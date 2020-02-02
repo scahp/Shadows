@@ -92,6 +92,8 @@ protected:
 	float DepthConstantBias = 1.0f;
 	std::vector<IBuffer*> Buffers;
 	bool EnableClear = true;
+	EPolygonMode PolygonMode = EPolygonMode::FILL;
+	EFace PolygonMode_Face = EFace::FRONT_AND_BACK;
 };
 
 #define CREATE_PIPELINE_WITH_SETUP(PipelineClass, ...) \
@@ -117,8 +119,8 @@ class jRenderPipeline : public IPipeline
 {
 public:
 	virtual void Do(const jPipelineContext& pipelineContext) const override;
-	virtual void Draw(const jPipelineContext& pipelineContext) const;
-	virtual void Draw(const jPipelineContext& pipelineContext, const jShader* shader) const;
+	virtual void Draw_Internal(const jPipelineContext& pipelineContext, const jShader* shader) const;
+	virtual void SetRenderState(const jShader* shader, const jPipelineContext& pipelineContext) const;
 };
 
 
@@ -132,7 +134,7 @@ public:
 
 	virtual void Setup() override;
 
-	virtual void Draw(const jPipelineContext& pipelineContext, const jShader* shader) const override;
+	virtual void Draw_Internal(const jPipelineContext& pipelineContext, const jShader* shader) const override;
 
 private:
 	const jGBuffer* GBuffer = nullptr;
@@ -147,7 +149,7 @@ public:
 	{ }
 
 	virtual void Setup() override;
-	virtual void Draw(const jPipelineContext& pipelineContext, const jShader* shader) const override;
+	virtual void Draw_Internal(const jPipelineContext& pipelineContext, const jShader* shader) const override;
 
 private:
 	jDeepShadowMapBuffers DeepShadowMapBuffers;
@@ -218,7 +220,7 @@ public:
 	jForwardShadowMap_Blur_Pipeline() = default;
 
 	virtual void Setup() override;
-	virtual void Draw(const jPipelineContext& pipelineContext, const jShader* shader) const override;
+	virtual void Draw_Internal(const jPipelineContext& pipelineContext, const jShader* shader) const override;
 
 	std::shared_ptr<class jPostProcess_Blur> PostProcessBlur;
 	std::shared_ptr<struct jPostProcessInOutput> PostProcessInput;
@@ -328,7 +330,7 @@ public: \
 #define START_CREATE_PIPELINE_SET_INFO_WITH_DEBUG_RENDER(Name, Prefix, PipelineSetType) \
 START_CREATE_PIPELINE_SET_INFO(Name, Prefix, PipelineSetType) \
 	ADD_PIPELINE_AT_RENDERPASS(DebugRenderPass, "Forward_DebugObject_Pipeline");\
-	ADD_PIPELINE_AT_RENDERPASS(BoundVolumeRenderPass, "Forward_BoundVolume_Pipeline");\
+	ADD_PIPELINE_AT_RENDERPASS(BoundVolumeRenderPass, "Forward_DebugObject_BoundBox_Pipeline");\
 	ADD_PIPELINE_AT_RENDERPASS(DebugUIPass, "Forward_UI_Pipeline");
 
 #define END_CREATE_PIPELINE_SET_INFO() } };
@@ -410,6 +412,20 @@ public:
 	{}
 
 	virtual void Setup() override;
+	const char* ShaderName = nullptr;
+};
+
+//////////////////////////////////////////////////////////////////////////
+// jForward_DebugObject_BoundBox_Pipeline
+class jForward_DebugObject_BoundBox_Pipeline : public jRenderPipeline
+{
+public:
+	jForward_DebugObject_BoundBox_Pipeline(const char* shaderName)
+		: ShaderName(shaderName)
+	{}
+
+	virtual void Setup() override;
+	void Draw_Internal(const jPipelineContext& pipelineContext, const jShader* shader) const;
 	const char* ShaderName = nullptr;
 };
 

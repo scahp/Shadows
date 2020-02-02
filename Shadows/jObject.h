@@ -52,6 +52,8 @@ public:
 	void SetSkipUpdateShadowVolume(bool skipUpdateShadowVolume) { SkipUpdateShadowVolume = skipUpdateShadowVolume; SetDirtyState(); }
 	void SetVisible(bool visible) { Visible = visible; SetDirtyState(); }
 
+	void CreateBoundBox(bool isShow = true);
+	void ShowBoundBox(bool isShow);
 
 	jRenderObject* RenderObject = nullptr;
 	jVertexAdjacency* VertexAdjacency = nullptr;

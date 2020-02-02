@@ -189,6 +189,9 @@
     <ClInclude Include="jSamplerStatePool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="jBoundPrimitiveType.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

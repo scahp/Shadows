@@ -187,34 +187,6 @@ std::vector<float> GenerateColor(const Vector4& color, int32 elementCount)
 	return std::move(temp);
 }
 
-jBoundBox GenerateBoundBox(const std::vector<float>& vertices)
-{
-	auto min = Vector(FLT_MAX);
-	auto max = Vector(FLT_MIN);
-	for (size_t i = 0; i < vertices.size() / 3; ++i)
-	{
-		auto curIndex = i * 3;
-		auto x = vertices[curIndex];
-		auto y = vertices[curIndex + 1];
-		auto z = vertices[curIndex + 2];
-		if (max.x < x)
-			max.x = x;
-		if (max.y < y)
-			max.y = y;
-		if (max.z < z)
-			max.z = z;
-
-		if (min.x > x)
-			min.x = x;
-		if (min.y > y)
-			min.y = y;
-		if (min.z > z)
-			min.z = z;
-	}
-
-	return { min, max };
-}
-
 jBoundSphere GenerateBoundSphere(const std::vector<float>& vertices)
 {
 	auto maxDist = FLT_MIN;
@@ -241,16 +213,6 @@ void CreateShadowVolume(const std::vector<float>& vertices, const std::vector<ui
 
 	ownerObject->ShadowVolumeCPU = new jShadowVolumeCPU(ownerObject->VertexAdjacency);
 	ownerObject->ShadowVolumeCPU->CreateShadowVolumeObject();
-}
-
-void CreateBoundObjects(const std::vector<float>& vertices, jObject* ownerObject)
-{
-	auto boundBoxObject = CreateBoundBox(GenerateBoundBox(vertices), ownerObject);
-	auto boundSphereObject = CreateBoundSphere(GenerateBoundSphere(vertices), ownerObject);
-	ownerObject->BoundBoxObjects.emplace_back(boundBoxObject);
-	ownerObject->BoundSphereObjects.emplace_back(boundSphereObject);
-	jObject::AddBoundBoxObject(boundBoxObject);
-	jObject::AddBoundSphereObject(boundSphereObject);
 }
 
 jBoundBoxObject* CreateBoundBox(jBoundBox boundBox, jObject* ownerObject, const Vector4& color)
@@ -538,7 +500,7 @@ jQuadPrimitive* CreateQuad(const Vector& pos, const Vector& size, const Vector& 
 	object->RenderObject = CreateQuad_Internal(pos, size, scale, color);
 	object->RenderObject->IsTwoSided = true;
 	CreateShadowVolume(static_cast<jStreamParam<float>*>(object->RenderObject->VertexStream->Params[0])->Data, {}, object);
-	CreateBoundObjects(static_cast<jStreamParam<float>*>(object->RenderObject->VertexStream->Params[0])->Data, object);
+	object->CreateBoundBox();
 	return object;
 }
 
@@ -646,7 +608,7 @@ jObject* CreateGizmo(const Vector& pos, const Vector& rot, const Vector& scale)
 	object->RenderObject = renderObject;
 	object->RenderObject->Pos = pos;
 	object->RenderObject->Scale = scale;
-	CreateBoundObjects({ std::begin(vertices), std::end(vertices) }, object);
+	object->CreateBoundBox();
 	return object;
 }
 
@@ -717,7 +679,7 @@ jObject* CreateTriangle(const Vector& pos, const Vector& size, const Vector& sca
 	object->RenderObject->Scale = scale;
 	object->RenderObject->IsTwoSided = true;
 	CreateShadowVolume({std::begin(vertices), std::end(vertices)}, {}, object);
-	CreateBoundObjects({ std::begin(vertices), std::end(vertices) }, object);
+	object->CreateBoundBox();
 
 	return object;
 }
@@ -871,7 +833,7 @@ jObject* CreateCube(const Vector& pos, const Vector& size, const Vector& scale, 
 	object->RenderObject->Pos = pos;
 	object->RenderObject->Scale = scale;
 	CreateShadowVolume({ std::begin(vertices), std::end(vertices) }, {}, object);
-	CreateBoundObjects({ std::begin(vertices), std::end(vertices) }, object);
+	object->CreateBoundBox();
 
 	return object;
 }
@@ -1006,7 +968,7 @@ jObject* CreateCapsule(const Vector& pos, float height, float radius, int32 slic
 	object->RenderObject->Pos = pos;
 	object->RenderObject->Scale = scale;
 	CreateShadowVolume(vertices, faces, object);
-	CreateBoundObjects(vertices, object);
+	object->CreateBoundBox();
 
 	return object;
 }
@@ -1124,7 +1086,7 @@ jConePrimitive* CreateCone(const Vector& pos, float height, float radius, int32 
 	if (createShadowVolumeInfo)
 		CreateShadowVolume(vertices, {}, object);
 	if (createBoundInfo)
-		CreateBoundObjects(vertices, object);
+		object->CreateBoundBox();
 	return object;
 }
 
@@ -1261,7 +1223,7 @@ jObject* CreateCylinder(const Vector& pos, float height, float radius, int32 sli
 	object->Radius = radius;
 	object->Color = color;
 	CreateShadowVolume(vertices, {}, object);
-	CreateBoundObjects(vertices, object);
+	object->CreateBoundBox();
 	return object;
 }
 
@@ -1405,7 +1367,7 @@ jObject* CreateSphere(const Vector& pos, float radius, int32 slice, const Vector
 	if (createShadowVolumeInfo)
 		CreateShadowVolume(vertices, faces, object);
 	if (createBoundInfo)
-		CreateBoundObjects(vertices, object);
+		object->CreateBoundBox();
 	return object;
 }
 
@@ -1555,7 +1517,7 @@ jSegmentPrimitive* CreateSegment(const Vector& start, const Vector& end, float t
 		thisObject->RenderObject->Scale = Vector(thisSegmentObject->Time);
 	};
 	CreateShadowVolume({ std::begin(vertices), std::end(vertices) }, {}, object);
-	CreateBoundObjects({ std::begin(vertices), std::end(vertices) }, object);
+	object->CreateBoundBox();
 	return object;
 }
 

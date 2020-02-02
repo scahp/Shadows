@@ -171,6 +171,7 @@
     <ClInclude Include="IMGUI\imstb_textedit.h" />
     <ClInclude Include="IMGUI\imstb_truetype.h" />
     <ClInclude Include="jAppSettings.h" />
+    <ClInclude Include="jBoundPrimitiveType.h" />
     <ClInclude Include="jCamera.h" />
     <ClInclude Include="jCollision.h" />
     <ClInclude Include="jDeferredRenderer.h" />

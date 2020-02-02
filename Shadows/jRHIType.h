@@ -270,3 +270,11 @@ enum class ETextureComparisonMode
 	COMPARE_REF_TO_TEXTURE,
 	MAX,
 };
+
+enum class EPolygonMode
+{
+	POINT = 0,
+	LINE,
+	FILL
+};
+

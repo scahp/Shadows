@@ -7,6 +7,7 @@
 #include "jRHI_OpenGL.h"
 #include "jRenderTargetPool.h"
 #include "jShadowAppProperties.h"
+#include "jObject.h"
 
 
 jRenderObject::jRenderObject()
@@ -107,6 +108,22 @@ void jRenderObject::Draw(const jCamera* camera, const jShader* shader, const std
 		else
 			g_rhi->DrawArraysInstanced(primitiveType, 0, count, instanceCount);
 	}
+}
+
+void jRenderObject::DrawBoundBox(const jCamera* camera, const jShader* shader)
+{
+	g_rhi->SetShader(shader);
+
+	SetCameraProperty(shader, camera);
+
+	const auto pos = Vector(ZeroType);
+	SET_UNIFORM_BUFFER_STATIC(Vector, "Pos", pos, shader);
+	SET_UNIFORM_BUFFER_STATIC(Vector, "BoxMin", BoundBox.Min, shader);
+	SET_UNIFORM_BUFFER_STATIC(Vector, "BoxMax", BoundBox.Max, shader);
+	SET_UNIFORM_BUFFER_STATIC(Vector4, "Color", Vector4(1.0f, 0.0f, 0.0f, 1.0f), shader);
+
+	g_rhi->EnableCullFace(camera->IsEnableCullMode && !IsTwoSided);
+	g_rhi->DrawArrays(EPrimitiveType::POINTS, 0, 1);
 }
 
 void jRenderObject::DrawBaseVertexIndex(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 startIndex, int32 count, int32 baseVertexIndex, int32 instanceCount)
@@ -292,6 +309,20 @@ void jRenderObject::SetTextureProperty(const jShader* shader, jMaterialData* mat
 			materialData->Params.push_back(tex_objectArray_param);
 		}
 	}
+}
+
+const std::vector<float>& jRenderObject::GetVertices() const
+{
+	if (VertexStream && !VertexStream->Params.empty())
+		return static_cast<jStreamParam<float>*>(VertexStream->Params[0])->Data;
+
+	static const std::vector<float> s_emtpy;
+	return s_emtpy;
+}
+
+void jRenderObject::CreateBoundBox()
+{
+	BoundBox.CreateBoundBox(GetVertices());
 }
 
 void jRenderObject::SetMaterialProperty(const jShader* shader, jMaterialData* materialData)

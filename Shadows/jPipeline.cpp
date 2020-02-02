@@ -11,6 +11,7 @@
 #include "jShadowAppProperties.h"
 #include "jRHI.h"
 #include "jVertexAdjacency.h"
+#include "jPrimitiveUtil.h"
 
 const std::list<jObject*> jPipelineContext::emptyObjectList;
 //const std::list<const jLight*> jPipelineContext::emptyLightList;
@@ -68,7 +69,7 @@ struct jShadowPipelinCreation
 		ADD_FORWARD_SHADOW_PIPELINE(Forward_EVSM_Pipeline, "EVSM");
 		ADD_FORWARD_SHADOW_PIPELINE(Forward_CSM_SSM_Pipeline, "CSM_SSM");
 
-		IPipeline::AddPipeline("Forward_BoundVolume_Pipeline", new jForward_DebugObject_Pipeline("BoundVolumeShader"));
+		IPipeline::AddPipeline("Forward_DebugObject_BoundBox_Pipeline", new jForward_DebugObject_BoundBox_Pipeline("BoundingBox"));
 		IPipeline::AddPipeline("Forward_DebugObject_Pipeline", new jForward_DebugObject_Pipeline("DebugObjectShader"));
 		IPipeline::AddPipeline("Forward_UI_Pipeline", new jForward_UIObject_Pipeline("UIShader"));
 
@@ -82,15 +83,18 @@ void jRenderPipeline::Do(const jPipelineContext& pipelineContext) const
 {
 	SCOPE_DEBUG_EVENT(g_rhi, Name.c_str());
 
-	Draw(pipelineContext, Shader);
+	Draw_Internal(pipelineContext, Shader);
 }
 
-void jRenderPipeline::Draw(const jPipelineContext& pipelineContext) const
+void jRenderPipeline::Draw_Internal(const jPipelineContext& pipelineContext, const jShader* shader) const
 {
-	Draw(pipelineContext, Shader);
+	SetRenderState(shader, pipelineContext);
+
+	for (const auto& iter : pipelineContext.Objects)
+		iter->Draw(pipelineContext.Camera, shader, pipelineContext.Lights);
 }
 
-void jRenderPipeline::Draw(const jPipelineContext& pipelineContext, const jShader* shader) const
+void jRenderPipeline::SetRenderState(const jShader* shader, const jPipelineContext& pipelineContext) const
 {
 	if (EnableClear)
 	{
@@ -107,6 +111,8 @@ void jRenderPipeline::Draw(const jPipelineContext& pipelineContext, const jShade
 	g_rhi->EnableDepthBias(EnableDepthBias);
 	g_rhi->SetDepthBias(DepthConstantBias, DepthSlopeBias);
 
+	g_rhi->SetPolygonMode(PolygonMode_Face, PolygonMode);
+
 	g_rhi->SetShader(shader);
 
 	for (const auto& iter : Buffers)
@@ -114,11 +120,7 @@ void jRenderPipeline::Draw(const jPipelineContext& pipelineContext, const jShade
 
 	pipelineContext.Camera->BindCamera(shader);
 	jLight::BindLights(pipelineContext.Lights, shader);
-
-	for (const auto& iter : pipelineContext.Objects)
-		iter->Draw(pipelineContext.Camera, shader, pipelineContext.Lights);
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 // jDeferredGeometryPipeline
@@ -129,14 +131,14 @@ void jDeferredGeometryPipeline::Setup()
 	ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
 }
 
-void jDeferredGeometryPipeline::Draw(const jPipelineContext& pipelineContext, const jShader* shader) const
+void jDeferredGeometryPipeline::Draw_Internal(const jPipelineContext& pipelineContext, const jShader* shader) const
 {
 	JASSERT(GBuffer);
 	if (GBuffer->Begin())
 	{
 		if (auto currentShader = jShadowAppSettingProperties::GetInstance().ExponentDeepShadowOn ? jShader::GetShader("ExpDeferred") : jShader::GetShader("Deferred"))
 		{
-			__super::Draw(pipelineContext, currentShader);
+			__super::Draw_Internal(pipelineContext, currentShader);
 		}
 		GBuffer->End();
 	}
@@ -159,7 +161,7 @@ void jDeepShadowMap_ShadowPass_Pipeline::Setup()
 	Buffers.push_back(DeepShadowMapBuffers.LinkedListEntryDepthAlphaNext);
 }
 
-void jDeepShadowMap_ShadowPass_Pipeline::Draw(const jPipelineContext& pipelineContext, const jShader* shader) const
+void jDeepShadowMap_ShadowPass_Pipeline::Draw_Internal(const jPipelineContext& pipelineContext, const jShader* shader) const
 {
 	DeepShadowMapBuffers.AtomicBuffer->ClearBuffer(0);
 	DeepShadowMapBuffers.StartElementBuf->ClearBuffer(-1);
@@ -178,7 +180,7 @@ void jDeepShadowMap_ShadowPass_Pipeline::Draw(const jPipelineContext& pipelineCo
 			{
 				g_rhi->SetShader(currentShader);
 
-				__super::Draw(jPipelineContext(pipelineContext.DefaultRenderTarget, pipelineContext.Objects, lightCamera, { light }), currentShader);
+				__super::Draw_Internal(jPipelineContext(pipelineContext.DefaultRenderTarget, pipelineContext.Objects, lightCamera, { light }), currentShader);
 			}
 			renderTarget->End();
 		}
@@ -241,7 +243,7 @@ void jForward_ShadowMapGen_Pipeline::Do(const jPipelineContext& pipelineContext)
 				g_rhi->SetViewport({ 0, 0, renderTarget->Info.Width, renderTarget->Info.Height });
 			else
 				g_rhi->SetViewportIndexedArray(0, static_cast<int32>(viewports.size()), &viewports[0]);
-			this->jRenderPipeline::Draw(jPipelineContext(pipelineContext.DefaultRenderTarget, pipelineContext.Objects, camera, { light }), currentShader);
+			this->jRenderPipeline::Draw_Internal(jPipelineContext(pipelineContext.DefaultRenderTarget, pipelineContext.Objects, camera, { light }), currentShader);
 		}, currentShader);
 	}
 
@@ -309,7 +311,7 @@ void jForward_ShadowMapGen_CSM_SSM_Pipeline::Do(const jPipelineContext& pipeline
 						g_rhi->SetViewport({ 0, 0, renderTarget->Info.Width, renderTarget->Info.Height });
 					else
 						g_rhi->SetViewportIndexedArray(0, static_cast<int32>(viewports.size()), &viewports[0]);
-					this->Draw(jPipelineContext(pipelineContext.DefaultRenderTarget, pipelineContext.Objects, camera, { light }), currentShader);
+					this->Draw_Internal(jPipelineContext(pipelineContext.DefaultRenderTarget, pipelineContext.Objects, camera, { light }), currentShader);
 				}, currentShader);
 			g_rhi->SetRenderTarget(pipelineContext.DefaultRenderTarget);
 			skip = true;
@@ -417,7 +419,7 @@ void jForward_ShadowMapGen_CSM_SSM_Pipeline::Do(const jPipelineContext& pipeline
 					g_rhi->SetViewport({ 0, 0, renderTarget->Info.Width, renderTarget->Info.Height });
 				else
 					g_rhi->SetViewportIndexedArray(0, static_cast<int32>(viewports.size()), &viewports[0]);
-				this->Draw(jPipelineContext(pipelineContext.DefaultRenderTarget, pipelineContext.Objects, camera, { light }), currentShader);
+				this->Draw_Internal(jPipelineContext(pipelineContext.DefaultRenderTarget, pipelineContext.Objects, camera, { light }), currentShader);
 			}, currentShader);
 		g_rhi->EnableDepthClip(true);
 		g_rhi->SetRenderTarget(pipelineContext.DefaultRenderTarget);
@@ -438,7 +440,7 @@ void jForwardShadowMap_Blur_Pipeline::Setup()
 	PostProcessOutput = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
 }
 
-void jForwardShadowMap_Blur_Pipeline::Draw(const jPipelineContext& pipelineContext, const jShader* shader) const
+void jForwardShadowMap_Blur_Pipeline::Draw_Internal(const jPipelineContext& pipelineContext, const jShader* shader) const
 {
 	for (auto light : pipelineContext.Lights)
 	{
@@ -925,3 +927,28 @@ void jForward_UIObject_Pipeline::Setup()
 	Shader = jShader::GetShader(ShaderName);
 }
 
+//////////////////////////////////////////////////////////////////////////
+// jForward_DebugObject_BoundBox_Pipeline
+void jForward_DebugObject_BoundBox_Pipeline::Setup()
+{
+	EnableClear = false;
+	EnableDepthTest = true;
+	DepthStencilFunc = EComparisonFunc::LESS;
+	EnableBlend = true;
+	BlendSrc = EBlendSrc::SRC_ALPHA;
+	BlendDest = EBlendDest::ONE_MINUS_SRC_ALPHA;
+	Shader = jShader::GetShader(ShaderName);
+	PolygonMode_Face = EFace::FRONT_AND_BACK;
+	PolygonMode = EPolygonMode::LINE;
+}
+
+void jForward_DebugObject_BoundBox_Pipeline::Draw_Internal(const jPipelineContext& pipelineContext, const jShader* shader) const
+{
+	SetRenderState(shader, pipelineContext);
+
+	for (const auto& iter : pipelineContext.Objects)
+	{
+		if (iter->RenderObject)
+			iter->RenderObject->DrawBoundBox(pipelineContext.Camera, shader);
+	}
+}

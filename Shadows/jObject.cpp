@@ -190,6 +190,24 @@ void jObject::Draw(const jCamera* camera, const jShader* shader, const std::list
 		RenderObject->Draw(camera, shader, lights, 0, -1, instanceCount);
 }
 
+void jObject::CreateBoundBox(bool isShow)
+{
+	if (RenderObject)
+	{
+		RenderObject->CreateBoundBox();
+		if (isShow)
+			jObject::AddBoundBoxObject(this);
+	}
+}
+
+void jObject::ShowBoundBox(bool isShow)
+{
+	if (isShow)
+		jObject::AddBoundBoxObject(this);
+	else
+		jObject::RemoveBoundBoxObject(this);
+}
+
 //void jObject::Draw(const jCamera* camera, const jShader* shader)
 //{
 //	if (Visible && RenderObject)

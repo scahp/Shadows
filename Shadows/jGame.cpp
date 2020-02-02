@@ -76,8 +76,8 @@ void jGame::Setup()
 	//AmbientLight = jLight::CreateAmbientLight(Vector(0.7f, 0.8f, 0.8f), Vector(0.1f));
 	AmbientLight = jLight::CreateAmbientLight(Vector(0.2f, 0.5f, 1.0f), Vector(0.05f));		// sky light color
 
-	PointLight = jLight::CreatePointLight(jShadowAppSettingProperties::GetInstance().PointLightPosition, Vector4(2.0f, 0.7f, 0.7f, 1.0f), 500.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
-	SpotLight = jLight::CreateSpotLight(jShadowAppSettingProperties::GetInstance().SpotLightPosition, jShadowAppSettingProperties::GetInstance().SpotLightDirection, Vector4(0.0f, 1.0f, 0.0f, 1.0f), 500.0f, 0.7f, 1.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
+	//PointLight = jLight::CreatePointLight(jShadowAppSettingProperties::GetInstance().PointLightPosition, Vector4(2.0f, 0.7f, 0.7f, 1.0f), 500.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
+	//SpotLight = jLight::CreateSpotLight(jShadowAppSettingProperties::GetInstance().SpotLightPosition, jShadowAppSettingProperties::GetInstance().SpotLightDirection, Vector4(0.0f, 1.0f, 0.0f, 1.0f), 500.0f, 0.7f, 1.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
 
 	DirectionalLightInfo = jPrimitiveUtil::CreateDirectionalLightDebug(Vector(250, 260, 0)*0.5f, Vector::OneVector * 10.0f, 10.0f, MainCamera, DirectionalLight, "Image/sun.png");
 	jObject::AddDebugObject(DirectionalLightInfo);
@@ -85,15 +85,15 @@ void jGame::Setup()
 	DirectionalLightShadowMapUIDebug = jPrimitiveUtil::CreateUIQuad({ 0.0f, 0.0f }, { 150, 150 }, DirectionalLight->GetShadowMap());
 	jObject::AddUIDebugObject(DirectionalLightShadowMapUIDebug);
 
-	PointLightInfo = jPrimitiveUtil::CreatePointLightDebug(Vector(10.0f), MainCamera, PointLight, "Image/bulb.png");
+	//PointLightInfo = jPrimitiveUtil::CreatePointLightDebug(Vector(10.0f), MainCamera, PointLight, "Image/bulb.png");
 	//jObject::AddDebugObject(PointLightInfo);
 
-	SpotLightInfo = jPrimitiveUtil::CreateSpotLightDebug(Vector(10.0f), MainCamera, SpotLight, "Image/spot.png");
+	//SpotLightInfo = jPrimitiveUtil::CreateSpotLightDebug(Vector(10.0f), MainCamera, SpotLight, "Image/spot.png");
 	//jObject::AddDebugObject(SpotLightInfo);
 
 	MainCamera->AddLight(DirectionalLight);
-	MainCamera->AddLight(PointLight);
-	MainCamera->AddLight(SpotLight);
+	//MainCamera->AddLight(PointLight);
+	//MainCamera->AddLight(SpotLight);
 	MainCamera->AddLight(AmbientLight);
 
 	SpawnObjects(ESpawnedType::TestPrimitive);
@@ -478,74 +478,74 @@ void jGame::SpawnTestPrimitives()
 	jObject::AddObject(cube);
 	SpawnedObjects.push_back(cube);
 
-	auto cube2 = jPrimitiveUtil::CreateCube(Vector(-65.0f, 35.0f, 10.0f), Vector::OneVector, Vector(50.0f, 50.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
-	jObject::AddObject(cube2);
-	SpawnedObjects.push_back(cube2);
+	//auto cube2 = jPrimitiveUtil::CreateCube(Vector(-65.0f, 35.0f, 10.0f), Vector::OneVector, Vector(50.0f, 50.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
+	//jObject::AddObject(cube2);
+	//SpawnedObjects.push_back(cube2);
 
-	auto capsule = jPrimitiveUtil::CreateCapsule(Vector(30.0f, 30.0f, -80.0f), 40.0f, 10.0f, 20, Vector(1.0f), Vector4(1.0f, 1.0f, 0.0f, 1.0f));
-	capsule->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
-	{
-		thisObject->RenderObject->Rot.x -= 0.01f;
-	};
-	jObject::AddObject(capsule);
-	SpawnedObjects.push_back(capsule);
+	//auto capsule = jPrimitiveUtil::CreateCapsule(Vector(30.0f, 30.0f, -80.0f), 40.0f, 10.0f, 20, Vector(1.0f), Vector4(1.0f, 1.0f, 0.0f, 1.0f));
+	//capsule->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
+	//{
+	//	thisObject->RenderObject->Rot.x -= 0.01f;
+	//};
+	//jObject::AddObject(capsule);
+	//SpawnedObjects.push_back(capsule);
 
-	auto cone = jPrimitiveUtil::CreateCone(Vector(0.0f, 50.0f, 60.0f), 40.0f, 20.0f, 15, Vector::OneVector, Vector4(1.0f, 1.0f, 0.0f, 1.0f));
-	cone->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
-	{
-		thisObject->RenderObject->Rot.y += 0.03f;
-	};
-	jObject::AddObject(cone);
-	SpawnedObjects.push_back(cone);
+	//auto cone = jPrimitiveUtil::CreateCone(Vector(0.0f, 50.0f, 60.0f), 40.0f, 20.0f, 15, Vector::OneVector, Vector4(1.0f, 1.0f, 0.0f, 1.0f));
+	//cone->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
+	//{
+	//	thisObject->RenderObject->Rot.y += 0.03f;
+	//};
+	//jObject::AddObject(cone);
+	//SpawnedObjects.push_back(cone);
 
-	auto cylinder = jPrimitiveUtil::CreateCylinder(Vector(-30.0f, 60.0f, -60.0f), 20.0f, 10.0f, 20, Vector::OneVector, Vector4(0.0f, 0.0f, 1.0f, 1.0f));
-	cylinder->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
-	{
-		thisObject->RenderObject->Rot.x += 0.05f;
-	};
-	jObject::AddObject(cylinder);
-	SpawnedObjects.push_back(cylinder);
+	//auto cylinder = jPrimitiveUtil::CreateCylinder(Vector(-30.0f, 60.0f, -60.0f), 20.0f, 10.0f, 20, Vector::OneVector, Vector4(0.0f, 0.0f, 1.0f, 1.0f));
+	//cylinder->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
+	//{
+	//	thisObject->RenderObject->Rot.x += 0.05f;
+	//};
+	//jObject::AddObject(cylinder);
+	//SpawnedObjects.push_back(cylinder);
 
-	auto quad2 = jPrimitiveUtil::CreateQuad(Vector(-20.0f, 80.0f, 40.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(0.0f, 0.0f, 1.0f, 1.0f));
-	quad2->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
-	{
-		thisObject->RenderObject->Rot.z += 0.08f;
-	};
-	jObject::AddObject(quad2);
-	SpawnedObjects.push_back(quad2);
+	//auto quad2 = jPrimitiveUtil::CreateQuad(Vector(-20.0f, 80.0f, 40.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(0.0f, 0.0f, 1.0f, 1.0f));
+	//quad2->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
+	//{
+	//	thisObject->RenderObject->Rot.z += 0.08f;
+	//};
+	//jObject::AddObject(quad2);
+	//SpawnedObjects.push_back(quad2);
 
-	auto sphere = jPrimitiveUtil::CreateSphere(Vector(65.0f, 35.0f, 10.0f), 1.0, 16, Vector(30.0f), Vector4(0.8f, 0.0f, 0.0f, 1.0f));
-	sphere->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
-	{
-		//thisObject->RenderObject->Rot.z += 0.01f;
-		thisObject->RenderObject->Rot.z = DegreeToRadian(180.0f);
-	};
-	Sphere = sphere;
+	//auto sphere = jPrimitiveUtil::CreateSphere(Vector(65.0f, 35.0f, 10.0f), 1.0, 16, Vector(30.0f), Vector4(0.8f, 0.0f, 0.0f, 1.0f));
+	//sphere->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
+	//{
+	//	//thisObject->RenderObject->Rot.z += 0.01f;
+	//	thisObject->RenderObject->Rot.z = DegreeToRadian(180.0f);
+	//};
+	//Sphere = sphere;
 
-	jObject::AddObject(sphere);
-	SpawnedObjects.push_back(sphere);
+	//jObject::AddObject(sphere);
+	//SpawnedObjects.push_back(sphere);
 
-	auto sphere2 = jPrimitiveUtil::CreateSphere(Vector(150.0f, 5.0f, 0.0f), 1.0, 16, Vector(10.0f), Vector4(0.8f, 0.4f, 0.6f, 1.0f));
-	sphere2->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
-	{
-		const float startY = 5.0f;
-		const float endY = 100;
-		const float speed = 1.5f;
-		static bool dir = true;
-		thisObject->RenderObject->Pos.y += dir ? speed : -speed;
-		if (thisObject->RenderObject->Pos.y < startY || thisObject->RenderObject->Pos.y > endY)
-		{
-			dir = !dir;
-			thisObject->RenderObject->Pos.y += dir ? speed : -speed;
-		}
-	};
-	Sphere = sphere2;
-	jObject::AddObject(sphere2);
-	SpawnedObjects.push_back(sphere2);
+	//auto sphere2 = jPrimitiveUtil::CreateSphere(Vector(150.0f, 5.0f, 0.0f), 1.0, 16, Vector(10.0f), Vector4(0.8f, 0.4f, 0.6f, 1.0f));
+	//sphere2->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
+	//{
+	//	const float startY = 5.0f;
+	//	const float endY = 100;
+	//	const float speed = 1.5f;
+	//	static bool dir = true;
+	//	thisObject->RenderObject->Pos.y += dir ? speed : -speed;
+	//	if (thisObject->RenderObject->Pos.y < startY || thisObject->RenderObject->Pos.y > endY)
+	//	{
+	//		dir = !dir;
+	//		thisObject->RenderObject->Pos.y += dir ? speed : -speed;
+	//	}
+	//};
+	//Sphere = sphere2;
+	//jObject::AddObject(sphere2);
+	//SpawnedObjects.push_back(sphere2);
 
-	auto billboard = jPrimitiveUtil::CreateBillobardQuad(Vector(0.0f, 60.0f, 80.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(1.0f, 0.0f, 1.0f, 1.0f), MainCamera);
-	jObject::AddObject(billboard);
-	SpawnedObjects.push_back(billboard);
+	//auto billboard = jPrimitiveUtil::CreateBillobardQuad(Vector(0.0f, 60.0f, 80.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(1.0f, 0.0f, 1.0f, 1.0f), MainCamera);
+	//jObject::AddObject(billboard);
+	//SpawnedObjects.push_back(billboard);
 }
 
 void jGame::SpawnGraphTestFunc()

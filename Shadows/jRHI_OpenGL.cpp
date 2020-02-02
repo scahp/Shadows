@@ -203,6 +203,44 @@ uint32 GetOpenGLTextureComparisonMode(ETextureComparisonMode mode)
 	return result;
 }
 
+uint32 GetOpenGLPolygonMode(EPolygonMode mode)
+{
+	uint32 result = 0;
+	switch (mode)
+	{
+	case EPolygonMode::POINT:
+		result = GL_POINT;
+		break;
+	case EPolygonMode::LINE:
+		result = GL_LINE;
+		break;
+	case EPolygonMode::FILL:
+		result = GL_FILL;
+		break;
+	default:
+		break;
+	}
+	return result;
+}
+
+uint32 GetOpenGLFaceType(EFace type)
+{
+	uint32 face_gl = 0;
+	switch (type)
+	{
+	case EFace::BACK:
+		face_gl = GL_BACK;
+		break;
+	case EFace::FRONT:
+		face_gl = GL_FRONT;
+		break;
+	case EFace::FRONT_AND_BACK:
+		face_gl = GL_FRONT_AND_BACK;
+		break;
+	}
+	return face_gl;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // jRHI_OpenGL
 jRHI_OpenGL::jRHI_OpenGL()
@@ -590,6 +628,11 @@ void jRHI_OpenGL::BeginQueryTimeElapsed(const jQueryTime* queryTimeElpased) cons
 void jRHI_OpenGL::EndQueryTimeElapsed(const jQueryTime* queryTimeElpased) const 
 {
 	glEndQuery(GL_TIME_ELAPSED);
+}
+
+void jRHI_OpenGL::SetPolygonMode(EFace face, EPolygonMode mode)
+{
+	glPolygonMode(GetOpenGLFaceType(face), GetOpenGLPolygonMode(mode));
 }
 
 void jRHI_OpenGL::SetClear(ERenderBufferType typeBit) const
@@ -1163,7 +1206,11 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 			uint32 tbo = 0;
 			glGenTextures(1, &tbo);
 			glBindTexture(GL_TEXTURE_2D, tbo);
-			glTexStorage2D(GL_TEXTURE_2D, 1, depthBufferFormat, info.Width, info.Height);
+			//glTexStorage2D(GL_TEXTURE_2D, 1, depthBufferFormat, info.Width, info.Height);
+			glTexImage2D(GL_TEXTURE_2D, 0, depthBufferFormat, info.Width, info.Height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+			//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, SCREEN_WIDTH, SCREEN_HEIGHT, 0,
+			//	GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL);
+			glGenerateMipmap(GL_TEXTURE_2D);
 			glFramebufferTexture2D(GL_FRAMEBUFFER, depthBufferType, GL_TEXTURE_2D, tbo, 0);
 
 			auto tex_gl = new jTexture_OpenGL();
@@ -1613,19 +1660,7 @@ void jRHI_OpenGL::EnableStencil(bool enable) const
 
 void jRHI_OpenGL::SetStencilOpSeparate(EFace face, EStencilOp sFail, EStencilOp dpFail, EStencilOp dpPass) const
 {
-	unsigned int face_gl = 0;
-	switch (face)
-	{
-	case EFace::BACK:
-		face_gl = GL_BACK;
-		break;
-	case EFace::FRONT:
-		face_gl = GL_FRONT;
-		break;
-	case EFace::FRONT_AND_BACK:
-		face_gl = GL_FRONT_AND_BACK;
-		break;
-	}
+	const uint32 face_gl = GetOpenGLFaceType(face);
 
 	auto func = [](EStencilOp op)
 	{

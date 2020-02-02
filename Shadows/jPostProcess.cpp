@@ -109,8 +109,15 @@ void jPostprocessChain::ReleaseAllPostprocesses()
 	PostProcesses.clear();
 }
 
+void jPostprocessChain::SetRenderState() const
+{
+	g_rhi->SetPolygonMode(EFace::FRONT_AND_BACK, EPolygonMode::FILL);
+}
+
 bool jPostprocessChain::Process(const jCamera* camera) const
 {
+	SetRenderState();
+
 	for (auto iter : PostProcesses)
 		iter->Process(camera);
 	return true;

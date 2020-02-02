@@ -233,6 +233,7 @@ struct jRenderTargetInfo
 		hash_combine(result, Height);
 		hash_combine(result, Height);
 		hash_combine(result, TextureCount);
+		hash_combine(result, IsGenerateMipmap);
 		return result;
 	}
 
@@ -246,6 +247,7 @@ struct jRenderTargetInfo
 	int32 TextureCount = 1;
 	ETextureFilter Magnification;
 	ETextureFilter Minification;
+	bool IsGenerateMipmap = false;
 };
 
 struct jRenderTarget : public std::enable_shared_from_this<jRenderTarget>
@@ -387,6 +389,7 @@ public:
 	virtual void GetQueryTimeStampResult(jQueryTime* queryTimeStamp) const {}
 	virtual void BeginQueryTimeElapsed(const jQueryTime* queryTimeElpased) const {}
 	virtual void EndQueryTimeElapsed(const jQueryTime* queryTimeElpased) const {}
+	virtual void SetPolygonMode(EFace face, EPolygonMode mode) {}
 };
 
 // Not thred safe

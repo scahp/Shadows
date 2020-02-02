@@ -66,6 +66,7 @@ public:
 	void AddNewPostprocess(IPostprocess* postprocess, const std::weak_ptr<jPostProcessInOutput>& input);
 	void ReleaseAllPostprocesses();
 
+	void SetRenderState() const;
 	bool Process(const jCamera* camera) const;
 
 private:
