@@ -29,6 +29,9 @@
 #define JASSERT(x) assert(x)
 #define JMESSAGE(x) MessageBoxA(0, x, "", MB_OK)
 
+#define ensure(x) (JASSERT(x), (x))
+#define check(x) JASSERT(x)
+
 using int8 = char;
 using uint8 = unsigned char;
 using int16 = short;

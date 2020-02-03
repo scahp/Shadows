@@ -607,3 +607,35 @@ FORCEINLINE Vector operator+(T value, Vector const& vector)
 	return Vector(vector.x + value, vector.y + value, vector.z + value);
 }
 
+struct Vector2i
+{
+	Vector2i() = default;
+	Vector2i(int32 fX, int32 fY) : x(fX), y(fY) {}
+	union
+	{
+		struct { int32 x, y; };
+		int32 v[2];
+	};
+};
+
+struct Vector3i
+{
+	Vector3i() = default;
+	Vector3i(int32 fX, int32 fY, int32 fZ) : x(fX), y(fY), z(fZ) {}
+	union
+	{
+		struct { int32 x, y, z; };
+		int32 v[3];
+	};
+};
+
+struct Vector4i
+{
+	Vector4i() = default;
+	Vector4i(int32 fX, int32 fY, int32 fZ, int32 fW) : x(fX), y(fY), z(fZ), w(fW) {}
+	union
+	{
+		struct { int32 x, y, z, w; };
+		int32 v[4];
+	};
+};

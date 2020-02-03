@@ -5,6 +5,7 @@
 #include "jPipeline.h"
 #include "jShader.h"
 #include "jPerformanceProfile.h"
+
 #include "jSamplerStatePool.h"
 #include "jRHI_OpenGL.h"
 #include "jLight.h"
@@ -58,176 +59,148 @@ void jEngine::Update(float deltaTime)
 	auto renderTarget = static_cast<jForwardRenderer*>(Game.ForwardRenderer)->RenderTarget;
 	if (renderTarget->Begin())
 	{
-		auto texture_gl = static_cast<jTexture_OpenGL*>(renderTarget->GetTextureDepth());
+		auto depthTexture = renderTarget->GetTextureDepth();
 		auto hiz_gen = jShader::GetShader("Hi-Z_Gen");
-		auto hiz_gen_gl = static_cast<jShader_OpenGL*>(hiz_gen);
 
 		int32 drawCallCount = 0;
-		int32 TempWidth = SCR_WIDTH;
-		int32 TempHeight = SCR_HEIGHT;
+		float TempWidth = static_cast<float>(SCR_WIDTH);
+		float TempHeight = static_cast<float>(SCR_HEIGHT);
 
-		glUseProgram(hiz_gen_gl->program);
+		g_rhi->SetShader(hiz_gen);
 
-		// disable color buffer as we will render only a depth image
-		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glUniform1i(glGetUniformLocation(hiz_gen_gl->program, "LastMip"), 0);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture_gl->TextureID);
+		// Color buffer를 모두 끄고, depth buffer에만 렌더링
+		g_rhi->SetColorMask(false, false, false, false);
+
+		// 소스로 사용할 Depth texture 를 설정해준다.
+		//  - depthTexture가 소스로도 현재 framebuffer의 depthbuffer 로도 쓰임. (한 쉐이더에서 동시 읽고 쓰고, 다른 mipmap-level 이면 괜찮음)
+		SET_UNIFORM_BUFFER_STATIC(int32, "LastMip", 0, hiz_gen);
+		g_rhi->SetTexture(0, depthTexture);
+
 		g_rhi->BindSamplerState(0, jSamplerStatePool::GetSamplerState("LinearClampMipmap").get());
-		// we have to disable depth testing but allow depth writes
-		glDepthFunc(GL_ALWAYS);
-		// calculate the number of mipmap levels for NPOT texture
-		int numLevels = 1 + (int)floorf(log2f(fmaxf(TempWidth, TempHeight)));
-		int currentWidth = TempWidth;
-		int currentHeight = TempHeight;
-		for (int i = 1; i < numLevels; i++) {
-			glUniform2i(glGetUniformLocation(hiz_gen_gl->program, "LastMipSize"), currentWidth, currentHeight);
-			// calculate next viewport size
+		
+		// Depth test는 끄고, depth write 쓰는도록 허용
+		g_rhi->SetDepthFunc(EComparisonFunc::ALWAYS);
+
+		// NPOT(Not power of two) Texture의 mipmap-level 개수를 계산한다.
+		int32 numLevels = 1 + (int)floorf(log2f(fmaxf(TempWidth, TempHeight)));
+		int32 currentWidth = static_cast<int32>(TempWidth);
+		int32 currentHeight = static_cast<int32>(TempHeight);
+		for (int32 i = 1; i < numLevels; i++) 
+		{
+			// 마지막으로 렌더링한 뷰포트 사이즈 Uniform 변수로 전달
+			SET_UNIFORM_BUFFER_STATIC(Vector2i, "LastMipSize", Vector2i(currentWidth, currentHeight), hiz_gen);
+
+			// 다음 뷰포트 사이즈 계산
 			currentWidth /= 2;
 			currentHeight /= 2;
-			// ensure that the viewport size is always at least 1x1
+
+			// 뷰포트 사이즈가 적어도 1x1 이 되도록 보장
 			currentWidth = currentWidth > 0 ? currentWidth : 1;
 			currentHeight = currentHeight > 0 ? currentHeight : 1;
-			glViewport(0, 0, currentWidth, currentHeight);
-			// bind next level for rendering but first restrict fetches only to previous level
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, i - 1);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, i - 1);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture_gl->TextureID, i);
-			// dummy draw command as the full screen quad is generated completely by a geometry shader
-			glDrawArrays(GL_POINTS, 0, 1);
+
+			g_rhi->SetViewport(0, 0, currentWidth, currentHeight);
+
+			// 이번에 소스로 사용할 mipmap-level 을 설정해줌. (for문의 인덱스가 1부터 시작함을 참고)
+			g_rhi->SetTextureMipmapLevelLimit(ETextureType::TEXTURE_2D, i - 1, i - 1);
+
+			renderTarget->SetDepthTexture(depthTexture, i);
+
+			// 지오메트리 쉐이더에서 Fullscreen Quad를 만들어줄 것이므로 여기서는 1개의 더미 버택스를 그림.
+			g_rhi->DrawArrays(EPrimitiveType::POINTS, 0, 1);
 			drawCallCount++;
 		}
-		// reset mipmap level range for the depth image
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, numLevels - 1);
 		
-		// reset the framebuffer configuration
-		//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture_gl->TextureID, 0);
+		// Depth texture의 mipmap-level 범위 복원
+		g_rhi->SetTextureMipmapLevelLimit(ETextureType::TEXTURE_2D, 0, numLevels - 1);
 		
-		// reenable color buffer writes, reset viewport and reenable depth test
-		glDepthFunc(GL_LESS);
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+		// Framebuffer의 depth buffer의 mipmap-level을 0으로 복원
+		renderTarget->SetDepthTexture(depthTexture, 0);
+		
+		// 컬러버퍼 쓰기가능 상태로 되돌리고, ViewportSize와 Depth func 설정 되돌림
+		g_rhi->SetDepthFunc(EComparisonFunc::LESS);
+		g_rhi->SetColorMask(true, true, true, true);
+		g_rhi->SetViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 		g_rhi->BindSamplerState(0, nullptr);
 	}
 	renderTarget->End();
 
-	static uint32 CullQuery = 0;
-	static uint32 TFBO = 0;
 	static bool test = false;
+	static jQueryPrimitiveGenerated* QueryPrimitiveGenerated = g_rhi->CreateQueryPrimitiveGenerated();
+	static ITransformFeedbackBuffer* TransformFeedback = g_rhi->CreateTransformFeedbackBuffer("TransformFeedback0");
 	if (!test)
 	{
 		test = true;
-		glGenQueries(1, &CullQuery);
-		glGenBuffers(1, &TFBO);
-		glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, TFBO);
-		glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, sizeof(float)*100, nullptr, GL_DYNAMIC_COPY);
 
 		auto hiZOcclusionCull = jShader::GetShader("HiZOcclusionCull");
 		auto hiZOcclusionCull_gl = static_cast<jShader_OpenGL*>(hiZOcclusionCull);
-
 		
-		//const char* vars[] = { "Test1", "Test2", "Test3", "Test4" };
-		//glTransformFeedbackVaryings(hiZOcclusionCull_gl->program, 4, vars, GL_INTERLEAVED_ATTRIBS);
-
-		const char* vars[] = { "OutVisible" };
-		glTransformFeedbackVaryings(hiZOcclusionCull_gl->program, 1, vars, GL_INTERLEAVED_ATTRIBS);
-
-		
-		glLinkProgram(hiZOcclusionCull_gl->program);
-		int32 isValid = 0;
-		glGetProgramiv(hiZOcclusionCull_gl->program, GL_LINK_STATUS, &isValid);
-		if (!isValid)
-		{
-			int maxLength = 0;
-			glGetProgramiv(hiZOcclusionCull_gl->program, GL_INFO_LOG_LENGTH, &maxLength);
-
-			if (maxLength > 0)
-			{
-				std::vector<char> errorLog(maxLength + 1, 0);
-				glGetProgramInfoLog(hiZOcclusionCull_gl->program, maxLength, &maxLength, &errorLog[0]);
-				JMESSAGE(&errorLog[0]);
-			}
-		}
-		
+		TransformFeedback->Init();
+		TransformFeedback->UpdateBufferData(nullptr, 400);
+		TransformFeedback->UpdateVaryingsToShader({ "OutVisible" }, hiZOcclusionCull);		
 	}
 
 	glDisable(GL_MULTISAMPLE);
 	static auto s_renderTarget = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget(
 		{ ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::NONE, SCR_WIDTH, SCR_HEIGHT, 1 }));
-	int32 Result = 0;
+	uint64 Result = 0;
 	if (s_renderTarget->Begin())
 	{
 		g_rhi->SetClearColor(Vector4(0.0f, 0.0f, 0.0f, 1.0f));
 		g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
 
 		auto texture_gl = static_cast<jTexture_OpenGL*>(static_cast<jForwardRenderer*>(Game.ForwardRenderer)->RenderTarget->GetTextureDepth());
-		//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture_gl->TextureID, 0);
-		static float scale = 1.2;
+		static float scale = 1.2f;
 		static bool test = true;
 		if (test)
 		{
 			auto hiZOcclusionCull = jShader::GetShader("HiZOcclusionCull");
 			if (hiZOcclusionCull)
 			{
-				auto hiZOcclusionCull_gl = static_cast<jShader_OpenGL*>(hiZOcclusionCull);
-
-				glUseProgram(hiZOcclusionCull_gl->program);
-
-				auto tex = glGetUniformLocation(hiZOcclusionCull_gl->program, "HiZBuffer");
-				glUniform1i(tex, 0);
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_2D, texture_gl->TextureID);
+				g_rhi->SetShader(hiZOcclusionCull);
 
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "ViewportSize", Vector4(0.0f, 0.0f, SCR_WIDTH, SCR_HEIGHT), hiZOcclusionCull);
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "Color", Vector4(1.0f, 0.0f, 0.0f, 0.0f), hiZOcclusionCull);
+				SET_UNIFORM_BUFFER_STATIC(int32, "HiZBuffer", 0, hiZOcclusionCull);
+				g_rhi->SetTexture(0, texture_gl);
 
-				glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, TFBO);
-				glBeginTransformFeedback(GL_POINTS);
+				TransformFeedback->Bind(hiZOcclusionCull);
+				TransformFeedback->Begin(EPrimitiveType::POINTS);
 				
-				glEnable(GL_RASTERIZER_DISCARD);
-				glBeginQuery(GL_PRIMITIVES_GENERATED, CullQuery);
+				g_rhi->EnableRasterizerDiscard(true);
+				QueryPrimitiveGenerated->Begin();
 
 				auto BoundBox = Game.Cube->RenderObject->BoundBox;
 				Game.Cube->RenderObject->BoundBox.Max *= scale;
 				Game.Cube->RenderObject->BoundBox.Min *= scale;
 				Game.Cube->RenderObject->DrawBoundBox(Game.MainCamera, hiZOcclusionCull);
-				////glDrawArrays(GL_POINTS, 0, 1);
 				Game.Cube->RenderObject->BoundBox = BoundBox;
-				glEndQuery(GL_PRIMITIVES_GENERATED);
-				glEndTransformFeedback();
-
-				glFlush();
+				QueryPrimitiveGenerated->End();
+				TransformFeedback->End();
 
 				float feedback[100];
-				glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(feedback), feedback);
+				TransformFeedback->GetBufferData(feedback, sizeof(feedback));
 
-				//while(!Result)
-				//	glGetQueryObjectiv(CullQuery, GL_QUERY_RESULT_AVAILABLE, &Result);
-				glGetQueryObjectiv(CullQuery, GL_QUERY_RESULT, &Result);
-				glDisable(GL_RASTERIZER_DISCARD);
-
+				Result = QueryPrimitiveGenerated->GetResult();
+				g_rhi->GetQueryPrimitiveGeneratedResult(QueryPrimitiveGenerated);
+				g_rhi->EnableRasterizerDiscard(false);
 			}
 		}
 
 		if (!test)
 		{
-			glBeginQueryIndexed(GL_PRIMITIVES_GENERATED, 0, CullQuery);
+			QueryPrimitiveGenerated->Begin();
 			auto boundingBox = jShader::GetShader("BoundingBox");
 			if (boundingBox)
 			{
-				auto boundingBox_gl = static_cast<jShader_OpenGL*>(boundingBox);
-
-				glUseProgram(boundingBox_gl->program);
+				g_rhi->SetShader(boundingBox);
 				auto BoundBox = Game.Cube->RenderObject->BoundBox;
 				Game.Cube->RenderObject->BoundBox.Max *= scale;
 				Game.Cube->RenderObject->BoundBox.Min *= scale;
 				Game.Cube->RenderObject->DrawBoundBox(Game.MainCamera, boundingBox);
 				Game.Cube->RenderObject->BoundBox = BoundBox;
 			}
-			glEndQueryIndexed(GL_PRIMITIVES_GENERATED, 0);
-			glGetQueryObjectiv(CullQuery, GL_QUERY_RESULT, &Result);
+			QueryPrimitiveGenerated->End();
+			Result = QueryPrimitiveGenerated->GetResult();
 		}
 
 		s_renderTarget->End();

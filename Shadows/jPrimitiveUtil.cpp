@@ -1936,7 +1936,7 @@ void jGraph2D::Draw(const jCamera* camera, const jShader* shader, const std::lis
 	SET_UNIFORM_BUFFER_STATIC(Vector2, "InvViewportSize", Vector2(1.0f / SCR_WIDTH, 1.0f / SCR_HEIGHT), shader);
 	SET_UNIFORM_BUFFER_STATIC(Vector4, "LineColor", Vector4::ColorRed, shader);
 	SET_UNIFORM_BUFFER_STATIC(Vector4, "GuardLineColor", Vector4::ColorWhite, shader);
-	__super::Draw(camera, shader, lights, ResultMatrices.size());
+	__super::Draw(camera, shader, lights, static_cast<int32>(ResultMatrices.size()));
 }
 
 void jGraph2D::SethPos(const Vector2& pos)

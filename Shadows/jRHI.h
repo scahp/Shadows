@@ -64,6 +64,9 @@ enum class EUniformType
 	VECTOR2,
 	VECTOR3,
 	VECTOR4,
+	VECTOR2I,
+	VECTOR3I,
+	VECTOR4I, 
 	MAX,
 };
 
@@ -105,6 +108,9 @@ DECLARE_UNIFORMBUFFER(EUniformType::FLOAT, float);
 DECLARE_UNIFORMBUFFER(EUniformType::VECTOR2, Vector2);
 DECLARE_UNIFORMBUFFER(EUniformType::VECTOR3, Vector);
 DECLARE_UNIFORMBUFFER(EUniformType::VECTOR4, Vector4);
+DECLARE_UNIFORMBUFFER(EUniformType::VECTOR2I, Vector2i);
+DECLARE_UNIFORMBUFFER(EUniformType::VECTOR3I, Vector3i);
+DECLARE_UNIFORMBUFFER(EUniformType::VECTOR4I, Vector4i);
 
 //template <>
 //struct jUniformBuffer<Matrix> : public IUniformBuffer
@@ -191,6 +197,36 @@ struct IAtomicCounterBuffer : public IBuffer
 	}
 };
 
+struct ITransformFeedbackBuffer : public IBuffer
+{
+	ITransformFeedbackBuffer() = default;
+	ITransformFeedbackBuffer(const std::string& name)
+		: Name(name)
+	{}
+	virtual ~ITransformFeedbackBuffer() {}
+
+	std::string Name;
+	size_t Size = 0;
+	std::vector<std::string> Varyings;
+
+	virtual void Init() = 0;
+	virtual void Bind(const jShader* shader) const override {}
+	virtual void UpdateBufferData(void* newData, size_t size) = 0;
+	virtual void GetBufferData(void* newData, size_t size) = 0;
+	virtual void ClearBuffer(int32 clearValue) = 0;
+	virtual void UpdateVaryingsToShader(const std::vector<std::string>& varyings, const jShader* shader) = 0;
+	virtual void ClearVaryingsToShader(const jShader* shader) = 0;
+	virtual void Begin(EPrimitiveType type) = 0;
+	virtual void End() = 0;
+	virtual void Pause() = 0;
+
+	template <typename T>
+	void GetBufferData(typename std::remove_reference<T>::type& out)
+	{
+		GetBufferData(&out, sizeof(T));
+	}
+};
+
 struct jMaterialParam
 {
 	virtual ~jMaterialParam() {}
@@ -222,6 +258,14 @@ public:
 
 struct jRenderTargetInfo
 {
+	jRenderTargetInfo() = default;
+	jRenderTargetInfo(ETextureType textureType, ETextureFormat internalFormat, ETextureFormat format, EFormatType formatType, EDepthBufferType depthBufferType
+					, int32 width, int32 height, int32 textureCount = 1, ETextureFilter magnification = ETextureFilter::LINEAR
+					, ETextureFilter minification = ETextureFilter::LINEAR, bool isGenerateMipmapDepth = false)
+		: TextureType(textureType), InternalFormat(internalFormat), Format(format), FormatType(formatType), DepthBufferType(depthBufferType)
+		, Width(width), Height(height), TextureCount(textureCount), Magnification(magnification), Minification(minification), IsGenerateMipmapDepth(isGenerateMipmapDepth)
+	{}
+
 	size_t GetHash() const
 	{
 		size_t result = 0;
@@ -233,7 +277,7 @@ struct jRenderTargetInfo
 		hash_combine(result, Height);
 		hash_combine(result, Height);
 		hash_combine(result, TextureCount);
-		hash_combine(result, IsGenerateMipmap);
+		hash_combine(result, IsGenerateMipmapDepth);
 		return result;
 	}
 
@@ -245,9 +289,9 @@ struct jRenderTargetInfo
 	int32 Width = 0;
 	int32 Height = 0;
 	int32 TextureCount = 1;
-	ETextureFilter Magnification;
-	ETextureFilter Minification;
-	bool IsGenerateMipmap = false;
+	ETextureFilter Magnification = ETextureFilter::LINEAR;
+	ETextureFilter Minification = ETextureFilter::LINEAR;
+	bool IsGenerateMipmapDepth = false;
 };
 
 struct jRenderTarget : public std::enable_shared_from_this<jRenderTarget>
@@ -258,12 +302,18 @@ struct jRenderTarget : public std::enable_shared_from_this<jRenderTarget>
 	virtual jTexture* GetTextureDepth(int32 index = 0) const { return TextureDepth; }
 	virtual ETextureType GetTextureType() const { return Info.TextureType; }
 
-	virtual bool Begin(int index = 0, bool mrt = false) const { return true; };
-	virtual void End() const {}
+	virtual bool Begin(int index = 0, bool mrt = false) const { Binding = true; return true; };
+	virtual void End() const { Binding = false; }
+	virtual void SetDepthTexture(jTexture* depthTexture, int32 mipmapLevel = 0) {}
+
+	FORCEINLINE bool IsBinding() const { return Binding; }
 
 	jRenderTargetInfo Info;
 	std::vector<jTexture*> Textures;
 	jTexture* TextureDepth = nullptr;
+
+private:
+	mutable bool Binding = false;
 };
 
 struct jQueryTime
@@ -271,6 +321,17 @@ struct jQueryTime
 	virtual ~jQueryTime() {}
 
 	uint64 TimeStamp = 0;
+};
+
+struct jQueryPrimitiveGenerated
+{
+	virtual ~jQueryPrimitiveGenerated() {}
+
+	uint64 NumOfGeneratedPrimitives = 0;
+
+	void Begin() const;
+	void End() const;
+	uint64 GetResult();
 };
 
 struct jSamplerStateInfo
@@ -377,6 +438,7 @@ public:
 	virtual IUniformBufferBlock* CreateUniformBufferBlock(const char* blockname) const { return nullptr; }
 	virtual IShaderStorageBufferObject* CreateShaderStorageBufferObject(const char* blockname) const { return nullptr; }
 	virtual IAtomicCounterBuffer* CreateAtomicCounterBuffer(const char* name, int32 bindingPoint) const { return nullptr; }
+	virtual ITransformFeedbackBuffer* CreateTransformFeedbackBuffer(const char* name) const { return nullptr; }
 	virtual void EnableSRGB(bool enable) const {  }
 	virtual void EnableDepthClip(bool enable) const {  }
 	virtual void BeginDebugEvent(const char* name) const {}
@@ -390,6 +452,13 @@ public:
 	virtual void BeginQueryTimeElapsed(const jQueryTime* queryTimeElpased) const {}
 	virtual void EndQueryTimeElapsed(const jQueryTime* queryTimeElpased) const {}
 	virtual void SetPolygonMode(EFace face, EPolygonMode mode) {}
+	virtual jQueryPrimitiveGenerated* CreateQueryPrimitiveGenerated() const { return nullptr; }
+	virtual void ReleaseQueryPrimitiveGenerated(jQueryPrimitiveGenerated* query) const {}
+	virtual void BeginQueryPrimitiveGenerated(const jQueryPrimitiveGenerated* query) const {}
+	virtual void EndQueryPrimitiveGenerated() const {}
+	virtual void GetQueryPrimitiveGeneratedResult(jQueryPrimitiveGenerated* query) const {}
+	virtual void EnableRasterizerDiscard(bool enable) const {}
+	virtual void SetTextureMipmapLevelLimit(ETextureType type, int32 baseLevel, int32 maxLevel) const {}
 };
 
 // Not thred safe

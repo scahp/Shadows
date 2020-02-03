@@ -92,7 +92,7 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_GS_FS("Hi-Z_Gen", "shaders/vs_empty.glsl", "shaders/shadowmap/gs_hi-z.glsl", "shaders/shadowmap/fs_hi-z.glsl");
 		DECLARE_SHADER_VS_GS_FS("BoundingBox", "shaders/vs_empty.glsl", "shaders/gs_boundvolume2.glsl", "shaders/fs_boundvolume2.glsl");
 		//DECLARE_SHADER_VS_FS("HiZOcclusionCull", "shaders/vs_hiZOcclusionCull.glsl", "shaders/fs_empty.glsl");
-		DECLARE_SHADER_VS_GS_FS("HiZOcclusionCull", "shaders/vs_hiZOcclusionCull.glsl", "shaders/gs_hiZOcclusionCull.glsl", "shaders/fs_boundvolume2.glsl");
+		DECLARE_SHADER_VS_GS_FS("HiZOcclusionCull", "shaders/vs_hiZOcclusionCull.glsl", "shaders/gs_hiZOcclusionCull.glsl", "");
 	}
 } s_shaderInfoCreation;
 
