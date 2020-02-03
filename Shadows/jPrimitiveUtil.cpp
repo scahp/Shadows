@@ -1544,8 +1544,13 @@ jDirectionalLightPrimitive* CreateDirectionalLightDebug(const Vector& pos, const
 	jImageFileLoader::GetInstance().LoadTextureFromFile(data, textureFilename, true);
 	object->BillboardObject = jPrimitiveUtil::CreateBillobardQuad(pos, Vector::OneVector, scale, Vector4(1.0f), targetCamera);
 	if (data.ImageData.size() > 0)
+	{
 		object->BillboardObject->RenderObject->tex_object2 = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
+		object->BillboardObject->RenderObject->IsHiddenBoundBox = true;
+	}
 	object->ArrowSegementObject = jPrimitiveUtil::CreateArrowSegment(Vector::ZeroVector, light->Data.Direction * length, 1.0f, scale.x, scale.x / 2, Vector4(0.8f, 0.2f, 0.3f, 1.0f));
+	object->ArrowSegementObject->ConeObject->RenderObject->IsHiddenBoundBox = true;
+	object->ArrowSegementObject->SegmentObject->RenderObject->IsHiddenBoundBox = true;
 	object->Pos = pos;
 	object->Light = light;
 	object->PostUpdateFunc = [length](jObject* thisObject, float deltaTime)
@@ -1569,8 +1574,12 @@ jPointLightPrimitive* CreatePointLightDebug(const Vector& scale, jCamera* target
 	jImageFileLoader::GetInstance().LoadTextureFromFile(data, textureFilename, true);
 	object->BillboardObject = jPrimitiveUtil::CreateBillobardQuad(light->Data.Position, Vector::OneVector, scale, Vector4(1.0f), targetCamera);
 	if (data.ImageData.size() > 0)
+	{
 		object->BillboardObject->RenderObject->tex_object2 = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
+		object->BillboardObject->RenderObject->IsHiddenBoundBox = true;
+	}
 	object->SphereObject = CreateSphere(light->Data.Position, light->Data.MaxDistance, 20, Vector::OneVector, Vector4(light->Data.Color, 1.0f), true, false, false);
+	object->SphereObject->RenderObject->IsHiddenBoundBox = true;
 	object->Light = light;
 	object->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
@@ -1596,7 +1605,9 @@ jSpotLightPrimitive* CreateSpotLightDebug(const Vector& scale, jCamera* targetCa
 		object->BillboardObject->RenderObject->tex_object2 = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
 
 	object->UmbraConeObject = jPrimitiveUtil::CreateCone(light->Data.Position, 1.0, 1.0, 20, Vector::OneVector, Vector4(light->Data.Color.x, light->Data.Color.y, light->Data.Color.z, 1.0f), true, false, false);
+	object->UmbraConeObject->RenderObject->IsHiddenBoundBox = true;
 	object->PenumbraConeObject = jPrimitiveUtil::CreateCone(light->Data.Position, 1.0, 1.0, 20, Vector::OneVector, Vector4(light->Data.Color.x, light->Data.Color.y, light->Data.Color.z, 0.5f), true, false, false);
+	object->PenumbraConeObject->RenderObject->IsHiddenBoundBox = true;
 	object->Light = light;
 	object->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{

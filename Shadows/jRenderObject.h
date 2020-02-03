@@ -80,6 +80,7 @@ public:
 	bool Collided = false;
 	bool IsTwoSided = false;
 
+	bool IsHiddenBoundBox = false;
 	jBoundBox BoundBox;
 };
 

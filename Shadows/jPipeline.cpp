@@ -948,7 +948,7 @@ void jForward_DebugObject_BoundBox_Pipeline::Draw_Internal(const jPipelineContex
 
 	for (const auto& iter : pipelineContext.Objects)
 	{
-		if (iter->RenderObject)
+		if (iter->RenderObject && !iter->RenderObject->IsHiddenBoundBox)
 			iter->RenderObject->DrawBoundBox(pipelineContext.Camera, shader);
 	}
 }

@@ -454,11 +454,13 @@ void jGame::SpawnTestPrimitives()
 	quad->SetPlane(jPlane(Vector(0.0, 1.0, 0.0), -0.1f));
 	//quad->SkipShadowMapGen = true;
 	quad->SkipUpdateShadowVolume = true;
+	quad->RenderObject->IsHiddenBoundBox = true;
 	jObject::AddObject(quad);
 	SpawnedObjects.push_back(quad);
 
 	auto gizmo = jPrimitiveUtil::CreateGizmo(Vector::ZeroVector, Vector::ZeroVector, Vector::OneVector);
 	gizmo->SkipShadowMapGen = true;
+	gizmo->RenderObject->IsHiddenBoundBox = true;
 	jObject::AddObject(gizmo);
 	SpawnedObjects.push_back(gizmo);
 
