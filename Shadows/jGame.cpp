@@ -478,6 +478,14 @@ void jGame::SpawnTestPrimitives()
 	jObject::AddObject(cube);
 	SpawnedObjects.push_back(cube);
 
+	auto cube2 = jPrimitiveUtil::CreateCube(Vector(-60.0f, -55.0f, -20.0f), Vector::OneVector, Vector(50.0f, 50.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
+	cube2->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
+	{
+		thisObject->RenderObject->Rot.z += 0.005f;
+	};
+	jObject::AddObject(cube2);
+	Cube = cube2;
+
 	//auto cube2 = jPrimitiveUtil::CreateCube(Vector(-65.0f, 35.0f, 10.0f), Vector::OneVector, Vector(50.0f, 50.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
 	//jObject::AddObject(cube2);
 	//SpawnedObjects.push_back(cube2);

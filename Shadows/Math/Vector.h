@@ -37,6 +37,12 @@ struct Vector
 		return Vector(x * fValue, y * fValue, z * fValue);
 	}
 
+	FORCEINLINE Vector& operator*=(float fValue)
+	{
+		x *= fValue, y *= fValue, z *= fValue;
+		return *this;
+	}
+
 	/*!
 	* \return Vector
 	* \param[in] vector	곱해질 벡터

@@ -532,5 +532,17 @@
     <None Include="Shaders\vs_graph.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\vs_hiZOcclusionCull.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\fs_boundvolume2.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\gs_boundvolume2.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\gs_hiZOcclusionCull.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

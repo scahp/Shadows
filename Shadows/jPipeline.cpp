@@ -932,7 +932,7 @@ void jForward_UIObject_Pipeline::Setup()
 void jForward_DebugObject_BoundBox_Pipeline::Setup()
 {
 	EnableClear = false;
-	EnableDepthTest = true;
+	EnableDepthTest = false;
 	DepthStencilFunc = EComparisonFunc::LESS;
 	EnableBlend = true;
 	BlendSrc = EBlendSrc::SRC_ALPHA;

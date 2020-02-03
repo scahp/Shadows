@@ -26,7 +26,7 @@ namespace jLightUtil
 	jShadowMapData* CreateShadowMap(const Vector& direction, const Vector&)
 	{
 		Vector pos, target, up;
-		pos = Vector(350.0f, 360.0f, 100.0f);
+		pos = Vector(350.0f, 360.0f, 100.0f) * 0.5;
 		//pos = Vector(500.0f, 500.0f, 500.0f);
 		//MakeDirectionalLightViewInfoWithPos(target, up, pos, direction);
 		MakeDirectionalLightViewInfo(pos, target, up, direction);
@@ -41,11 +41,11 @@ namespace jLightUtil
 		float farDist = 500.0f;
 		shadowMapData->ShadowMapCamera = jOrthographicCamera::CreateCamera(pos, target, up, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
 		
-		shadowMapData->ShadowMapRenderTarget = jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RG32F, ETextureFormat::RG, EFormatType::FLOAT, EDepthBufferType::DEPTH32, SM_WIDTH, SM_HEIGHT, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR });
+		//shadowMapData->ShadowMapRenderTarget = jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RG32F, ETextureFormat::RG, EFormatType::FLOAT, EDepthBufferType::DEPTH32, SM_WIDTH, SM_HEIGHT, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR });
 		shadowMapData->ShadowMapSamplerState = jSamplerStatePool::GetSamplerState("LinearClampShadow");
 		
 		// #hizgen
-		//shadowMapData->ShadowMapRenderTarget = jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RG32F, ETextureFormat::RG, EFormatType::FLOAT, EDepthBufferType::DEPTH32, SM_WIDTH, SM_HEIGHT, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR, true });
+		shadowMapData->ShadowMapRenderTarget = jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RG32F, ETextureFormat::RG, EFormatType::FLOAT, EDepthBufferType::DEPTH32, SM_WIDTH, SM_HEIGHT, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR, true });
 		//shadowMapData->ShadowMapSamplerState = jSamplerStatePool::GetSamplerState("LinearClampMipmap");
 
 		return shadowMapData;

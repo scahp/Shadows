@@ -31,7 +31,7 @@ public:
 
 	//void Draw(const jCamera* camera, const jShader* shader, int32 startIndex = -1, int32 count = -1);
 	void Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 startIndex, int32 count, int32 instanceCount = 1);
-	void DrawBoundBox(const jCamera* camera, const jShader* shader);
+	void DrawBoundBox(const jCamera* camera, const jShader* shader, const Vector& offset = Vector(ZeroType));
 
 	// todo 함수를 줄일까? 아니면 이렇게 쓸까? 고민
 	//void Draw(const jCamera* camera, const jShader* shader, int32 startIndex, int32 count, int32 baseVertexIndex);

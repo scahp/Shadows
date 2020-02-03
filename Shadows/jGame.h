@@ -89,5 +89,8 @@ public:
 	jUIQuadPrimitive* DirectionalLightShadowMapUIDebug = nullptr;
 
 	std::vector<jObject*> SpawnedObjects;
+
+	//////////////////////////////////////////////////////////////////////////
+	jObject* Cube = nullptr;
 };
 

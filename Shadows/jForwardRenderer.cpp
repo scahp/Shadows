@@ -17,7 +17,7 @@ jForwardRenderer::~jForwardRenderer()
 
 void jForwardRenderer::Setup()
 {
-	RenderTarget = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA16F, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT, 1 }));
+	RenderTarget = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA16F, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::DEPTH32, SCR_WIDTH, SCR_HEIGHT, 1 }));
 
 	PostProcessInput = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
 	PostProcessInput->RenderTarget = RenderTarget.get();

@@ -110,14 +110,13 @@ void jRenderObject::Draw(const jCamera* camera, const jShader* shader, const std
 	}
 }
 
-void jRenderObject::DrawBoundBox(const jCamera* camera, const jShader* shader)
+void jRenderObject::DrawBoundBox(const jCamera* camera, const jShader* shader, const Vector& offset)
 {
 	g_rhi->SetShader(shader);
 
 	SetCameraProperty(shader, camera);
 
-	const auto pos = Vector(ZeroType);
-	SET_UNIFORM_BUFFER_STATIC(Vector, "Pos", pos, shader);
+	SET_UNIFORM_BUFFER_STATIC(Vector, "Pos", offset, shader);
 	SET_UNIFORM_BUFFER_STATIC(Vector, "BoxMin", BoundBox.Min, shader);
 	SET_UNIFORM_BUFFER_STATIC(Vector, "BoxMax", BoundBox.Max, shader);
 	SET_UNIFORM_BUFFER_STATIC(Vector4, "Color", Vector4(1.0f, 0.0f, 0.0f, 1.0f), shader);
