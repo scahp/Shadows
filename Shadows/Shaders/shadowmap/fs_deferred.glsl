@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 
 #preprocessor
 
@@ -66,6 +66,9 @@ layout (location = 3) out vec4 out_posInLight;
 
 void main()
 {
+	const int all_sample_mask = 0x000f;
+	bool IsEdge = (int(gl_SampleMaskIn[0]) != all_sample_mask);
+
     vec3 normal = normalize(Normal_);
     vec3 viewDir = normalize(Eye - Pos_);
 
@@ -118,5 +121,6 @@ void main()
 	out_normal.xyz = normal;
 	out_normal.w = float(ShadingModel);
 	out_posInWorld.xyz = Pos_;
+	out_posInWorld.w = float(IsEdge);
 	out_posInLight.xyz = ShadowPos;
 }

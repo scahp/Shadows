@@ -161,12 +161,35 @@ bool jPostProcess_DeepShadowMap::Do(const jCamera* camera) const
 		SSBOs.Bind(deepShadowFull_Shader);
 
 		JASSERT(GBuffer);
-		GBuffer->BindGeometryBuffer(deepShadowFull_Shader);
+		GBuffer->BindGeometryBuffer(deepShadowFull_Shader, ResolveTarget->GetTexture());
 
 		Draw(camera, deepShadowFull_Shader, lights);
 	}
 
 	return true;
+}
+
+bool jPostProcess_DeepShadowMap::Process(const jCamera* camera) const
+{
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, static_cast<jRenderTarget_OpenGL*>(GBuffer->GeometryBuffer.get())->fbos[0]);
+	glReadBuffer(GL_COLOR_ATTACHMENT0);
+
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<jRenderTarget_OpenGL*>(ResolveTarget.get())->fbos[0]);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_STENCIL_TEST);
+	glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+	return __super::Process(camera);
+}
+
+void jPostProcess_DeepShadowMap::Setup()
+{
+	__super::Setup();
+
+	jRenderTargetInfo info = jRenderTargetInfo(ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::NONE, SCR_WIDTH, SCR_HEIGHT, 1, ETextureFilter::NEAREST, ETextureFilter::NEAREST, false, 1);
+	ResolveTarget = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget(info));
 }
 
 void jPostProcess_AA_DeepShadowAddition::Setup()

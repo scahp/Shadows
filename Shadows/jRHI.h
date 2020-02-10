@@ -261,9 +261,10 @@ struct jRenderTargetInfo
 	jRenderTargetInfo() = default;
 	jRenderTargetInfo(ETextureType textureType, ETextureFormat internalFormat, ETextureFormat format, EFormatType formatType, EDepthBufferType depthBufferType
 					, int32 width, int32 height, int32 textureCount = 1, ETextureFilter magnification = ETextureFilter::LINEAR
-					, ETextureFilter minification = ETextureFilter::LINEAR, bool isGenerateMipmapDepth = false)
+					, ETextureFilter minification = ETextureFilter::LINEAR, bool isGenerateMipmapDepth = false, int32 sampleCount = 1)
 		: TextureType(textureType), InternalFormat(internalFormat), Format(format), FormatType(formatType), DepthBufferType(depthBufferType)
 		, Width(width), Height(height), TextureCount(textureCount), Magnification(magnification), Minification(minification), IsGenerateMipmapDepth(isGenerateMipmapDepth)
+		, SampleCount(sampleCount)
 	{}
 
 	size_t GetHash() const
@@ -278,6 +279,7 @@ struct jRenderTargetInfo
 		hash_combine(result, Height);
 		hash_combine(result, TextureCount);
 		hash_combine(result, IsGenerateMipmapDepth);
+		hash_combine(result, SampleCount);
 		return result;
 	}
 
@@ -292,6 +294,7 @@ struct jRenderTargetInfo
 	ETextureFilter Magnification = ETextureFilter::LINEAR;
 	ETextureFilter Minification = ETextureFilter::LINEAR;
 	bool IsGenerateMipmapDepth = false;
+	int32 SampleCount = 1;
 };
 
 struct jRenderTarget : public std::enable_shared_from_this<jRenderTarget>
@@ -459,6 +462,7 @@ public:
 	virtual void GetQueryPrimitiveGeneratedResult(jQueryPrimitiveGenerated* query) const {}
 	virtual void EnableRasterizerDiscard(bool enable) const {}
 	virtual void SetTextureMipmapLevelLimit(ETextureType type, int32 baseLevel, int32 maxLevel) const {}
+	virtual void EnableMultisample(bool enable) const {}
 };
 
 // Not thred safe

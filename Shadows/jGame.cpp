@@ -125,7 +125,11 @@ void jGame::Setup()
 	ForwardRenderer = new jForwardRenderer(currentShadowPipelineSet);
 	ForwardRenderer->Setup();
 
-	DeferredRenderer = new jDeferredRenderer({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::DEPTH16, SCR_WIDTH, SCR_HEIGHT, 4 });
+	const auto renderTargetInfo = jRenderTargetInfo(
+		ETextureType::TEXTURE_2D_MULTISAMPLE, ETextureFormat::RGBA32F, ETextureFormat::RGBA
+		, EFormatType::FLOAT, EDepthBufferType::DEPTH16, SCR_WIDTH, SCR_HEIGHT
+		, 4 ,ETextureFilter::LINEAR, ETextureFilter::LINEAR, false, 4 );
+	DeferredRenderer = new jDeferredRenderer(renderTargetInfo);
 	DeferredRenderer->Setup();
 
 	//for (int32 i = 0; i < NUM_CASCADES; ++i)
@@ -300,7 +304,7 @@ void jGame::UpdateAppSetting()
 		{
 			//if (DirectionalLight && DirectionalLight->ShadowMapData && DirectionalLight->ShadowMapData->ShadowMapCamera)
 			//	DirectionalLight->ShadowMapData->ShadowMapCamera->IsPerspectiveProjection = false;
-			Renderer = ForwardRenderer;
+			Renderer = DeferredRenderer;
 
 			const bool isChangedPoisson = (UsePoissonSample != appSetting.UsePoissonSample);
 			if (isChangedShadowType || isChangedPoisson || isChangedShadowMapType)
@@ -309,7 +313,7 @@ void jGame::UpdateAppSetting()
 				UsePoissonSample = appSetting.UsePoissonSample;
 				CurrentShadowMapType = appSetting.ShadowMapType;
 				auto newPipelineSet = UsePoissonSample ? ShadowPoissonSamplePipelineSetMap[CurrentShadowMapType] : ShadowPipelineSetMap[CurrentShadowMapType];
-				Renderer->SetChangePipelineSet(newPipelineSet);
+				//Renderer->SetChangePipelineSet(newPipelineSet);
 			}
 
 			if (appSetting.ShadowMapType == EShadowMapType::CSM_SSM)
@@ -321,7 +325,7 @@ void jGame::UpdateAppSetting()
 	}
 	else if (appSetting.ShadowType == EShadowType::ShadowVolume)
 	{
-		Renderer = ForwardRenderer;
+		Renderer = DeferredRenderer;
 		if (DirectionalLight && DirectionalLight->ShadowMapData && DirectionalLight->ShadowMapData->ShadowMapCamera)
 			DirectionalLight->ShadowMapData->ShadowMapCamera->IsPerspectiveProjection = false;
 
@@ -329,7 +333,7 @@ void jGame::UpdateAppSetting()
 		if (isChangedShadowType)
 		{
 			CurrentShadowType = appSetting.ShadowType;
-			Renderer->SetChangePipelineSet(ShadowVolumePipelineSet);
+			//Renderer->SetChangePipelineSet(ShadowVolumePipelineSet);
 		}
 
 		SpawnObjects(ESpawnedType::TestPrimitive);

@@ -93,10 +93,13 @@ public:
 	{ }
 
 	virtual bool Do(const jCamera* camera) const override;
+	virtual bool Process(const jCamera* camera) const override;
+	virtual void Setup() override;
 
 private:
 	jSSBO_DeepShadowMap SSBOs;
 	const jGBuffer* GBuffer = nullptr;
+	std::shared_ptr<jRenderTarget> ResolveTarget = nullptr;
 };
 
 //////////////////////////////////////////////////////////////////////////

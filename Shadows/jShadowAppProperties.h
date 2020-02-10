@@ -29,7 +29,7 @@ public:
 	bool ShowDirectionalLightInfo = true;
 	bool ShowPointLightInfo = false;
 	bool ShowSpotLightInfo = false;
-	bool ShowBoundBox = true;
+	bool ShowBoundBox = false;
 	bool ShowBoundSphere = false;
 	Vector DirecionalLightDirection = Vector(-0.56f, -0.83f, 0.01f).GetNormalize();
 	Vector PointLightPosition = Vector(10.0f, 100.0f, 10.0f);

@@ -31,7 +31,18 @@ void jDeferredRenderer::Setup()
 
 	////////////////////////////////////////////////////////////////////////////
 	//// Setup a postprocess chain
-	
+
+	//jRenderTargetInfo info = jRenderTargetInfo(ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::NONE, SCR_WIDTH, SCR_HEIGHT, 1, ETextureFilter::NEAREST, ETextureFilter::NEAREST, false, 1);
+	//static auto ResolveTarget = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget(info));
+	//glBindFramebuffer(GL_READ_FRAMEBUFFER, static_cast<jTexture_OpenGL*>(GBuffer.GeometryBuffer->GetTexture(0))->TextureID);
+	//glReadBuffer(GL_COLOR_ATTACHMENT0);
+
+	//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<jTexture_OpenGL*>(ResolveTarget->GetTexture())->TextureID);
+	//glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+	//glDisable(GL_DEPTH_TEST);
+	//glDisable(GL_STENCIL_TEST);
+	//glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	
 	// Render DeepShadow
 	OutRenderTarget = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::NONE, SCR_WIDTH, SCR_HEIGHT, 1 }));
@@ -44,22 +55,25 @@ void jDeferredRenderer::Setup()
 		auto& DeepShadowMapBuffers = deferredDeepShadowMapPipelineSet->DeepShadowMapBuffers;
 
 		// LightPass of DeepShadowMap
-		auto postprocess = new jPostProcess_DeepShadowMap("DeepShadow", { DeepShadowMapBuffers.StartElementBuf, DeepShadowMapBuffers.LinkedListEntryDepthAlphaNext, DeepShadowMapBuffers.LinkedListEntryNeighbors }, &GBuffer);
+		auto postprocess = new jPostProcess_DeepShadowMap("DeepShadow", { DeepShadowMapBuffers.StartElementBuf, DeepShadowMapBuffers.LinkedListEntryDepthAlphaNext, DeepShadowMapBuffers.LinkedListEntryNeighbors }
+		, &GBuffer);
 		postprocess->SetOutput(PostProcessOutput);
 		PostProcessChain.AddNewPostprocess(postprocess);
 	}
 
-	// Anti-Aliasing for DeepShadow
-	{
-		PostPrceoss_AA_DeepShadowAddition = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::NONE, SCR_WIDTH, SCR_HEIGHT, 1 }));
-		PostProcessOutput2 = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
-		PostProcessOutput2->RenderTarget = PostPrceoss_AA_DeepShadowAddition.get();
+	//// Anti-Aliasing for DeepShadow
+	//{
+	//	PostPrceoss_AA_DeepShadowAddition = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::NONE, SCR_WIDTH, SCR_HEIGHT, 1 }));
+	//	PostProcessOutput2 = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
+	//	PostProcessOutput2->RenderTarget = PostPrceoss_AA_DeepShadowAddition.get();
 
-		auto postprocess = new jPostProcess_AA_DeepShadowAddition("AA_DeepShadowAddition");
-		postprocess->AddInput(PostProcessOutput);
-		postprocess->SetOutput(PostProcessOutput2);
-		PostProcessChain.AddNewPostprocess(postprocess);
-	}
+	//	auto postprocess = new jPostProcess_AA_DeepShadowAddition("AA_DeepShadowAddition");
+	//	postprocess->AddInput(PostProcessOutput);
+	//	postprocess->SetOutput(PostProcessOutput2);
+	//	PostProcessChain.AddNewPostprocess(postprocess);
+	//}
+
+	PostProcessOutput2 = PostProcessOutput;
 
 	// Luminance And Adaptive Luminance
 	{
