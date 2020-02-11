@@ -118,9 +118,9 @@ void main()
 #endif // USE_MATERIAL
 
 	out_color = diffuse;
+	out_color.w = float(IsEdge);
 	out_normal.xyz = normal;
 	out_normal.w = float(ShadingModel);
 	out_posInWorld.xyz = Pos_;
-	out_posInWorld.w = float(IsEdge);
 	out_posInLight.xyz = ShadowPos;
 }

@@ -51,10 +51,9 @@ void main()
 {
 	float shading = 1.0;
 
-	vec4 DiffuseColor = vec4(0);
+	vec3 DiffuseColor = vec3(0);
 	vec3 ResultDirectColor = vec3(0);
-	if (texture(ResolvedColorSampler, TexCoord_).a > 0.02)
-	//if (texelFetch(PosInWorldSampler, ivec2(gl_FragCoord.xy), gl_SampleID).w > 0.0)
+	if (texture(ResolvedColorSampler, TexCoord_).a > 0.0)
 	{
 		const int sampleCount = 4;
 		for (int k = 0; k < sampleCount; ++k)
@@ -82,7 +81,7 @@ void main()
 
 				ResultDirectColor += GetDirectionalLight(light, Normal.xyz, toEye);
 			}
-			DiffuseColor += texelFetch(ColorSampler, ivec2(gl_FragCoord.xy), k); // texture(ColorSampler, TexCoord_);
+			DiffuseColor += texelFetch(ColorSampler, ivec2(gl_FragCoord.xy), k).xyz; // texture(ColorSampler, TexCoord_);
 		}
 		ResultDirectColor = (ResultDirectColor / float(sampleCount)) * (DiffuseColor.xyz / float(sampleCount));
 		DiffuseColor /= float(sampleCount);
@@ -112,7 +111,7 @@ void main()
 
 			ResultDirectColor += GetDirectionalLight(light, Normal.xyz, toEye);
 		}
-		DiffuseColor = texelFetch(ColorSampler, ivec2(gl_FragCoord.xy), gl_SampleID); // texture(ColorSampler, TexCoord_);
+		DiffuseColor = texelFetch(ColorSampler, ivec2(gl_FragCoord.xy), gl_SampleID).xyz; // texture(ColorSampler, TexCoord_);
 		ResultDirectColor = ResultDirectColor * DiffuseColor.xyz;
 	}
 
