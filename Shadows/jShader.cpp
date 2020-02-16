@@ -45,6 +45,9 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS_WITH_OPTION_MORE("SSM_PCF", "shaders/shadowmap/vs.glsl", "shaders/shadowmap/fs.glsl", false, false, "\r\n#define USE_PCF 1");
 		DECLARE_SHADER_VS_FS_WITH_OPTION_MORE("SSM_PCF_Poisson", "shaders/shadowmap/vs.glsl", "shaders/shadowmap/fs.glsl", false, false, "\r\n#define USE_PCF 1\r\n#define USE_POISSON_SAMPLE 1");
 
+		DECLARE_SHADER_VS_GS_FS("ShadowGen_DualParaboloid_SSM", "shaders/shadowmap/vs_dualParaboloid.glsl", "shaders/shadowmap/gs_dualParaboloid.glsl", "shaders/shadowmap/fs_dualParaboloid.glsl");
+		//DECLARE_SHADER_VS_FS("ShadowGen_DualParaboloid_SSM", "shaders/shadowmap/vs_dualParaboloid.glsl", "shaders/shadowmap/fs_dualParaboloid.glsl");
+
 		DECLARE_SHADER_VS_FS_WITH_OPTION_MORE("SSM_PCSS", "shaders/shadowmap/vs.glsl", "shaders/shadowmap/fs.glsl", false, false, "\r\n#define USE_PCSS 1");
 		DECLARE_SHADER_VS_FS_WITH_OPTION_MORE("SSM_PCSS_Poisson", "shaders/shadowmap/vs.glsl", "shaders/shadowmap/fs.glsl", false, false, "\r\n#define USE_PCSS 1\r\n#define USE_POISSON_SAMPLE 1");
 

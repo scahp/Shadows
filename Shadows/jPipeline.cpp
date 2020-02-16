@@ -53,7 +53,7 @@ struct jShadowPipelinCreation
 {
 	jShadowPipelinCreation()
 	{
-		ADD_FORWARD_SHADOWMAP_GEN_PIPELINE(Forward_ShadowMapGen_SSM_Pipeline, "ShadowGen_SSM", "ShadowGen_Omni_SSM");
+		ADD_FORWARD_SHADOWMAP_GEN_PIPELINE(Forward_ShadowMapGen_SSM_Pipeline, "ShadowGen_SSM", "ShadowGen_DualParaboloid_SSM");
 		ADD_FORWARD_SHADOWMAP_GEN_PIPELINE(Forward_ShadowMapGen_VSM_Pipeline, "ShadowGen_VSM", "ShadowGen_Omni_SSM");
 		ADD_FORWARD_SHADOWMAP_GEN_PIPELINE(Forward_ShadowMapGen_ESM_Pipeline, "ShadowGen_ESM", "ShadowGen_Omni_ESM");
 		ADD_FORWARD_SHADOWMAP_GEN_PIPELINE(Forward_ShadowMapGen_EVSM_Pipeline, "ShadowGen_EVSM", "ShadowGen_Omni_EVSM");
@@ -233,6 +233,7 @@ void jForward_ShadowMapGen_Pipeline::Do(const jPipelineContext& pipelineContext)
 		if (skip)
 			continue;
 
+		g_rhi->EnableDepthClip(false);
 		light->RenderToShadowMap([&pipelineContext, currentShader, light, this](const jRenderTarget* renderTarget
 			, int32 renderTargetIndex, const jCamera* camera, const std::vector<jViewport>& viewports)
 		{
@@ -243,6 +244,7 @@ void jForward_ShadowMapGen_Pipeline::Do(const jPipelineContext& pipelineContext)
 				g_rhi->SetViewportIndexedArray(0, static_cast<int32>(viewports.size()), &viewports[0]);
 			this->jRenderPipeline::Draw(jPipelineContext(pipelineContext.DefaultRenderTarget, pipelineContext.Objects, camera, { light }), currentShader);
 		}, currentShader);
+		g_rhi->EnableDepthClip(true);
 	}
 
 	g_rhi->SetRenderTarget(pipelineContext.DefaultRenderTarget);

@@ -77,7 +77,7 @@ void jGame::Setup()
 	AmbientLight = jLight::CreateAmbientLight(Vector(0.2f, 0.5f, 1.0f), Vector(0.05f));		// sky light color
 
 	PointLight = jLight::CreatePointLight(jShadowAppSettingProperties::GetInstance().PointLightPosition, Vector4(2.0f, 0.7f, 0.7f, 1.0f), 500.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
-	SpotLight = jLight::CreateSpotLight(jShadowAppSettingProperties::GetInstance().SpotLightPosition, jShadowAppSettingProperties::GetInstance().SpotLightDirection, Vector4(0.0f, 1.0f, 0.0f, 1.0f), 500.0f, 0.7f, 1.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
+	//SpotLight = jLight::CreateSpotLight(jShadowAppSettingProperties::GetInstance().SpotLightPosition, jShadowAppSettingProperties::GetInstance().SpotLightDirection, Vector4(0.0f, 1.0f, 0.0f, 1.0f), 500.0f, 0.7f, 1.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
 
 	DirectionalLightInfo = jPrimitiveUtil::CreateDirectionalLightDebug(Vector(250, 260, 0)*0.5f, Vector::OneVector * 10.0f, 10.0f, MainCamera, DirectionalLight, "Image/sun.png");
 	jObject::AddDebugObject(DirectionalLightInfo);
@@ -88,12 +88,12 @@ void jGame::Setup()
 	PointLightInfo = jPrimitiveUtil::CreatePointLightDebug(Vector(10.0f), MainCamera, PointLight, "Image/bulb.png");
 	//jObject::AddDebugObject(PointLightInfo);
 
-	SpotLightInfo = jPrimitiveUtil::CreateSpotLightDebug(Vector(10.0f), MainCamera, SpotLight, "Image/spot.png");
+	//SpotLightInfo = jPrimitiveUtil::CreateSpotLightDebug(Vector(10.0f), MainCamera, SpotLight, "Image/spot.png");
 	//jObject::AddDebugObject(SpotLightInfo);
 
 	MainCamera->AddLight(DirectionalLight);
 	MainCamera->AddLight(PointLight);
-	MainCamera->AddLight(SpotLight);
+	//MainCamera->AddLight(SpotLight);
 	MainCamera->AddLight(AmbientLight);
 
 	SpawnObjects(ESpawnedType::TestPrimitive);
@@ -546,6 +546,12 @@ void jGame::SpawnTestPrimitives()
 	auto billboard = jPrimitiveUtil::CreateBillobardQuad(Vector(0.0f, 60.0f, 80.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(1.0f, 0.0f, 1.0f, 1.0f), MainCamera);
 	jObject::AddObject(billboard);
 	SpawnedObjects.push_back(billboard);
+
+	auto Test = jPrimitiveUtil::CreateUIQuad(Vector2(ZeroType), Vector2(300.0f, 600.0f), PointLight->GetShadowMapRenderTarget()->GetTexture(0));
+	jObject::AddUIDebugObject(Test);
+
+	//auto Test2 = jPrimitiveUtil::CreateUIQuad(Vector2(300.0f, 0.0f), Vector2(300.0f, 300.0f), PointLight->GetShadowMapRenderTarget()->GetTexture(1));
+	//jObject::AddUIDebugObject(Test2);
 }
 
 void jGame::SpawnGraphTestFunc()

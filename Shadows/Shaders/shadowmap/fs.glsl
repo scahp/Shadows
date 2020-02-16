@@ -44,6 +44,7 @@ layout (std140) uniform DirectionalLightShadowMapBlock
 
 layout (std140) uniform PointLightShadowMapBlock
 {
+	mat4 PointLightShadowV;
 	float PointLightZNear;
 	float PointLightZFar;
 	vec2 PointShadowMapSize;
@@ -345,7 +346,58 @@ void main()
 			}
 	#else
 			{
-				lit = IsShadowing(Pos_, PointLight[i].LightPos, PointLight[i].MaxDistance, shadow_object_point_shadow);
+				//lit = IsShadowing(Pos_, PointLight[i].LightPos, PointLight[i].MaxDistance, shadow_object_point_shadow);
+
+				//vec3 lightDir = pos - lightPos;
+				//float dist = sqrt(dot(lightDir, lightDir)) / maxDist + SHADOW_BIAS_OMNIDIRECTIONAL;
+
+				//TexArrayUV result = convert_xyz_to_texarray_uv(normalize(lightDir));
+				//return texture(shadow_object, vec3(Convert_TexArrayUV_To_Tex2dUV(result), dist));
+
+				vec4 PosMV = (PointLightShadowV * vec4(Pos_, 1.0));
+
+				float len = length(PosMV);
+				PosMV /= len;
+
+				float ScreenDepth = (len - PointLightZNear) / (PointLightZFar - PointLightZNear);
+				float DualParaboloidDepth;
+				if (PosMV.z >= 0.0)
+				{
+					vec2 TexFrontCoord;
+					TexFrontCoord.x = (PosMV.x / (1.0 + PosMV.z)) * 0.5 + 0.5;
+					TexFrontCoord.y = ((PosMV.y / (1.0 + PosMV.z)) * 0.5 + 0.5) * 0.5;
+
+					float depth = 0.0f;
+					if (texture(shadow_object_point, TexFrontCoord).r > (ScreenDepth + SHADOW_BIAS_OMNIDIRECTIONAL))
+					{
+						depth = 1.0;
+					}
+					else
+					{
+						lit = 0.0;
+					}
+					//if (depth > 0.0)
+					//	directColor = vec3(0.0, 0.0, 1.0);					
+				}
+				else
+				{
+					vec2 TexBackCoord;
+					TexBackCoord.x = (PosMV.x / (1.0 - PosMV.z)) * 0.5 + 0.5;
+					TexBackCoord.y = ((PosMV.y / (1.0 - PosMV.z)) * 0.5 + 0.5) * 0.5 + 0.5;
+
+					float depth = 0.0f;
+					if (texture(shadow_object_point, TexBackCoord).r > (ScreenDepth + SHADOW_BIAS_OMNIDIRECTIONAL))
+					{
+						depth = 1.0;
+					}
+					else
+					{
+						lit = 0.0;
+					}
+
+					//if (depth > 0.0)
+					//	directColor = vec3(0.0, 1.0, 0.0);
+				}
 			}
 	#endif
 		}

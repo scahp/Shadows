@@ -50,11 +50,15 @@ namespace jLightUtil
 			delete UniformBlock;
 		}
 
-		FORCEINLINE bool IsValid() const { return (ShadowMapRenderTarget && ShadowMapCamera[0] && ShadowMapCamera[1] && ShadowMapCamera[2] && ShadowMapCamera[3] && ShadowMapCamera[4] && ShadowMapCamera[5]); }
+		static constexpr int32 TargetCount = 2;
+
+		//FORCEINLINE bool IsValid() const { return (ShadowMapRenderTarget && ShadowMapCamera[0] && ShadowMapCamera[1] && ShadowMapCamera[2] && ShadowMapCamera[3] && ShadowMapCamera[4] && ShadowMapCamera[5]); }
+		FORCEINLINE bool IsValid() const { return (ShadowMapRenderTarget && ShadowMapCamera[0] && ShadowMapCamera[1]); }
+		//FORCEINLINE bool IsValid() const { return (ShadowMapRenderTarget && ShadowMapCamera[0]); }
 
 		std::shared_ptr<jRenderTarget> ShadowMapRenderTarget;
 		std::shared_ptr<jSamplerState> ShadowMapSamplerState;
-		jCamera* ShadowMapCamera[6] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+		jCamera* ShadowMapCamera[TargetCount] = { nullptr };
 		IUniformBufferBlock* UniformBlock = nullptr;
 	};
 
