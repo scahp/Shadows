@@ -189,6 +189,9 @@
     <ClInclude Include="jSamplerStatePool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="jLightIndexedDeferredRenderer.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -330,6 +333,9 @@
       <Filter>IMGUI</Filter>
     </ClCompile>
     <ClCompile Include="jSamplerStatePool.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="jLightIndexedDeferredRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -527,6 +533,24 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="Shaders\vs_graph.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\DepthOnly_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\DepthOnly_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\LIDR_BasePass_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\LIDR_BasePass_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\LIDR_LightBuffer_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\LIDR_LightBuffer_vs.glsl">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

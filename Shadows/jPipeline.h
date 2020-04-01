@@ -282,6 +282,7 @@ enum class EPipelineSetType
 	None = 0,
 	DeepShadowMap,
 	Forward,
+	LightIndexedDeferredRendering,
 	Max,
 };
 
@@ -445,3 +446,18 @@ START_CREATE_PIPELINE_SET_INFO_WITH_DEBUG_RENDER(ShadowVolume, Forward, EPipelin
 	ADD_PIPELINE_WITH_CREATE_AND_SETUP_AT_RENDERPASS(RenderPass, jForward_ShadowVolume_Pipeline);
 END_CREATE_PIPELINE_SET_INFO()
 
+//////////////////////////////////////////////////////////////////////////
+// jForward_LightIndexedDeferredRendering_Pipeline
+class jForward_LightIndexedDeferredRendering_Pipeline : public jRenderPipeline
+{
+public:
+	using jRenderPipeline::jRenderPipeline;
+
+	virtual void Setup() override;
+	virtual void Do(const jPipelineContext& pipelineContext) const override;
+};
+
+// jForwardPipelineSet_LightIndexedDeferredRednering
+START_CREATE_PIPELINE_SET_INFO_WITH_DEBUG_RENDER(LightIndexedDeferredRendering, , EPipelineSetType::LightIndexedDeferredRendering)
+	ADD_PIPELINE_WITH_CREATE_AND_SETUP_AT_RENDERPASS(RenderPass, jForward_LightIndexedDeferredRendering_Pipeline);
+END_CREATE_PIPELINE_SET_INFO()

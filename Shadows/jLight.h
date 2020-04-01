@@ -129,6 +129,7 @@ public:
 
 	const ELightType Type = ELightType::MAX;
 	jObject* LightDebugObject = nullptr;
+	bool EnableShadow = true;
 };
 
 class jAmbientLight : public jLight

@@ -8,8 +8,8 @@ layout(location = 0) in vec4 Pos;
 layout(location = 1) in vec4 Color;
 
 #define MAX_NUM_OF_DIRECTIONAL_LIGHT 1
-#define MAX_NUM_OF_POINT_LIGHT 1
-#define MAX_NUM_OF_SPOT_LIGHT 1
+#define MAX_NUM_OF_POINT_LIGHT 100
+#define MAX_NUM_OF_SPOT_LIGHT 100
 
 uniform int NumOfDirectionalLight;
 uniform int NumOfPointLight;

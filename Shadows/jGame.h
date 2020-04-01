@@ -74,8 +74,10 @@ public:
 
 	jRenderer* DeferredRenderer = nullptr;
 	jRenderer* ForwardRenderer = nullptr;
+	jRenderer* LightIndexedDeferredRenderer = nullptr;
 
 	jPipelineSet* ShadowVolumePipelineSet = nullptr;
+	jPipelineSet* LightIndexedDeferredRenderingSet = nullptr;
 	std::map<EShadowMapType, jPipelineSet*> ShadowPipelineSetMap;
 	std::map<EShadowMapType, jPipelineSet*> ShadowPoissonSamplePipelineSetMap;
 

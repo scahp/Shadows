@@ -89,6 +89,11 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("GaussianBlurV", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/fullscreen/fs_blur_gaussian_vertical.glsl");
 
 		DECLARE_SHADER_VS_FS("Graph2D", "shaders/vs_graph.glsl", "shaders/fs_graph.glsl");
+
+		DECLARE_SHADER_VS_FS("LIDR_LightBuffer", "Shaders/LIDR_LightBuffer_vs.glsl", "Shaders/LIDR_LightBuffer_fs.glsl");
+		DECLARE_SHADER_VS_FS("DepthOnly", "Shaders/DepthOnly_vs.glsl", "Shaders/DepthOnly_fs.glsl");
+		DECLARE_SHADER_VS_FS("LIDR_BasePass", "Shaders/LIDR_BasePass_vs.glsl", "Shaders/LIDR_BasePass_fs.glsl");
+		DECLARE_SHADER_VS_FS("ColorCopy", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/fullscreen/fs_scale.glsl");
 	}
 } s_shaderInfoCreation;
 

@@ -19,6 +19,7 @@ public:
 	bool ShowSilhouette_SpotLight = false;
 	bool IsGPUShadowVolume = true;
 	EShadowMapType ShadowMapType = EShadowMapType::SSM;
+	ERendererType RendererType = ERendererType::LightIndexedForwardRenderer;
 	bool UsePoissonSample = true;
 	bool ShowDirectionalLightMap = false;
 	bool UseTonemap = true;

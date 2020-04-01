@@ -210,6 +210,9 @@ void jForward_ShadowMapGen_Pipeline::Do(const jPipelineContext& pipelineContext)
 	{
 		JASSERT(light);
 
+		if (!light->EnableShadow)
+			continue;
+
 		bool skip = false;
 
 		jShader* currentShader = nullptr;
@@ -925,3 +928,18 @@ void jForward_UIObject_Pipeline::Setup()
 	Shader = jShader::GetShader(ShaderName);
 }
 
+void jForward_LightIndexedDeferredRendering_Pipeline::Setup()
+{
+	EnableClear = true;
+	EnableDepthTest = true;
+	DepthStencilFunc = EComparisonFunc::LESS;
+	EnableBlend = true;
+	BlendSrc = EBlendSrc::ONE;
+	BlendDest = EBlendDest::ZERO;
+	ClearColor = Vector4(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);	// light sky blue
+}
+
+void jForward_LightIndexedDeferredRendering_Pipeline::Do(const jPipelineContext& pipelineContext) const
+{
+
+}

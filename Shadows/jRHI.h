@@ -244,8 +244,8 @@ struct jRenderTargetInfo
 	int32 Width = 0;
 	int32 Height = 0;
 	int32 TextureCount = 1;
-	ETextureFilter Magnification;
-	ETextureFilter Minification;
+	ETextureFilter Magnification = ETextureFilter::NEAREST;
+	ETextureFilter Minification = ETextureFilter::NEAREST;
 };
 
 struct jRenderTarget : public std::enable_shared_from_this<jRenderTarget>
@@ -255,6 +255,8 @@ struct jRenderTarget : public std::enable_shared_from_this<jRenderTarget>
 	virtual jTexture* GetTexture(int32 index = 0) const { return Textures[index]; }
 	virtual jTexture* GetTextureDepth(int32 index = 0) const { return TextureDepth; }
 	virtual ETextureType GetTextureType() const { return Info.TextureType; }
+
+	virtual void SetTextureDetph(jTexture* depthTexture, EDepthBufferType depthBufferType, int index = 0) {}
 
 	virtual bool Begin(int index = 0, bool mrt = false) const { return true; };
 	virtual void End() const {}
@@ -362,10 +364,14 @@ public:
 	virtual jTexture* CreateTextureFromData(unsigned char* data, int32 width, int32 height, bool sRGB) const { return nullptr; }
 	virtual void SetMatetrial(jMaterialData* materialData, const jShader* shader, int32 baseBindingIndex = 0) const {}
 	virtual void EnableCullFace(bool enable) const {}
+	virtual void EnableCullMode(ECullMode cullMode) const {}
 	virtual jRenderTarget* CreateRenderTarget(const jRenderTargetInfo& info) const { return nullptr; }
 	virtual void EnableDepthTest(bool enable) const {}
 	virtual void EnableBlend(bool enable) const {}
 	virtual void SetBlendFunc(EBlendSrc src, EBlendDest dest) const {}
+	virtual void SetBlendEquation(EBlendMode mode) const {}
+	virtual void SetBlenpertydColor(float r, float g, float b, float a) const {}
+	virtual void SetBlendColor(float r, float g, float b, float a) const {}
 	virtual void EnableStencil(bool enable) const {}
 	virtual void SetStencilOpSeparate(EFace face, EStencilOp sFail, EStencilOp dpFail, EStencilOp dpPass) const {}
 	virtual void SetStencilFunc(EComparisonFunc func, int32 ref, uint32 mask) const {}

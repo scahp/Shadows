@@ -4,8 +4,8 @@
 
 precision mediump float;
 
-#define MAX_NUM_OF_POINT_LIGHT 1
-#define MAX_NUM_OF_SPOT_LIGHT 1
+#define MAX_NUM_OF_POINT_LIGHT 100
+#define MAX_NUM_OF_SPOT_LIGHT 100
 
 uniform int NumOfPointLight;
 uniform int NumOfSpotLight;

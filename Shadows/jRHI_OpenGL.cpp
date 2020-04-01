@@ -71,11 +71,23 @@ uint32 GetOpenGLTextureFormat(ETextureFormat format)
 	case ETextureFormat::RGBA:
 		result = GL_RGBA;
 		break;
+	case ETextureFormat::RGBA_INTEGER:
+		result = GL_RGBA_INTEGER;
+		break;
 	case ETextureFormat::RG:
 		result = GL_RG;
 		break;
 	case ETextureFormat::R:
 		result = GL_RED;
+		break;
+	case ETextureFormat::RGBA8:
+		result = GL_RGBA8;
+		break;
+	case ETextureFormat::RGBA8I:
+		result = GL_RGBA8I;
+		break;
+	case ETextureFormat::RGBA8UI:
+		result = GL_RGBA8UI;
 		break;
 	case ETextureFormat::R32F:
 		result = GL_R32F;
@@ -202,6 +214,55 @@ uint32 GetOpenGLTextureComparisonMode(ETextureComparisonMode mode)
 	}
 	return result;
 }
+
+uint32 GetOpenGLCullMode(ECullMode cullMode)
+{
+	uint32 cullMode_gl = 0;
+	switch (cullMode)
+	{
+	case ECullMode::BACK:
+		cullMode_gl = GL_BACK;
+		break;
+	case ECullMode::FRONT:
+		cullMode_gl = GL_FRONT;
+		break;
+	case ECullMode::FRONT_AND_BACK:
+		cullMode_gl = GL_FRONT_AND_BACK;
+		break;
+	default:
+		break;
+	}
+	return cullMode_gl;
+}
+
+bool GetOpenGLDepthBufferType(uint32& depthBufferFormat_gl, uint32& depthBufferType_gl, EDepthBufferType depthBufferType)
+{
+	switch (depthBufferType)
+	{
+	case EDepthBufferType::DEPTH16:
+		depthBufferFormat_gl = GL_DEPTH_COMPONENT16;
+		depthBufferType_gl = GL_DEPTH_ATTACHMENT;
+		break;
+	case EDepthBufferType::DEPTH24:
+		depthBufferFormat_gl = GL_DEPTH_COMPONENT24;
+		depthBufferType_gl = GL_DEPTH_ATTACHMENT;
+		break;
+	case EDepthBufferType::DEPTH32:
+		depthBufferFormat_gl = GL_DEPTH_COMPONENT32;
+		depthBufferType_gl = GL_DEPTH_ATTACHMENT;
+		break;
+	case EDepthBufferType::DEPTH24_STENCIL8:
+		depthBufferFormat_gl = GL_DEPTH24_STENCIL8;
+		depthBufferType_gl = GL_DEPTH_STENCIL_ATTACHMENT;
+		break;
+	default:
+		return false;
+		break;
+	}
+
+	return true;
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 // jRHI_OpenGL
@@ -1076,6 +1137,12 @@ void jRHI_OpenGL::EnableCullFace(bool enable) const
 		glDisable(GL_CULL_FACE);
 }
 
+void jRHI_OpenGL::EnableCullMode(ECullMode cullMode) const
+{
+	const uint32 cullmode_gl = GetOpenGLCullMode(cullMode);
+	glCullFace(cullmode_gl);
+}
+
 jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) const
 {
 	const uint32 internalFormat = GetOpenGLTextureFormat(info.InternalFormat);
@@ -1087,8 +1154,14 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 	case EFormatType::BYTE:
 		formatType = GL_BYTE;
 		break;
+	case EFormatType::UNSIGNED_BYTE:
+		formatType = GL_UNSIGNED_BYTE;
+		break;
 	case EFormatType::INT:
 		formatType = GL_INT;
+		break;
+	case EFormatType::HALF:
+		formatType = GL_HALF_FLOAT;
 		break;
 	case EFormatType::FLOAT:
 		formatType = GL_FLOAT;
@@ -1100,28 +1173,7 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 	bool hasDepthAttachment = true;
 	uint32 depthBufferFormat = 0;
 	uint32 depthBufferType = 0;
-	switch (info.DepthBufferType)
-	{
-	case EDepthBufferType::DEPTH16:
-		depthBufferFormat = GL_DEPTH_COMPONENT16;
-		depthBufferType = GL_DEPTH_ATTACHMENT;
-		break;
-	case EDepthBufferType::DEPTH24:
-		depthBufferFormat = GL_DEPTH_COMPONENT24;
-		depthBufferType = GL_DEPTH_ATTACHMENT;
-		break;
-	case EDepthBufferType::DEPTH32:
-		depthBufferFormat = GL_DEPTH_COMPONENT32;
-		depthBufferType = GL_DEPTH_ATTACHMENT;
-		break;
-	case EDepthBufferType::DEPTH24_STENCIL8:
-		depthBufferFormat = GL_DEPTH24_STENCIL8;
-		depthBufferType = GL_DEPTH_STENCIL_ATTACHMENT;
-		break;
-	default:
-		hasDepthAttachment = false;
-		break;
-	}
+	hasDepthAttachment = GetOpenGLDepthBufferType(depthBufferFormat, depthBufferType, info.DepthBufferType);
 
 	const uint32 magnification = GetOpenGLTextureFilterType(info.Magnification);
 	const uint32 minification = GetOpenGLTextureFilterType(info.Minification);
@@ -1603,6 +1655,39 @@ void jRHI_OpenGL::SetBlendFunc(EBlendSrc src, EBlendDest dest) const
 	glBlendFunc(src_gl, dest_gl);
 }
 
+void jRHI_OpenGL::SetBlendEquation(EBlendMode mode) const
+{
+	unsigned int mode_gl = 0;
+	switch (mode)
+	{
+	case EBlendMode::FUNC_ADD:
+		mode_gl = GL_FUNC_ADD;
+		break;
+	case EBlendMode::FUNC_SUBTRACT:
+		mode_gl = GL_FUNC_SUBTRACT;
+		break;
+	case EBlendMode::FUNC_REVERSE_SUBTRACT:
+		mode_gl = GL_FUNC_REVERSE_SUBTRACT;
+		break;
+	case EBlendMode::FUNC_MIN:
+		mode_gl = GL_MIN;
+		break;
+	case EBlendMode::FUNC_MAX:
+		mode_gl = GL_MAX;
+		break;
+	default:
+		JASSERT(0);
+		break;
+	}
+
+	glBlendEquation(mode_gl);
+}
+
+void jRHI_OpenGL::SetBlendColor(float r, float g, float b, float a) const
+{
+	glBlendColor(r, g, b, a);
+}
+
 void jRHI_OpenGL::EnableStencil(bool enable) const
 {
 	if (enable)
@@ -1686,6 +1771,51 @@ void jIndexBuffer_OpenGL::Bind(const jShader* shader) const
 	g_rhi->BindIndexBuffer(this, shader);
 }
 
+void jRenderTarget_OpenGL::SetTextureDetph(jTexture* depthTexture, EDepthBufferType depthBufferType, int index)
+{
+	if (mrt_fbo)
+	{
+		auto depthTexture_gl = static_cast<jTexture_OpenGL*>(depthTexture);
+
+		uint32 depthBufferFormat_gl = 0;
+		uint32 depthBufferType_gl = 0;
+		GetOpenGLDepthBufferType(depthBufferFormat_gl, depthBufferType_gl, depthBufferType);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, mrt_fbo);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, depthBufferType_gl, GL_TEXTURE_2D, depthTexture_gl->TextureID, 0);
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			auto status_code = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+			char szTemp[256] = { 0, };
+			sprintf_s(szTemp, sizeof(szTemp), "Failed to create Texture2D framebuffer which is not complete : %d", status_code);
+			JMESSAGE(szTemp);
+			return;
+		}
+	}
+
+	if (fbos.size() > index && index >= 0)
+	{
+		auto depthTexture_gl = static_cast<jTexture_OpenGL*>(depthTexture);
+
+		uint32 depthBufferFormat_gl = 0;
+		uint32 depthBufferType_gl = 0;
+		GetOpenGLDepthBufferType(depthBufferFormat_gl, depthBufferType_gl, depthBufferType);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, fbos[index]);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, depthBufferType_gl, GL_TEXTURE_2D, depthTexture_gl->TextureID, 0);
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			auto status_code = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+			char szTemp[256] = { 0, };
+			sprintf_s(szTemp, sizeof(szTemp), "Failed to create Texture2D framebuffer which is not complete : %d", status_code);
+			JMESSAGE(szTemp);
+			return;
+		}
+	}
+}
+
 bool jRenderTarget_OpenGL::Begin(int index, bool mrt) const
 {
 	if (mrt && mrt_fbo)
@@ -1734,7 +1864,7 @@ void jUniformBufferBlock_OpenGL::ClearBuffer(int32 clearValue)
 
 void jUniformBufferBlock_OpenGL::Init()
 {
-	BindingPoint = GetBindPoint();
+	BindingPoint = 0;
 	glGenBuffers(1, &UBO);
 	glBindBufferBase(GL_UNIFORM_BUFFER, BindingPoint, UBO);
 }

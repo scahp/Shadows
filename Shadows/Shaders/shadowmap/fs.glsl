@@ -8,8 +8,8 @@ precision mediump float;
 precision mediump sampler2DArray;
 
 #define MAX_NUM_OF_DIRECTIONAL_LIGHT 1
-#define MAX_NUM_OF_POINT_LIGHT 1
-#define MAX_NUM_OF_SPOT_LIGHT 1
+#define MAX_NUM_OF_POINT_LIGHT 100
+#define MAX_NUM_OF_SPOT_LIGHT 100
 
 uniform int UseAmbientLight;
 uniform int NumOfDirectionalLight;

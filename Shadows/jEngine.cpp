@@ -25,7 +25,7 @@ void jEngine::Init()
 	jShaderInfo::CreateShaders();
 	IPipeline::SetupPipelines();
 
-	g_rhi->EnableSRGB(false);
+	//g_rhi->EnableSRGB(false);
 
 	Game.Setup();
 

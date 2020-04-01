@@ -50,3 +50,17 @@ static const char* EShadowMapTypeString[] = {
 	"DeepShadowMap_DirectionalLight",
 	"CSM_SSM",
 };
+
+enum class ERendererType
+{
+	//ForwardRenderer = 0,
+	//DeferredRenderer,
+	LightIndexedForwardRenderer,
+	MAX
+};
+
+static const char* ERendererTypeString[] = {
+	//"ForwardRenderer",
+	//"DeferredRenderer",
+	"LightIndexedForwardRenderer",
+};
