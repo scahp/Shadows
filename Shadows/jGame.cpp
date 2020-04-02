@@ -280,6 +280,11 @@ void jGame::Update(float deltaTime)
 	{
 		MainCamera->IsEnableCullMode = true;
 
+		auto& appSetting = jShadowAppSettingProperties::GetInstance();
+		const bool isLIDRTestTypeDefault = (ELIDR_TestType::Default == appSetting.LIDR_TestType);
+		int32 MAX_POINT_LIGHT = isLIDRTestTypeDefault ? 255 : 5;
+
+		// LIDR 구조체 선언
 		struct LightData_LIDR
 		{
 			Vector Pos;
@@ -287,10 +292,7 @@ void jGame::Update(float deltaTime)
 			Vector4 Color;
 		};
 
-		auto& appSetting = jShadowAppSettingProperties::GetInstance();
-		const bool isLIDRTestTypeDefault = (ELIDR_TestType::Default == appSetting.LIDR_TestType);
-		int32 MAX_POINT_LIGHT = isLIDRTestTypeDefault ? 255 : 5;
-
+		// 라이트 개수만큼 LightData_LIDR 생성
 		static bool InitLightData = false;
 		static std::vector<LightData_LIDR> PointLight_LIDR;
 		if (PointLight_LIDR.size() != MAX_POINT_LIGHT)
@@ -299,6 +301,7 @@ void jGame::Update(float deltaTime)
 			InitLightData = false;
 		}
 
+		// 라이트가 초기화 되지 않았다면 초기화, 그렇지 않으면 라이트를 업데이트 함.
 		if (!InitLightData)
 		{
 			InitLightData = true;
@@ -395,17 +398,15 @@ void jGame::Update(float deltaTime)
 		//auto Shader = jShader::GetShader("Simple");
 		auto Shader = jShader::GetShader("DepthOnly");
 
-		g_rhi->EnableDepthTest(true);
-		g_rhi->SetDepthMask(true);
-
 		g_rhi->SetClearColor(ClearColor);
 		g_rhi->SetClear(ClearType);
 
 		g_rhi->EnableDepthTest(EnableDepthTest);
 		g_rhi->SetDepthFunc(DepthStencilFunc);
+		g_rhi->SetDepthMask(true);						// Depth write on
 
-		g_rhi->EnableBlend(EnableBlend);
-		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+		g_rhi->EnableBlend(EnableBlend);				// Blend on
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);		// Src One, Dst Zero
 
 		static auto MainRenderTarget = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({
 			ETextureType::TEXTURE_2D,
@@ -417,7 +418,7 @@ void jGame::Update(float deltaTime)
 			SCR_HEIGHT,
 			1 }));
 
-		// 1. DepthOnly
+		// 1. DepthOnly Pass
 		if (MainRenderTarget->Begin())
 		{
 			g_rhi->SetClear({ERenderBufferType::COLOR | ERenderBufferType::DEPTH});
@@ -428,12 +429,13 @@ void jGame::Update(float deltaTime)
 			MainRenderTarget->End();
 		}
 
-		g_rhi->SetDepthMask(false);
-
-		// 2. LightBuffer
+		// 2. LightBuffer Pass
 		Shader = jShader::GetShader("LIDR_LightBuffer");
 		g_rhi->SetShader(Shader);
 
+		g_rhi->SetDepthMask(false);		// depth write off
+
+		// Set the dst blend func as CONSTANT_COLOR(0.25) for each texel value shifted by blending
 		g_rhi->SetBlendFunc(EBlendSrc::ONE, EBlendDest::CONSTANT_COLOR);
 		g_rhi->SetBlendEquation(EBlendMode::FUNC_ADD);
 		g_rhi->SetBlendColor(0.251f, 0.251f, 0.251f, 0.251f);
@@ -448,6 +450,7 @@ void jGame::Update(float deltaTime)
 			SCR_HEIGHT, 
 			1 }));
 
+		// Set the depth buffer of light buffer as depth only pass's depth buffer
 		LightBufferRenderTarget->SetTextureDetph(MainRenderTarget->GetTextureDepth(), MainRenderTarget->Info.DepthBufferType);
 
 		if (LightBufferRenderTarget->Begin())
@@ -480,6 +483,7 @@ void jGame::Update(float deltaTime)
 			LightBufferRenderTarget->End();
 		}
 
+		// 3. Base pass (Forward rendering)
 		Shader = jShader::GetShader("LIDR_BasePass");
 		g_rhi->SetShader(Shader);
 

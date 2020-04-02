@@ -29,7 +29,6 @@ void main()
     vec2 Coord = Temp.xy * vec2(0.5) + vec2(0.5);
     vec4 packedLightIndex = texture(LightBuffer, Coord);
     color = vec4(Color_) * vec4(0.2, 0.2, 0.2, 1.0);
-    //color = vec4(0.0, 0.0, 0.0, 1.0);
 
     //vec4 unpackConst = vec4(4.0, 16.0, 64.0, 256.0) / 256.0;
     vec4 unpackConst = vec4(4, 16, 64, 256);
@@ -38,15 +37,8 @@ void main()
     for (int i = 0; i < 4; ++i)
     {
         packedLightIndex = floorValues * 0.25;
-        //packedLightIndex = packedLightIndex * 0.25;
-        //packedLightIndex = packedLightIndex * 0.25;
-        //packedLightIndex = packedLightIndex * 0.25;
-        //color.y = packedLightIndex.x;
         floorValues = floor(packedLightIndex);
-        //color.z = floorValues.x;
         vec4 fracParts = packedLightIndex - floorValues;
-        //color.w = fracParts.x;
-        //fracParts *= 256;
 
         //float tempIndex = dot(fracParts, unpackConst) * 256;
         //int lightIndex = int(tempIndex);
@@ -62,8 +54,6 @@ void main()
         //    color.z = tempIndex;
         //else
         //    color.w = tempIndex;
-
-        //float tempIndex = dot(floorValues, unpackConst);
 
         float dist = distance(PointLight[lightIndex].Pos, WorldPos_);
         float distSQ = dist * dist;
