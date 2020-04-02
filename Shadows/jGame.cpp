@@ -494,13 +494,16 @@ void jGame::Update(float deltaTime)
 
 		static auto LightBufferRenderTarget2 = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({
 			ETextureType::TEXTURE_2D,
-			ETextureFormat::RGBA32F,
+			ETextureFormat::RGBA8,
 			ETextureFormat::RGBA,
-			EFormatType::FLOAT,
+			EFormatType::UNSIGNED_BYTE,
 			EDepthBufferType::NONE,
 			SCR_WIDTH,
 			SCR_HEIGHT,
 			1 }));
+
+		LightBufferRenderTarget2->SetTextureDetph(MainRenderTarget->GetTextureDepth(), MainRenderTarget->Info.DepthBufferType);
+
 		if (LightBufferRenderTarget2->Begin())
 		{
 			g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -754,7 +757,7 @@ void jGame::SpawnTestPrimitives()
 	jObject::AddObject(gizmo);
 	SpawnedObjects.push_back(gizmo);
 
-	auto triangle = jPrimitiveUtil::CreateTriangle(Vector(60.0, 100.0, 20.0), Vector::OneVector, Vector(40.0, 40.0, 40.0), Vector4(0.5f, 0.1f, 1.0f, 1.0f));
+	auto triangle = jPrimitiveUtil::CreateTriangle(Vector(60.0, 10.0, 20.0), Vector::OneVector, Vector(40.0, 40.0, 40.0), Vector4(0.5f, 0.1f, 1.0f, 1.0f));
 	triangle->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
 		thisObject->RenderObject->Rot.x += 0.05f;
@@ -762,7 +765,7 @@ void jGame::SpawnTestPrimitives()
 	jObject::AddObject(triangle);
 	SpawnedObjects.push_back(triangle);
 
-	auto cube = jPrimitiveUtil::CreateCube(Vector(-60.0f, 55.0f, -20.0f), Vector::OneVector, Vector(50.0f, 50.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
+	auto cube = jPrimitiveUtil::CreateCube(Vector(-60.0f, 5.0f, -20.0f), Vector::OneVector, Vector(50.0f, 50.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
 	cube->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
 		thisObject->RenderObject->Rot.z += 0.005f;
@@ -770,11 +773,11 @@ void jGame::SpawnTestPrimitives()
 	jObject::AddObject(cube);
 	SpawnedObjects.push_back(cube);
 
-	auto cube2 = jPrimitiveUtil::CreateCube(Vector(-65.0f, 35.0f, 10.0f), Vector::OneVector, Vector(50.0f, 50.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
+	auto cube2 = jPrimitiveUtil::CreateCube(Vector(-65.0f, 3.0f, 10.0f), Vector::OneVector, Vector(50.0f, 50.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
 	jObject::AddObject(cube2);
 	SpawnedObjects.push_back(cube2);
 
-	auto capsule = jPrimitiveUtil::CreateCapsule(Vector(30.0f, 30.0f, -80.0f), 40.0f, 10.0f, 20, Vector(1.0f), Vector4(1.0f, 1.0f, 0.0f, 1.0f));
+	auto capsule = jPrimitiveUtil::CreateCapsule(Vector(30.0f, 3.0f, -80.0f), 40.0f, 10.0f, 20, Vector(1.0f), Vector4(1.0f, 1.0f, 0.0f, 1.0f));
 	capsule->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
 		thisObject->RenderObject->Rot.x -= 0.01f;
@@ -782,7 +785,7 @@ void jGame::SpawnTestPrimitives()
 	jObject::AddObject(capsule);
 	SpawnedObjects.push_back(capsule);
 
-	auto cone = jPrimitiveUtil::CreateCone(Vector(0.0f, 50.0f, 60.0f), 40.0f, 20.0f, 15, Vector::OneVector, Vector4(1.0f, 1.0f, 0.0f, 1.0f));
+	auto cone = jPrimitiveUtil::CreateCone(Vector(0.0f, 5.0f, 60.0f), 40.0f, 20.0f, 15, Vector::OneVector, Vector4(1.0f, 1.0f, 0.0f, 1.0f));
 	cone->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
 		thisObject->RenderObject->Rot.y += 0.03f;
@@ -790,7 +793,7 @@ void jGame::SpawnTestPrimitives()
 	jObject::AddObject(cone);
 	SpawnedObjects.push_back(cone);
 
-	auto cylinder = jPrimitiveUtil::CreateCylinder(Vector(-30.0f, 60.0f, -60.0f), 20.0f, 10.0f, 20, Vector::OneVector, Vector4(0.0f, 0.0f, 1.0f, 1.0f));
+	auto cylinder = jPrimitiveUtil::CreateCylinder(Vector(-30.0f, 6.0f, -60.0f), 20.0f, 10.0f, 20, Vector::OneVector, Vector4(0.0f, 0.0f, 1.0f, 1.0f));
 	cylinder->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
 		thisObject->RenderObject->Rot.x += 0.05f;
@@ -798,7 +801,7 @@ void jGame::SpawnTestPrimitives()
 	jObject::AddObject(cylinder);
 	SpawnedObjects.push_back(cylinder);
 
-	auto quad2 = jPrimitiveUtil::CreateQuad(Vector(-20.0f, 80.0f, 40.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(0.0f, 0.0f, 1.0f, 1.0f));
+	auto quad2 = jPrimitiveUtil::CreateQuad(Vector(-20.0f, 8.0f, 40.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(0.0f, 0.0f, 1.0f, 1.0f));
 	quad2->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
 		thisObject->RenderObject->Rot.z += 0.08f;
@@ -806,7 +809,7 @@ void jGame::SpawnTestPrimitives()
 	jObject::AddObject(quad2);
 	SpawnedObjects.push_back(quad2);
 
-	auto sphere = jPrimitiveUtil::CreateSphere(Vector(65.0f, 35.0f, 10.0f), 1.0, 16, Vector(30.0f), Vector4(0.8f, 0.0f, 0.0f, 1.0f));
+	auto sphere = jPrimitiveUtil::CreateSphere(Vector(65.0f, 3.0f, 10.0f), 1.0, 16, Vector(30.0f), Vector4(0.8f, 0.0f, 0.0f, 1.0f));
 	sphere->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
 		//thisObject->RenderObject->Rot.z += 0.01f;
@@ -835,7 +838,7 @@ void jGame::SpawnTestPrimitives()
 	jObject::AddObject(sphere2);
 	SpawnedObjects.push_back(sphere2);
 
-	auto billboard = jPrimitiveUtil::CreateBillobardQuad(Vector(0.0f, 60.0f, 80.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(1.0f, 0.0f, 1.0f, 1.0f), MainCamera);
+	auto billboard = jPrimitiveUtil::CreateBillobardQuad(Vector(0.0f, 6.0f, 80.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(1.0f, 0.0f, 1.0f, 1.0f), MainCamera);
 	jObject::AddObject(billboard);
 	SpawnedObjects.push_back(billboard);
 }
