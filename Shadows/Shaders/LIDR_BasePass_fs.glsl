@@ -31,7 +31,8 @@ void main()
     color = vec4(Color_) * vec4(0.2, 0.2, 0.2, 1.0);
     //color = vec4(0.0, 0.0, 0.0, 1.0);
 
-    vec4 unpackConst = vec4(4.0, 16.0, 64.0, 256.0) / 256.0;
+    //vec4 unpackConst = vec4(4.0, 16.0, 64.0, 256.0) / 256.0;
+    vec4 unpackConst = vec4(4, 16, 64, 256);
     vec4 floorValues = ceil(packedLightIndex * 254.5);
 
     for (int i = 0; i < 4; ++i)
@@ -46,7 +47,11 @@ void main()
         vec4 fracParts = packedLightIndex - floorValues;
         //color.w = fracParts.x;
         //fracParts *= 256;
-        float tempIndex = dot(fracParts, unpackConst) * 256;
+
+        //float tempIndex = dot(fracParts, unpackConst) * 256;
+        //int lightIndex = int(tempIndex);
+
+        float tempIndex = dot(fracParts, unpackConst);
         int lightIndex = int(tempIndex);
 
         //if (i == 0)
