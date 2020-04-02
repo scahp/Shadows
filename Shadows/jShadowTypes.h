@@ -64,3 +64,15 @@ static const char* ERendererTypeString[] = {
 	//"DeferredRenderer",
 	"LightIndexedForwardRenderer",
 };
+
+enum class ELIDR_TestType
+{
+	Default = 0,
+	LightBlendTest,
+	MAX
+};
+
+static const char* ELIDR_TestTypeString[] = {
+	"Default",
+	"LightBlendTest",
+};

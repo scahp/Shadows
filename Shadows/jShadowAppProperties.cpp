@@ -6,6 +6,7 @@ jShadowAppSettingProperties* jShadowAppSettingProperties::_instance = nullptr;
 void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 {
 	appSetting->AddEnumVariable("RendererType", RendererType, "ERendererType", ERendererTypeString);
+	appSetting->AddEnumVariable("ELIDR_TestType", LIDR_TestType, "ELIDR_TestType", ELIDR_TestTypeString);
 
 	//appSetting->AddVariable("ShadowOn", ShadowOn);
 
@@ -132,6 +133,7 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 {
 	appSetting->RemoveVariable("RendererType");
+	appSetting->RemoveVariable("LIDR_TestType");	
 	//appSetting->RemoveVariable("ShadowOn");
 	//appSetting->RemoveVariable("EShadowType");
 	//appSetting->RemoveVariable("DirectionalLightSilhouette");

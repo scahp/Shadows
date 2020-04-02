@@ -20,6 +20,7 @@ public:
 	bool IsGPUShadowVolume = true;
 	EShadowMapType ShadowMapType = EShadowMapType::SSM;
 	ERendererType RendererType = ERendererType::LightIndexedForwardRenderer;
+	ELIDR_TestType LIDR_TestType = ELIDR_TestType::Default;
 	bool UsePoissonSample = true;
 	bool ShowDirectionalLightMap = false;
 	bool UseTonemap = true;

@@ -65,6 +65,9 @@ void main()
 
         //if (lightIndex > 0 && lightIndex < 5)
         if (lightIndex > 0)
-            color += (PointLight[lightIndex].Color * (2.0 / distSQ));
+        {
+            const float LightIntensity = 4.0f;
+            color += (PointLight[lightIndex].Color * (LightIntensity / distSQ));
+        }
     }
 }

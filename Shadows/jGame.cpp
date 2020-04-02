@@ -287,10 +287,11 @@ void jGame::Update(float deltaTime)
 			Vector4 Color;
 		};
 
-		static bool changeLightTest = true;
-		static bool InitLightData = false;
+		auto& appSetting = jShadowAppSettingProperties::GetInstance();
+		const bool isLIDRTestTypeDefault = (ELIDR_TestType::Default == appSetting.LIDR_TestType);
+		int32 MAX_POINT_LIGHT = isLIDRTestTypeDefault ? 255 : 5;
 
-		int32 MAX_POINT_LIGHT = changeLightTest ? 255 : 5;
+		static bool InitLightData = false;
 		static std::vector<LightData_LIDR> PointLight_LIDR;
 		if (PointLight_LIDR.size() != MAX_POINT_LIGHT)
 		{
@@ -303,10 +304,9 @@ void jGame::Update(float deltaTime)
 			InitLightData = true;
 
 			static constexpr float Interval = 60.0f;
+			constexpr int count = 15;
 			for (int i = 1; i < MAX_POINT_LIGHT; ++i)
 			{
-				const int count = 15;
-
 				int r = i / count;
 				int k = i % count;
 
@@ -315,7 +315,7 @@ void jGame::Update(float deltaTime)
 				float B = (rand() % 256) / 255.0f;
 
 				auto& LightData = PointLight_LIDR[r * count + k];
-				if (changeLightTest)
+				if (isLIDRTestTypeDefault)
 				{
 					LightData.Pos = Vector((-count / 2 + r) * Interval, 0.0f, (-count / 2 + k) * Interval);
 					LightData.Color = Vector4(R, G, B, 1.0f);
@@ -332,12 +332,12 @@ void jGame::Update(float deltaTime)
 					else if (i == 4)
 						LightData.Color = Vector4(0.5f, 0.0f, 0.0f, 1.0f);
 				}
-				LightData.Radius = 30.0f;
+				LightData.Radius = 50.0f;
 			}
 		}
 		else
 		{
-			if (changeLightTest)
+			if (isLIDRTestTypeDefault)
 			{
 				static bool Sign = true;
 				static int32 Temp = 0;
