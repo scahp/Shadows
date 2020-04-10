@@ -279,6 +279,7 @@ void jGame::Update(float deltaTime)
 			SCR_HEIGHT,
 			1 }));
 
+		// 1. Render high-resolution base pass
 		if (MainRenderTarget->Begin())
 		{
 			g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
@@ -299,6 +300,7 @@ void jGame::Update(float deltaTime)
 			SCR_HEIGHT,
 			1 }));
 
+		// 2. Generate SDF from high-resolution base pass texture
 		{
 			Shader = jShader::GetShader("cs_sdf_generator");
 
@@ -325,6 +327,7 @@ void jGame::Update(float deltaTime)
 			SCR_HEIGHT / 4,
 			1 }));
 
+		// 3. Render low-resolution base pass
 		if (MainRenderTargetLow->Begin())
 		{
 			//auto ClearColor = Vector4(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);	// light sky blue
@@ -359,6 +362,7 @@ void jGame::Update(float deltaTime)
 
 		auto& appSetting = jShadowAppSettingProperties::GetInstance();
 
+		// 4. Copy low-resolution base pss to the backbuffer with SDF clean edging and outline.
 		Shader = jShader::GetShader("SDF");
 		static jFullscreenQuadPrimitive* s_fullscreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
 		s_fullscreenQuad->SetTexture(MainRenderTargetLow->GetTexture(), nullptr);
