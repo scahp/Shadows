@@ -12,6 +12,11 @@ public:
 		return *_instance;
 	}
 
+	bool EnableSDF = true;
+	float Delta = -0.2f;
+	bool ShowSDF = false;
+	bool EnableOutline = false;
+
 	bool ShadowOn = true;
 	EShadowType ShadowType = EShadowType::ShadowMap;
 	bool ShowSilhouette_DirectionalLight = false;

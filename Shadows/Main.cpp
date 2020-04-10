@@ -124,6 +124,7 @@ int main()
 		g_Engine.Update(g_timeDeltaSecond);
 		jPerformanceProfile::GetInstance().Update(g_timeDeltaSecond);
 
+		if (jAppSettings::EnableAppSettingBar)
 		{
 			SCOPE_DEBUG_EVENT(g_rhi, "TwDraw");
 			TwDraw();

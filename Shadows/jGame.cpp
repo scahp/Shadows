@@ -243,7 +243,133 @@ void jGame::Update(float deltaTime)
 
 	jObject::FlushDirtyState();
 
-	Renderer->Render(MainCamera);
+	//Renderer->Render(MainCamera);
+
+
+	{
+		MainCamera->IsEnableCullMode = true;
+
+		//auto ClearColor = Vector4(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);	// light sky blue
+		auto ClearColor = Vector4(1.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("Simple");
+
+		g_rhi->SetClearColor(ClearColor);
+		g_rhi->SetClear(ClearType);
+
+		g_rhi->EnableDepthTest(EnableDepthTest);
+		g_rhi->SetDepthFunc(DepthStencilFunc);
+		g_rhi->SetDepthMask(true);						// Depth write on
+
+		g_rhi->EnableBlend(EnableBlend);				// Blend on
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);		// Src One, Dst Zero
+
+		static auto MainRenderTarget = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({
+			ETextureType::TEXTURE_2D,
+			ETextureFormat::RGBA,
+			ETextureFormat::RGBA,
+			EFormatType::BYTE,
+			EDepthBufferType::DEPTH24_STENCIL8,
+			SCR_WIDTH,
+			SCR_HEIGHT,
+			1 }));
+
+		if (MainRenderTarget->Begin())
+		{
+			g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
+
+			const auto& StaticObjectList = jObject::GetStaticObject();
+			for (auto& Object : StaticObjectList)
+				Object->Draw(MainCamera, Shader, { });
+			MainRenderTarget->End();
+		}
+
+		static auto SDFRenderTarget = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({
+			ETextureType::TEXTURE_2D,
+			ETextureFormat::RGBA,
+			ETextureFormat::RGBA,
+			EFormatType::BYTE,
+			EDepthBufferType::DEPTH24_STENCIL8,
+			SCR_WIDTH,
+			SCR_HEIGHT,
+			1 }));
+
+		{
+			Shader = jShader::GetShader("cs_sdf_generator");
+
+			g_rhi->SetShader(Shader);
+
+			auto NumGroupsX = SCR_WIDTH / 16;
+			auto NumGroupsY = SCR_HEIGHT / 16;
+			auto NumGroupsZ = 1;
+
+			if (g_rhi->SetUniformbuffer(&jUniformBuffer<int>("srcTex", 0), Shader))
+				glBindImageTexture(0, static_cast<const jTexture_OpenGL*>(MainRenderTarget->GetTexture())->TextureID, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
+			if (g_rhi->SetUniformbuffer(&jUniformBuffer<int>("destTex", 1), Shader))
+				glBindImageTexture(1, static_cast<const jTexture_OpenGL*>(SDFRenderTarget->GetTexture())->TextureID, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+			g_rhi->DispatchCompute(NumGroupsX, NumGroupsY, NumGroupsZ);
+		}
+
+		static auto MainRenderTargetLow = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({
+			ETextureType::TEXTURE_2D,
+			ETextureFormat::RGBA,
+			ETextureFormat::RGBA,
+			EFormatType::BYTE,
+			EDepthBufferType::DEPTH24_STENCIL8,
+			SCR_WIDTH / 4,
+			SCR_HEIGHT / 4,
+			1 }));
+
+		if (MainRenderTargetLow->Begin())
+		{
+			//auto ClearColor = Vector4(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);	// light sky blue
+			auto ClearColor = Vector4(1.0f);
+			auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+			auto EnableDepthTest = true;
+			auto DepthStencilFunc = EComparisonFunc::LESS;
+			auto EnableBlend = true;
+			auto BlendSrc = EBlendSrc::ONE;
+			auto BlendDest = EBlendDest::ZERO;
+			auto Shader = jShader::GetShader("Simple");
+			g_rhi->SetShader(Shader);
+
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+
+			g_rhi->EnableDepthTest(EnableDepthTest);
+			g_rhi->SetDepthFunc(DepthStencilFunc);
+			g_rhi->SetDepthMask(true);						// Depth write on
+
+			g_rhi->EnableBlend(EnableBlend);				// Blend on
+			g_rhi->SetBlendFunc(BlendSrc, BlendDest);		// Src One, Dst Zero
+
+			g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
+
+			const auto& StaticObjectList = jObject::GetStaticObject();
+			for (auto& Object : StaticObjectList)
+				Object->Draw(MainCamera, Shader, { });
+
+			MainRenderTargetLow->End();
+		}
+
+		auto& appSetting = jShadowAppSettingProperties::GetInstance();
+
+		Shader = jShader::GetShader("SDF");
+		static jFullscreenQuadPrimitive* s_fullscreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
+		s_fullscreenQuad->SetTexture(MainRenderTargetLow->GetTexture(), nullptr);
+		s_fullscreenQuad->SetTexture2(SDFRenderTarget->GetTexture(), nullptr);
+		g_rhi->SetShader(Shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "Delta", appSetting.Delta, Shader);
+		SET_UNIFORM_BUFFER_STATIC(bool, "EnableSDF", appSetting.EnableSDF, Shader);
+		SET_UNIFORM_BUFFER_STATIC(bool, "ShowSDF", appSetting.ShowSDF, Shader);
+		SET_UNIFORM_BUFFER_STATIC(bool, "EnableOutline", appSetting.EnableOutline, Shader);
+		s_fullscreenQuad->Draw(MainCamera, Shader, {});
+	}
 }
 
 void jGame::UpdateAppSetting()
@@ -450,12 +576,12 @@ void jGame::SpawnTestPrimitives()
 {
 	RemoveSpawnedObjects();
 
-	auto quad = jPrimitiveUtil::CreateQuad(Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), Vector(1000.0f, 1000.0f, 1000.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-	quad->SetPlane(jPlane(Vector(0.0, 1.0, 0.0), -0.1f));
-	//quad->SkipShadowMapGen = true;
-	quad->SkipUpdateShadowVolume = true;
-	jObject::AddObject(quad);
-	SpawnedObjects.push_back(quad);
+	//auto quad = jPrimitiveUtil::CreateQuad(Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), Vector(1000.0f, 1000.0f, 1000.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	//quad->SetPlane(jPlane(Vector(0.0, 1.0, 0.0), -0.1f));
+	////quad->SkipShadowMapGen = true;
+	//quad->SkipUpdateShadowVolume = true;
+	//jObject::AddObject(quad);
+	//SpawnedObjects.push_back(quad);
 
 	auto gizmo = jPrimitiveUtil::CreateGizmo(Vector::ZeroVector, Vector::ZeroVector, Vector::OneVector);
 	gizmo->SkipShadowMapGen = true;

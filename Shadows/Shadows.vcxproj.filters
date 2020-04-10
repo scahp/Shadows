@@ -529,5 +529,17 @@
     <None Include="Shaders\vs_graph.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\compute\compute_SDF.glsl">
+      <Filter>Shaders\compute</Filter>
+    </None>
+    <None Include="Shaders\color_only_sdf_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\color_only_sdf_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\fullscreen\fs_sdf.glsl">
+      <Filter>Shaders\fullscreen</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -106,6 +106,8 @@ public:
 class jAppSettings
 {
 public:
+	static constexpr bool EnableAppSettingBar = true;
+
 	static jAppSettings& GetInstance()
 	{
 		if (!_instance)

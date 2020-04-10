@@ -6,17 +6,23 @@ jAppSettings* jAppSettings::_instance = nullptr;
 //////////////////////////////////////////////////////////////////////////
 void jAppSettings::Init(int32 width, int32 height)
 {
+	if (!EnableAppSettingBar)
+		return;
+
 	// todo it's depend on rhi type
 	TwInit(TW_OPENGL_CORE, nullptr);
 	TwWindowSize(width, height);
 
 	auto mainPannel = jAppSettings::GetInstance().AddTwBar("MainPannel");		// Default Pannel
-	mainPannel->SetSizeBar(250, 600);
+	mainPannel->SetSizeBar(150, 100);
 	mainPannel->SetValueSizeFit();
 }
 
 jAppSettingBase* jAppSettings::AddTwBar(const char* barName)
 {
+	if (!EnableAppSettingBar)
+		return nullptr;
+
 	auto it_find = BarMap.find(barName);
 	if (it_find != BarMap.end())
 		delete it_find->second;
@@ -28,6 +34,9 @@ jAppSettingBase* jAppSettings::AddTwBar(const char* barName)
 
 void jAppSettings::DeleteTwBar(const char* barName)
 {
+	if (!EnableAppSettingBar)
+		return;
+
 	auto it_find = BarMap.find(barName);
 	if (it_find != BarMap.end())
 	{

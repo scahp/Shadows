@@ -38,6 +38,7 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_CS("cs", "Shaders/compute/compute_example.glsl");
 		DECLARE_SHADER_CS("cs_sort", "Shaders/compute/compute_sort_linkedlist.glsl");
 		DECLARE_SHADER_CS("cs_link", "Shaders/compute/compute_link_linkedlist.glsl");
+		DECLARE_SHADER_CS("cs_sdf_generator", "Shaders/compute/compute_SDF.glsl");
 
 		DECLARE_SHADER_VS_FS("ShadowGen_SSM", "shaders/shadowmap/vs_shadowMap.glsl", "shaders/shadowmap/fs_shadowMap.glsl");
 		DECLARE_SHADER_VS_GS_FS("ShadowGen_Omni_SSM", "shaders/shadowmap/vs_omniDirectionalShadowMap.glsl", "shaders/shadowmap/gs_omniDirectionalShadowMap.glsl", "shaders/shadowmap/fs_omniDirectionalShadowMap.glsl");
@@ -87,6 +88,8 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("Scale", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/fullscreen/fs_scale.glsl");
 		DECLARE_SHADER_VS_FS("GaussianBlurH", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/fullscreen/fs_blur_gaussian_horizontal.glsl");
 		DECLARE_SHADER_VS_FS("GaussianBlurV", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/fullscreen/fs_blur_gaussian_vertical.glsl");
+
+		DECLARE_SHADER_VS_FS("SDF", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/fullscreen/fs_sdf.glsl");
 
 		DECLARE_SHADER_VS_FS("Graph2D", "shaders/vs_graph.glsl", "shaders/fs_graph.glsl");
 	}

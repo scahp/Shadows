@@ -919,8 +919,9 @@ bool jRHI_OpenGL::SetUniformbuffer(const IUniformBuffer* buffer, const jShader* 
 
 		auto uniformVector = static_cast<const jUniformBuffer<bool>*>(buffer);
 		auto loc = glGetUniformLocation(shader_gl->program, uniformVector->Name.c_str());
-		if (loc != -1)
-			glUniform1i(loc, (int32)uniformVector->Data);
+		if (loc == -1)
+			return false;
+		glUniform1i(loc, (int32)uniformVector->Data);
 		break;
 	}
 	case EUniformType::INT:
