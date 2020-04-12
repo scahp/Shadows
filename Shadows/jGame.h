@@ -89,5 +89,9 @@ public:
 	jUIQuadPrimitive* DirectionalLightShadowMapUIDebug = nullptr;
 
 	std::vector<jObject*> SpawnedObjects;
+
+	jTexture* FontTexture = nullptr;
+	jTexture* SDFFontTexture = nullptr;
+	jUIQuadPrimitive* FontPrimitive = nullptr;
 };
 

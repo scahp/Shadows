@@ -50,3 +50,17 @@ static const char* EShadowMapTypeString[] = {
 	"DeepShadowMap_DirectionalLight",
 	"CSM_SSM",
 };
+
+enum class ESDFTest
+{
+	AlphaBlend = 0,
+	AlphaTest,
+	SDF,
+	MAX,
+};
+
+static const char* ESDFTestTypeString[] = {
+	"AlphaBlend",
+	"AlphaTest",
+	"SDF"
+};

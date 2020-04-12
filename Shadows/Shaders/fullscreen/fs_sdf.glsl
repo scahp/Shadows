@@ -42,6 +42,6 @@ void main()
             return;
         }
 
-        FragColor = vec4(FragColor.xyz, smoothstep(0.5 - Delta, 0.5 + Delta, RawAlpha));
+        FragColor = vec4(FragColor.xyz, FragColor.a * smoothstep(0.5 - Delta, 0.5 + Delta, RawAlpha));
     }
 }

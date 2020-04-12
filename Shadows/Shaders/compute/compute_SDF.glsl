@@ -23,7 +23,7 @@ float squaredDistanceBetween(vec2 uv1, vec2 uv2)
 
 void main(void)
 {
-	ivec2 TexPos = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 TexPos = ivec2(gl_GlobalInvocationID.xy) * 2;
 
 	float Range = 16.0;
 	int iRange = int(Range);
@@ -57,6 +57,6 @@ void main(void)
 
 	float test = float(fragIsIn);
 
-	imageStore(destTex, TexPos, vec4(normalized, normalized, normalized, 1));
+	imageStore(destTex, TexPos / 2, vec4(normalized, normalized, normalized, 1));
 	//imageStore(destTex, TexPos, vec4(1, 0, 0, 1));
 }

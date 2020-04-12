@@ -50,6 +50,7 @@ void jUIQuadPrimitive::SetUniformParams(const jShader* shader)
 	SET_UNIFORM_BUFFER_STATIC(Vector2, "PixelSize", Vector2(1.0f / SCR_WIDTH, 1.0f / SCR_HEIGHT), shader);
 	SET_UNIFORM_BUFFER_STATIC(Vector2, "Pos", Pos, shader);
 	SET_UNIFORM_BUFFER_STATIC(Vector2, "Size", Size, shader);
+	SET_UNIFORM_BUFFER_STATIC(bool, "UpsideDown", UpsideDown, shader);
 }
 
 void jFullscreenQuadPrimitive::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount)
@@ -1419,7 +1420,7 @@ jBillboardQuadPrimitive* CreateBillobardQuad(const Vector& pos, const Vector& si
 	return object;
 }
 
-jUIQuadPrimitive* CreateUIQuad(const Vector2& pos, const Vector2& size, jTexture* texture)
+jUIQuadPrimitive* CreateUIQuad(const Vector2& pos, const Vector2& size, bool upsideDown, jTexture* texture, jSamplerState* sampler /*= nullptr*/)
 {
 	float vertices[] = {
 		0.0f, 1.0f,
@@ -1453,6 +1454,8 @@ jUIQuadPrimitive* CreateUIQuad(const Vector2& pos, const Vector2& size, jTexture
 	renderObject->CreateRenderObject(vertexStreamData, nullptr);
 	object->RenderObject = renderObject;
 	object->RenderObject->tex_object = texture;
+	object->RenderObject->samplerState = sampler;
+	object->UpsideDown = upsideDown;
 	object->Pos = pos;
 	object->Size = size;
 

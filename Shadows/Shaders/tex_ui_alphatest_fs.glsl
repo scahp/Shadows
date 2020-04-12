@@ -12,6 +12,9 @@ void main()
 {
     color = texture2D(tex_object, TexCoord_);
 
+	if (color.a < 0.5)		// Alpha Test Threshold
+		discard;
+
 	if (TextureSRGB[0] > 0)
 		color.xyz = pow(color.xyz, vec3(2.2));
 }

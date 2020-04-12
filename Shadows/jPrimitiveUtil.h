@@ -47,6 +47,7 @@ class jUIQuadPrimitive : public jObject
 public:
 	Vector2 Pos;
 	Vector2 Size;
+	bool UpsideDown = false;
 
 	virtual void Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount = 0) override;
 	void SetTexture(const jTexture* texture);
@@ -232,7 +233,7 @@ namespace jPrimitiveUtil
 	jObject* CreateCylinder(const Vector& pos, float height, float radius, int32 slice, const Vector& scale, const Vector4& color);
 	jObject* CreateSphere(const Vector& pos, float radius, int32 slice, const Vector& scale, const Vector4& color, bool isWireframe = false, bool createBoundInfo = true, bool createShadowVolumeInfo = true);
 	jBillboardQuadPrimitive* CreateBillobardQuad(const Vector& pos, const Vector& size, const Vector& scale, const Vector4& color, jCamera* camera);
-	jUIQuadPrimitive* CreateUIQuad(const Vector2& pos, const Vector2& size, jTexture* texture);
+	jUIQuadPrimitive* CreateUIQuad(const Vector2& pos, const Vector2& size, bool upsideDown, jTexture* texture, jSamplerState* sampler = nullptr);
 	jFullscreenQuadPrimitive* CreateFullscreenQuad(jTexture* texture);
 	jSegmentPrimitive* CreateSegment(const Vector& start, const Vector& end, float time, const Vector4& color);
 	jArrowSegmentPrimitive* CreateArrowSegment(const Vector& start, const Vector& end, float time, float coneHeight, float coneRadius, const Vector4& color);

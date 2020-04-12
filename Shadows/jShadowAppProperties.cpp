@@ -8,11 +8,7 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	if (!jAppSettings::EnableAppSettingBar)
 		return;
 
-	appSetting->AddVariable("EnableSDF", EnableSDF);
-	appSetting->AddVariable("Delta", Delta);
-	appSetting->SetStep("Delta", 0.1f);
-	appSetting->SetMinMax("Delta", -1.0f, 1.0f);
-	appSetting->AddVariable("ShowSDF", ShowSDF);
+	appSetting->AddEnumVariable("RenderType", RenderType, "ESDFTest", ESDFTestTypeString);
 	appSetting->AddVariable("EnableOutline", EnableOutline);
 
 	//appSetting->AddVariable("ShadowOn", ShadowOn);
@@ -142,9 +138,7 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 	if (!jAppSettings::EnableAppSettingBar)
 		return;
 
-	appSetting->RemoveVariable("EnableSDF");
-	appSetting->RemoveVariable("Delta");
-	appSetting->RemoveVariable("ShowSDF");
+	appSetting->RemoveVariable("RenderType");
 	appSetting->RemoveVariable("EnableOutline");
 
 	//appSetting->RemoveVariable("ShadowOn");
