@@ -541,5 +541,11 @@
     <None Include="Shaders\fullscreen\fs_sdf.glsl">
       <Filter>Shaders\fullscreen</Filter>
     </None>
+    <None Include="Shaders\tex_ui_alphatest_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\tex_ui_sdf_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

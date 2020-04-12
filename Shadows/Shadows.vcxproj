@@ -335,7 +335,9 @@
     <None Include="Shaders\shadowvolume\vs_shadowvolume_cpu.glsl" />
     <None Include="Shaders\shadowvolume\vs_shadowvolume_gpu.glsl" />
     <None Include="Shaders\tex_fs.glsl" />
+    <None Include="Shaders\tex_ui_alphatest_fs.glsl" />
     <None Include="Shaders\tex_ui_fs.glsl" />
+    <None Include="Shaders\tex_ui_sdf_fs.glsl" />
     <None Include="Shaders\tex_ui_vs.glsl" />
     <None Include="Shaders\tex_vs.glsl" />
     <None Include="Shaders\vs_boundvolume.glsl" />
