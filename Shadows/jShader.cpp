@@ -39,6 +39,8 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_CS("cs_sort", "Shaders/compute/compute_sort_linkedlist.glsl");
 		DECLARE_SHADER_CS("cs_link", "Shaders/compute/compute_link_linkedlist.glsl");
 
+		DECLARE_SHADER_VS_FS("Skin", "Shaders/skin_vs.glsl", "Shaders/skin_fs.glsl");
+
 		DECLARE_SHADER_VS_FS("ShadowGen_SSM", "shaders/shadowmap/vs_shadowMap.glsl", "shaders/shadowmap/fs_shadowMap.glsl");
 		DECLARE_SHADER_VS_GS_FS("ShadowGen_Omni_SSM", "shaders/shadowmap/vs_omniDirectionalShadowMap.glsl", "shaders/shadowmap/gs_omniDirectionalShadowMap.glsl", "shaders/shadowmap/fs_omniDirectionalShadowMap.glsl");
 		DECLARE_SHADER_VS_FS("SSM", "shaders/shadowmap/vs.glsl", "shaders/shadowmap/fs.glsl");

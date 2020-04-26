@@ -55,11 +55,11 @@ void jGame::ProcessInput()
 void jGame::Setup()
 {
 	//////////////////////////////////////////////////////////////////////////
-	const Vector mainCameraPos(172.66f, 166.47f, -180.63f);
+	const Vector mainCameraPos(0.0f, 0.0f, 150.63f);
 	//const Vector mainCameraTarget(171.96f, 166.02f, -180.05f);
 	//const Vector mainCameraPos(165.0f, 125.0f, -136.0f);
 	//const Vector mainCameraPos(300.0f, 100.0f, 300.0f);
-	const Vector mainCameraTarget(0.0f, 0.0f, 0.0f);
+	const Vector mainCameraTarget(0.0f, -20.0f, 0.0f);
 	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(45.0f), 10.0f, 1000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
 
@@ -136,21 +136,31 @@ void jGame::Setup()
 
 void jGame::SpawnObjects(ESpawnedType spawnType)
 {
-	if (spawnType != SpawnedType)
+	//if (spawnType != SpawnedType)
+	//{
+	//	SpawnedType = spawnType;
+	//	switch (SpawnedType)
+	//	{
+	//	case ESpawnedType::Hair:
+	//		SpawnHairObjects();
+	//		break;
+	//	case ESpawnedType::TestPrimitive:
+	//		SpawnTestPrimitives();
+	//		break;
+	//	case ESpawnedType::CubePrimitive:
+	//		SapwnCubePrimitives();
+	//		break;
+	//	}
+	//}
+
+	static jObject* headModel = nullptr;
+	if (!headModel)
 	{
-		SpawnedType = spawnType;
-		switch (SpawnedType)
-		{
-		case ESpawnedType::Hair:
-			SpawnHairObjects();
-			break;
-		case ESpawnedType::TestPrimitive:
-			SpawnTestPrimitives();
-			break;
-		case ESpawnedType::CubePrimitive:
-			SapwnCubePrimitives();
-			break;
-		}
+		headModel = jModelLoader::GetInstance().LoadFromFile("SkinData/Infinite-Level_02.OBJ");
+		//g_StaticObjectArray.push_back(headModel);
+		headModel->RenderObject->Scale = Vector(300);
+		jObject::AddObject(headModel);
+		SpawnedObjects.push_back(headModel);
 	}
 }
 

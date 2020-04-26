@@ -101,7 +101,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
@@ -186,6 +186,18 @@
     <ClInclude Include="jMeshObject.h" />
     <ClInclude Include="jModelLoader.h" />
     <ClInclude Include="jObject.h" />
+    <ClInclude Include="jpeglib2\jchuff.h" />
+    <ClInclude Include="jpeglib2\jconfig.h" />
+    <ClInclude Include="jpeglib2\jdct.h" />
+    <ClInclude Include="jpeglib2\jdhuff.h" />
+    <ClInclude Include="jpeglib2\jerror.h" />
+    <ClInclude Include="jpeglib2\jinclude.h" />
+    <ClInclude Include="jpeglib2\jmemsys.h" />
+    <ClInclude Include="jpeglib2\Jmorecfg.h" />
+    <ClInclude Include="jpeglib2\jpegint.h" />
+    <ClInclude Include="jpeglib2\jpeglib.h" />
+    <ClInclude Include="jpeglib2\jversion.h" />
+    <ClInclude Include="jpeglib2\transupp.h" />
     <ClInclude Include="jPerformanceProfile.h" />
     <ClInclude Include="jPipeline.h" />
     <ClInclude Include="jPostProcess.h" />
@@ -243,6 +255,53 @@
     <ClCompile Include="jMeshObject.cpp" />
     <ClCompile Include="jModelLoader.cpp" />
     <ClCompile Include="jObject.cpp" />
+    <ClCompile Include="jpeglib2\jcapimin.c" />
+    <ClCompile Include="jpeglib2\jcapistd.c" />
+    <ClCompile Include="jpeglib2\jccoefct.c" />
+    <ClCompile Include="jpeglib2\jccolor.c" />
+    <ClCompile Include="jpeglib2\jcdctmgr.c" />
+    <ClCompile Include="jpeglib2\jchuff.c" />
+    <ClCompile Include="jpeglib2\jcinit.c" />
+    <ClCompile Include="jpeglib2\jcmainct.c" />
+    <ClCompile Include="jpeglib2\jcmarker.c" />
+    <ClCompile Include="jpeglib2\jcmaster.c" />
+    <ClCompile Include="jpeglib2\jcomapi.c" />
+    <ClCompile Include="jpeglib2\jcparam.c" />
+    <ClCompile Include="jpeglib2\jcphuff.c" />
+    <ClCompile Include="jpeglib2\jcprepct.c" />
+    <ClCompile Include="jpeglib2\jcsample.c" />
+    <ClCompile Include="jpeglib2\jctrans.c" />
+    <ClCompile Include="jpeglib2\jdapimin.c" />
+    <ClCompile Include="jpeglib2\jdapistd.c" />
+    <ClCompile Include="jpeglib2\jdatadst.c" />
+    <ClCompile Include="jpeglib2\jdatasrc.c" />
+    <ClCompile Include="jpeglib2\jdcoefct.c" />
+    <ClCompile Include="jpeglib2\jdcolor.c" />
+    <ClCompile Include="jpeglib2\jddctmgr.c" />
+    <ClCompile Include="jpeglib2\jdhuff.c" />
+    <ClCompile Include="jpeglib2\jdinput.c" />
+    <ClCompile Include="jpeglib2\jdmainct.c" />
+    <ClCompile Include="jpeglib2\jdmarker.c" />
+    <ClCompile Include="jpeglib2\jdmaster.c" />
+    <ClCompile Include="jpeglib2\jdmerge.c" />
+    <ClCompile Include="jpeglib2\jdphuff.c" />
+    <ClCompile Include="jpeglib2\jdpostct.c" />
+    <ClCompile Include="jpeglib2\jdsample.c" />
+    <ClCompile Include="jpeglib2\jdtrans.c" />
+    <ClCompile Include="jpeglib2\jerror.c" />
+    <ClCompile Include="jpeglib2\jfdctflt.c" />
+    <ClCompile Include="jpeglib2\jfdctfst.c" />
+    <ClCompile Include="jpeglib2\jfdctint.c" />
+    <ClCompile Include="jpeglib2\jidctflt.c" />
+    <ClCompile Include="jpeglib2\jidctfst.c" />
+    <ClCompile Include="jpeglib2\jidctint.c" />
+    <ClCompile Include="jpeglib2\jidctred.c" />
+    <ClCompile Include="jpeglib2\jmemmgr.c" />
+    <ClCompile Include="jpeglib2\jmemnobs.c" />
+    <ClCompile Include="jpeglib2\jquant1.c" />
+    <ClCompile Include="jpeglib2\jquant2.c" />
+    <ClCompile Include="jpeglib2\jutils.c" />
+    <ClCompile Include="jpeglib2\transupp.c" />
     <ClCompile Include="jPerformanceProfile.cpp" />
     <ClCompile Include="jPipeline.cpp" />
     <ClCompile Include="jPostProcess.cpp" />

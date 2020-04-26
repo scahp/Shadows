@@ -34,6 +34,9 @@
     <Filter Include="IMGUI">
       <UniqueIdentifier>{3b4a88b3-46a4-4af9-a6f1-5ecfe188c022}</UniqueIdentifier>
     </Filter>
+    <Filter Include="jpeglib2">
+      <UniqueIdentifier>{21868118-542e-4c6e-9e1c-8c4619f25aa1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -189,6 +192,42 @@
     <ClInclude Include="jSamplerStatePool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="jpeglib2\jchuff.h">
+      <Filter>jpeglib2</Filter>
+    </ClInclude>
+    <ClInclude Include="jpeglib2\jconfig.h">
+      <Filter>jpeglib2</Filter>
+    </ClInclude>
+    <ClInclude Include="jpeglib2\jdct.h">
+      <Filter>jpeglib2</Filter>
+    </ClInclude>
+    <ClInclude Include="jpeglib2\jdhuff.h">
+      <Filter>jpeglib2</Filter>
+    </ClInclude>
+    <ClInclude Include="jpeglib2\jerror.h">
+      <Filter>jpeglib2</Filter>
+    </ClInclude>
+    <ClInclude Include="jpeglib2\jinclude.h">
+      <Filter>jpeglib2</Filter>
+    </ClInclude>
+    <ClInclude Include="jpeglib2\jmemsys.h">
+      <Filter>jpeglib2</Filter>
+    </ClInclude>
+    <ClInclude Include="jpeglib2\Jmorecfg.h">
+      <Filter>jpeglib2</Filter>
+    </ClInclude>
+    <ClInclude Include="jpeglib2\jpegint.h">
+      <Filter>jpeglib2</Filter>
+    </ClInclude>
+    <ClInclude Include="jpeglib2\jpeglib.h">
+      <Filter>jpeglib2</Filter>
+    </ClInclude>
+    <ClInclude Include="jpeglib2\jversion.h">
+      <Filter>jpeglib2</Filter>
+    </ClInclude>
+    <ClInclude Include="jpeglib2\transupp.h">
+      <Filter>jpeglib2</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -331,6 +370,147 @@
     </ClCompile>
     <ClCompile Include="jSamplerStatePool.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jcapimin.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jcapistd.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jccoefct.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jccolor.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jcdctmgr.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jchuff.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jcinit.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jcmainct.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jcmarker.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jcmaster.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jcomapi.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jcparam.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jcphuff.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jcprepct.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jcsample.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jctrans.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jdapimin.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jdapistd.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jdatadst.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jdatasrc.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jdcoefct.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jdcolor.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jddctmgr.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jdhuff.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jdinput.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jdmainct.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jdmarker.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jdmaster.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jdmerge.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jdphuff.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jdpostct.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jdsample.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jdtrans.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jerror.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jfdctflt.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jfdctfst.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jfdctint.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jidctflt.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jidctfst.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jidctint.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jidctred.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jmemmgr.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jmemnobs.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jquant1.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jquant2.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\jutils.c">
+      <Filter>jpeglib2</Filter>
+    </ClCompile>
+    <ClCompile Include="jpeglib2\transupp.c">
+      <Filter>jpeglib2</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

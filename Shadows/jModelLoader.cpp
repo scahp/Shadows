@@ -168,6 +168,11 @@ jMeshObject* jModelLoader::LoadFromFile(const char* filename)
 		vertexStreamData->Params.push_back(streamParam);
 	}
 
+	if (meshData->Normals.empty())
+	{
+		meshData->Normals.resize(meshData->Vertices.size());
+	}
+
 	{
 		auto streamParam = new jStreamParam<float>();
 		streamParam->BufferType = EBufferType::STATIC;
