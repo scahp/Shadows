@@ -159,6 +159,16 @@ void jGame::SpawnObjects(ESpawnedType spawnType)
 		headModel = jModelLoader::GetInstance().LoadFromFile("SkinData/Infinite-Level_02.OBJ");
 		//g_StaticObjectArray.push_back(headModel);
 		headModel->RenderObject->Scale = Vector(300);
+		{
+			jImageData data;
+			std::string temp = "SkinData/Infinite-Level_02_World_NoSmoothUV.jpg";
+			jImageFileLoader::GetInstance().LoadTextureFromFile(data, temp.c_str(), true);
+			//auto newMeshMaterial = new jMeshMaterial();
+			auto Texture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
+			//newMeshMaterial->TextureName = temp.c_str();
+
+			headModel->RenderObject->tex_object3 = Texture;
+		}
 		jObject::AddObject(headModel);
 		SpawnedObjects.push_back(headModel);
 	}
