@@ -54,7 +54,8 @@ float PHBeckmann(float ndoth, float m)
     return val; 
 } 
 
-float KS_Skin_Specular(vec3 N, // Bumped surface normal
+float KS_Skin_Specular(
+    vec3 N, // Bumped surface normal
     vec3 L, // Points to light
     vec3 V, // Points to eye
     float m,  // Roughness
@@ -67,7 +68,7 @@ float KS_Skin_Specular(vec3 N, // Bumped surface normal
     {
         vec3 h = L + V; // Unnormalized half-way vector
         vec3 H = normalize(h);
-        float ndoth = dot(N, H);
+        float ndoth = clamp(dot(N, H), -1.0, 1.0);
         float PH = PHBeckmann(ndoth, m);
         float F = fresnelReflectance(H, V, 0.028);
         float frSpec = max((PH * F) / dot(h, h), 0.0);
