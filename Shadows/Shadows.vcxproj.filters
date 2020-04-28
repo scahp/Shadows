@@ -709,5 +709,14 @@
     <None Include="Shaders\vs_graph.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\skin_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\skin_gs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\skin_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
