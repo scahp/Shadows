@@ -58,7 +58,7 @@ struct jShadowPipelinCreation
 		ADD_FORWARD_SHADOWMAP_GEN_PIPELINE(Forward_ShadowMapGen_ESM_Pipeline, "ShadowGen_ESM", "ShadowGen_Omni_ESM");
 		ADD_FORWARD_SHADOWMAP_GEN_PIPELINE(Forward_ShadowMapGen_EVSM_Pipeline, "ShadowGen_EVSM", "ShadowGen_Omni_EVSM");
 
-		ADD_FORWARD_SHADOW_PIPELINE(Forward_SSM_Pipeline, "Skin");
+		ADD_FORWARD_SHADOW_PIPELINE(Forward_SSM_Pipeline, "SSM");
 		ADD_FORWARD_SHADOW_PIPELINE(Forward_SSM_PCF_Pipeline, "SSM_PCF");
 		ADD_FORWARD_SHADOW_PIPELINE(Forward_SSM_PCSS_Pipeline, "SSM_PCSS");
 		ADD_FORWARD_SHADOW_PIPELINE(Forward_SSM_PCF_Poisson_Pipeline, "SSM_PCF_Poisson");

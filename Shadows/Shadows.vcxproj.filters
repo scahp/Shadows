@@ -718,5 +718,11 @@
     <None Include="Shaders\skin_vs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\skin_irr_gen_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\skin_irr_gen_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

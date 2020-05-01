@@ -87,7 +87,6 @@ float KS_Skin_Specular(
 void main()
 {
 	vec3 viewDir = normalize(Eye - Pos_);
-	//vec3 normal = (VP * vec4(texture2D(tex_object3, TexCoord_).xyz, 0.0)).xyz;
     vec3 normal = texture2D(tex_object3, TexCoord_).xyz * 2.0 - 1.0;
     normal = normalize(normal);
 
@@ -95,28 +94,12 @@ void main()
 
     vec3 LightPos = -light.LightDirection * 5000;
     vec3 ToLight = normalize(LightPos - Pos_);
-    
-    //color = vec4(light.Color * clamp(dot(ToLight, normal), 0.0, 1.0) * light.DiffuseLightIntensity, 1.0);
-    //return;
-	//color *= texture2D(tex_object2, TexCoord_);
-    
-    //if (dot(ToLight, normal) > 0.0)
-    //{
-    //    vec3 h = ToLight + viewDir; // Unnormalized half-way vector
-    //    vec3 H = normalize(h);
-    //    float f = fresnelReflectance(H, viewDir, 0.028);
-    //    color = vec4(vec3(f), 1.0);
-    //    color.xyz = pow(color.xyz, vec3(1.0 / 2.2));
-    //    return;
-    //}
-    //color = vec4(vec3(0), 1);
-    //return;
 
-    // specularLight += lightColor[i] * lightShadow[i] * rho_s * specBRDF(N, V, L[i], eta, m) * saturate(dot(N, L[i]));
     float roughness = 0.3;
     float rho_s = 0.18;
-    float test = KS_Skin_Specular(normal, ToLight, viewDir, roughness, rho_s);
-    vec3 specularLight = vec3(test);
+    float sBRDF = KS_Skin_Specular(normal, ToLight, viewDir, roughness, rho_s); // White
+    vec3 specularLight = vec3(sBRDF);
     color = vec4(specularLight, 1.0);
+
     color.xyz = pow(color.xyz, vec3(1.0 / 2.2));
 }

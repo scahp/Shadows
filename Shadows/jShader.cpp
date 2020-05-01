@@ -41,6 +41,7 @@ struct jShaderInfoCreation
 
 		//DECLARE_SHADER_VS_GS_FS("Skin", "Shaders/skin_vs.glsl", "Shaders/skin_gs.glsl", "Shaders/skin_fs.glsl");
 		DECLARE_SHADER_VS_FS("Skin", "Shaders/skin_vs.glsl", "Shaders/skin_fs.glsl");
+		DECLARE_SHADER_VS_FS("SkinIrrGen", "Shaders/skin_irr_gen_vs.glsl", "Shaders/skin_irr_gen_fs.glsl");
 
 		DECLARE_SHADER_VS_FS("ShadowGen_SSM", "shaders/shadowmap/vs_shadowMap.glsl", "shaders/shadowmap/fs_shadowMap.glsl");
 		DECLARE_SHADER_VS_GS_FS("ShadowGen_Omni_SSM", "shaders/shadowmap/vs_omniDirectionalShadowMap.glsl", "shaders/shadowmap/gs_omniDirectionalShadowMap.glsl", "shaders/shadowmap/fs_omniDirectionalShadowMap.glsl");

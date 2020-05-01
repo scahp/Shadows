@@ -391,6 +391,8 @@
     <None Include="Shaders\shadowvolume\vs_shadowvolume_gpu.glsl" />
     <None Include="Shaders\skin_fs.glsl" />
     <None Include="Shaders\skin_gs.glsl" />
+    <None Include="Shaders\skin_irr_gen_fs.glsl" />
+    <None Include="Shaders\skin_irr_gen_vs.glsl" />
     <None Include="Shaders\skin_vs.glsl" />
     <None Include="Shaders\tex_fs.glsl" />
     <None Include="Shaders\tex_ui_fs.glsl" />

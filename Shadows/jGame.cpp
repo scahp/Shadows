@@ -263,7 +263,127 @@ void jGame::Update(float deltaTime)
 
 	jObject::FlushDirtyState();
 
-	Renderer->Render(MainCamera);
+	//Renderer->Render(MainCamera);
+
+	jRenderTargetInfo info;
+	info.TextureType = ETextureType::TEXTURE_2D;
+	info.InternalFormat = ETextureFormat::RGB;
+	info.Format = ETextureFormat::RGB;
+	info.FormatType = EFormatType::BYTE;
+	info.DepthBufferType = EDepthBufferType::NONE;
+	info.Width = 4096;
+	info.Height = 4096;
+	info.TextureCount = 1;
+	info.Magnification = ETextureFilter::NEAREST;
+	info.Minification = ETextureFilter::NEAREST;
+
+	static auto IrrTarget = jRenderTargetPool::GetRenderTarget(info);
+	if (IrrTarget->Begin())
+	{
+		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);	// blank space color
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("SkinIrrGen");
+		auto EnableClear = true;
+		bool EnableDepthBias = false;
+		float DepthSlopeBias = 1.0f;
+		float DepthConstantBias = 1.0f;
+
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		g_rhi->EnableDepthTest(EnableDepthTest);
+		g_rhi->SetDepthFunc(DepthStencilFunc);
+
+		g_rhi->EnableBlend(EnableBlend);
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+
+		g_rhi->EnableDepthBias(EnableDepthBias);
+		g_rhi->SetDepthBias(DepthConstantBias, DepthSlopeBias);
+
+		g_rhi->SetShader(Shader);
+
+		std::list<const jLight*> lights;
+		lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
+
+		MainCamera->BindCamera(Shader);
+		jLight::BindLights(lights, Shader);
+
+		for (const auto& iter : jObject::GetStaticObject())
+			iter->Draw(MainCamera, Shader, lights);
+
+		IrrTarget->End();
+	}
+
+	{
+		auto ClearColor = Vector4(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);	// light sky blue
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("Skin");
+		auto EnableClear = true;
+		bool EnableDepthBias = false;
+		float DepthSlopeBias = 1.0f;
+		float DepthConstantBias = 1.0f;
+
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		g_rhi->EnableDepthTest(EnableDepthTest);
+		g_rhi->SetDepthFunc(DepthStencilFunc);
+
+		g_rhi->EnableBlend(EnableBlend);
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+
+		g_rhi->EnableDepthBias(EnableDepthBias);
+		g_rhi->SetDepthBias(DepthConstantBias, DepthSlopeBias);
+
+		g_rhi->SetShader(Shader);
+
+		std::list<const jLight*> lights;
+		lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
+
+		MainCamera->BindCamera(Shader);
+		jLight::BindLights(lights, Shader);
+
+		for (const auto& iter : jObject::GetStaticObject())
+			iter->Draw(MainCamera, Shader, lights);
+	}
+
+	const Vector2 PreviewSize(300, 300);
+	static auto PreviewUI = jPrimitiveUtil::CreateUIQuad(Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y), PreviewSize, IrrTarget->GetTexture());
+	{
+		auto EnableClear = false;
+		auto EnableDepthTest = false;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = false;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("UIShader");
+
+		g_rhi->EnableDepthTest(false);
+
+		g_rhi->EnableBlend(EnableBlend);
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+
+		g_rhi->SetShader(Shader);
+
+		MainCamera->BindCamera(Shader);
+		PreviewUI->Draw(MainCamera, Shader, {});
+	}
 }
 
 void jGame::UpdateAppSetting()
