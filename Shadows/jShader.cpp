@@ -93,6 +93,9 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("GaussianBlurV", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/fullscreen/fs_blur_gaussian_vertical.glsl");
 
 		DECLARE_SHADER_VS_FS("Graph2D", "shaders/vs_graph.glsl", "shaders/fs_graph.glsl");
+
+		DECLARE_SHADER_VS_FS("SkinGaussianBlurX", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/skin_gaussian_x_fs.glsl");
+		DECLARE_SHADER_VS_FS("SkinGaussianBlurY", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/skin_gaussian_y_fs.glsl");
 	}
 } s_shaderInfoCreation;
 

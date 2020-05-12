@@ -271,13 +271,20 @@ void jGame::Update(float deltaTime)
 	info.Format = ETextureFormat::RGB;
 	info.FormatType = EFormatType::BYTE;
 	info.DepthBufferType = EDepthBufferType::NONE;
-	info.Width = 4096;
-	info.Height = 4096;
+	info.Width = 1024;
+	info.Height = 1024;
 	info.TextureCount = 1;
 	info.Magnification = ETextureFilter::NEAREST;
 	info.Minification = ETextureFilter::NEAREST;
 
 	static auto IrrTarget = jRenderTargetPool::GetRenderTarget(info);
+	static auto IrrBlurTemp = jRenderTargetPool::GetRenderTarget(info);
+	static auto IrrBlurTarget2 = jRenderTargetPool::GetRenderTarget(info);
+	static auto IrrBlurTarget4 = jRenderTargetPool::GetRenderTarget(info);
+	static auto IrrBlurTarget8 = jRenderTargetPool::GetRenderTarget(info);
+	static auto IrrBlurTarget16 = jRenderTargetPool::GetRenderTarget(info);
+	static auto IrrBlurTarget32 = jRenderTargetPool::GetRenderTarget(info);
+
 	if (IrrTarget->Begin())
 	{
 		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);	// blank space color
@@ -322,6 +329,69 @@ void jGame::Update(float deltaTime)
 		IrrTarget->End();
 	}
 
+	static jFullscreenQuadPrimitive* FullScreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
+#define BLUR(RENDERTARGET, Scale, TextureSize) \
+	FullScreenQuad->RenderObject->tex_object = IrrTarget->GetTexture();\
+	if (IrrBlurTemp->Begin())\
+	{\
+		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);\
+		auto ClearType = ERenderBufferType::COLOR;\
+		auto EnableClear = true;\
+		auto EnableDepthTest = false;\
+		auto DepthStencilFunc = EComparisonFunc::LESS;\
+		auto EnableBlend = false;\
+		auto BlendSrc = EBlendSrc::ONE;\
+		auto BlendDest = EBlendDest::ZERO;\
+		auto Shader = jShader::GetShader("SkinGaussianBlurX");\
+		if (EnableClear)\
+		{\
+			g_rhi->SetClearColor(ClearColor);\
+			g_rhi->SetClear(ClearType);\
+		}\
+		g_rhi->EnableDepthTest(false);\
+		g_rhi->EnableBlend(EnableBlend);\
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);\
+		g_rhi->SetShader(Shader);\
+		g_rhi->SetUniformbuffer(&jUniformBuffer<float>("Scale", Scale), Shader);\
+		g_rhi->SetUniformbuffer(&jUniformBuffer<float>("TextureSize", TextureSize), Shader);\
+		MainCamera->BindCamera(Shader);\
+		FullScreenQuad->Draw(MainCamera, Shader, {});\
+		IrrBlurTemp->End();\
+	}\
+	FullScreenQuad->RenderObject->tex_object = IrrBlurTemp->GetTexture();\
+	if (RENDERTARGET->Begin())\
+	{\
+		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);\
+		auto ClearType = ERenderBufferType::COLOR;\
+		auto EnableClear = true;\
+		auto EnableDepthTest = false;\
+		auto DepthStencilFunc = EComparisonFunc::LESS;\
+		auto EnableBlend = false;\
+		auto BlendSrc = EBlendSrc::ONE;\
+		auto BlendDest = EBlendDest::ZERO;\
+		auto Shader = jShader::GetShader("SkinGaussianBlurY");\
+		if (EnableClear)\
+		{\
+			g_rhi->SetClearColor(ClearColor);\
+			g_rhi->SetClear(ClearType);\
+		}\
+		g_rhi->EnableDepthTest(false);\
+		g_rhi->EnableBlend(EnableBlend);\
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);\
+		g_rhi->SetShader(Shader);\
+		g_rhi->SetUniformbuffer(&jUniformBuffer<float>("Scale", Scale), Shader);\
+		g_rhi->SetUniformbuffer(&jUniformBuffer<float>("TextureSize", TextureSize), Shader);\
+		MainCamera->BindCamera(Shader);\
+		FullScreenQuad->Draw(MainCamera, Shader, {});\
+		RENDERTARGET->End();\
+	}
+
+	BLUR(IrrBlurTarget2, 2, 1024.0f);
+	BLUR(IrrBlurTarget4, 4, 1024.0f);
+	BLUR(IrrBlurTarget8, 8, 1024.0f);
+	BLUR(IrrBlurTarget16, 16, 1024.0f);
+	BLUR(IrrBlurTarget32, 32, 1024.0f);
+
 	{
 		auto ClearColor = Vector4(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);	// light sky blue
 		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
@@ -365,25 +435,42 @@ void jGame::Update(float deltaTime)
 
 	const Vector2 PreviewSize(300, 300);
 	static auto PreviewUI = jPrimitiveUtil::CreateUIQuad(Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y), PreviewSize, IrrTarget->GetTexture());
-	{
-		auto EnableClear = false;
-		auto EnableDepthTest = false;
-		auto DepthStencilFunc = EComparisonFunc::LESS;
-		auto EnableBlend = false;
-		auto BlendSrc = EBlendSrc::ONE;
-		auto BlendDest = EBlendDest::ZERO;
-		auto Shader = jShader::GetShader("UIShader");
 
-		g_rhi->EnableDepthTest(false);
-
-		g_rhi->EnableBlend(EnableBlend);
-		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
-
-		g_rhi->SetShader(Shader);
-
-		MainCamera->BindCamera(Shader);
-		PreviewUI->Draw(MainCamera, Shader, {});
+#define PREVIEW_TEXTURE(TEXTURE)\
+	{\
+		auto EnableClear = false;\
+		auto EnableDepthTest = false;\
+		auto DepthStencilFunc = EComparisonFunc::LESS;\
+		auto EnableBlend = false;\
+		auto BlendSrc = EBlendSrc::ONE;\
+		auto BlendDest = EBlendDest::ZERO;\
+		auto Shader = jShader::GetShader("UIShader");\
+		g_rhi->EnableDepthTest(false);\
+		g_rhi->EnableBlend(EnableBlend);\
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);\
+		g_rhi->SetShader(Shader);\
+		MainCamera->BindCamera(Shader);\
+		PreviewUI->RenderObject->tex_object = TEXTURE;\
+		PreviewUI->Draw(MainCamera, Shader, {});\
 	}
+	PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y);
+	PREVIEW_TEXTURE(IrrTarget->GetTexture());
+	
+	PreviewUI->Pos.x -= PreviewSize.x;
+	PREVIEW_TEXTURE(IrrBlurTarget2->GetTexture());
+
+	PreviewUI->Pos.x -= PreviewSize.x;
+	PREVIEW_TEXTURE(IrrBlurTarget4->GetTexture());
+	
+	PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y * 2);
+	PREVIEW_TEXTURE(IrrBlurTarget8->GetTexture());
+
+	PreviewUI->Pos.x -= PreviewSize.x;
+	PREVIEW_TEXTURE(IrrBlurTarget16->GetTexture());
+
+	PreviewUI->Pos.x -= PreviewSize.x;
+	PREVIEW_TEXTURE(IrrBlurTarget32->GetTexture());
+
 }
 
 void jGame::UpdateAppSetting()
