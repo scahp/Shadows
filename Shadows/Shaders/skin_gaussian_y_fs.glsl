@@ -6,6 +6,7 @@ precision highp float;
 uniform float Scale;
 uniform float TextureSize;
 uniform sampler2D tex_object;
+uniform sampler2D tex_object2;		// StrechMap
 
 in vec2 TexCoord_;
 
@@ -13,7 +14,9 @@ out vec4 color;
 
 void main()
 {
-	float Step = Scale * (1.0 / TextureSize);
+	float Step = Scale;
+	Step *= texture2D(tex_object2, TexCoord_).y;		// Apply strechMap
+	Step *= (1.0 / TextureSize);
 
 	float weights[7] = float[7](
 		0.006,

@@ -41,7 +41,7 @@ void jUIQuadPrimitive::Draw(const jCamera* camera, const jShader* shader, const 
 
 void jUIQuadPrimitive::SetTexture(const jTexture* texture)
 {
-	RenderObject->tex_object = texture;
+	RenderObject->tex_object[0] = texture;
 }
 
 void jUIQuadPrimitive::SetUniformParams(const jShader* shader)
@@ -64,44 +64,28 @@ void jFullscreenQuadPrimitive::SetUniformBuffer(const jShader* shader)
 	SET_UNIFORM_BUFFER_STATIC(Vector2, "PixelSize", Vector2(1.0f / SCR_WIDTH, 1.0f / SCR_HEIGHT), shader);
 }
 
-void jFullscreenQuadPrimitive::SetTexture(const jTexture* texture, const jSamplerState* samplerState)
+void jFullscreenQuadPrimitive::SetTexture(const jTexture* texture, const jSamplerState* samplerState, int32 index)
 {
-	RenderObject->tex_object = texture;
-	RenderObject->samplerState = samplerState;
+	if (index < 0 || index > MAX_TEX)
+	{
+		JASSERT(0);
+		return;
+	}
+
+	RenderObject->tex_object[index] = texture;
+	RenderObject->samplerState[index] = samplerState;
 }
 
 void jFullscreenQuadPrimitive::SetTexture(int index, const jTexture* texture, const jSamplerState* samplerState)
 {
-	switch (index)
+	if (index < 0 || index > MAX_TEX)
 	{
-	case 0:
-		RenderObject->tex_object = texture;
-		RenderObject->samplerState = samplerState;
-		break;
-	case 1:
-		RenderObject->tex_object2 = texture;
-		RenderObject->samplerState2 = samplerState;
-		break;
-	case 2:
-		RenderObject->tex_object3 = texture;
-		RenderObject->samplerState3 = samplerState;
-		break;
-	default:
 		JASSERT(0);
-		break;
+		return;
 	}
-}
 
-void jFullscreenQuadPrimitive::SetTexture2(const jTexture* texture, const jSamplerState* samplerState)
-{
-	RenderObject->tex_object2 = texture;
-	RenderObject->samplerState2 = samplerState;
-}
-
-void jFullscreenQuadPrimitive::SetTexture3(const jTexture* texture, const jSamplerState* samplerState)
-{
-	RenderObject->tex_object3 = texture;
-	RenderObject->samplerState3 = samplerState;
+	RenderObject->tex_object[index] = texture;
+	RenderObject->samplerState[index] = samplerState;
 }
 
 void jBoundBoxObject::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 1 */)
@@ -1452,7 +1436,7 @@ jUIQuadPrimitive* CreateUIQuad(const Vector2& pos, const Vector2& size, jTexture
 	auto renderObject = new jRenderObject();
 	renderObject->CreateRenderObject(vertexStreamData, nullptr);
 	object->RenderObject = renderObject;
-	object->RenderObject->tex_object = texture;
+	object->RenderObject->tex_object[0] = texture;
 	object->Pos = pos;
 	object->Size = size;
 
@@ -1487,7 +1471,7 @@ jFullscreenQuadPrimitive* CreateFullscreenQuad(jTexture* texture)
 	auto renderObject = new jRenderObject();
 	renderObject->CreateRenderObject(vertexStreamData, nullptr);
 	object->RenderObject = renderObject;
-	object->RenderObject->tex_object = texture;
+	object->RenderObject->tex_object[0] = texture;
 	return object;
 }
 
@@ -1582,7 +1566,7 @@ jDirectionalLightPrimitive* CreateDirectionalLightDebug(const Vector& pos, const
 	jImageFileLoader::GetInstance().LoadTextureFromFile(data, textureFilename, true);
 	object->BillboardObject = jPrimitiveUtil::CreateBillobardQuad(pos, Vector::OneVector, scale, Vector4(1.0f), targetCamera);
 	if (data.ImageData.size() > 0)
-		object->BillboardObject->RenderObject->tex_object2 = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
+		object->BillboardObject->RenderObject->tex_object[1] = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
 	object->ArrowSegementObject = jPrimitiveUtil::CreateArrowSegment(Vector::ZeroVector, light->Data.Direction * length, 1.0f, scale.x, scale.x / 2, Vector4(0.8f, 0.2f, 0.3f, 1.0f));
 	object->Pos = pos;
 	object->Light = light;
@@ -1607,7 +1591,7 @@ jPointLightPrimitive* CreatePointLightDebug(const Vector& scale, jCamera* target
 	jImageFileLoader::GetInstance().LoadTextureFromFile(data, textureFilename, true);
 	object->BillboardObject = jPrimitiveUtil::CreateBillobardQuad(light->Data.Position, Vector::OneVector, scale, Vector4(1.0f), targetCamera);
 	if (data.ImageData.size() > 0)
-		object->BillboardObject->RenderObject->tex_object2 = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
+		object->BillboardObject->RenderObject->tex_object[1] = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
 	object->SphereObject = CreateSphere(light->Data.Position, light->Data.MaxDistance, 20, Vector::OneVector, Vector4(light->Data.Color, 1.0f), true, false, false);
 	object->Light = light;
 	object->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
@@ -1631,7 +1615,7 @@ jSpotLightPrimitive* CreateSpotLightDebug(const Vector& scale, jCamera* targetCa
 	jImageFileLoader::GetInstance().LoadTextureFromFile(data, textureFilename, true);
 	object->BillboardObject = jPrimitiveUtil::CreateBillobardQuad(light->Data.Position, Vector::OneVector, scale, Vector4(1.0f), targetCamera);
 	if (data.ImageData.size() > 0)
-		object->BillboardObject->RenderObject->tex_object2 = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
+		object->BillboardObject->RenderObject->tex_object[1] = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
 
 	object->UmbraConeObject = jPrimitiveUtil::CreateCone(light->Data.Position, 1.0, 1.0, 20, Vector::OneVector, Vector4(light->Data.Color.x, light->Data.Color.y, light->Data.Color.z, 1.0f), true, false, false);
 	object->PenumbraConeObject = jPrimitiveUtil::CreateCone(light->Data.Position, 1.0, 1.0, 20, Vector::OneVector, Vector4(light->Data.Color.x, light->Data.Color.y, light->Data.Color.z, 0.5f), true, false, false);

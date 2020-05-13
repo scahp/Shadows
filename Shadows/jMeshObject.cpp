@@ -39,16 +39,23 @@ void jMeshObject::DrawNode(const jMeshNode* node, const jCamera* camera, const j
 void jMeshObject::DrawSubMesh(int32 meshIndex, const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights)
 {
 	auto& subMesh = SubMeshes[meshIndex];
-	auto it_find = MeshData->Materials.find(subMesh.MaterialIndex);
-	if (MeshData->Materials.end() != it_find)
+	if (SetMaterialOverride)
 	{
-		RenderObject->tex_object2 = it_find->second->Texture;
-		SetMaterialUniform(shader, it_find->second);
+		SetMaterialOverride(this);
 	}
 	else
 	{
-		RenderObject->tex_object2 = nullptr;
-		SetMaterialUniform(shader, &NullMeshMateral);
+		auto it_find = MeshData->Materials.find(subMesh.MaterialIndex);
+		if (MeshData->Materials.end() != it_find)
+		{
+			RenderObject->tex_object[1] = it_find->second->Texture;
+			SetMaterialUniform(shader, it_find->second);
+		}
+		else
+		{
+			RenderObject->tex_object[1] = nullptr;
+			SetMaterialUniform(shader, &NullMeshMateral);
+		}
 	}
 
 	if (subMesh.EndFace > 0)

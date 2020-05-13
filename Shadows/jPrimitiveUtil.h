@@ -60,9 +60,7 @@ public:
 	virtual void Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount = 0) override;
 	void SetUniformBuffer(const jShader* shader);
 	void SetTexture(int index, const jTexture* texture, const jSamplerState* samplerState);
-	void SetTexture(const jTexture* texture, const jSamplerState* samplerState);
-	void SetTexture2(const jTexture* texture, const jSamplerState* samplerState);
-	void SetTexture3(const jTexture* texture, const jSamplerState* samplerState);
+	void SetTexture(const jTexture* texture, const jSamplerState* samplerState, int32 index = 0);
 };
 
 struct jBoundBox

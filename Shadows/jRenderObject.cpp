@@ -253,32 +253,24 @@ void jRenderObject::SetTextureProperty(const jShader* shader, jMaterialData* mat
 {
 	if (materialData)
 	{
-		if (tex_object)
+		bool useTexture = false;
+
+		char szTemp[128] = {};
+		for (int32 i = 0; i < MAX_TEX; ++i)
 		{
 			auto tex_object_param = new jMaterialParam();
-			tex_object_param->Name = "tex_object";
-			tex_object_param->Texture = tex_object;
-			tex_object_param->SamplerState = samplerState;
+			if (i == 0)
+			{
+				tex_object_param->Name = "tex_object";
+			}
+			else if (i > 0)
+			{
+				sprintf_s(szTemp, sizeof(szTemp), "tex_object%d", i + 1);
+				tex_object_param->Name = szTemp;
+			}
+			tex_object_param->Texture = tex_object[i];
+			tex_object_param->SamplerState = samplerState[i];
 			materialData->Params.push_back(tex_object_param);
-		}
-
-		bool useTexture = false;
-		if (tex_object2)
-		{
-			auto tex_object2_param = new jMaterialParam();
-			tex_object2_param->Name = "tex_object2";
-			tex_object2_param->Texture = tex_object2;
-			tex_object2_param->SamplerState = samplerState2;
-			materialData->Params.push_back(tex_object2_param);
-			useTexture = true;
-		}
-		if (tex_object3)
-		{
-			auto tex_object3_param = new jMaterialParam();
-			tex_object3_param->Name = "tex_object3";
-			tex_object3_param->Texture = tex_object3;
-			tex_object3_param->SamplerState = samplerState3;
-			materialData->Params.push_back(tex_object3_param);
 			useTexture = true;
 		}
 		SET_UNIFORM_BUFFER_STATIC(int, "UseTexture", useTexture, shader);

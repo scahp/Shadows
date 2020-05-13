@@ -389,10 +389,14 @@
     <None Include="Shaders\shadowvolume\vs.glsl" />
     <None Include="Shaders\shadowvolume\vs_shadowvolume_cpu.glsl" />
     <None Include="Shaders\shadowvolume\vs_shadowvolume_gpu.glsl" />
+    <None Include="Shaders\skin_final_fs.glsl" />
     <None Include="Shaders\skin_fs.glsl" />
+    <None Include="Shaders\skin_gaussian_x_fs.glsl" />
+    <None Include="Shaders\skin_gaussian_y_fs.glsl" />
     <None Include="Shaders\skin_gs.glsl" />
     <None Include="Shaders\skin_irr_gen_fs.glsl" />
     <None Include="Shaders\skin_irr_gen_vs.glsl" />
+    <None Include="Shaders\skin_strech_gen_fs.glsl" />
     <None Include="Shaders\skin_vs.glsl" />
     <None Include="Shaders\tex_fs.glsl" />
     <None Include="Shaders\tex_ui_fs.glsl" />

@@ -18,6 +18,8 @@ enum class EShadingModel : int32
 	HAIR,
 };
 
+static constexpr int32 MAX_TEX = 10;
+
 class jRenderObject
 {
 public:
@@ -48,12 +50,8 @@ public:
 	std::shared_ptr<jIndexStreamData> IndexStream;
 	jIndexBuffer* IndexBuffer = nullptr;
 
-	const jTexture* tex_object = nullptr;
-	const jTexture* tex_object2 = nullptr;
-	const jTexture* tex_object3 = nullptr;
-	const jSamplerState* samplerState = nullptr;
-	const jSamplerState* samplerState2 = nullptr;
-	const jSamplerState* samplerState3 = nullptr;
+	const jTexture* tex_object[MAX_TEX] = {};
+	const jSamplerState* samplerState[MAX_TEX] = {};
 
 	jTexture* tex_object_array = nullptr;
 	jSamplerState* samplerStateTexArray = nullptr;

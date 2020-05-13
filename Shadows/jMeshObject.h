@@ -57,6 +57,8 @@ public:
 	std::vector<jSubMesh> SubMeshes;
 	jMeshNode* RootNode = nullptr;
 
+	std::function<void(jMeshObject*)> SetMaterialOverride;
+
 	virtual void Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount = 0 ) override;
 
 	void SetMaterialUniform(const jShader* shader, const jMeshMaterial* material);

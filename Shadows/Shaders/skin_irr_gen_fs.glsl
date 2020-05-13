@@ -95,7 +95,8 @@ void main()
     vec3 albedo = pow(texture2D(tex_object2, TexCoord_).xyz, vec3(2.2));      // to linear space
     vec3 lightForDiffuse = max((vec3(1.0) - specularLight.xyz), vec3(0.0));
     vec3 E = clamp(dot(normal, ToLight), 0.0, 1.0) * light.Color * lightForDiffuse; // todo : it should be added for shadow term.
-    color.xyz = specularLight + (albedo * E);
+    //color.xyz = specularLight + (albedo * E);
+    color.xyz = E;
     
-    color.xyz = pow(color.xyz, vec3(1.0 / 2.2));    // to sRGB space
+    //color.xyz = pow(color.xyz, vec3(1.0 / 2.2));    // to sRGB space
 }

@@ -724,5 +724,17 @@
     <None Include="Shaders\skin_irr_gen_vs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\skin_gaussian_y_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\skin_strech_gen_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\skin_gaussian_x_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\skin_final_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
