@@ -26,7 +26,7 @@ class jLight;
 
 namespace jLightUtil
 {
-	void MakeDirectionalLightViewInfo(Vector& outPos, Vector& outTarget, Vector& outUp, const Vector& direction);
+	void MakeDirectionalLightViewInfo(Vector& outPos, Vector& outTarget, Vector& outUp, const Vector& direction, float distance = 5000.0f);
 	void MakeDirectionalLightViewInfoWithPos(Vector& outTarget, Vector& outUp, const Vector& pos, const Vector& direction);
 
 	//////////////////////////////////////////////////////////////////////////

@@ -10,7 +10,7 @@
 
 namespace jLightUtil
 {
-	void MakeDirectionalLightViewInfo(Vector& outPos, Vector& outTarget, Vector& outUp, const Vector& direction)
+	void MakeDirectionalLightViewInfo(Vector& outPos, Vector& outTarget, Vector& outUp, const Vector& direction, float distance /*= 5000.0f*/)
 	{
 		outPos = Vector(-200.0f) * direction;
 		outTarget = Vector::ZeroVector;
@@ -39,7 +39,8 @@ namespace jLightUtil
 		float height = SM_HEIGHT;
 		float nearDist = 10.0f;
 		float farDist = 500.0f;
-		shadowMapData->ShadowMapCamera = jOrthographicCamera::CreateCamera(pos, target, up, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
+		shadowMapData->ShadowMapCamera = jCamera::CreateCamera(pos, target, up, DegreeToRadian(90.0f), 10.0f, 900.0f, SM_WIDTH, SM_HEIGHT, true);
+		//shadowMapData->ShadowMapCamera = jOrthographicCamera::CreateCamera(pos, target, up, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
 		
 		shadowMapData->ShadowMapRenderTarget = jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RG32F, ETextureFormat::RG, EFormatType::FLOAT, EDepthBufferType::DEPTH32, SM_WIDTH, SM_HEIGHT, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR });
 		shadowMapData->ShadowMapSamplerState = jSamplerStatePool::GetSamplerState("LinearClampShadow");
@@ -345,7 +346,8 @@ void jDirectionalLight::Update(float deltaTime)
 	if (ShadowMapData && ShadowMapData->ShadowMapCamera)
 	{
 		auto camera = ShadowMapData->ShadowMapCamera;
-		jLightUtil::MakeDirectionalLightViewInfoWithPos(camera->Target, camera->Up, camera->Pos, Data.Direction);
+		//jLightUtil::MakeDirectionalLightViewInfoWithPos(camera->Target, camera->Up, camera->Pos, Data.Direction);
+		jLightUtil::MakeDirectionalLightViewInfo(camera->Pos, camera->Target, camera->Up, Data.Direction, 500);
 		camera->UpdateCamera();
 	}
 }

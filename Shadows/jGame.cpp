@@ -78,8 +78,8 @@ void jGame::Setup()
 	//AmbientLight = jLight::CreateAmbientLight(Vector(0.7f, 0.8f, 0.8f), Vector(0.1f));
 	AmbientLight = jLight::CreateAmbientLight(Vector(0.2f, 0.5f, 1.0f), Vector(0.05f));		// sky light color
 
-	PointLight = jLight::CreatePointLight(jShadowAppSettingProperties::GetInstance().PointLightPosition, Vector4(2.0f, 0.7f, 0.7f, 1.0f), 500.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
-	SpotLight = jLight::CreateSpotLight(jShadowAppSettingProperties::GetInstance().SpotLightPosition, jShadowAppSettingProperties::GetInstance().SpotLightDirection, Vector4(0.0f, 1.0f, 0.0f, 1.0f), 500.0f, 0.7f, 1.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
+	//PointLight = jLight::CreatePointLight(jShadowAppSettingProperties::GetInstance().PointLightPosition, Vector4(2.0f, 0.7f, 0.7f, 1.0f), 500.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
+	//SpotLight = jLight::CreateSpotLight(jShadowAppSettingProperties::GetInstance().SpotLightPosition, jShadowAppSettingProperties::GetInstance().SpotLightDirection, Vector4(0.0f, 1.0f, 0.0f, 1.0f), 500.0f, 0.7f, 1.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
 
 	DirectionalLightInfo = jPrimitiveUtil::CreateDirectionalLightDebug(Vector(250, 260, 0)*0.5f, Vector::OneVector * 10.0f, 10.0f, MainCamera, DirectionalLight, "Image/sun.png");
 	jObject::AddDebugObject(DirectionalLightInfo);
@@ -87,15 +87,15 @@ void jGame::Setup()
 	DirectionalLightShadowMapUIDebug = jPrimitiveUtil::CreateUIQuad({ 0.0f, 0.0f }, { 150, 150 }, DirectionalLight->GetShadowMap());
 	jObject::AddUIDebugObject(DirectionalLightShadowMapUIDebug);
 
-	PointLightInfo = jPrimitiveUtil::CreatePointLightDebug(Vector(10.0f), MainCamera, PointLight, "Image/bulb.png");
+	//PointLightInfo = jPrimitiveUtil::CreatePointLightDebug(Vector(10.0f), MainCamera, PointLight, "Image/bulb.png");
 	//jObject::AddDebugObject(PointLightInfo);
 
-	SpotLightInfo = jPrimitiveUtil::CreateSpotLightDebug(Vector(10.0f), MainCamera, SpotLight, "Image/spot.png");
+	//SpotLightInfo = jPrimitiveUtil::CreateSpotLightDebug(Vector(10.0f), MainCamera, SpotLight, "Image/spot.png");
 	//jObject::AddDebugObject(SpotLightInfo);
 
 	MainCamera->AddLight(DirectionalLight);
-	MainCamera->AddLight(PointLight);
-	MainCamera->AddLight(SpotLight);
+	//MainCamera->AddLight(PointLight);
+	//MainCamera->AddLight(SpotLight);
 	MainCamera->AddLight(AmbientLight);
 
 	SpawnObjects(ESpawnedType::TestPrimitive);
@@ -194,11 +194,6 @@ void jGame::Update(float deltaTime)
 
 	MainCamera->UpdateCamera();
 
-	//DirectionalLight->ShadowMapData->ShadowMapCamera->Pos = MainCamera->Pos - Vector(1000.0f, 500.0f, 1000.0f) * DirectionalLight->Data.Direction;
-	//jLightUtil::MakeDirectionalLightViewInfoWithPos(DirectionalLight->ShadowMapData->ShadowMapCamera->Target, DirectionalLight->ShadowMapData->ShadowMapCamera->Up
-	//	, DirectionalLight->ShadowMapData->ShadowMapCamera->Pos, DirectionalLight->Data.Direction);
-	//DirectionalLight->ShadowMapData->ShadowMapCamera->UpdateCamera();
-
 	const int32 numOfLights = MainCamera->GetNumOfLight();
 	for (int32 i = 0; i < numOfLights; ++i)
 	{
@@ -206,49 +201,6 @@ void jGame::Update(float deltaTime)
 		JASSERT(light);
 		light->Update(deltaTime);
 	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// Get the 8 points of the view frustum in world space
-	if (jShadowAppSettingProperties::GetInstance().ShadowMapType != EShadowMapType::DeepShadowMap_DirectionalLight)
-	{
-		Vector frustumCornersWS[8] =
-		{
-			Vector(-1.0f,  1.0f, -1.0f),
-			Vector(1.0f,  1.0f, -1.0f),
-			Vector(1.0f, -1.0f, -1.0f),
-			Vector(-1.0f, -1.0f, -1.0f),
-			Vector(-1.0f,  1.0f, 1.0f),
-			Vector(1.0f,  1.0f, 1.0f),
-			Vector(1.0f, -1.0f, 1.0f),
-			Vector(-1.0f, -1.0f, 1.0f),
-		};
-
-		Vector frustumCenter(0.0f);
-		Matrix invViewProj = (MainCamera->Projection * MainCamera->View).GetInverse();
-		for (uint32 i = 0; i < 8; ++i)
-		{
-			frustumCornersWS[i] = invViewProj.Transform(frustumCornersWS[i]);
-			frustumCenter = frustumCenter + frustumCornersWS[i];
-		}
-		frustumCenter = frustumCenter * (1.0f / 8.0f);
-
-		auto upDir = Vector::UpVector;
-
-		float width = SM_WIDTH;
-		float height = SM_HEIGHT;
-		float nearDist = 10.0f;
-		float farDist = 1000.0f;
-
-		// Get position of the shadow camera
-		Vector shadowCameraPos = frustumCenter + DirectionalLight->Data.Direction * -(farDist - nearDist) / 2.0f;
-	
-		auto shadowCamera = jOrthographicCamera::CreateCamera(shadowCameraPos, frustumCenter, shadowCameraPos + upDir
-			, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
-		shadowCamera->UpdateCamera();
-		DirectionalLight->GetLightCamra()->Projection = shadowCamera->Projection;
-		DirectionalLight->GetLightCamra()->View = shadowCamera->View;
-	}
-	//////////////////////////////////////////////////////////////////////////
 
 	for (auto iter : jObject::GetStaticObject())
 		iter->Update(deltaTime);
@@ -265,6 +217,7 @@ void jGame::Update(float deltaTime)
 	jObject::FlushDirtyState();
 
 	//Renderer->Render(MainCamera);
+	Renderer->ShadowPrePass(MainCamera);
 
 	jRenderTargetInfo info;
 	info.TextureType = ETextureType::TEXTURE_2D;
@@ -622,7 +575,10 @@ void jGame::Update(float deltaTime)
 		Preview = false;
 	if (Preview)
 	{
-		PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x * 3, SCR_HEIGHT - PreviewSize.y);
+		PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x * 4, SCR_HEIGHT - PreviewSize.y);
+		PREVIEW_TEXTURE(MainCamera->GetLight(ELightType::DIRECTIONAL)->GetShadowMapRenderTarget()->GetTexture());
+
+		PreviewUI->Pos.x += PreviewSize.x;
 		PREVIEW_TEXTURE(IrrTarget->GetTexture());
 
 		PreviewUI->Pos.x += PreviewSize.x;

@@ -189,7 +189,8 @@ void jDeepShadowMap_ShadowPass_Pipeline::Draw(const jPipelineContext& pipelineCo
 // jForward_ShadowMapGen_Pipeline
 void jForward_ShadowMapGen_Pipeline::Setup()
 {
-	ClearColor = Vector4(FLT_MAX, FLT_MAX, FLT_MAX, 1.0f);
+	//ClearColor = Vector4(FLT_MAX, FLT_MAX, FLT_MAX, 1.0f);
+	ClearColor = Vector4(0.0, 0.0, 0.0, 1.0f);
 	ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
 	EnableDepthTest = true;
 	DepthStencilFunc = EComparisonFunc::LESS;

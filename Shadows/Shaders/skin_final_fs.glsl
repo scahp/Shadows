@@ -115,7 +115,7 @@ void main()
 
     //    jDirectionalLight light = DirectionalLight[0];
 
-    //    vec3 LightPos = -light.LightDirection * 5000;
+    //    vec3 LightPos = -light.LightDirection * 500;
     //    vec3 ToLight = normalize(LightPos - Pos_);
 
     //    float roughness = 0.3;

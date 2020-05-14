@@ -17,12 +17,23 @@ struct jDirectionalLight
     vec3 SpecularLightIntensity;
 };
 
+layout(std140) uniform DirectionalLightShadowMapBlock
+{
+    mat4 ShadowVP;
+    mat4 ShadowV;
+    vec3 LightPos;      // Directional Light Pos 임시
+    float LightZNear;
+    float LightZFar;
+    vec2 ShadowMapSize;
+};
+
 #define MAX_NUM_OF_DIRECTIONAL_LIGHT 1
 #define MAX_NUM_OF_POINT_LIGHT 1
 #define MAX_NUM_OF_SPOT_LIGHT 1
 
 uniform sampler2D tex_object2;
 uniform sampler2D tex_object3;
+uniform sampler2DShadow shadow_object;
 uniform int UseTexture;
 uniform vec3 Eye;
 uniform mat4 VP;
@@ -38,6 +49,20 @@ layout(std140) uniform DirectionalLightBlock
 {
 	jDirectionalLight DirectionalLight[MAX_NUM_OF_DIRECTIONAL_LIGHT];
 };
+
+#define SHADOW_BIAS_DIRECTIONAL 0.001
+bool IsInShadowMapSpace(vec3 clipPos)
+{
+    return (clipPos.x >= 0.0 && clipPos.x <= 1.0 && clipPos.y >= 0.0 && clipPos.y <= 1.0 && clipPos.z >= 0.0 && clipPos.z <= 1.0);
+}
+float IsShadowing(vec3 lightClipPos, sampler2DShadow shadow_object)
+{
+    if (IsInShadowMapSpace(lightClipPos))
+        return texture(shadow_object, vec3(lightClipPos.xy, lightClipPos.z - SHADOW_BIAS_DIRECTIONAL));
+
+    return 1.0;
+}
+
 float fresnelReflectance(vec3 H, vec3 V, float F0)
 {
     float base = 1.0 - dot(V, H);
@@ -82,9 +107,16 @@ void main()
     vec3 normal = texture2D(tex_object3, TexCoord_).xyz * 2.0 - 1.0;
     normal = normalize(normal);
 
+    // Shadow 
+    vec4 tempShadowPos = (ShadowVP * vec4(Pos_, 1.0));
+    tempShadowPos /= tempShadowPos.w;
+    vec3 ShadowPos = tempShadowPos.xyz * 0.5 + 0.5;        // Transform NDC space coordinate from [-1.0 ~ 1.0] into [0.0 ~ 1.0].
+    float Lit = IsShadowing(ShadowPos, shadow_object);
+    //////////////////////////////////////////////////////////
+
 	jDirectionalLight light = DirectionalLight[0];
 
-    vec3 LightPos = -light.LightDirection * 5000;
+    vec3 LightPos = -light.LightDirection * 500;
     vec3 ToLight = normalize(LightPos - Pos_);
 
     float roughness = 0.3;
@@ -94,9 +126,10 @@ void main()
 
     vec3 albedo = pow(texture2D(tex_object2, TexCoord_).xyz, vec3(2.2));      // to linear space
     vec3 lightForDiffuse = max((vec3(1.0) - specularLight.xyz), vec3(0.0));
-    vec3 E = clamp(dot(normal, ToLight), 0.0, 1.0) * light.Color * lightForDiffuse; // todo : it should be added for shadow term.
+    vec3 LightColor = light.Color * Lit;
+    vec3 E = clamp(dot(normal, ToLight), 0.0, 1.0) * LightColor * lightForDiffuse; // todo : it should be added for shadow term.
     //color.xyz = specularLight + (albedo * E);
     color.xyz = E;
-    
+
     //color.xyz = pow(color.xyz, vec3(1.0 / 2.2));    // to sRGB space
 }
