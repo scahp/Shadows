@@ -20,6 +20,7 @@ void main()
 {
     TexCoord_ = TexCoord;
     Pos_ = TransformPos(M, Pos);
+    //gl_Position = MVP * vec4(Pos, 1.0);
 
     gl_Position.xy = TexCoord_.xy * 2.0 - 1.0;
     gl_Position.y *= -1.0;

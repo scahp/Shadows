@@ -8,8 +8,11 @@ uniform sampler2D tex_object3;
 uniform sampler2D tex_object4;
 uniform sampler2D tex_object5;
 uniform sampler2D tex_object6;
-uniform sampler2D tex_object7;
-uniform sampler2D tex_object8;
+uniform sampler2D tex_object7;      // Albedo
+uniform sampler2D tex_object8;      // World Normal
+uniform sampler2D tex_object9;      // TSM
+uniform sampler2D tex_object10;		// StrechMap
+uniform float TextureSize;
 
 in vec2 TexCoord_;
 in vec3 Pos_;
@@ -28,6 +31,16 @@ struct jDirectionalLight
     vec3 Color;
     vec3 DiffuseLightIntensity;
     vec3 SpecularLightIntensity;
+};
+
+layout(std140) uniform DirectionalLightShadowMapBlock
+{
+    mat4 ShadowVP;
+    mat4 ShadowV;
+    vec3 LightPos;      // Directional Light Pos 임시
+    float LightZNear;
+    float LightZFar;
+    vec2 ShadowMapSize;
 };
 
 #define MAX_NUM_OF_DIRECTIONAL_LIGHT 1
@@ -100,6 +113,44 @@ void main()
     color.xyz += BlurWieghts[4] * texture2D(tex_object5, uv).xyz;
     color.xyz += BlurWieghts[5] * texture2D(tex_object6, uv).xyz;
     
+    // TSM
+    {
+        // Shadow 
+        vec4 tempShadowPos = (ShadowVP * vec4(Pos_, 1.0));
+        tempShadowPos /= tempShadowPos.w;
+        vec3 ShadowPos = tempShadowPos.xyz * 0.5 + 0.5;        // Transform NDC space coordinate from [-1.0 ~ 1.0] into [0.0 ~ 1.0].
+
+        // Compute global scatter from modified TSM
+        // TSMtap = (distance to light, u, v)
+        vec4 TSMtap = texture2D(tex_object9, ShadowPos.xy);
+
+        // Four average thicknesses through the object (in mm)
+        vec4 blur2 = texture2D(tex_object2, uv);
+        vec4 blur4 = texture2D(tex_object3, uv);
+        vec4 blur8 = texture2D(tex_object4, uv);
+        vec4 blur16 = texture2D(tex_object5, uv);
+
+        vec4 thickness_mm = 1.0 * -(1.0 / 0.2) * log(vec4(blur2.w, blur4.w, blur8.w, blur16.w));
+        vec2 stretchTap = texture2D(tex_object10, uv).xy;
+        float stretchval = 0.5 * (stretchTap.x + stretchTap.y);
+        vec4 a_values = vec4(0.433, 0.753, 1.412, 2.722);
+        vec4 inv_a = -1.0 / (2.0 * a_values * a_values);
+        vec4 fades = exp(thickness_mm * thickness_mm * inv_a);
+        float textureScale = TextureSize * 0.1 / stretchval;
+        float blendFactor4 = clamp(textureScale * length(TexCoord_.xy - TSMtap.yz) / (a_values.y * 6.0), 0.0, 1.0);
+        float blendFactor5 = clamp(textureScale * length(TexCoord_.xy - TSMtap.yz) / (a_values.z * 6.0), 0.0, 1.0);
+        float blendFactor6 = clamp(textureScale * length(TexCoord_.xy - TSMtap.yz) / (a_values.w * 6.0), 0.0, 1.0);
+
+        float normConst = 1.0;  // 현재는 weight 총합이 1 인것을 쓰므로 1로 고정
+
+        vec2 TSMUV_For_Blur = TSMtap.yz;
+        TSMUV_For_Blur.y = 1.0 - TSMUV_For_Blur.y;
+
+        //color.xyz = BlurWieghts[3] / normConst * fades.y * blendFactor4 * texture2D(tex_object4, uv).xyz;
+        //color.xyz += BlurWieghts[4] / normConst * fades.z * blendFactor5 * texture2D(tex_object5, uv).xyz;
+        //color.xyz += BlurWieghts[5] / normConst * fades.w * blendFactor6 * texture2D(tex_object6, uv).xyz;
+    }
+
     color.w = 1.0;
 
     //color.xyz = texture2D(tex_object, uv).xyz;
@@ -124,5 +175,6 @@ void main()
     //    vec3 specularLight = vec3(sBRDF);
     //    color.xyz = specularLight + (vec3(1.0) - specularLight) * color.xyz;
     //}
+
     color.xyz = pow(color.xyz, vec3(1.0 / 2.2));
 }

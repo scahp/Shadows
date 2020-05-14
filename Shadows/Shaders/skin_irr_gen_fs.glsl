@@ -31,8 +31,9 @@ layout(std140) uniform DirectionalLightShadowMapBlock
 #define MAX_NUM_OF_POINT_LIGHT 1
 #define MAX_NUM_OF_SPOT_LIGHT 1
 
-uniform sampler2D tex_object2;
-uniform sampler2D tex_object3;
+uniform sampler2D tex_object2;      // Albedo
+uniform sampler2D tex_object3;      // World Normal
+uniform sampler2D tex_object4;      // TSM
 uniform sampler2DShadow shadow_object;
 uniform int UseTexture;
 uniform vec3 Eye;
@@ -50,7 +51,7 @@ layout(std140) uniform DirectionalLightBlock
 	jDirectionalLight DirectionalLight[MAX_NUM_OF_DIRECTIONAL_LIGHT];
 };
 
-#define SHADOW_BIAS_DIRECTIONAL 0.001
+#define SHADOW_BIAS_DIRECTIONAL 0.0001
 bool IsInShadowMapSpace(vec3 clipPos)
 {
     return (clipPos.x >= 0.0 && clipPos.x <= 1.0 && clipPos.y >= 0.0 && clipPos.y <= 1.0 && clipPos.z >= 0.0 && clipPos.z <= 1.0);
@@ -132,4 +133,28 @@ void main()
     color.xyz = E;
 
     //color.xyz = pow(color.xyz, vec3(1.0 / 2.2));    // to sRGB space
+
+    {
+        float DistToLight = length(LightPos - Pos_);
+        vec4 TSMTap = texture2D(tex_object4, ShadowPos.xy);
+
+        // Find normal on back side of object, Ni
+        vec3 Ni = texture2D(tex_object3, TSMTap.yz).xyz * 2.0 - 1.0;
+        Ni = normalize(normal);
+        float backFacingEst = clamp(-dot(Ni, normal), 0.0, 1.0);
+        float thicknessToLight = DistToLight - TSMTap.x;
+
+        float ndotL = dot(normal, ToLight);
+
+        // Set a large distance for surface points facing the light
+        if (ndotL > 0.0)
+            thicknessToLight = 50.0;
+
+        float correctedThickness = clamp(-ndotL, 0.0, 1.0) * thicknessToLight;
+        float finalThickness = mix(thicknessToLight, correctedThickness, backFacingEst);
+
+        // Exponentiate thickness value for storage as 8-bit alpha
+        float alpha = exp(finalThickness * -20.0);
+        color.w = alpha;
+    }
 }

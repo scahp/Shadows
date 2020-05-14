@@ -736,5 +736,11 @@
     <None Include="Shaders\skin_final_fs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\skin_TSM_GEN_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\skin_TSM_GEN_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

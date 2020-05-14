@@ -42,6 +42,7 @@ struct jShaderInfoCreation
 		//DECLARE_SHADER_VS_GS_FS("Skin", "Shaders/skin_vs.glsl", "Shaders/skin_gs.glsl", "Shaders/skin_fs.glsl");
 		DECLARE_SHADER_VS_FS("Skin", "Shaders/skin_vs.glsl", "Shaders/skin_fs.glsl");
 		DECLARE_SHADER_VS_FS("SkinStrechGen", "Shaders/skin_irr_gen_vs.glsl", "Shaders/skin_strech_gen_fs.glsl");		
+		DECLARE_SHADER_VS_FS("SkinTSMGen", "Shaders/skin_vs.glsl", "Shaders/skin_TSM_GEN_fs.glsl");
 		DECLARE_SHADER_VS_FS("SkinIrrGen", "Shaders/skin_irr_gen_vs.glsl", "Shaders/skin_irr_gen_fs.glsl");
 		DECLARE_SHADER_VS_FS("SkinGaussianBlurX", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/skin_gaussian_x_fs.glsl");
 		DECLARE_SHADER_VS_FS("SkinGaussianBlurY", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/skin_gaussian_y_fs.glsl");

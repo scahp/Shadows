@@ -221,15 +221,65 @@ void jGame::Update(float deltaTime)
 
 	jRenderTargetInfo info;
 	info.TextureType = ETextureType::TEXTURE_2D;
-	info.InternalFormat = ETextureFormat::RGB;
-	info.Format = ETextureFormat::RGB;
-	info.FormatType = EFormatType::BYTE;
+	info.InternalFormat = ETextureFormat::RGBA32F;
+	info.Format = ETextureFormat::RGBA;
+	info.FormatType = EFormatType::FLOAT;
 	info.DepthBufferType = EDepthBufferType::NONE;
 	info.Width = 4096;
 	info.Height = 4096;
 	info.TextureCount = 1;
 	info.Magnification = ETextureFilter::NEAREST;
 	info.Minification = ETextureFilter::NEAREST;
+
+	info.DepthBufferType = EDepthBufferType::DEPTH32;
+	static auto TSMTarget = jRenderTargetPool::GetRenderTarget(info);
+	if (TSMTarget->Begin())
+	{
+		auto ClearColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);	// blank space color
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("SkinTSMGen");
+		auto EnableClear = true;
+		bool EnableDepthBias = false;
+		float DepthSlopeBias = 1.0f;
+		float DepthConstantBias = 1.0f;
+
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		g_rhi->EnableDepthTest(EnableDepthTest);
+		g_rhi->SetDepthFunc(DepthStencilFunc);
+
+		g_rhi->EnableBlend(EnableBlend);
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+
+		g_rhi->EnableDepthBias(EnableDepthBias);
+		g_rhi->SetDepthBias(DepthConstantBias, DepthSlopeBias);
+
+		g_rhi->SetShader(Shader);
+
+		std::list<const jLight*> lights;
+		lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
+
+		DirectionalLight->GetLightCamra()->BindCamera(Shader);
+		jLight::BindLights(lights, Shader);
+
+		headModel->Draw(DirectionalLight->GetLightCamra(), Shader, lights);
+
+		TSMTarget->End();
+	}
+
+	info.InternalFormat = ETextureFormat::RGBA;
+	info.Format = ETextureFormat::RGBA;
+	info.FormatType = EFormatType::BYTE;
+	info.DepthBufferType = EDepthBufferType::NONE;
 
 	static auto IrrBlurTemp = jRenderTargetPool::GetRenderTarget(info);
 
@@ -278,6 +328,7 @@ void jGame::Update(float deltaTime)
 		MainCamera->BindCamera(Shader);
 		jLight::BindLights(lights, Shader);
 
+		headModel->RenderObject->tex_object[3] = TSMTarget->GetTexture();
 		headModel->Draw(MainCamera, Shader, lights);
 
 		IrrTarget->End();
@@ -510,6 +561,7 @@ void jGame::Update(float deltaTime)
 		g_rhi->SetDepthBias(DepthConstantBias, DepthSlopeBias);
 
 		g_rhi->SetShader(Shader);
+		g_rhi->SetUniformbuffer(&jUniformBuffer<float>("TextureSize", 4096), Shader);
 
 		std::list<const jLight*> lights;
 		lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
@@ -531,6 +583,8 @@ void jGame::Update(float deltaTime)
 			InMeshObject->RenderObject->tex_object[6] = InMeshObject->MeshData->Materials[1]->Texture;
 			//InMeshObject->RenderObject->tex_object[7] = StrechTarget->GetTexture();
 			headModel->RenderObject->tex_object[7] = headModelWorldNormalTexture;
+			headModel->RenderObject->tex_object[8] = TSMTarget->GetTexture();
+			headModel->RenderObject->tex_object[9] = StrechTarget->GetTexture();
 		};
 		headModel->Draw(MainCamera, Shader, { lights });
 		headModel->SetMaterialOverride = nullptr;
@@ -543,12 +597,14 @@ void jGame::Update(float deltaTime)
 		headModel->RenderObject->tex_object[5] = nullptr;
 		headModel->RenderObject->tex_object[6] = nullptr;
 		headModel->RenderObject->tex_object[7] = nullptr;
+		headModel->RenderObject->tex_object[8] = nullptr;
+		headModel->RenderObject->tex_object[9] = nullptr;
 
 		headModel->RenderObject->tex_object[2] = headModelWorldNormalTexture;
 	}
 
 	const Vector2 PreviewSize(300, 300);
-	static auto PreviewUI = jPrimitiveUtil::CreateUIQuad(Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y), PreviewSize, IrrTarget->GetTexture());
+	static auto PreviewUI = jPrimitiveUtil::CreateUIQuad(Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y), PreviewSize, nullptr);
 
 #define PREVIEW_TEXTURE(TEXTURE)\
 	{\
@@ -598,6 +654,19 @@ void jGame::Update(float deltaTime)
 
 		PreviewUI->Pos.x += PreviewSize.x;
 		PREVIEW_TEXTURE(IrrBlurTarget32->GetTexture());
+	}
+	else
+	{
+		static bool Preview2 = false;
+		if (g_KeyState['c'])
+			Preview2 = true;
+		if (g_KeyState['v'])
+			Preview2 = false;
+		if (Preview2)
+		{
+			PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y);
+			PREVIEW_TEXTURE(TSMTarget->GetTexture());
+		}
 	}
 }
 
