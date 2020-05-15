@@ -34,6 +34,7 @@ layout(std140) uniform DirectionalLightShadowMapBlock
 uniform sampler2D tex_object2;      // Albedo
 uniform sampler2D tex_object3;      // World Normal
 uniform sampler2D tex_object4;      // TSM
+uniform sampler2D tex_object5;      // Stretch
 uniform sampler2DShadow shadow_object;
 uniform int UseTexture;
 uniform vec3 Eye;
@@ -105,7 +106,8 @@ float KS_Skin_Specular(
 void main()
 {
 	vec3 viewDir = normalize(Eye - Pos_);
-    vec3 normal = texture2D(tex_object3, TexCoord_).xyz * 2.0 - 1.0;
+    vec3 normalRaw = texture2D(tex_object3, TexCoord_).xyz;
+    vec3 normal = normalRaw * 2.0 - 1.0;
     normal = normalize(normal);
 
     // Shadow 
@@ -132,10 +134,8 @@ void main()
     //color.xyz = specularLight + (albedo * E);
     color.xyz = E;
 
-    //color.xyz = pow(color.xyz, vec3(1.0 / 2.2));    // to sRGB space
-
     {
-        float DistToLight = length(LightPos - Pos_);
+        float DistToLight = length(LightPos - Pos_) / 500.0;
         vec4 TSMTap = texture2D(tex_object4, ShadowPos.xy);
 
         // Find normal on back side of object, Ni
@@ -157,4 +157,6 @@ void main()
         float alpha = exp(finalThickness * -20.0);
         color.w = alpha;
     }
+
+    //color.w = 1.0;
 }

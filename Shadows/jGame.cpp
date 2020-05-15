@@ -21,6 +21,7 @@
 #include "jForwardRenderer.h"
 #include "jPipeline.h"
 #include "jVertexAdjacency.h"
+#include "jSamplerStatePool.h"
 
 jRHI* g_rhi = nullptr;
 static jMeshObject* headModel = nullptr;
@@ -190,6 +191,9 @@ void jGame::Update(float deltaTime)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "Game::Update");
 
+	static float temp = 300.0f;
+	headModel->RenderObject->Scale = Vector(temp);
+
 	UpdateAppSetting();
 
 	MainCamera->UpdateCamera();
@@ -218,6 +222,66 @@ void jGame::Update(float deltaTime)
 
 	//Renderer->Render(MainCamera);
 	Renderer->ShadowPrePass(MainCamera);
+
+	static std::shared_ptr<jRenderTarget> StrechTarget = nullptr;
+	{
+		jRenderTargetInfo StretchTargetInfo;
+		StretchTargetInfo.TextureType = ETextureType::TEXTURE_2D;
+		StretchTargetInfo.InternalFormat = ETextureFormat::RGBA32F;
+		StretchTargetInfo.Format = ETextureFormat::RGBA;
+		StretchTargetInfo.FormatType = EFormatType::FLOAT;
+		StretchTargetInfo.DepthBufferType = EDepthBufferType::NONE;
+		StretchTargetInfo.Width = 4096;
+		StretchTargetInfo.Height = 4096;
+		StretchTargetInfo.TextureCount = 1;
+		StretchTargetInfo.Magnification = ETextureFilter::NEAREST;
+		StretchTargetInfo.Minification = ETextureFilter::NEAREST;
+		if (!StrechTarget)
+			StrechTarget = jRenderTargetPool::GetRenderTarget(StretchTargetInfo);
+		if (StrechTarget->Begin())
+		{
+			auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 0.0f);	// blank space color
+			auto ClearType = ERenderBufferType::COLOR;
+			auto EnableDepthTest = false;
+			auto DepthStencilFunc = EComparisonFunc::LESS;
+			auto EnableBlend = true;
+			auto BlendSrc = EBlendSrc::ONE;
+			auto BlendDest = EBlendDest::ZERO;
+			auto Shader = jShader::GetShader("SkinStrechGen");
+			auto EnableClear = true;
+			bool EnableDepthBias = false;
+			float DepthSlopeBias = 1.0f;
+			float DepthConstantBias = 1.0f;
+
+			if (EnableClear)
+			{
+				g_rhi->SetClearColor(ClearColor);
+				g_rhi->SetClear(ClearType);
+			}
+
+			g_rhi->EnableDepthTest(EnableDepthTest);
+			g_rhi->SetDepthFunc(DepthStencilFunc);
+
+			g_rhi->EnableBlend(EnableBlend);
+			g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+
+			g_rhi->EnableDepthBias(EnableDepthBias);
+			g_rhi->SetDepthBias(DepthConstantBias, DepthSlopeBias);
+
+			g_rhi->SetShader(Shader);
+			g_rhi->SetUniformbuffer(&jUniformBuffer<float>("ModelScale", headModel->RenderObject->Scale.x), Shader);
+
+			std::list<const jLight*> lights;
+			lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
+
+			MainCamera->BindCamera(Shader);
+			jLight::BindLights(lights, Shader);
+
+			headModel->Draw(MainCamera, Shader, lights);
+
+			StrechTarget->End();
+		}
+	}
 
 	jRenderTargetInfo info;
 	info.TextureType = ETextureType::TEXTURE_2D;
@@ -280,7 +344,6 @@ void jGame::Update(float deltaTime)
 	info.Format = ETextureFormat::RGBA;
 	info.FormatType = EFormatType::BYTE;
 	info.DepthBufferType = EDepthBufferType::NONE;
-
 	static auto IrrBlurTemp = jRenderTargetPool::GetRenderTarget(info);
 
 	static auto IrrTarget = jRenderTargetPool::GetRenderTarget(info);
@@ -292,7 +355,8 @@ void jGame::Update(float deltaTime)
 
 	if (IrrTarget->Begin())
 	{
-		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);	// blank space color
+		//auto ClearColor = Vector4(0.819f, 0.643f, 0.568f, 0.0f);	// skin color
+		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 0.0f);	// blank space color
 		auto ClearType = ERenderBufferType::COLOR;
 		auto EnableDepthTest = false;
 		auto DepthStencilFunc = EComparisonFunc::LESS;
@@ -301,7 +365,7 @@ void jGame::Update(float deltaTime)
 		auto BlendDest = EBlendDest::ZERO;
 		auto Shader = jShader::GetShader("SkinIrrGen");
 		auto EnableClear = true;
-		bool EnableDepthBias = false;
+		bool EnableDepthBias = true;
 		float DepthSlopeBias = 1.0f;
 		float DepthConstantBias = 1.0f;
 
@@ -329,69 +393,65 @@ void jGame::Update(float deltaTime)
 		jLight::BindLights(lights, Shader);
 
 		headModel->RenderObject->tex_object[3] = TSMTarget->GetTexture();
+		headModel->RenderObject->tex_object[4] = StrechTarget->GetTexture();
+		auto LinearWrap = jSamplerStatePool::GetSamplerState("LinearWrap").get();
+		headModel->RenderObject->samplerState[1] = LinearWrap;
+		headModel->RenderObject->samplerState[2] = LinearWrap;
 		headModel->Draw(MainCamera, Shader, lights);
 
 		IrrTarget->End();
 	}
 
-	jRenderTargetInfo StretchTargetInfo;
-	StretchTargetInfo.TextureType = ETextureType::TEXTURE_2D;
-	StretchTargetInfo.InternalFormat = ETextureFormat::RG32F;
-	StretchTargetInfo.Format = ETextureFormat::RG;
-	StretchTargetInfo.FormatType = EFormatType::FLOAT;
-	StretchTargetInfo.DepthBufferType = EDepthBufferType::NONE;
-	StretchTargetInfo.Width = 4096;
-	StretchTargetInfo.Height = 4096;
-	StretchTargetInfo.TextureCount = 1;
-	StretchTargetInfo.Magnification = ETextureFilter::NEAREST;
-	StretchTargetInfo.Minification = ETextureFilter::NEAREST;
-	static auto StrechTarget = jRenderTargetPool::GetRenderTarget(StretchTargetInfo);
-	if (StrechTarget->Begin())
-	{
-		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);	// blank space color
-		auto ClearType = ERenderBufferType::COLOR;
-		auto EnableDepthTest = false;
-		auto DepthStencilFunc = EComparisonFunc::LESS;
-		auto EnableBlend = true;
-		auto BlendSrc = EBlendSrc::ONE;
-		auto BlendDest = EBlendDest::ZERO;
-		auto Shader = jShader::GetShader("SkinStrechGen");
-		auto EnableClear = true;
-		bool EnableDepthBias = false;
-		float DepthSlopeBias = 1.0f;
-		float DepthConstantBias = 1.0f;
+	//static jFullscreenQuadPrimitive* UVDilationFullQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
+	//if (IrrTarget->Begin())
+	//{
+	//	//auto ClearColor = Vector4(0.819f, 0.643f, 0.568f, 0.0f);	// skin color
+	//	auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 0.0f);	// blank space color
+	//	auto ClearType = ERenderBufferType::COLOR;
+	//	auto EnableDepthTest = false;
+	//	auto DepthStencilFunc = EComparisonFunc::LESS;
+	//	auto EnableBlend = true;
+	//	auto BlendSrc = EBlendSrc::ONE;
+	//	auto BlendDest = EBlendDest::ZERO;
+	//	auto Shader = jShader::GetShader("UVDilation");
+	//	auto EnableClear = true;
+	//	bool EnableDepthBias = false;
+	//	float DepthSlopeBias = 1.0f;
+	//	float DepthConstantBias = 1.0f;
 
-		if (EnableClear)
-		{
-			g_rhi->SetClearColor(ClearColor);
-			g_rhi->SetClear(ClearType);
-		}
+	//	if (EnableClear)
+	//	{
+	//		g_rhi->SetClearColor(ClearColor);
+	//		g_rhi->SetClear(ClearType);
+	//	}
 
-		g_rhi->EnableDepthTest(EnableDepthTest);
-		g_rhi->SetDepthFunc(DepthStencilFunc);
+	//	g_rhi->EnableDepthTest(EnableDepthTest);
+	//	g_rhi->SetDepthFunc(DepthStencilFunc);
 
-		g_rhi->EnableBlend(EnableBlend);
-		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+	//	g_rhi->EnableBlend(EnableBlend);
+	//	g_rhi->SetBlendFunc(BlendSrc, BlendDest);
 
-		g_rhi->EnableDepthBias(EnableDepthBias);
-		g_rhi->SetDepthBias(DepthConstantBias, DepthSlopeBias);
+	//	g_rhi->EnableDepthBias(EnableDepthBias);
+	//	g_rhi->SetDepthBias(DepthConstantBias, DepthSlopeBias);
 
-		g_rhi->SetShader(Shader);
+	//	static int32 steps = 2;
 
-		std::list<const jLight*> lights;
-		lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
+	//	g_rhi->SetShader(Shader);
+	//	g_rhi->SetUniformbuffer(&jUniformBuffer<float>("TextureSize", 4096), Shader);
+	//	g_rhi->SetUniformbuffer(&jUniformBuffer<int>("MaxSteps", steps), Shader);
 
-		MainCamera->BindCamera(Shader);
-		jLight::BindLights(lights, Shader);
+	//	MainCamera->BindCamera(Shader);
 
-		headModel->Draw(MainCamera, Shader, lights);
+	//	UVDilationFullQuad->RenderObject->tex_object[0] = IrrBlurTemp->GetTexture();
+	//	UVDilationFullQuad->Draw(MainCamera, Shader, {});
 
-		StrechTarget->End();
-	}
+	//	IrrTarget->End();
+	//}
 
 	static jFullscreenQuadPrimitive* FullScreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
 #define BLUR(RENDERTARGET, SRCTEXTURE, Scale, TextureSize)  \
 	FullScreenQuad->RenderObject->tex_object[0] = SRCTEXTURE; \
+	FullScreenQuad->RenderObject->samplerState[0] = jSamplerStatePool::GetSamplerState("LinearWrap").get(); \
 	FullScreenQuad->RenderObject->tex_object[1] = StrechTarget->GetTexture();\
 	if (IrrBlurTemp->Begin())\
 	{\
@@ -445,7 +505,7 @@ void jGame::Update(float deltaTime)
 		MainCamera->BindCamera(Shader);\
 		FullScreenQuad->Draw(MainCamera, Shader, {});\
 		RENDERTARGET->End();\
-	}
+	}\
 
 	static auto IrrBlurTemp2 = jRenderTargetPool::GetRenderTarget(info);
 
@@ -562,6 +622,7 @@ void jGame::Update(float deltaTime)
 
 		g_rhi->SetShader(Shader);
 		g_rhi->SetUniformbuffer(&jUniformBuffer<float>("TextureSize", 4096), Shader);
+		g_rhi->SetUniformbuffer(&jUniformBuffer<float>("ModelScale", headModel->RenderObject->Scale.x), Shader);
 
 		std::list<const jLight*> lights;
 		lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
@@ -585,20 +646,22 @@ void jGame::Update(float deltaTime)
 			headModel->RenderObject->tex_object[7] = headModelWorldNormalTexture;
 			headModel->RenderObject->tex_object[8] = TSMTarget->GetTexture();
 			headModel->RenderObject->tex_object[9] = StrechTarget->GetTexture();
+
+			auto LinearWrap = jSamplerStatePool::GetSamplerState("LinearWrap").get();
+			headModel->RenderObject->samplerState[0] = LinearWrap;
+			headModel->RenderObject->samplerState[1] = LinearWrap;
+			headModel->RenderObject->samplerState[2] = LinearWrap;
+			headModel->RenderObject->samplerState[3] = LinearWrap;
+			headModel->RenderObject->samplerState[4] = LinearWrap;
 		};
 		headModel->Draw(MainCamera, Shader, { lights });
 		headModel->SetMaterialOverride = nullptr;
 
-		headModel->RenderObject->tex_object[0] = nullptr;
-		headModel->RenderObject->tex_object[1] = nullptr;
-		headModel->RenderObject->tex_object[2] = nullptr;
-		headModel->RenderObject->tex_object[3] = nullptr;
-		headModel->RenderObject->tex_object[4] = nullptr;
-		headModel->RenderObject->tex_object[5] = nullptr;
-		headModel->RenderObject->tex_object[6] = nullptr;
-		headModel->RenderObject->tex_object[7] = nullptr;
-		headModel->RenderObject->tex_object[8] = nullptr;
-		headModel->RenderObject->tex_object[9] = nullptr;
+		for (int32 i = 0; i < MAX_TEX; ++i)
+		{
+			headModel->RenderObject->tex_object[i] = nullptr;
+			headModel->RenderObject->samplerState[i] = nullptr;
+		}
 
 		headModel->RenderObject->tex_object[2] = headModelWorldNormalTexture;
 	}

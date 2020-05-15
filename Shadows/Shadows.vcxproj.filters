@@ -742,5 +742,8 @@
     <None Include="Shaders\skin_TSM_GEN_fs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\uv_dilation.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

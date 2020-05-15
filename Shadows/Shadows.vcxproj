@@ -404,6 +404,7 @@
     <None Include="Shaders\tex_ui_fs.glsl" />
     <None Include="Shaders\tex_ui_vs.glsl" />
     <None Include="Shaders\tex_vs.glsl" />
+    <None Include="Shaders\uv_dilation.glsl" />
     <None Include="Shaders\vs_boundvolume.glsl" />
     <None Include="Shaders\vs_graph.glsl" />
     <None Include="Shaders\vs_red.glsl" />

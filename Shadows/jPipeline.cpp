@@ -198,6 +198,9 @@ void jForward_ShadowMapGen_Pipeline::Setup()
 	JASSERT(ShadowGenShader);
 	OmniShadowGenShader = jShader::GetShader(OmniDirectionalLightShaderName);
 	JASSERT(OmniShadowGenShader);
+	DepthSlopeBias = 100.0f;
+	DepthConstantBias = 10.0f;
+	EnableDepthBias = true;
 }
 
 void jForward_ShadowMapGen_Pipeline::Do(const jPipelineContext& pipelineContext) const
