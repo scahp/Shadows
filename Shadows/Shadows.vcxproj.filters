@@ -745,5 +745,8 @@
     <None Include="Shaders\uv_dilation.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\skin_bluralphadistribution_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

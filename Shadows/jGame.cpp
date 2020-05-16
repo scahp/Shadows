@@ -355,7 +355,6 @@ void jGame::Update(float deltaTime)
 
 	if (IrrTarget->Begin())
 	{
-		//auto ClearColor = Vector4(0.819f, 0.643f, 0.568f, 0.0f);	// skin color
 		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 0.0f);	// blank space color
 		auto ClearType = ERenderBufferType::COLOR;
 		auto EnableDepthTest = false;
@@ -402,52 +401,6 @@ void jGame::Update(float deltaTime)
 
 		IrrTarget->End();
 	}
-
-	//static jFullscreenQuadPrimitive* UVDilationFullQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
-	//if (IrrTarget->Begin())
-	//{
-	//	//auto ClearColor = Vector4(0.819f, 0.643f, 0.568f, 0.0f);	// skin color
-	//	auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 0.0f);	// blank space color
-	//	auto ClearType = ERenderBufferType::COLOR;
-	//	auto EnableDepthTest = false;
-	//	auto DepthStencilFunc = EComparisonFunc::LESS;
-	//	auto EnableBlend = true;
-	//	auto BlendSrc = EBlendSrc::ONE;
-	//	auto BlendDest = EBlendDest::ZERO;
-	//	auto Shader = jShader::GetShader("UVDilation");
-	//	auto EnableClear = true;
-	//	bool EnableDepthBias = false;
-	//	float DepthSlopeBias = 1.0f;
-	//	float DepthConstantBias = 1.0f;
-
-	//	if (EnableClear)
-	//	{
-	//		g_rhi->SetClearColor(ClearColor);
-	//		g_rhi->SetClear(ClearType);
-	//	}
-
-	//	g_rhi->EnableDepthTest(EnableDepthTest);
-	//	g_rhi->SetDepthFunc(DepthStencilFunc);
-
-	//	g_rhi->EnableBlend(EnableBlend);
-	//	g_rhi->SetBlendFunc(BlendSrc, BlendDest);
-
-	//	g_rhi->EnableDepthBias(EnableDepthBias);
-	//	g_rhi->SetDepthBias(DepthConstantBias, DepthSlopeBias);
-
-	//	static int32 steps = 2;
-
-	//	g_rhi->SetShader(Shader);
-	//	g_rhi->SetUniformbuffer(&jUniformBuffer<float>("TextureSize", 4096), Shader);
-	//	g_rhi->SetUniformbuffer(&jUniformBuffer<int>("MaxSteps", steps), Shader);
-
-	//	MainCamera->BindCamera(Shader);
-
-	//	UVDilationFullQuad->RenderObject->tex_object[0] = IrrBlurTemp->GetTexture();
-	//	UVDilationFullQuad->Draw(MainCamera, Shader, {});
-
-	//	IrrTarget->End();
-	//}
 
 	static jFullscreenQuadPrimitive* FullScreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
 #define BLUR(RENDERTARGET, SRCTEXTURE, Scale, TextureSize)  \
@@ -515,6 +468,84 @@ void jGame::Update(float deltaTime)
 	BLUR(IrrBlurTarget8, IrrBlurTarget4->GetTexture(), 4, 4096);  // 8
 	BLUR(IrrBlurTarget16, IrrBlurTarget8->GetTexture(), 8, 4096); // 16
 	BLUR(IrrBlurTarget32, IrrBlurTarget16->GetTexture(), 16, 4096); // 32
+
+	static std::shared_ptr<jRenderTarget> BlurAlphaDistributionTarget;
+	static bool RenderedBlurAlphaDistributionTarget = false;
+	if (!RenderedBlurAlphaDistributionTarget)
+	{
+		RenderedBlurAlphaDistributionTarget = true;
+
+		jRenderTargetInfo blurAlphaDistributionInfo;
+		blurAlphaDistributionInfo.TextureType = ETextureType::TEXTURE_2D;
+		blurAlphaDistributionInfo.InternalFormat = ETextureFormat::R32F;
+		blurAlphaDistributionInfo.Format = ETextureFormat::R;
+		blurAlphaDistributionInfo.FormatType = EFormatType::FLOAT;
+		blurAlphaDistributionInfo.DepthBufferType = EDepthBufferType::NONE;
+		blurAlphaDistributionInfo.Width = 4096;
+		blurAlphaDistributionInfo.Height = 4096;
+		blurAlphaDistributionInfo.TextureCount = 1;
+		blurAlphaDistributionInfo.Magnification = ETextureFilter::NEAREST;
+		blurAlphaDistributionInfo.Minification = ETextureFilter::NEAREST;
+
+		BlurAlphaDistributionTarget = jRenderTargetPool::GetRenderTarget(blurAlphaDistributionInfo);
+		// RenderBlurAlpha Once
+		auto BlurAlphaDistributionTarget2 = jRenderTargetPool::GetRenderTarget(blurAlphaDistributionInfo);
+		if (BlurAlphaDistributionTarget->Begin())
+		{
+			auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 0.0f);	// blank space color
+			auto ClearType = ERenderBufferType::COLOR;
+			auto EnableDepthTest = false;
+			auto DepthStencilFunc = EComparisonFunc::LESS;
+			auto EnableBlend = true;
+			auto BlendSrc = EBlendSrc::ONE;
+			auto BlendDest = EBlendDest::ZERO;
+			auto Shader = jShader::GetShader("SkinBlurAlphaDistribution");
+			auto EnableClear = true;
+			bool EnableDepthBias = true;
+			float DepthSlopeBias = 1.0f;
+			float DepthConstantBias = 1.0f;
+
+			if (EnableClear)
+			{
+				g_rhi->SetClearColor(ClearColor);
+				g_rhi->SetClear(ClearType);
+			}
+
+			g_rhi->EnableDepthTest(EnableDepthTest);
+			g_rhi->SetDepthFunc(DepthStencilFunc);
+
+			g_rhi->EnableBlend(EnableBlend);
+			g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+
+			g_rhi->EnableDepthBias(EnableDepthBias);
+			g_rhi->SetDepthBias(DepthConstantBias, DepthSlopeBias);
+
+			g_rhi->SetShader(Shader);
+			g_rhi->SetUniformbuffer(&jUniformBuffer<float>("ModelScale", headModel->RenderObject->Scale.x), Shader);
+
+			std::list<const jLight*> lights;
+			lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
+
+			MainCamera->BindCamera(Shader);
+			jLight::BindLights(lights, Shader);
+
+			headModel->RenderObject->tex_object[3] = TSMTarget->GetTexture();
+			headModel->RenderObject->tex_object[4] = StrechTarget->GetTexture();
+			auto LinearWrap = jSamplerStatePool::GetSamplerState("LinearWrap").get();
+			headModel->RenderObject->samplerState[1] = LinearWrap;
+			headModel->RenderObject->samplerState[2] = LinearWrap;
+			headModel->Draw(MainCamera, Shader, lights);
+
+			BlurAlphaDistributionTarget->End();
+		}
+
+		// It's enough the gaussian blur until 16.
+		BLUR(BlurAlphaDistributionTarget2, BlurAlphaDistributionTarget->GetTexture(), 2, 4096);   // 2
+		BLUR(BlurAlphaDistributionTarget, BlurAlphaDistributionTarget2->GetTexture(), 2, 4096);  // 4
+		BLUR(BlurAlphaDistributionTarget2, BlurAlphaDistributionTarget->GetTexture(), 4, 4096);  // 8
+		BLUR(BlurAlphaDistributionTarget, BlurAlphaDistributionTarget2->GetTexture(), 8, 4096); // 16
+		jRenderTargetPool::ReturnRenderTarget(BlurAlphaDistributionTarget2.get());
+	}
 
 	//{
 	//	auto ClearColor = Vector4(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);	// light sky blue
@@ -647,6 +678,7 @@ void jGame::Update(float deltaTime)
 			headModel->RenderObject->tex_object[7] = headModelWorldNormalTexture;
 			headModel->RenderObject->tex_object[8] = TSMTarget->GetTexture();
 			headModel->RenderObject->tex_object[9] = StrechTarget->GetTexture();
+			headModel->RenderObject->tex_object[10] = BlurAlphaDistributionTarget->GetTexture();
 
 			auto LinearWrap = jSamplerStatePool::GetSamplerState("LinearWrap").get();
 			headModel->RenderObject->samplerState[0] = LinearWrap;
@@ -738,7 +770,7 @@ void jGame::UpdateAppSetting()
 {
 	auto& appSetting =  jShadowAppSettingProperties::GetInstance();
 
-	appSetting.SpotLightDirection = Matrix::MakeRotateY(0.01).Transform(appSetting.SpotLightDirection);
+	appSetting.SpotLightDirection = Matrix::MakeRotateY(0.01f).Transform(appSetting.SpotLightDirection);
 
 	bool changedDirectionalLight = false;
 	if (appSetting.ShadowMapType == EShadowMapType::CSM_SSM)
@@ -1052,7 +1084,7 @@ void jGame::SpawnGraphTestFunc()
 			}
 
 			for (int i = 0; i < _countof(PerspectiveVector); ++i)
-				PerspectiveVector[i].z = (PerspectiveVector[i].z + 1.0) * 0.5;
+				PerspectiveVector[i].z = (PerspectiveVector[i].z + 1.0f) * 0.5f;
 		}
 		{
 			static jCamera* pCamera = jCamera::CreateCamera(Vector(0.0), Vector(0.0, 0.0, 1.0), Vector(0.0, 1.0, 0.0), DegreeToRadian(90), 10.0, 100.0, 100.0, 100.0, false);
@@ -1065,7 +1097,7 @@ void jGame::SpawnGraphTestFunc()
 			}
 
 			for (int i = 0; i < _countof(OrthographicVector); ++i)
-				OrthographicVector[i].z = (OrthographicVector[i].z + 1.0) * 0.5;
+				OrthographicVector[i].z = (OrthographicVector[i].z + 1.0f) * 0.5f;
 		}
 	}
 	std::vector<Vector2> graph1;

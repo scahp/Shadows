@@ -104,20 +104,6 @@ float KS_Skin_Specular(
     return result;
 }
 
-float packVec2(vec2 Data)
-{
-    return Data.x * 256.0 * 256.0 + Data.y;
-}
-
-vec2 unPackVec2(float Data)
-{
-    float temp = (Data / (256.0 * 256.0));
-    float Second = fract(temp);
-    float First = temp - Second;
-    Second *= (256.0 * 256.0);
-    return vec2(First, Second);
-}
-
 void main()
 {
 	vec3 viewDir = normalize(Eye - Pos_);

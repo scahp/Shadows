@@ -12,6 +12,7 @@ uniform sampler2D tex_object7;      // Albedo
 uniform sampler2D tex_object8;      // World Normal
 uniform sampler2D tex_object9;      // TSM
 uniform sampler2D tex_object10;		// StrechMap
+uniform sampler2D tex_object11;		// BlurAlphaDistribution
 uniform sampler2DShadow shadow_object; 
 
 uniform float TextureSize;
@@ -192,18 +193,17 @@ void main()
 
         color.xyz /= normConst;
 
-        //// Make seamless UV
-        //vec2 TSM_SeamAlpha = unPackVec2(IrrGaussian16.a);
-        //float SeamAlpha = TSM_SeamAlpha.y;
-        //if (SeamAlpha < 1.0)
-        //{
-        //    // Visualize Seam's problems
-        //    //Irr1.xyz = vec3(1.0, 0.0, 0.0);
-        //    //color.xyz = vec3(0.0, 1.0, 0.0);
+        // Make seamless UV
+        float SeamAlpha = texture2D(tex_object11, uv).r;
+        if (SeamAlpha < 1.0)
+        {
+            // Visualize Seam's problems
+            //Irr1.xyz = vec3(1.0, 0.0, 0.0);
+            //color.xyz = vec3(0.0, 1.0, 0.0);
 
-        //    SeamAlpha = clamp(pow(SeamAlpha, 4), 0.0, 1.0);
-        //    color.xyz = mix(Irr1, color.xyz, SeamAlpha);
-        //}
+            SeamAlpha = clamp(pow(SeamAlpha, 4), 0.0, 1.0);
+            color.xyz = mix(Irr1, color.xyz, SeamAlpha);
+        }
 
         // TSM
         {

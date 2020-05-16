@@ -18,7 +18,7 @@ enum class EShadingModel : int32
 	HAIR,
 };
 
-static constexpr int32 MAX_TEX = 10;
+static constexpr int32 MAX_TEX = 20;
 
 class jRenderObject
 {
