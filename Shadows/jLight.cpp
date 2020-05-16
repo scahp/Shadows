@@ -12,7 +12,7 @@ namespace jLightUtil
 {
 	void MakeDirectionalLightViewInfo(Vector& outPos, Vector& outTarget, Vector& outUp, const Vector& direction, float distance /*= 5000.0f*/)
 	{
-		outPos = Vector(-200.0f) * direction;
+		outPos = Vector(-distance) * direction;
 		outTarget = Vector::ZeroVector;
 		outUp = outPos + Vector(0.0f, 1.0f, 0.0f);
 	}

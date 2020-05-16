@@ -110,10 +110,29 @@ float KS_Skin_Specular(
     return result;
 }
 
+float packVec2(vec2 Data)
+{
+    return Data.x * 256.0 * 256.0 + Data.y;
+}
+
+vec2 unPackVec2(float Data)
+{
+    float temp = (Data / (256.0 * 256.0));
+    float Second = fract(temp);
+    float First = temp - Second;
+    Second *= (256.0 * 256.0);
+    return vec2(First, Second);
+}
+
 void main()
 {
     vec2 uv = TexCoord_;
     uv.y = 1.0 - uv.y;
+
+    // Shadow 
+    vec4 tempShadowPos = (ShadowVP * vec4(Pos_, 1.0));
+    tempShadowPos /= tempShadowPos.w;
+    vec3 ShadowPos = tempShadowPos.xyz * 0.5 + 0.5;        // Transform NDC space coordinate from [-1.0 ~ 1.0] into [0.0 ~ 1.0].
 
     vec3 Irr1;
     {
@@ -121,10 +140,6 @@ void main()
         vec3 normal = texture2D(tex_object8, TexCoord_).xyz * 2.0 - 1.0;
         normal = normalize(normal);
 
-        // Shadow 
-        vec4 tempShadowPos = (ShadowVP * vec4(Pos_, 1.0));
-        tempShadowPos /= tempShadowPos.w;
-        vec3 ShadowPos = tempShadowPos.xyz * 0.5 + 0.5;        // Transform NDC space coordinate from [-1.0 ~ 1.0] into [0.0 ~ 1.0].
         float Lit = IsShadowing(ShadowPos, shadow_object);
         //////////////////////////////////////////////////////////
 
@@ -147,7 +162,7 @@ void main()
     }
 
     {
-        vec3 BlurWieghts[6] = vec3[6](
+        vec3 BlurWeights[6] = vec3[6](
             vec3(0.233, 0.455, 0.649),
             vec3(0.1, 0.336, 0.344),
             vec3(0.118, 0.198, 0.0),
@@ -156,50 +171,70 @@ void main()
             vec3(0.078, 0.0, 0.0)
             );
 
+        vec4 IrrGaussian2 = texture2D(tex_object2, uv);
+        vec4 IrrGaussian4 = texture2D(tex_object3, uv);
+        vec4 IrrGaussian8 = texture2D(tex_object4, uv);
+        vec4 IrrGaussian16 = texture2D(tex_object5, uv);
+        vec4 IrrGaussian32 = texture2D(tex_object6, uv);
+
         color.xyz = vec3(0.0, 0.0, 0.0);
-        color.xyz += BlurWieghts[0] * texture2D(tex_object, uv).xyz;        // 최대 해상도를 얻기위해서 요건 여기서 실시간으로 계산해도 될듯.
-        color.xyz += BlurWieghts[1] * texture2D(tex_object2, uv).xyz;
-        color.xyz += BlurWieghts[2] * texture2D(tex_object3, uv).xyz;
-        color.xyz += BlurWieghts[3] * texture2D(tex_object4, uv).xyz;
-        color.xyz += BlurWieghts[4] * texture2D(tex_object5, uv).xyz;
-        color.xyz += BlurWieghts[5] * texture2D(tex_object6, uv).xyz;
+        //color.xyz += BlurWeights[0] * texture2D(tex_object, uv).xyz;        // 최대 해상도를 얻기위해서 요건 여기서 실시간으로 계산해도 될듯.
+        color.xyz += BlurWeights[0] * Irr1;
+        color.xyz += BlurWeights[1] * IrrGaussian2.xyz;
+        color.xyz += BlurWeights[2] * IrrGaussian4.xyz;
+        color.xyz += BlurWeights[3] * IrrGaussian8.xyz;
+        color.xyz += BlurWeights[4] * IrrGaussian16.xyz;
+        color.xyz += BlurWeights[5] * IrrGaussian32.xyz;
+
+        vec3 normConst = vec3(0.0);
+        for (int i = 0; i < 6; ++i)
+            normConst += BlurWeights[i];
+
+        color.xyz /= normConst;
+
+        //// Make seamless UV
+        //vec2 TSM_SeamAlpha = unPackVec2(IrrGaussian16.a);
+        //float SeamAlpha = TSM_SeamAlpha.y;
+        //if (SeamAlpha < 1.0)
+        //{
+        //    // Visualize Seam's problems
+        //    //Irr1.xyz = vec3(1.0, 0.0, 0.0);
+        //    //color.xyz = vec3(0.0, 1.0, 0.0);
+
+        //    SeamAlpha = clamp(pow(SeamAlpha, 4), 0.0, 1.0);
+        //    color.xyz = mix(Irr1, color.xyz, SeamAlpha);
+        //}
 
         // TSM
         {
-            // Shadow 
-            vec4 tempShadowPos = (ShadowVP * vec4(Pos_, 1.0));
-            tempShadowPos /= tempShadowPos.w;
-            vec3 ShadowPos = tempShadowPos.xyz * 0.5 + 0.5;        // Transform NDC space coordinate from [-1.0 ~ 1.0] into [0.0 ~ 1.0].
-
             // Compute global scatter from modified TSM
             // TSMtap = (distance to light, u, v)
             vec4 TSMtap = texture2D(tex_object9, ShadowPos.xy);
 
-            // Four average thicknesses through the object (in mm)
-            vec4 blur2 = texture2D(tex_object2, uv);
-            vec4 blur4 = texture2D(tex_object3, uv);
-            vec4 blur8 = texture2D(tex_object4, uv);
-            vec4 blur16 = texture2D(tex_object5, uv);
+            float blur2 = IrrGaussian2.a;
+            float blur4 = IrrGaussian4.a;
+            float blur8 = IrrGaussian8.a;
+            float blur16 = IrrGaussian16.a;
 
-            vec4 thickness_mm = 1.0 * -(1.0 / 0.2) * log(vec4(blur2.w, blur4.w, blur8.w, blur16.w));
-            vec2 stretchTap = texture2D(tex_object10, uv).xy;
-            float stretchval = 0.5 * (stretchTap.x + stretchTap.y);
+            // Four average thicknesses through the object (in mm)
+            vec4 thickness_mm = 1.0 * -(1.0 / 0.2) * log(vec4(blur2, blur4, blur8, blur16));
             vec4 a_values = vec4(0.433, 0.753, 1.412, 2.722);
             vec4 inv_a = -1.0 / (2.0 * a_values * a_values);
             vec4 fades = exp(thickness_mm * thickness_mm * inv_a);
-            float textureScale = 1024 * 0.1 / stretchval;
+            
+            vec2 stretchTap = texture2D(tex_object10, uv).xy;
+            float stretchval = 0.5 * (stretchTap.x + stretchTap.y);
+            float textureScale = TextureSize * 0.1 / stretchval;
             float blendFactor4 = clamp(textureScale * length(TexCoord_.xy - TSMtap.yz) / (a_values.y * 6.0), 0.0, 1.0);
             float blendFactor5 = clamp(textureScale * length(TexCoord_.xy - TSMtap.yz) / (a_values.z * 6.0), 0.0, 1.0);
             float blendFactor6 = clamp(textureScale * length(TexCoord_.xy - TSMtap.yz) / (a_values.w * 6.0), 0.0, 1.0);
 
-            float normConst = 1.0;  // 현재는 weight 총합이 1 인것을 쓰므로 1로 고정
-
             vec2 TSMUV_For_Blur = TSMtap.yz;
             TSMUV_For_Blur.y = 1.0 - TSMUV_For_Blur.y;
 
-            color.xyz += BlurWieghts[3] / normConst * fades.y * blendFactor4 * texture2D(tex_object4, TSMUV_For_Blur).xyz;
-            color.xyz += BlurWieghts[4] / normConst * fades.z * blendFactor5 * texture2D(tex_object5, TSMUV_For_Blur).xyz;
-            color.xyz += BlurWieghts[5] / normConst * fades.w * blendFactor6 * texture2D(tex_object6, TSMUV_For_Blur).xyz;
+            color.xyz += BlurWeights[3] / normConst * fades.y * blendFactor4 * texture2D(tex_object4, TSMUV_For_Blur).xyz;
+            color.xyz += BlurWeights[4] / normConst * fades.z * blendFactor5 * texture2D(tex_object5, TSMUV_For_Blur).xyz;
+            color.xyz += BlurWeights[5] / normConst * fades.w * blendFactor6 * texture2D(tex_object6, TSMUV_For_Blur).xyz;
         }
     }
 

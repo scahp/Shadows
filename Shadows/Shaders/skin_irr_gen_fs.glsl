@@ -1,4 +1,4 @@
-﻿#version 330 core
+﻿#version 430 core
 
 precision highp float;
 
@@ -39,6 +39,7 @@ uniform sampler2DShadow shadow_object;
 uniform int UseTexture;
 uniform vec3 Eye;
 uniform mat4 VP;
+uniform float ModelScale;
 
 in vec2 TexCoord_;
 in vec3 Pos_;
@@ -103,6 +104,20 @@ float KS_Skin_Specular(
     return result;
 }
 
+float packVec2(vec2 Data)
+{
+    return Data.x * 256.0 * 256.0 + Data.y;
+}
+
+vec2 unPackVec2(float Data)
+{
+    float temp = (Data / (256.0 * 256.0));
+    float Second = fract(temp);
+    float First = temp - Second;
+    Second *= (256.0 * 256.0);
+    return vec2(First, Second);
+}
+
 void main()
 {
 	vec3 viewDir = normalize(Eye - Pos_);
@@ -134,29 +149,30 @@ void main()
     //color.xyz = specularLight + (albedo * E);
     color.xyz = E;
 
+    // TSM Alpha
+    float TSMAlpha = 0.0;
     {
-        float DistToLight = length(LightPos - Pos_) / 500.0;
+        float DistToLight = length(LightPos - Pos_);
         vec4 TSMTap = texture2D(tex_object4, ShadowPos.xy);
 
         // Find normal on back side of object, Ni
         vec3 Ni = texture2D(tex_object3, TSMTap.yz).xyz * 2.0 - 1.0;
         Ni = normalize(normal);
         float backFacingEst = clamp(-dot(Ni, normal), 0.0, 1.0);
-        float thicknessToLight = DistToLight - TSMTap.x;
+        float thicknessToLight = (DistToLight - TSMTap.x) / ModelScale;
 
         float ndotL = dot(normal, ToLight);
 
         // Set a large distance for surface points facing the light
         if (ndotL > 0.0)
-            thicknessToLight = 50.0;
+            thicknessToLight = 5000.0;
 
         float correctedThickness = clamp(-ndotL, 0.0, 1.0) * thicknessToLight;
         float finalThickness = mix(thicknessToLight, correctedThickness, backFacingEst);
 
         // Exponentiate thickness value for storage as 8-bit alpha
-        float alpha = exp(finalThickness * -20.0);
-        color.w = alpha;
+        TSMAlpha = exp(finalThickness * -20.0);
     }
-
-    //color.w = 1.0;
+    
+    color.w = TSMAlpha;
 }

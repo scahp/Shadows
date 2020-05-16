@@ -299,7 +299,7 @@ void jGame::Update(float deltaTime)
 	static auto TSMTarget = jRenderTargetPool::GetRenderTarget(info);
 	if (TSMTarget->Begin())
 	{
-		auto ClearColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);	// blank space color
+		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 0.0f);	// blank space color
 		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
 		auto EnableDepthTest = true;
 		auto DepthStencilFunc = EComparisonFunc::LESS;
@@ -385,6 +385,7 @@ void jGame::Update(float deltaTime)
 		g_rhi->SetDepthBias(DepthConstantBias, DepthSlopeBias);
 
 		g_rhi->SetShader(Shader);
+		g_rhi->SetUniformbuffer(&jUniformBuffer<float>("ModelScale", headModel->RenderObject->Scale.x), Shader);
 
 		std::list<const jLight*> lights;
 		lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());

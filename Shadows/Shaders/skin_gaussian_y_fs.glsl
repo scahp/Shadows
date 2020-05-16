@@ -9,8 +9,21 @@ uniform sampler2D tex_object;
 uniform sampler2D tex_object2;		// StrechMap
 
 in vec2 TexCoord_;
-
 out vec4 color;
+
+float packVec2(vec2 Data)
+{
+	return Data.x * 256.0 * 256.0 + Data.y;
+}
+
+vec2 unPackVec2(float Data)
+{
+	float temp = (Data / (256.0 * 256.0));
+	float Second = fract(temp);
+	float First = temp - Second;
+	Second *= (256.0 * 256.0);
+	return vec2(First, Second);
+}
 
 void main()
 {
@@ -30,33 +43,14 @@ void main()
 
 	vec2 coords = TexCoord_ - vec2(0.0, Step * 3.0);  // offset = ( 0.0, -3.0 )
 	vec4 sum = vec4(0.0);
+	vec2 sumAlpha = vec2(0.0);
 
-	vec4 tap0 = texture2D(tex_object, coords);
-	sum = weights[0] * tap0;
-	coords += vec2(0.0, Step * 1.0); // offset =  0.0, -2.0
-
-	vec4 tap1 = texture2D(tex_object, coords);
-	sum += weights[1] * tap1;
-	coords += vec2(0.0, Step * 1.0); // offset =  0.0, -1.0
-
-	vec4 tap2 = texture2D(tex_object, coords);
-	sum += weights[2] * tap2;
-	coords += vec2(0.0, Step * 1.0); // offset = 0.0, 0.0
-
-	vec4 tap3 = texture2D(tex_object, coords);
-	sum += weights[3] * tap3;
-	coords += vec2(0.0, Step * 1.0); // offset = 0.0, 1.0
-
-	vec4 tap4 = texture2D(tex_object, coords);
-	sum += weights[4] * tap4;
-	coords += vec2(0.0, Step * 1.0); // offset = 0.0, 2.0
-
-	vec4 tap5 = texture2D(tex_object, coords);
-	sum += weights[5] * tap5;
-	coords += vec2(0.0, Step * 1.0); // offset = 0.0, 3.0
-
-	vec4 tap6 = texture2D(tex_object, coords);
-	sum += weights[6] * tap6;
+	for (int i = 0; i < 7; ++i)
+	{
+		vec4 tap = texture2D(tex_object, coords);
+		sum += weights[i] * tap;
+		coords += vec2(0.0, Step * 1.0);
+	}
 
 	color = sum;
 }

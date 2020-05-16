@@ -38,7 +38,7 @@ void main()
 {
     jDirectionalLight light = DirectionalLight[0];
     vec3 LightPos = -light.LightDirection * 500;
-    float DistToLight = length(LightPos - Pos_) / 500.0;
+    float DistToLight = length(LightPos - Pos_);
 
     color.x = DistToLight;
     color.yz = TexCoord_;
