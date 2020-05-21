@@ -16,6 +16,7 @@
 
 struct Vector4;
 struct Vector2;
+struct jPlane;
 
 struct Vector
 {
@@ -236,6 +237,8 @@ struct Vector4
 	FORCEINLINE explicit Vector4(float fValue) : x(fValue), y(fValue), z(fValue), w(fValue) { }
 	FORCEINLINE Vector4(float fX, float fY, float fZ, float fW) : x(fX), y(fY), z(fZ), w(fW) { }
 	FORCEINLINE Vector4(Vector vector, float fW) : x(vector.x), y(vector.y), z(vector.z), w(fW) { }
+	
+	Vector4(jPlane const& plane);
 
 	FORCEINLINE Vector4 operator*(float fValue) const
 	{
@@ -453,9 +456,16 @@ struct Vector2
 		return Vector2(x - vector.x, y - vector.y);
 	}
 
+	FORCEINLINE Vector2 operator/(Vector2 const& vector) const
+	{
+		JASSERT(!IsNearlyZero(vector.x));
+		JASSERT(!IsNearlyZero(vector.y));
+		return Vector2(x / vector.x, y / vector.y);
+	}
+
 	FORCEINLINE Vector2 operator/(float fValue) const
 	{
-		JASSERT(fValue != 0);
+		JASSERT(!IsNearlyZero(fValue));
 		return Vector2(x / fValue, y / fValue);
 	}
 

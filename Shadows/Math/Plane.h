@@ -10,9 +10,28 @@ struct jPlane
 		: n(nx, ny, nz), d(distance)
 	{}
 
-	jPlane(Vector normal, float distance)
+	jPlane(Vector const& normal, float distance)
 		: n(normal), d(distance)
 	{}
+
+	jPlane(Vector4 const& vector)
+		: n(vector.x, vector.y, vector.z), d(vector.w)
+	{}
+
+	void Normalize()
+	{
+		float length = n.Length();
+		JASSERT(!IsNearlyZero(length));
+		n /= length;
+		d /= length;
+	}
+
+	jPlane GetNormalize() const
+	{
+		auto NewPlane = jPlane(*this);
+		NewPlane.Normalize();
+		return NewPlane;
+	}
 
 	static jPlane CreateFrustumFromThreePoints(const Vector& p0, const Vector& p1, const Vector& p2)
 	{

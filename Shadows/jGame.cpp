@@ -55,11 +55,11 @@ void jGame::ProcessInput()
 void jGame::Setup()
 {
 	//////////////////////////////////////////////////////////////////////////
-	const Vector mainCameraPos(172.66f, 166.47f, -180.63f);
+	const Vector mainCameraPos = Vector::ZeroVector;
 	//const Vector mainCameraTarget(171.96f, 166.02f, -180.05f);
 	//const Vector mainCameraPos(165.0f, 125.0f, -136.0f);
 	//const Vector mainCameraPos(300.0f, 100.0f, 300.0f);
-	const Vector mainCameraTarget(0.0f, 0.0f, 0.0f);
+	const Vector mainCameraTarget(0.0f, 0.0f, -1.0f);
 	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(45.0f), 10.0f, 1000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
 
@@ -136,6 +136,8 @@ void jGame::Setup()
 
 void jGame::SpawnObjects(ESpawnedType spawnType)
 {
+	return;
+
 	if (spawnType != SpawnedType)
 	{
 		SpawnedType = spawnType;
@@ -243,7 +245,79 @@ void jGame::Update(float deltaTime)
 
 	jObject::FlushDirtyState();
 
-	Renderer->Render(MainCamera);
+	//Renderer->Render(MainCamera);
+	static Matrix View = MainCamera->View;
+	static Matrix Projection = MainCamera->Projection;
+	static Matrix InvViewProjection = (Projection * View).GetInverse();
+
+	{
+		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS; 
+		auto EnableBlend = true; 
+		auto BlendSrc = EBlendSrc::SRC_ALPHA;
+		auto BlendDest = EBlendDest::ONE_MINUS_SRC_ALPHA;
+		auto EnableClear = true;
+		auto Shader = jShader::GetShader("Simple"); 
+
+		if(EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		g_rhi->EnableDepthTest(EnableDepthTest);
+		g_rhi->EnableBlend(EnableBlend); 
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest); 
+		g_rhi->SetShader(Shader); 
+		MainCamera->BindCamera(Shader); 
+
+		jPlane frustumPlanes[4];
+
+		int tileNumber = 16;
+
+		static int i = 0;
+		static float temp = 0;
+		temp += deltaTime;
+		if (temp > 0.05)
+		{
+			temp = 0.0f;
+			++i;
+			if (i >= tileNumber * tileNumber)
+				i = 0;
+		}
+		int tileID = i;
+
+		int GET_GROUP_IDX = tileID % (int32)tileNumber;
+		int GET_GROUP_IDY = tileID / (int32)tileNumber;
+
+		auto projToView = [tileNumber](float x, float y, float z) -> Vector
+		{
+			float X = (2.0f * x) / tileNumber - 1.0f;
+			float Y = (2.0f * y) / tileNumber - 1.0f;
+			return Projection.GetInverse().Transform(Vector(X, Y, z));
+		};
+		Vector v[4];
+		v[0] = projToView(GET_GROUP_IDX, GET_GROUP_IDY, 1.0f);
+		v[1] = projToView((GET_GROUP_IDX + 1), GET_GROUP_IDY, 1.0f);
+		v[2] = projToView((GET_GROUP_IDX + 1), (GET_GROUP_IDY + 1), 1.0f);
+		v[3] = projToView(GET_GROUP_IDX, (GET_GROUP_IDY + 1), 1.0f);
+
+		auto Triangle0 = jPrimitiveUtil::CreateTriangle2(Vector::ZeroVector, v[0], v[1], Vector4(1.0f, 0.0f, 0.0f, 0.5f));
+		auto Triangle1 = jPrimitiveUtil::CreateTriangle2(Vector::ZeroVector, v[1], v[2], Vector4(0.0f, 1.0f, 0.0f, 0.5f));
+		auto Triangle2 = jPrimitiveUtil::CreateTriangle2(Vector::ZeroVector, v[2], v[3], Vector4(0.0f, 0.0f, 1.0f, 0.5f));
+		auto Triangle3 = jPrimitiveUtil::CreateTriangle2(Vector::ZeroVector, v[3], v[0], Vector4(1.0f, 0.0f, 1.0f, 0.5f));
+		Triangle0->Draw(MainCamera, Shader, {});
+		Triangle1->Draw(MainCamera, Shader, {});
+		Triangle2->Draw(MainCamera, Shader, {});
+		Triangle3->Draw(MainCamera, Shader, {});
+		delete Triangle0;
+		delete Triangle1;
+		delete Triangle2;
+		delete Triangle3;
+	}
+
 }
 
 void jGame::UpdateAppSetting()

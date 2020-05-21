@@ -722,6 +722,75 @@ jObject* CreateTriangle(const Vector& pos, const Vector& size, const Vector& sca
 	return object;
 }
 
+jObject* CreateTriangle2(const Vector& v1, const Vector& v2, const Vector& v3, const Vector4& color)
+{
+	float vertices[] = {
+		v1.x, v1.y, v1.z,
+		v2.x, v2.y, v2.z,
+		v3.x, v3.y, v3.z,
+	};
+
+	int32 elementCount = _countof(vertices) / 3;
+
+	// attribute 추가
+	auto vertexStreamData = std::shared_ptr<jVertexStreamData>(new jVertexStreamData());
+
+	{
+		auto streamParam = new jStreamParam<float>();
+		streamParam->BufferType = EBufferType::STATIC;
+		streamParam->ElementTypeSize = sizeof(float);
+		streamParam->ElementType = EBufferElementType::FLOAT;
+		streamParam->Stride = sizeof(float) * 3;
+		streamParam->Name = "Pos";
+		streamParam->Data.resize(elementCount * 3);
+		memcpy(&streamParam->Data[0], vertices, sizeof(vertices));
+		vertexStreamData->Params.push_back(streamParam);
+	}
+
+	{
+		auto streamParam = new jStreamParam<float>();
+		streamParam->BufferType = EBufferType::STATIC;
+		streamParam->ElementType = EBufferElementType::FLOAT;
+		streamParam->ElementTypeSize = sizeof(float);
+		streamParam->Stride = sizeof(float) * 4;
+		streamParam->Name = "Color";
+		streamParam->Data = std::move(GenerateColor(color, elementCount));
+		vertexStreamData->Params.push_back(streamParam);
+	}
+
+	{
+		auto streamParam = new jStreamParam<float>();
+		streamParam->BufferType = EBufferType::STATIC;
+		streamParam->ElementType = EBufferElementType::FLOAT;
+		streamParam->ElementTypeSize = sizeof(float);
+		streamParam->Stride = sizeof(float) * 3;
+		streamParam->Name = "Normal";
+		streamParam->Data.resize(elementCount * 3);
+		for (int32 i = 0; i < elementCount; ++i)
+		{
+			streamParam->Data[i * 3 + 0] = 0.0f;
+			streamParam->Data[i * 3 + 1] = 1.0f;
+			streamParam->Data[i * 3 + 2] = 0.0f;
+		}
+		vertexStreamData->Params.push_back(streamParam);
+	}
+
+	vertexStreamData->PrimitiveType = EPrimitiveType::TRIANGLES;
+	vertexStreamData->ElementCount = elementCount;
+
+	auto object = new jObject();
+	auto renderObject = new jRenderObject();
+	renderObject->CreateRenderObject(vertexStreamData, nullptr);
+	object->RenderObject = renderObject;
+	object->RenderObject->Pos = Vector::ZeroVector;
+	object->RenderObject->Scale = Vector::OneVector;
+	object->RenderObject->IsTwoSided = true;
+	CreateShadowVolume({ std::begin(vertices), std::end(vertices) }, {}, object);
+	CreateBoundObjects({ std::begin(vertices), std::end(vertices) }, object);
+
+	return object;
+}
+
 jObject* CreateCube(const Vector& pos, const Vector& size, const Vector& scale, const Vector4& color)
 {
 	const Vector halfSize = size / 2.0f;

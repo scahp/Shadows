@@ -226,6 +226,7 @@ namespace jPrimitiveUtil
 	jQuadPrimitive* CreateQuad(const Vector& pos, const Vector& size, const Vector& scale, const Vector4& color);
 	jObject* CreateGizmo(const Vector& pos, const Vector& rot, const Vector& scale);
 	jObject* CreateTriangle(const Vector& pos, const Vector& size, const Vector& scale, const Vector4& color);
+	jObject* CreateTriangle2(const Vector& v1, const Vector& v2, const Vector& v3, const Vector4& color);
 	jObject* CreateCube(const Vector& pos, const Vector& size, const Vector& scale, const Vector4& color);
 	jObject* CreateCapsule(const Vector& pos, float height, float radius, int32 slice, const Vector& scale, const Vector4& color);
 	jConePrimitive* CreateCone(const Vector& pos, float height, float radius, int32 slice, const Vector& scale, const Vector4& color, bool isWireframe = false, bool createBoundInfo = true, bool createShadowVolumeInfo = true);

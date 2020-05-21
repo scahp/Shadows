@@ -529,5 +529,8 @@
     <None Include="Shaders\vs_graph.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\compute\compute_lightcull.glsl">
+      <Filter>Shaders\compute</Filter>
+    </None>
   </ItemGroup>
 </Project>
