@@ -2,7 +2,7 @@
 
 precision highp float;
 
-uniform sampler2D tex_object;
+uniform sampler2D tex_object;       // Pdt sBRDF
 uniform sampler2D tex_object2;
 uniform sampler2D tex_object3;
 uniform sampler2D tex_object4;
@@ -135,29 +135,29 @@ void main()
     tempShadowPos /= tempShadowPos.w;
     vec3 ShadowPos = tempShadowPos.xyz * 0.5 + 0.5;        // Transform NDC space coordinate from [-1.0 ~ 1.0] into [0.0 ~ 1.0].
 
+    float rho_s = 0.3;
+    float roughness = 0.3;
+    vec3 viewDir = normalize(Eye - Pos_);
+    vec3 normal = texture2D(tex_object8, TexCoord_).xyz * 2.0 - 1.0;
+    normal = normalize(normal);
+
+    float Lit = IsShadowing(ShadowPos, shadow_object);
+
+    jDirectionalLight light = DirectionalLight[0];
+    vec3 LightPos = -light.LightDirection * 500;
+    vec3 ToLight = normalize(LightPos - Pos_);
+    float ndotL = clamp(dot(normal, ToLight), 0.0, 1.0);
+
     vec3 Irr1;
     {
-        vec3 viewDir = normalize(Eye - Pos_);
-        vec3 normal = texture2D(tex_object8, TexCoord_).xyz * 2.0 - 1.0;
-        normal = normalize(normal);
-
-        float Lit = IsShadowing(ShadowPos, shadow_object);
-        //////////////////////////////////////////////////////////
-
-        jDirectionalLight light = DirectionalLight[0];
-
-        vec3 LightPos = -light.LightDirection * 500;
-        vec3 ToLight = normalize(LightPos - Pos_);
-
-        float roughness = 0.3;
-        float rho_s = 0.18;
-        float sBRDF = KS_Skin_Specular(normal, ToLight, viewDir, roughness, rho_s); // White
-        vec3 specularLight = vec3(sBRDF);
+        float ndotL = clamp(dot(normal, ToLight), 0.0, 1.0);
+        float sEnergy = rho_s * texture2D(tex_object6, vec2(ndotL, roughness)).x;
+        float dEnergy = max(1.0 - sEnergy, 0.0);
+        //dEnergy = 1.0;
 
         vec3 albedo = pow(texture2D(tex_object2, TexCoord_).xyz, vec3(2.2));      // to linear space
-        vec3 lightForDiffuse = max((vec3(1.0) - specularLight.xyz), vec3(0.0));
         vec3 LightColor = light.Color * Lit;
-        vec3 E = clamp(dot(normal, ToLight), 0.0, 1.0) * LightColor * lightForDiffuse; // todo : it should be added for shadow term.
+        vec3 E = ndotL * LightColor * dEnergy;
 
         Irr1 = E;
     }
@@ -242,26 +242,12 @@ void main()
 
     //color.xyz = texture2D(tex_object, uv).xyz;
     color.xyz *= pow(texture2D(tex_object7, TexCoord_).xyz, vec3(2.2));
-    //color.xyz = color.xxx;
-    //color.xyz = color.yyy;
-    //color.xyz = color.zzz;
 
-    //{
-    //    vec3 viewDir = normalize(Eye - Pos_);
-    //    vec3 normal = texture2D(tex_object8, TexCoord_).xyz * 2.0 - 1.0;
-    //    normal = normalize(normal);
+    float sBRDF = KS_Skin_Specular(normal, ToLight, viewDir, roughness, rho_s); // White
+    vec3 specularLight = vec3(sBRDF) * Lit;
 
-    //    jDirectionalLight light = DirectionalLight[0];
+    color.xyz = color.xyz + specularLight;
 
-    //    vec3 LightPos = -light.LightDirection * 500;
-    //    vec3 ToLight = normalize(LightPos - Pos_);
-
-    //    float roughness = 0.3;
-    //    float rho_s = 0.18;
-    //    float sBRDF = KS_Skin_Specular(normal, ToLight, viewDir, roughness, rho_s); // White
-    //    vec3 specularLight = vec3(sBRDF);
-    //    color.xyz = specularLight + (vec3(1.0) - specularLight) * color.xyz;
-    //}
 
     color.xyz = pow(color.xyz, vec3(1.0 / 2.2));
 

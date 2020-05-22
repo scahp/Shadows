@@ -748,5 +748,14 @@
     <None Include="Shaders\skin_bluralphadistribution_fs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\skin_hemispherebrdfbacker.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\skin_fastbloom_y_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\skin_fastbloom_x_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -35,6 +35,7 @@ uniform sampler2D tex_object2;      // Albedo
 uniform sampler2D tex_object3;      // World Normal
 uniform sampler2D tex_object4;      // TSM
 uniform sampler2D tex_object5;      // Stretch
+uniform sampler2D tex_object6;      // PdtBRDFBackerTarget
 uniform sampler2DShadow shadow_object;
 uniform int UseTexture;
 uniform vec3 Eye;
@@ -123,16 +124,16 @@ void main()
     vec3 LightPos = -light.LightDirection * 500;
     vec3 ToLight = normalize(LightPos - Pos_);
 
+    float rho_s = 0.3;
     float roughness = 0.3;
-    float rho_s = 0.18;
-    float sBRDF = KS_Skin_Specular(normal, ToLight, viewDir, roughness, rho_s); // White
-    vec3 specularLight = vec3(sBRDF);
+    float ndotL = clamp(dot(normal, ToLight), 0.0, 1.0);
+    float sEnergy = rho_s * texture2D(tex_object6, vec2(ndotL, roughness)).x;
+    float dEnergy = max(1.0 - sEnergy, 0.0);
+    //dEnergy = 1.0;
 
     vec3 albedo = pow(texture2D(tex_object2, TexCoord_).xyz, vec3(2.2));      // to linear space
-    vec3 lightForDiffuse = max((vec3(1.0) - specularLight.xyz), vec3(0.0));
     vec3 LightColor = light.Color * Lit;
-    vec3 E = clamp(dot(normal, ToLight), 0.0, 1.0) * LightColor * lightForDiffuse; // todo : it should be added for shadow term.
-    //color.xyz = specularLight + (albedo * E);
+    vec3 E = clamp(dot(normal, ToLight), 0.0, 1.0) * LightColor * dEnergy;
     color.xyz = E;
 
     // TSM Alpha
