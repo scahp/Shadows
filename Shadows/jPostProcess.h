@@ -68,6 +68,8 @@ public:
 
 	bool Process(const jCamera* camera) const;
 
+	IPostprocess* GetPostProcess(int32 Index) const;
+
 private:
 	std::list<IPostprocess*> PostProcesses;
 };

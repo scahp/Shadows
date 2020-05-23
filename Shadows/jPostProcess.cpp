@@ -116,6 +116,15 @@ bool jPostprocessChain::Process(const jCamera* camera) const
 	return true;
 }
 
+IPostprocess* jPostprocessChain::GetPostProcess(int32 Index) const
+{
+	JASSERT(PostProcesses.size() > Index);
+	auto It = PostProcesses.begin();
+	for (int i = 0; (i <= Index) || (PostProcesses.end() == It); ++i, ++It)
+		return *It;
+	return nullptr;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // jPostProcess_DeepShadowMap
 void jPostProcess_DeepShadowMap::jSSBO_DeepShadowMap::Bind(const jShader* shader) const

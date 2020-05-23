@@ -245,6 +245,9 @@ void jForward_ShadowMapGen_Pipeline::Do(const jPipelineContext& pipelineContext)
 				g_rhi->SetViewport({ 0, 0, renderTarget->Info.Width, renderTarget->Info.Height });
 			else
 				g_rhi->SetViewportIndexedArray(0, static_cast<int32>(viewports.size()), &viewports[0]);
+
+			SET_UNIFORM_BUFFER_STATIC(float, "NearDist", camera->Near, currentShader);
+			SET_UNIFORM_BUFFER_STATIC(float, "FarDist", camera->Far, currentShader);
 			this->jRenderPipeline::Draw(jPipelineContext(pipelineContext.DefaultRenderTarget, pipelineContext.Objects, camera, { light }), currentShader);
 		}, currentShader);
 	}
@@ -313,6 +316,8 @@ void jForward_ShadowMapGen_CSM_SSM_Pipeline::Do(const jPipelineContext& pipeline
 						g_rhi->SetViewport({ 0, 0, renderTarget->Info.Width, renderTarget->Info.Height });
 					else
 						g_rhi->SetViewportIndexedArray(0, static_cast<int32>(viewports.size()), &viewports[0]);
+					SET_UNIFORM_BUFFER_STATIC(float, "NearDist", camera->Near, currentShader);
+					SET_UNIFORM_BUFFER_STATIC(float, "FarDist", camera->Far, currentShader);
 					this->Draw(jPipelineContext(pipelineContext.DefaultRenderTarget, pipelineContext.Objects, camera, { light }), currentShader);
 				}, currentShader);
 			g_rhi->SetRenderTarget(pipelineContext.DefaultRenderTarget);
@@ -421,6 +426,8 @@ void jForward_ShadowMapGen_CSM_SSM_Pipeline::Do(const jPipelineContext& pipeline
 					g_rhi->SetViewport({ 0, 0, renderTarget->Info.Width, renderTarget->Info.Height });
 				else
 					g_rhi->SetViewportIndexedArray(0, static_cast<int32>(viewports.size()), &viewports[0]);
+				SET_UNIFORM_BUFFER_STATIC(float, "NearDist", camera->Near, currentShader);
+				SET_UNIFORM_BUFFER_STATIC(float, "FarDist", camera->Far, currentShader);
 				this->Draw(jPipelineContext(pipelineContext.DefaultRenderTarget, pipelineContext.Objects, camera, { light }), currentShader);
 			}, currentShader);
 		g_rhi->EnableDepthClip(true);

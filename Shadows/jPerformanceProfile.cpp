@@ -43,13 +43,13 @@ void AddScopedProfileGPU(const std::string& name, uint64 elapsedTick)
 
 void jPerformanceProfile::Update(float deltaTime)
 {
-	jProfile_GPU::ProcessWaitings();
+	//jProfile_GPU::ProcessWaitings();
 
-	CalcAvg();
-	NextFrame();
+	//CalcAvg();
+	//NextFrame();
 
-	if (TRUE_PER_MS(1000))
-		PrintOutputDebugString();
+	//if (TRUE_PER_MS(1000))
+	//	PrintOutputDebugString();
 }
 
 void jPerformanceProfile::CalcAvg()

@@ -44,27 +44,26 @@ uniform float ModelScale;
 
 in vec2 TexCoord_;
 in vec3 Pos_;
+in vec4 VPos_;
 out vec4 color;
 
 uniform int NumOfDirectionalLight;
 uniform jAmbientLight AmbientLight;
+uniform float DiffuseMix;
 
 layout(std140) uniform DirectionalLightBlock
 {
 	jDirectionalLight DirectionalLight[MAX_NUM_OF_DIRECTIONAL_LIGHT];
 };
 
-#define SHADOW_BIAS_DIRECTIONAL 0.0001
+#define SHADOW_BIAS_DIRECTIONAL 0.001
 bool IsInShadowMapSpace(vec3 clipPos)
 {
     return (clipPos.x >= 0.0 && clipPos.x <= 1.0 && clipPos.y >= 0.0 && clipPos.y <= 1.0 && clipPos.z >= 0.0 && clipPos.z <= 1.0);
 }
-float IsShadowing(vec3 lightClipPos, sampler2DShadow shadow_object)
+float IsShadowing(vec3 lightClipPos, sampler2DShadow shadow_texture)
 {
-    if (IsInShadowMapSpace(lightClipPos))
-        return texture(shadow_object, vec3(lightClipPos.xy, lightClipPos.z - SHADOW_BIAS_DIRECTIONAL));
-
-    return 1.0;
+    return texture(shadow_texture, vec3(lightClipPos.xy, lightClipPos.z - SHADOW_BIAS_DIRECTIONAL));
 }
 
 float fresnelReflectance(vec3 H, vec3 V, float F0)
@@ -116,15 +115,21 @@ void main()
     vec4 tempShadowPos = (ShadowVP * vec4(Pos_, 1.0));
     tempShadowPos /= tempShadowPos.w;
     vec3 ShadowPos = tempShadowPos.xyz * 0.5 + 0.5;        // Transform NDC space coordinate from [-1.0 ~ 1.0] into [0.0 ~ 1.0].
+
+    float vZ = (VPos_.z / VPos_.w);
+    vZ = -vZ / LightZFar;
+    ShadowPos.z = vZ;
+
     float Lit = IsShadowing(ShadowPos, shadow_object);
     //////////////////////////////////////////////////////////
 
 	jDirectionalLight light = DirectionalLight[0];
 
-    vec3 LightPos = -light.LightDirection * 500;
+    vec3 LightPos = -light.LightDirection * 300;
     vec3 ToLight = normalize(LightPos - Pos_);
+    float LightAtten = 400.0 * 400.0 / dot(LightPos - Pos_, LightPos - Pos_);
 
-    float rho_s = 0.3;
+    float rho_s = 0.18;
     float roughness = 0.3;
     float ndotL = clamp(dot(normal, ToLight), 0.0, 1.0);
     float sEnergy = rho_s * texture2D(tex_object6, vec2(ndotL, roughness)).x;
@@ -132,9 +137,9 @@ void main()
     //dEnergy = 1.0;
 
     vec3 albedo = pow(texture2D(tex_object2, TexCoord_).xyz, vec3(2.2));      // to linear space
-    vec3 LightColor = light.Color * Lit;
-    vec3 E = clamp(dot(normal, ToLight), 0.0, 1.0) * LightColor * dEnergy;
-    color.xyz = E;
+    vec3 LightColor = light.Color * Lit * LightAtten;
+    vec3 E = clamp(dot(normal, ToLight), 0.0, 1.0) * LightColor;
+    color.xyz = E * pow(albedo, vec3(DiffuseMix));
 
     // TSM Alpha
     float TSMAlpha = 0.0;
@@ -151,7 +156,8 @@ void main()
         float ndotL = dot(normal, ToLight);
 
         // Set a large distance for surface points facing the light
-        if (ndotL > 0.0)
+        float bias = -0.5;
+        if (ndotL > 0.0 + bias)
             thicknessToLight = 5000.0;
 
         float correctedThickness = clamp(-ndotL, 0.0, 1.0) * thicknessToLight;

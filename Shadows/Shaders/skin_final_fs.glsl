@@ -13,10 +13,11 @@ uniform sampler2D tex_object8;      // World Normal
 uniform sampler2D tex_object9;      // TSM
 uniform sampler2D tex_object10;		// StrechMap
 uniform sampler2D tex_object11;		// BlurAlphaDistribution
-uniform sampler2DShadow shadow_object; 
+uniform sampler2DShadow shadow_object;
 
 uniform float TextureSize;
 uniform float ModelScale;
+uniform float DiffuseMix;
 
 in vec2 TexCoord_;
 in vec3 Pos_;
@@ -60,17 +61,14 @@ layout(std140) uniform DirectionalLightBlock
     jDirectionalLight DirectionalLight[MAX_NUM_OF_DIRECTIONAL_LIGHT];
 };
 
-#define SHADOW_BIAS_DIRECTIONAL 0.0001
+#define SHADOW_BIAS_DIRECTIONAL 0.001
 bool IsInShadowMapSpace(vec3 clipPos)
 {
     return (clipPos.x >= 0.0 && clipPos.x <= 1.0 && clipPos.y >= 0.0 && clipPos.y <= 1.0 && clipPos.z >= 0.0 && clipPos.z <= 1.0);
 }
-float IsShadowing(vec3 lightClipPos, sampler2DShadow shadow_object)
+float IsShadowing(vec3 lightClipPos, sampler2DShadow shadow_texture)
 {
-    if (IsInShadowMapSpace(lightClipPos))
-        return texture(shadow_object, vec3(lightClipPos.xy, lightClipPos.z - SHADOW_BIAS_DIRECTIONAL));
-
-    return 1.0;
+    return texture(shadow_object, vec3(lightClipPos.xy, lightClipPos.z - SHADOW_BIAS_DIRECTIONAL));
 }
 
 float fresnelReflectance(vec3 H, vec3 V, float F0)
@@ -135,31 +133,34 @@ void main()
     tempShadowPos /= tempShadowPos.w;
     vec3 ShadowPos = tempShadowPos.xyz * 0.5 + 0.5;        // Transform NDC space coordinate from [-1.0 ~ 1.0] into [0.0 ~ 1.0].
 
-    float rho_s = 0.3;
+    vec4 LinearShadowZ = (ShadowV * vec4(Pos_, 1.0));
+    LinearShadowZ /= LinearShadowZ.w;
+    ShadowPos.z = -LinearShadowZ.z / LightZFar;
+
+    float Lit = IsShadowing(ShadowPos, shadow_object);
+
+    float rho_s = 0.18;
     float roughness = 0.3;
     vec3 viewDir = normalize(Eye - Pos_);
     vec3 normal = texture2D(tex_object8, TexCoord_).xyz * 2.0 - 1.0;
     normal = normalize(normal);
 
-    float Lit = IsShadowing(ShadowPos, shadow_object);
-
     jDirectionalLight light = DirectionalLight[0];
-    vec3 LightPos = -light.LightDirection * 500;
+    vec3 LightPos = -light.LightDirection * 300;
     vec3 ToLight = normalize(LightPos - Pos_);
     float ndotL = clamp(dot(normal, ToLight), 0.0, 1.0);
+    float LightAtten = 400.0 * 400.0 / dot(LightPos - Pos_, LightPos - Pos_);
 
     vec3 Irr1;
+    float sEnergy = rho_s * texture2D(tex_object6, vec2(ndotL, roughness)).x;
+    float dEnergy = max(1.0 - sEnergy, 0.0);
+    //dEnergy = 1.0;
+    vec3 albedo = pow(texture2D(tex_object7, TexCoord_).xyz, vec3(2.2));
     {
-        float ndotL = clamp(dot(normal, ToLight), 0.0, 1.0);
-        float sEnergy = rho_s * texture2D(tex_object6, vec2(ndotL, roughness)).x;
-        float dEnergy = max(1.0 - sEnergy, 0.0);
-        //dEnergy = 1.0;
+        vec3 LightColor = light.Color * Lit * LightAtten;
+        vec3 E = ndotL * LightColor;
 
-        vec3 albedo = pow(texture2D(tex_object2, TexCoord_).xyz, vec3(2.2));      // to linear space
-        vec3 LightColor = light.Color * Lit;
-        vec3 E = ndotL * LightColor * dEnergy;
-
-        Irr1 = E;
+        Irr1 = E * pow(albedo, vec3(DiffuseMix));
     }
 
     {
@@ -179,7 +180,6 @@ void main()
         vec4 IrrGaussian32 = texture2D(tex_object6, uv);
 
         color.xyz = vec3(0.0, 0.0, 0.0);
-        //color.xyz += BlurWeights[0] * texture2D(tex_object, uv).xyz;        // 최대 해상도를 얻기위해서 요건 여기서 실시간으로 계산해도 될듯.
         color.xyz += BlurWeights[0] * Irr1;
         color.xyz += BlurWeights[1] * IrrGaussian2.xyz;
         color.xyz += BlurWeights[2] * IrrGaussian4.xyz;
@@ -206,15 +206,17 @@ void main()
         }
 
         // TSM
+        int TSMEnable = 1;
+        if (TSMEnable > 0)
         {
             // Compute global scatter from modified TSM
             // TSMtap = (distance to light, u, v)
             vec4 TSMtap = texture2D(tex_object9, ShadowPos.xy);
 
-            float blur2 = IrrGaussian2.a;
-            float blur4 = IrrGaussian4.a;
-            float blur8 = IrrGaussian8.a;
-            float blur16 = IrrGaussian16.a;
+            float blur2 = max(IrrGaussian2.a, 0.01);
+            float blur4 = max(IrrGaussian4.a, 0.01);
+            float blur8 = max(IrrGaussian8.a, 0.01);
+            float blur16 = max(IrrGaussian16.a, 0.01);
 
             // Four average thicknesses through the object (in mm)
             vec4 thickness_mm = 1.0 * -(1.0 / 0.2) * log(vec4(blur2, blur4, blur8, blur16));
@@ -237,17 +239,13 @@ void main()
             color.xyz += BlurWeights[5] / normConst * fades.w * blendFactor6 * texture2D(tex_object6, TSMUV_For_Blur).xyz;
         }
     }
-
     color.w = 1.0;
 
-    //color.xyz = texture2D(tex_object, uv).xyz;
-    color.xyz *= pow(texture2D(tex_object7, TexCoord_).xyz, vec3(2.2));
+    color.xyz *= pow(albedo, vec3(1.0 - DiffuseMix));
 
     float sBRDF = KS_Skin_Specular(normal, ToLight, viewDir, roughness, rho_s); // White
     vec3 specularLight = vec3(sBRDF) * Lit;
-
-    color.xyz = color.xyz + specularLight;
-
+    color.xyz = dEnergy * color.xyz + specularLight;
 
     color.xyz = pow(color.xyz, vec3(1.0 / 2.2));
 

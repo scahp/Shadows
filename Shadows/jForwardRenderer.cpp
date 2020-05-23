@@ -22,16 +22,6 @@ void jForwardRenderer::Setup()
 	PostProcessInput = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
 	PostProcessInput->RenderTarget = RenderTarget.get();
 
-	// skin test 
-	// todo : 임시
-	{
-		auto postprocess = new jPostProcess_Scale("Scale");
-		postprocess->AddInput(PostProcessInput, jSamplerStatePool::GetSamplerState("Point"));
-		postprocess->SetOutput(nullptr);
-		PostProcessChain.AddNewPostprocess(postprocess);
-		return;
-	}
-
 	//////////////////////////////////////////////////////////////////////////
 	// Setup a postprocess chain
 

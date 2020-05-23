@@ -1,11 +1,18 @@
 #version 330 core
 
-#include "common.glsl"
+precision highp float;
 
-precision mediump float;
+uniform float NearDist;
+uniform float FarDist;
+
+in vec4 VPos_;
+
+out vec4 color;
 
 void main()
 {
-    gl_FragData[0].x = gl_FragCoord.z;
-    gl_FragData[0].w = 1.0;
+    float vZ = (VPos_.z / VPos_.w);
+    vZ = -vZ / FarDist;
+    color = vec4(vZ);
+    gl_FragDepth = vZ;
 }

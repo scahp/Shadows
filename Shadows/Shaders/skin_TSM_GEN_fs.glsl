@@ -37,7 +37,7 @@ layout(std140) uniform DirectionalLightBlock
 void main()
 {
     jDirectionalLight light = DirectionalLight[0];
-    vec3 LightPos = -light.LightDirection * 500;
+    vec3 LightPos = -light.LightDirection * 300;
     float DistToLight = length(LightPos - Pos_);
 
     color.x = DistToLight;

@@ -526,12 +526,6 @@
     <None Include="Shaders\tex_ui_fs.glsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="Shaders\fs_shadowMap.glsl">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="Shaders\vs_shadowMap.glsl">
-      <Filter>Shaders</Filter>
-    </None>
     <None Include="Shaders\common.glsl">
       <Filter>Shaders</Filter>
     </None>

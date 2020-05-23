@@ -115,24 +115,24 @@ class jScopedProfile_GPU
 public:
 	jScopedProfile_GPU(const std::string& name)
 	{
-		Profile.Name = name;
-		Profile.Start = jQueryTimePool::GetQueryTime();
-		JASSERT(Profile.Start);
-		g_rhi->QueryTimeStamp(Profile.Start);
+		//Profile.Name = name;
+		//Profile.Start = jQueryTimePool::GetQueryTime();
+		//JASSERT(Profile.Start);
+		//g_rhi->QueryTimeStamp(Profile.Start);
 	}
 
 	~jScopedProfile_GPU()
 	{
-		Profile.End = jQueryTimePool::GetQueryTime();
-		g_rhi->QueryTimeStamp(Profile.End);
-		
-		jProfile_GPU::WatingResultList[jProfile_GPU::CurrentWatingResultListIndex].push_back(Profile);
+		//Profile.End = jQueryTimePool::GetQueryTime();
+		//g_rhi->QueryTimeStamp(Profile.End);
+		//
+		//jProfile_GPU::WatingResultList[jProfile_GPU::CurrentWatingResultListIndex].push_back(Profile);
 	}
 
 	jProfile_GPU Profile;
 };
 
-#define SCOPE_GPU_PROFILE(Name) jScopedProfile_GPU Name##ScopedProfileGPU(#Name);
+#define SCOPE_GPU_PROFILE(Name) 
 
 //////////////////////////////////////////////////////////////////////////
 // jPerformanceProfile
