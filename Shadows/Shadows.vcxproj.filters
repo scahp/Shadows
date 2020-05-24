@@ -751,5 +751,11 @@
     <None Include="Shaders\skin_fastbloom_x_fs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\skin_fastbloom_final.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\skin_no_tonemap.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

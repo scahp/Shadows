@@ -342,7 +342,9 @@
     <None Include="Shaders\fs_boundvolume.glsl" />
     <None Include="Shaders\fs_graph.glsl" />
     <None Include="Shaders\fs_red.glsl" />
+    <None Include="Shaders\skin_no_tonemap.glsl" />
     <None Include="Shaders\skin_bluralphadistribution_fs.glsl" />
+    <None Include="Shaders\skin_fastbloom_final.glsl" />
     <None Include="Shaders\skin_fastbloom_x_fs.glsl" />
     <None Include="Shaders\skin_fastbloom_y_fs.glsl" />
     <None Include="Shaders\skin_hemispherebrdfbacker.glsl" />

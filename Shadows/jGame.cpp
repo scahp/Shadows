@@ -465,7 +465,7 @@ void jGame::Update(float deltaTime)
 
 	static jFullscreenQuadPrimitive* FullScreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
 	float AccumulatedVariance = 0.0;
-#define BLUR(RENDERTARGET, SRCTEXTURE, CurrentVariance, TextureSize)  \
+#define BLUR(RENDERTARGET, SRCTEXTURE, CurrentVariance, TextureSize, ShaderBlurX, ShaderBlurY)  \
 	FullScreenQuad->RenderObject->tex_object[0] = SRCTEXTURE; \
 	FullScreenQuad->RenderObject->samplerState[0] = jSamplerStatePool::GetSamplerState("LinearWrap").get(); \
 	FullScreenQuad->RenderObject->tex_object[1] = StrechTarget->GetTexture();\
@@ -480,7 +480,7 @@ void jGame::Update(float deltaTime)
 		auto EnableBlend = false;\
 		auto BlendSrc = EBlendSrc::ONE;\
 		auto BlendDest = EBlendDest::ZERO;\
-		auto Shader = jShader::GetShader("SkinGaussianBlurX");\
+		auto Shader = jShader::GetShader(ShaderBlurX);\
 		if (EnableClear)\
 		{\
 			g_rhi->SetClearColor(ClearColor);\
@@ -507,7 +507,7 @@ void jGame::Update(float deltaTime)
 		auto EnableBlend = false;\
 		auto BlendSrc = EBlendSrc::ONE;\
 		auto BlendDest = EBlendDest::ZERO;\
-		auto Shader = jShader::GetShader("SkinGaussianBlurY");\
+		auto Shader = jShader::GetShader(ShaderBlurY);\
 		if (EnableClear)\
 		{\
 			g_rhi->SetClearColor(ClearColor);\
@@ -525,14 +525,17 @@ void jGame::Update(float deltaTime)
 	}\
 	AccumulatedVariance += CurrentVariance;\
 
+#define BLUR_DIFFUSION_PROFILE(RENDERTARGET, SRCTEXTURE, CurrentVariance, TextureSize) \
+	BLUR(RENDERTARGET, SRCTEXTURE, CurrentVariance, TextureSize, "SkinGaussianBlurX", "SkinGaussianBlurY")
+
 	static auto IrrBlurTemp2 = jRenderTargetPool::GetRenderTarget(info);
 
 	AccumulatedVariance = 0.0f;
-	BLUR(IrrBlurTarget2, IrrTarget->GetTexture(), (0.0484f), TEXTURE_SIZE);   // 2
-	BLUR(IrrBlurTarget4, IrrBlurTarget2->GetTexture(), (0.187f), TEXTURE_SIZE);  // 4
-	BLUR(IrrBlurTarget8, IrrBlurTarget4->GetTexture(), (0.567f), TEXTURE_SIZE);  // 8
-	BLUR(IrrBlurTarget16, IrrBlurTarget8->GetTexture(), (1.99f), TEXTURE_SIZE); // 16
-	BLUR(IrrBlurTarget32, IrrBlurTarget16->GetTexture(), (7.41f), TEXTURE_SIZE); // 32
+	BLUR_DIFFUSION_PROFILE(IrrBlurTarget2, IrrTarget->GetTexture(), (0.0484f), TEXTURE_SIZE);   // 2
+	BLUR_DIFFUSION_PROFILE(IrrBlurTarget4, IrrBlurTarget2->GetTexture(), (0.187f), TEXTURE_SIZE);  // 4
+	BLUR_DIFFUSION_PROFILE(IrrBlurTarget8, IrrBlurTarget4->GetTexture(), (0.567f), TEXTURE_SIZE);  // 8
+	BLUR_DIFFUSION_PROFILE(IrrBlurTarget16, IrrBlurTarget8->GetTexture(), (1.99f), TEXTURE_SIZE); // 16
+	BLUR_DIFFUSION_PROFILE(IrrBlurTarget32, IrrBlurTarget16->GetTexture(), (7.41f), TEXTURE_SIZE); // 32
 
 	static std::shared_ptr<jRenderTarget> BlurAlphaDistributionTarget;
 	static bool RenderedBlurAlphaDistributionTarget = false;
@@ -608,10 +611,10 @@ void jGame::Update(float deltaTime)
 		AccumulatedVariance = 0.0;
 
 		// It's enough the gaussian blur until 16.
-		BLUR(BlurAlphaDistributionTarget2, BlurAlphaDistributionTarget->GetTexture(), 2, TEXTURE_SIZE);   // 2
-		BLUR(BlurAlphaDistributionTarget, BlurAlphaDistributionTarget2->GetTexture(), 2, TEXTURE_SIZE);  // 4
-		BLUR(BlurAlphaDistributionTarget2, BlurAlphaDistributionTarget->GetTexture(), 8, TEXTURE_SIZE);  // 8
-		BLUR(BlurAlphaDistributionTarget, BlurAlphaDistributionTarget2->GetTexture(), 16, TEXTURE_SIZE); // 16
+		BLUR_DIFFUSION_PROFILE(BlurAlphaDistributionTarget2, BlurAlphaDistributionTarget->GetTexture(), 2, TEXTURE_SIZE);   // 2
+		BLUR_DIFFUSION_PROFILE(BlurAlphaDistributionTarget, BlurAlphaDistributionTarget2->GetTexture(), 2, TEXTURE_SIZE);  // 4
+		BLUR_DIFFUSION_PROFILE(BlurAlphaDistributionTarget2, BlurAlphaDistributionTarget->GetTexture(), 8, TEXTURE_SIZE);  // 8
+		BLUR_DIFFUSION_PROFILE(BlurAlphaDistributionTarget, BlurAlphaDistributionTarget2->GetTexture(), 16, TEXTURE_SIZE); // 16
 		jRenderTargetPool::ReturnRenderTarget(BlurAlphaDistributionTarget2.get());
 	}
 
@@ -704,7 +707,8 @@ void jGame::Update(float deltaTime)
 		info.TextureCount = 1;
 		info.Magnification = ETextureFilter::NEAREST;
 		info.Minification = ETextureFilter::NEAREST;
-		static auto BloomTempTarget = jRenderTargetPool::GetRenderTarget(info);
+		static auto FastBloomATarget = jRenderTargetPool::GetRenderTarget(info);
+		static auto FastBloomBTarget = jRenderTargetPool::GetRenderTarget(info);
 
 		info.DepthBufferType = EDepthBufferType::DEPTH32;
 		static auto FinalTarget = jRenderTargetPool::GetRenderTarget(info);
@@ -790,138 +794,122 @@ void jGame::Update(float deltaTime)
 			FinalTarget->End();
 		}
 
-		//// Bloom
-		//{
-		//	static float ScaleFactorA = 0.017f;
-
-		//	FullScreenQuad->RenderObject->tex_object[0] = FinalTarget->GetTexture();
-		//	if (BloomTempTarget->Begin())
-		//	{
-		//		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f); 
-		//		auto ClearType = ERenderBufferType::COLOR; 
-		//		auto EnableClear = true; 
-		//		auto EnableDepthTest = false; 
-		//		auto DepthStencilFunc = EComparisonFunc::LESS; 
-		//		auto EnableBlend = false; 
-		//		auto BlendSrc = EBlendSrc::ONE; 
-		//		auto BlendDest = EBlendDest::ZERO; 
-		//		auto Shader = jShader::GetShader("SkinFastBloomX"); 
-		//		if (EnableClear)
-		//		{
-		//			g_rhi->SetClearColor(ClearColor); 
-		//			g_rhi->SetClear(ClearType); 
-		//		}
-		//		g_rhi->EnableDepthTest(false); 
-		//		g_rhi->EnableBlend(EnableBlend); 
-		//		g_rhi->SetBlendFunc(BlendSrc, BlendDest); 
-		//		g_rhi->SetShader(Shader); 
-		//		g_rhi->SetUniformbuffer(&jUniformBuffer<float>("Scale", ScaleFactorA), Shader);
-		//		g_rhi->SetUniformbuffer(&jUniformBuffer<float>("TextureSize", SCR_WIDTH), Shader); 
-		//		MainCamera->BindCamera(Shader); 
-		//		FullScreenQuad->Draw(MainCamera, Shader, {}); 
-		//		BloomTempTarget->End();
-		//	}
-		//	FullScreenQuad->RenderObject->tex_object[0] = BloomTempTarget->GetTexture();
-		//	if (FinalTarget->Begin())
-		//	{
-		//		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f); 
-		//		auto ClearType = ERenderBufferType::COLOR; 
-		//		auto EnableClear = true; 
-		//		auto EnableDepthTest = false; 
-		//		auto DepthStencilFunc = EComparisonFunc::LESS; 
-		//		auto EnableBlend = false; 
-		//		auto BlendSrc = EBlendSrc::ONE; 
-		//		auto BlendDest = EBlendDest::ZERO; 
-		//		auto Shader = jShader::GetShader("SkinFastBloomY"); 
-		//		if (EnableClear)
-		//		{
-		//			g_rhi->SetClearColor(ClearColor); 
-		//			g_rhi->SetClear(ClearType); 
-		//		}
-		//		g_rhi->EnableDepthTest(false); 
-		//		g_rhi->EnableBlend(EnableBlend); 
-		//		g_rhi->SetBlendFunc(BlendSrc, BlendDest); 
-		//		g_rhi->SetShader(Shader); 
-		//		g_rhi->SetUniformbuffer(&jUniformBuffer<float>("Scale", ScaleFactorA), Shader);
-		//		g_rhi->SetUniformbuffer(&jUniformBuffer<float>("TextureSize", SCR_HEIGHT), Shader); 
-		//		MainCamera->BindCamera(Shader); 
-		//		FullScreenQuad->Draw(MainCamera, Shader, {}); 
-		//		FinalTarget->End();
-		//	}
-
-		//	static float ScaleFactorB = 0.192f;
-		//	FullScreenQuad->RenderObject->tex_object[0] = FinalTarget->GetTexture();
-		//	if (BloomTempTarget->Begin())
-		//	{
-		//		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
-		//		auto ClearType = ERenderBufferType::COLOR;
-		//		auto EnableClear = true;
-		//		auto EnableDepthTest = false;
-		//		auto DepthStencilFunc = EComparisonFunc::LESS;
-		//		auto EnableBlend = false;
-		//		auto BlendSrc = EBlendSrc::ONE;
-		//		auto BlendDest = EBlendDest::ZERO;
-		//		auto Shader = jShader::GetShader("SkinFastBloomX");
-		//		if (EnableClear)
-		//		{
-		//			g_rhi->SetClearColor(ClearColor);
-		//			g_rhi->SetClear(ClearType);
-		//		}
-		//		g_rhi->EnableDepthTest(false);
-		//		g_rhi->EnableBlend(EnableBlend);
-		//		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
-		//		g_rhi->SetShader(Shader);
-		//		g_rhi->SetUniformbuffer(&jUniformBuffer<float>("Scale", ScaleFactorB), Shader);
-		//		g_rhi->SetUniformbuffer(&jUniformBuffer<float>("TextureSize", SCR_WIDTH), Shader);
-		//		MainCamera->BindCamera(Shader);
-		//		FullScreenQuad->Draw(MainCamera, Shader, {});
-		//		BloomTempTarget->End();
-		//	}
-		//	FullScreenQuad->RenderObject->tex_object[0] = BloomTempTarget->GetTexture();
-		//	if (FinalTarget->Begin())
-		//	{
-		//		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
-		//		auto ClearType = ERenderBufferType::COLOR;
-		//		auto EnableClear = true;
-		//		auto EnableDepthTest = false;
-		//		auto DepthStencilFunc = EComparisonFunc::LESS;
-		//		auto EnableBlend = false;
-		//		auto BlendSrc = EBlendSrc::ONE;
-		//		auto BlendDest = EBlendDest::ZERO;
-		//		auto Shader = jShader::GetShader("SkinFastBloomY");
-		//		if (EnableClear)
-		//		{
-		//			g_rhi->SetClearColor(ClearColor);
-		//			g_rhi->SetClear(ClearType);
-		//		}
-		//		g_rhi->EnableDepthTest(false);
-		//		g_rhi->EnableBlend(EnableBlend);
-		//		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
-		//		g_rhi->SetShader(Shader);
-		//		g_rhi->SetUniformbuffer(&jUniformBuffer<float>("Scale", ScaleFactorB), Shader);
-		//		g_rhi->SetUniformbuffer(&jUniformBuffer<float>("TextureSize", SCR_HEIGHT), Shader);
-		//		MainCamera->BindCamera(Shader);
-		//		FullScreenQuad->Draw(MainCamera, Shader, {});
-		//		FinalTarget->End();
-		//	}
-		//}
-
-		static auto Final = jPrimitiveUtil::CreateUIQuad(Vector2(0.0f), Vector2(SCR_WIDTH, SCR_HEIGHT), nullptr);
+		// Bloom
+		static bool IsEnableFastBloom = true;
+		if (IsEnableFastBloom)
 		{
-			auto EnableClear = false; 
-			auto EnableDepthTest = false; 
-			auto DepthStencilFunc = EComparisonFunc::LESS; 
-			auto EnableBlend = false; 
-			auto BlendSrc = EBlendSrc::ONE; 
-			auto BlendDest = EBlendDest::ZERO; 
-			auto Shader = jShader::GetShader("UIShader"); 
-			g_rhi->EnableDepthTest(false); 
-			g_rhi->EnableBlend(EnableBlend); 
-			g_rhi->SetBlendFunc(BlendSrc, BlendDest); 
-			g_rhi->SetShader(Shader); 
-			MainCamera->BindCamera(Shader); 
-			Final->RenderObject->tex_object[0] = FinalTarget->GetTexture();
-			Final->Draw(MainCamera, Shader, {});
+#define BLUR_FAST_BLOOM(RENDERTARGET, SRCTEXTURE, CurrentVariance, TextureSize) \
+	BLUR(RENDERTARGET, SRCTEXTURE, CurrentVariance, TextureSize, "SkinFastBloomX", "SkinFastBloomY")
+
+			const float aspect = FinalTarget->Info.Width / (float)FinalTarget->Info.Height;
+
+			AccumulatedVariance = 0.0f;
+			BLUR_FAST_BLOOM(FastBloomATarget, FinalTarget->GetTexture(), 0.008f, TEXTURE_SIZE);
+			BLUR_FAST_BLOOM(FastBloomBTarget, FastBloomATarget->GetTexture(), 0.0576f / aspect, TEXTURE_SIZE);
+
+			if (FinalTarget->Begin())
+			{
+				auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f); 
+				auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+				auto EnableClear = true; 
+				auto EnableDepthTest = false; 
+				auto DepthStencilFunc = EComparisonFunc::LESS; 
+				auto EnableBlend = false; 
+				auto BlendSrc = EBlendSrc::ONE; 
+				auto BlendDest = EBlendDest::ZERO; 
+				auto Shader = jShader::GetShader("SkinFastBloomFinal"); 
+				if (EnableClear)
+				{
+					g_rhi->SetClearColor(ClearColor); 
+					g_rhi->SetClear(ClearType); 
+				}
+				g_rhi->EnableDepthTest(false);
+				g_rhi->EnableBlend(EnableBlend);
+				g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+				g_rhi->SetShader(Shader);
+				MainCamera->BindCamera(Shader);
+
+				auto linearClampSamplerState = jSamplerStatePool::GetSamplerState("LinearClamp").get();
+				FullScreenQuad->RenderObject->tex_object[0] = FastBloomATarget->GetTexture();
+				FullScreenQuad->RenderObject->samplerState[0] = linearClampSamplerState;
+				FullScreenQuad->RenderObject->tex_object[1] = FastBloomBTarget->GetTexture();
+				FullScreenQuad->RenderObject->samplerState[1] = linearClampSamplerState;
+
+				g_rhi->SetUniformbuffer(&jUniformBuffer<float>("WeightA", 0.0174f), Shader);
+				g_rhi->SetUniformbuffer(&jUniformBuffer<float>("WeightB", 0.192f), Shader);
+
+				FullScreenQuad->Draw(MainCamera, Shader, {});
+				FinalTarget->End();
+			}
+
+			//////////////////////////////////////////////////////////////////////////
+			// Setup a postprocess chain
+
+			// Luminance And Adaptive Luminance
+			static jPostprocessChain PostProcessChain;
+			static bool InitializedPostProcessChain = false;
+			if (!InitializedPostProcessChain)
+			{
+				static std::shared_ptr<jPostProcessInOutput> PostProcessInput;
+				PostProcessInput = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
+				PostProcessInput->RenderTarget = FinalTarget.get();
+
+				static auto LuminanceRenderTarget = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget(
+					{ ETextureType::TEXTURE_2D, ETextureFormat::R32F, ETextureFormat::R
+					, EFormatType::FLOAT, EDepthBufferType::NONE, LUMINANCE_WIDTH, LUMINANCE_HEIGHT
+					, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR_MIPMAP_LINEAR }));
+				static auto luminancePostProcessOutput = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
+				luminancePostProcessOutput->RenderTarget = LuminanceRenderTarget.get();
+				{
+					static auto postprocess = new jPostProcess_LuminanceMapGeneration("LuminanceMapGeneration");
+					postprocess->AddInput(PostProcessInput, jSamplerStatePool::GetSamplerState("LinearClamp"));
+					postprocess->SetOutput(luminancePostProcessOutput);
+					PostProcessChain.AddNewPostprocess(postprocess);
+				}
+
+				static auto avgLuminancePostProcessOutput = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
+				{
+					static auto postprocess = new jPostProcess_AdaptiveLuminance("AdaptiveLuminance");
+					postprocess->AddInput(luminancePostProcessOutput, jSamplerStatePool::GetSamplerState("PointMipmap"));
+					postprocess->SetOutput(avgLuminancePostProcessOutput);
+					PostProcessChain.AddNewPostprocess(postprocess);
+				}
+
+				// ToneMapAndBloom
+				{
+					static auto final_PostProcessOut = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
+					final_PostProcessOut->RenderTarget = FinalTarget.get();
+
+					static auto postprocess = new jPostProcess_Tonemap("TonemapAndBloom");
+					postprocess->AddInput(PostProcessInput, jSamplerStatePool::GetSamplerState("LinearClamp"));
+					postprocess->AddInput(avgLuminancePostProcessOutput);
+					postprocess->AddInput(final_PostProcessOut, jSamplerStatePool::GetSamplerState("Linear"));
+					postprocess->SetOutput(nullptr);
+					PostProcessChain.AddNewPostprocess(postprocess);
+				}
+				InitializedPostProcessChain = true;
+			}
+			PostProcessChain.Process(MainCamera);
+		}
+		else
+		{
+			static auto Final = jPrimitiveUtil::CreateUIQuad(Vector2(0.0f), Vector2(SCR_WIDTH, SCR_HEIGHT), nullptr);
+			{
+				auto EnableClear = false;
+				auto EnableDepthTest = false;
+				auto DepthStencilFunc = EComparisonFunc::LESS;
+				auto EnableBlend = false;
+				auto BlendSrc = EBlendSrc::ONE;
+				auto BlendDest = EBlendDest::ZERO;
+				auto Shader = jShader::GetShader("SkinNoTonemapUIShader");
+				g_rhi->EnableDepthTest(false);
+				g_rhi->EnableBlend(EnableBlend);
+				g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+				g_rhi->SetShader(Shader);
+				MainCamera->BindCamera(Shader);
+				Final->RenderObject->tex_object[0] = FinalTarget->GetTexture();
+				Final->Draw(MainCamera, Shader, {});
+			}
 		}
 	}
 

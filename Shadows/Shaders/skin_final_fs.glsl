@@ -226,7 +226,7 @@ void main()
             
             vec2 stretchTap = texture2D(tex_object10, uv).xy;
             float stretchval = 0.5 * (stretchTap.x + stretchTap.y);
-            float textureScale = TextureSize * 0.1 / stretchval;
+            float textureScale = TextureSize * 0.05 / stretchval;
             float blendFactor4 = clamp(textureScale * length(TexCoord_.xy - TSMtap.yz) / (a_values.y * 6.0), 0.0, 1.0);
             float blendFactor5 = clamp(textureScale * length(TexCoord_.xy - TSMtap.yz) / (a_values.z * 6.0), 0.0, 1.0);
             float blendFactor6 = clamp(textureScale * length(TexCoord_.xy - TSMtap.yz) / (a_values.w * 6.0), 0.0, 1.0);
@@ -247,7 +247,7 @@ void main()
     vec3 specularLight = vec3(sBRDF) * Lit;
     color.xyz = dEnergy * color.xyz + specularLight;
 
-    color.xyz = pow(color.xyz, vec3(1.0 / 2.2));
+    //color.xyz = pow(color.xyz, vec3(1.0 / 2.2));
 
     //if (texture2D(tex_object10, uv).z <= 0.0)
     //    color.xyz = texture2D(tex_object2, uv).xyz;

@@ -49,7 +49,9 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("SkinGaussianBlurY", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/skin_gaussian_y_fs.glsl");
 		DECLARE_SHADER_VS_FS("SkinFastBloomX", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/skin_fastbloom_x_fs.glsl");
 		DECLARE_SHADER_VS_FS("SkinFastBloomY", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/skin_fastbloom_y_fs.glsl");
+		DECLARE_SHADER_VS_FS("SkinFastBloomFinal", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/skin_fastbloom_final.glsl");
 		DECLARE_SHADER_VS_FS("SkinFinal", "Shaders/skin_vs.glsl", "Shaders/skin_final_fs.glsl");
+		DECLARE_SHADER_VS_FS("SkinNoTonemapUIShader", "Shaders/tex_ui_vs.glsl", "Shaders/skin_no_tonemap.glsl");
 		DECLARE_SHADER_VS_FS("UVDilation", "shaders/fullscreen/vs_fullscreen_common.glsl", "Shaders/uv_dilation.glsl");
 
 		DECLARE_SHADER_VS_FS("ShadowGen_SSM", "shaders/shadowmap/vs_shadowMap.glsl", "shaders/shadowmap/fs_shadowMap.glsl");
