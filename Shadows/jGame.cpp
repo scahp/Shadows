@@ -26,6 +26,7 @@
 jRHI* g_rhi = nullptr;
 static jMeshObject* headModel = nullptr;
 static jTexture* headModelWorldNormalTexture = nullptr;
+static jTexture* headModelSpecularAOTexture = nullptr;
 
 static constexpr int32 TEXTURE_SIZE = 1024;
 
@@ -164,14 +165,21 @@ void jGame::SpawnObjects(ESpawnedType spawnType)
 		//g_StaticObjectArray.push_back(headModel);
 		headModel->RenderObject->Scale = Vector(300);
 		{
-			jImageData data;
-			std::string temp = "SkinData/Infinite-Level_02_World_NoSmoothUV.jpg";
-			jImageFileLoader::GetInstance().LoadTextureFromFile(data, temp.c_str(), true);
-			//auto newMeshMaterial = new jMeshMaterial();
-			headModelWorldNormalTexture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
-			//newMeshMaterial->TextureName = temp.c_str();
+			{
+				jImageData data;
+				std::string temp = "SkinData/Infinite-Level_02_World_NoSmoothUV.jpg";
+				jImageFileLoader::GetInstance().LoadTextureFromFile(data, temp.c_str(), false);
+				headModelWorldNormalTexture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
+				headModel->RenderObject->tex_object[2] = headModelWorldNormalTexture;
+			}
 
-			headModel->RenderObject->tex_object[2] = headModelWorldNormalTexture;
+			{
+				jImageData data;
+				std::string temp = "SkinData/SpecularAOMap.png";
+				jImageFileLoader::GetInstance().LoadTextureFromFile(data, temp.c_str(), false);
+				headModelSpecularAOTexture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
+				headModel->RenderObject->tex_object[3] = headModelSpecularAOTexture;
+			}			
 		}
 		jObject::AddObject(headModel);
 		SpawnedObjects.push_back(headModel);
@@ -192,6 +200,17 @@ void jGame::RemoveSpawnedObjects()
 void jGame::Update(float deltaTime)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "Game::Update");
+
+	static bool AutoLightRotating = false;
+	if (g_KeyState['1'])
+		AutoLightRotating = true;
+	if (g_KeyState['2'])
+		AutoLightRotating = false;
+
+	auto& appSetting = jShadowAppSettingProperties::GetInstance();
+	static auto RotYMat = Matrix::MakeRotateY(0.01f);
+	if (AutoLightRotating)
+		appSetting.DirecionalLightDirection = RotYMat.Transform(appSetting.DirecionalLightDirection);
 
 	static float temp = 300.0f;
 	headModel->RenderObject->Scale = Vector(temp);
@@ -450,6 +469,7 @@ void jGame::Update(float deltaTime)
 		headModel->RenderObject->tex_object[3] = TSMTarget->GetTexture();
 		headModel->RenderObject->tex_object[4] = StrechTarget->GetTexture();
 		headModel->RenderObject->tex_object[5] = PdtBRDFBackerTarget->GetTexture();
+		headModel->RenderObject->tex_object[6] = headModelSpecularAOTexture;
 
 		auto LinearWrap = jSamplerStatePool::GetSamplerState("LinearWrap").get();
 		headModel->RenderObject->samplerState[1] = LinearWrap;
@@ -457,6 +477,7 @@ void jGame::Update(float deltaTime)
 
 		auto LinearClamp = jSamplerStatePool::GetSamplerState("LinearClamp").get();
 		headModel->RenderObject->samplerState[4] = LinearClamp;
+		headModel->RenderObject->samplerState[6] = LinearClamp;
 
 		headModel->Draw(MainCamera, Shader, lights);
 
@@ -618,47 +639,6 @@ void jGame::Update(float deltaTime)
 		jRenderTargetPool::ReturnRenderTarget(BlurAlphaDistributionTarget2.get());
 	}
 
-	//{
-	//	auto ClearColor = Vector4(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);	// light sky blue
-	//	auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
-	//	auto EnableDepthTest = true;
-	//	auto DepthStencilFunc = EComparisonFunc::LESS;
-	//	auto EnableBlend = true;
-	//	auto BlendSrc = EBlendSrc::ONE;
-	//	auto BlendDest = EBlendDest::ZERO;
-	//	auto Shader = jShader::GetShader("Skin");
-	//	auto EnableClear = true;
-	//	bool EnableDepthBias = false;
-	//	float DepthSlopeBias = 1.0f;
-	//	float DepthConstantBias = 1.0f;
-
-	//	if (EnableClear)
-	//	{
-	//		g_rhi->SetClearColor(ClearColor);
-	//		g_rhi->SetClear(ClearType);
-	//	}
-
-	//	g_rhi->EnableDepthTest(EnableDepthTest);
-	//	g_rhi->SetDepthFunc(DepthStencilFunc);
-
-	//	g_rhi->EnableBlend(EnableBlend);
-	//	g_rhi->SetBlendFunc(BlendSrc, BlendDest);
-
-	//	g_rhi->EnableDepthBias(EnableDepthBias);
-	//	g_rhi->SetDepthBias(DepthConstantBias, DepthSlopeBias);
-
-	//	g_rhi->SetShader(Shader);
-
-	//	std::list<const jLight*> lights;
-	//	lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
-
-	//	MainCamera->BindCamera(Shader);
-	//	jLight::BindLights(lights, Shader);
-
-	//	for (const auto& iter : jObject::GetStaticObject())
-	//		iter->Draw(MainCamera, Shader, lights);
-	//}
-
 	jTexture* SelectedIrrTexture = nullptr;
 	static int32 Sel = 0;
 
@@ -771,6 +751,7 @@ void jGame::Update(float deltaTime)
 				headModel->RenderObject->tex_object[8] = TSMTarget->GetTexture();
 				headModel->RenderObject->tex_object[9] = StrechTarget->GetTexture();
 				headModel->RenderObject->tex_object[10] = BlurAlphaDistributionTarget->GetTexture();
+				headModel->RenderObject->tex_object[11] = headModelSpecularAOTexture;
 
 				auto LinearWrap = jSamplerStatePool::GetSamplerState("LinearWrap").get();
 				headModel->RenderObject->samplerState[0] = LinearWrap;
@@ -779,7 +760,9 @@ void jGame::Update(float deltaTime)
 				headModel->RenderObject->samplerState[3] = LinearWrap;
 				headModel->RenderObject->samplerState[4] = LinearWrap;
 
-				headModel->RenderObject->samplerState[9] = jSamplerStatePool::GetSamplerState("LinearClamp").get();
+				auto LinearClamp = jSamplerStatePool::GetSamplerState("LinearWrap").get();
+				headModel->RenderObject->samplerState[9] = LinearClamp;
+				headModel->RenderObject->samplerState[11] = LinearClamp;
 			};
 			headModel->Draw(MainCamera, Shader, { lights });
 			headModel->SetMaterialOverride = nullptr;

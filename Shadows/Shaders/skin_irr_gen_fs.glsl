@@ -36,6 +36,7 @@ uniform sampler2D tex_object3;      // World Normal
 uniform sampler2D tex_object4;      // TSM
 uniform sampler2D tex_object5;      // Stretch
 uniform sampler2D tex_object6;      // PdtBRDFBackerTarget
+uniform sampler2D tex_object7;      // SpecularAO
 uniform sampler2DShadow shadow_object;
 uniform int UseTexture;
 uniform vec3 Eye;
@@ -131,6 +132,11 @@ void main()
 
     float rho_s = 0.18;
     float roughness = 0.3;
+    vec3 specularAO = texture2D(tex_object7, TexCoord_).xyz;   // (specular intensity, roughness, occlusion)
+    rho_s = specularAO.x;
+    roughness = specularAO.y;
+    float occlusion = specularAO.z;
+
     float ndotL = clamp(dot(normal, ToLight), 0.0, 1.0);
     float sEnergy = rho_s * texture2D(tex_object6, vec2(ndotL, roughness)).x;
     float dEnergy = max(1.0 - sEnergy, 0.0);
@@ -139,7 +145,7 @@ void main()
     vec3 albedo = pow(texture2D(tex_object2, TexCoord_).xyz, vec3(2.2));      // to linear space
     vec3 LightColor = light.Color * Lit * LightAtten;
     vec3 E = clamp(dot(normal, ToLight), 0.0, 1.0) * LightColor;
-    color.xyz = E * pow(albedo, vec3(DiffuseMix));
+    color.xyz = dEnergy * occlusion * E * pow(albedo, vec3(DiffuseMix));
 
     // TSM Alpha
     float TSMAlpha = 0.0;

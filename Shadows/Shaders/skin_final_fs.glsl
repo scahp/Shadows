@@ -13,6 +13,7 @@ uniform sampler2D tex_object8;      // World Normal
 uniform sampler2D tex_object9;      // TSM
 uniform sampler2D tex_object10;		// StrechMap
 uniform sampler2D tex_object11;		// BlurAlphaDistribution
+uniform sampler2D tex_object12;		// SpecularAO
 uniform sampler2DShadow shadow_object;
 
 uniform float TextureSize;
@@ -141,6 +142,11 @@ void main()
 
     float rho_s = 0.18;
     float roughness = 0.3;
+    vec3 specularAO = texture2D(tex_object12, TexCoord_).xyz;   // (specular intensity, roughness, occlusion)
+    rho_s = specularAO.x;
+    roughness = specularAO.y;
+    float occlusion = specularAO.z;
+
     vec3 viewDir = normalize(Eye - Pos_);
     vec3 normal = texture2D(tex_object8, TexCoord_).xyz * 2.0 - 1.0;
     normal = normalize(normal);
@@ -160,7 +166,7 @@ void main()
         vec3 LightColor = light.Color * Lit * LightAtten;
         vec3 E = ndotL * LightColor;
 
-        Irr1 = E * pow(albedo, vec3(DiffuseMix));
+        Irr1 = dEnergy * occlusion * E * pow(albedo, vec3(DiffuseMix));
     }
 
     {
@@ -198,11 +204,15 @@ void main()
         if (SeamAlpha < 1.0)
         {
             // Visualize Seam's problems
-            //Irr1.xyz = vec3(1.0, 0.0, 0.0);
-            //color.xyz = vec3(0.0, 1.0, 0.0);
+            int VisualizeRangeOfSeam = 0;
+            if (VisualizeRangeOfSeam > 0)
+            {
+                Irr1.xyz = vec3(1.0, 0.0, 0.0);
+                color.xyz = vec3(0.0, 1.0, 0.0);
+            }
 
-            SeamAlpha = clamp(pow(SeamAlpha, 4), 0.0, 1.0);
-            color.xyz = mix(Irr1, color.xyz, SeamAlpha);
+            SeamAlpha = clamp(pow(SeamAlpha, 3), 0.0, 1.0);
+            color.xyz = mix(Irr1 / dEnergy, color.xyz, SeamAlpha);
         }
 
         // TSM
@@ -239,13 +249,14 @@ void main()
             color.xyz += BlurWeights[5] / normConst * fades.w * blendFactor6 * texture2D(tex_object6, TSMUV_For_Blur).xyz;
         }
     }
+
     color.w = 1.0;
 
     color.xyz *= pow(albedo, vec3(1.0 - DiffuseMix));
 
     float sBRDF = KS_Skin_Specular(normal, ToLight, viewDir, roughness, rho_s); // White
     vec3 specularLight = vec3(sBRDF) * Lit;
-    color.xyz = dEnergy * color.xyz + specularLight;
+    color.xyz = color.xyz + specularLight;
 
     //color.xyz = pow(color.xyz, vec3(1.0 / 2.2));
 
