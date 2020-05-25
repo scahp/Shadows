@@ -532,5 +532,26 @@
     <None Include="Shaders\compute\compute_lightcull.glsl">
       <Filter>Shaders\compute</Filter>
     </None>
+    <None Include="Shaders\compute\compute_forwardplus_lightculling.glsl">
+      <Filter>Shaders\compute</Filter>
+    </None>
+    <None Include="Shaders\color_only_uniform_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\color_only_uniform_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\DepthOnly_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\DepthOnly_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\forwardplus_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\forwardplus_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

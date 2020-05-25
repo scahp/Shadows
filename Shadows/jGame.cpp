@@ -55,12 +55,12 @@ void jGame::ProcessInput()
 void jGame::Setup()
 {
 	//////////////////////////////////////////////////////////////////////////
-	const Vector mainCameraPos = Vector::ZeroVector;
+	const Vector mainCameraPos(-318.7f, 380.6f, 321.9f);
 	//const Vector mainCameraTarget(171.96f, 166.02f, -180.05f);
 	//const Vector mainCameraPos(165.0f, 125.0f, -136.0f);
 	//const Vector mainCameraPos(300.0f, 100.0f, 300.0f);
-	const Vector mainCameraTarget(0.0f, 0.0f, -1.0f);
-	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(45.0f), 10.0f, 1000.0f, SCR_WIDTH, SCR_HEIGHT, true);
+	const Vector mainCameraTarget(-318.2f, 380.1f, 321.2f);
+	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(45.0f), 10.0f, 2000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
 
 	// Light creation step
@@ -136,8 +136,6 @@ void jGame::Setup()
 
 void jGame::SpawnObjects(ESpawnedType spawnType)
 {
-	return;
-
 	if (spawnType != SpawnedType)
 	{
 		SpawnedType = spawnType;
@@ -246,78 +244,337 @@ void jGame::Update(float deltaTime)
 	jObject::FlushDirtyState();
 
 	//Renderer->Render(MainCamera);
-	static Matrix View = MainCamera->View;
-	static Matrix Projection = MainCamera->Projection;
-	static Matrix InvViewProjection = (Projection * View).GetInverse();
+	//return;
 
+	//////////////////////////////////////////////////////////////////////////
+	// 1. Depth-only pass
+	static auto MainRenderTarget = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({
+		ETextureType::TEXTURE_2D,
+		ETextureFormat::RGBA,
+		ETextureFormat::RGBA,
+		EFormatType::BYTE,
+		EDepthBufferType::DEPTH24_STENCIL8,
+		SCR_WIDTH,
+		SCR_HEIGHT,
+		1 })); 
+	
 	{
 		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
 		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
 		auto EnableDepthTest = true;
-		auto DepthStencilFunc = EComparisonFunc::LESS; 
-		auto EnableBlend = true; 
-		auto BlendSrc = EBlendSrc::SRC_ALPHA;
-		auto BlendDest = EBlendDest::ONE_MINUS_SRC_ALPHA;
-		auto EnableClear = true;
-		auto Shader = jShader::GetShader("Simple"); 
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		//auto Shader = jShader::GetShader("Simple");
+		auto Shader = jShader::GetShader("DepthOnly");
 
-		if(EnableClear)
-		{
-			g_rhi->SetClearColor(ClearColor);
-			g_rhi->SetClear(ClearType);
-		}
+		g_rhi->SetClearColor(ClearColor);
+		g_rhi->SetClear(ClearType);
 
 		g_rhi->EnableDepthTest(EnableDepthTest);
-		g_rhi->EnableBlend(EnableBlend); 
-		g_rhi->SetBlendFunc(BlendSrc, BlendDest); 
-		g_rhi->SetShader(Shader); 
-		MainCamera->BindCamera(Shader); 
+		g_rhi->SetDepthFunc(DepthStencilFunc);
+		g_rhi->SetDepthMask(true);						// Depth write on
 
-		jPlane frustumPlanes[4];
+		g_rhi->EnableBlend(EnableBlend);				// Blend on
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);		// Src One, Dst Zero
 
-		int tileNumber = 16;
-
-		static int i = 0;
-		static float temp = 0;
-		temp += deltaTime;
-		if (temp > 0.05)
+		if (MainRenderTarget->Begin())
 		{
-			temp = 0.0f;
-			++i;
-			if (i >= tileNumber * tileNumber)
-				i = 0;
+			g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
+
+			const auto& StaticObjectList = jObject::GetStaticObject();
+			for (auto& Object : StaticObjectList)
+				Object->Draw(MainCamera, Shader, { });
+			MainRenderTarget->End();
 		}
-		int tileID = i;
+	}
+	//////////////////////////////////////////////////////////////////////////
 
-		int GET_GROUP_IDX = tileID % (int32)tileNumber;
-		int GET_GROUP_IDY = tileID / (int32)tileNumber;
+	Matrix View = MainCamera->View;
+	Matrix Projection = MainCamera->Projection;
+	Matrix InvViewProjection = (Projection * View).GetInverse();
 
-		auto projToView = [tileNumber](float x, float y, float z) -> Vector
-		{
-			float X = (2.0f * x) / tileNumber - 1.0f;
-			float Y = (2.0f * y) / tileNumber - 1.0f;
-			return Projection.GetInverse().Transform(Vector(X, Y, z));
-		};
-		Vector v[4];
-		v[0] = projToView(GET_GROUP_IDX, GET_GROUP_IDY, 1.0f);
-		v[1] = projToView((GET_GROUP_IDX + 1), GET_GROUP_IDY, 1.0f);
-		v[2] = projToView((GET_GROUP_IDX + 1), (GET_GROUP_IDY + 1), 1.0f);
-		v[3] = projToView(GET_GROUP_IDX, (GET_GROUP_IDY + 1), 1.0f);
+	//{
+	//	auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+	//	auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+	//	auto EnableDepthTest = true;
+	//	auto DepthStencilFunc = EComparisonFunc::LESS; 
+	//	auto EnableBlend = true; 
+	//	auto BlendSrc = EBlendSrc::SRC_ALPHA;
+	//	auto BlendDest = EBlendDest::ONE_MINUS_SRC_ALPHA;
+	//	auto EnableClear = true;
+	//	auto Shader = jShader::GetShader("Simple"); 
 
-		auto Triangle0 = jPrimitiveUtil::CreateTriangle2(Vector::ZeroVector, v[0], v[1], Vector4(1.0f, 0.0f, 0.0f, 0.5f));
-		auto Triangle1 = jPrimitiveUtil::CreateTriangle2(Vector::ZeroVector, v[1], v[2], Vector4(0.0f, 1.0f, 0.0f, 0.5f));
-		auto Triangle2 = jPrimitiveUtil::CreateTriangle2(Vector::ZeroVector, v[2], v[3], Vector4(0.0f, 0.0f, 1.0f, 0.5f));
-		auto Triangle3 = jPrimitiveUtil::CreateTriangle2(Vector::ZeroVector, v[3], v[0], Vector4(1.0f, 0.0f, 1.0f, 0.5f));
-		Triangle0->Draw(MainCamera, Shader, {});
-		Triangle1->Draw(MainCamera, Shader, {});
-		Triangle2->Draw(MainCamera, Shader, {});
-		Triangle3->Draw(MainCamera, Shader, {});
-		delete Triangle0;
-		delete Triangle1;
-		delete Triangle2;
-		delete Triangle3;
+	//	if(EnableClear)
+	//	{
+	//		g_rhi->SetClearColor(ClearColor);
+	//		g_rhi->SetClear(ClearType);
+	//	}
+
+	//	g_rhi->EnableDepthTest(EnableDepthTest);
+	//	g_rhi->EnableBlend(EnableBlend); 
+	//	g_rhi->SetBlendFunc(BlendSrc, BlendDest); 
+	//	g_rhi->SetShader(Shader); 
+	//	MainCamera->BindCamera(Shader); 
+
+	//	jPlane frustumPlanes[4];
+
+	//	int tileNumber = 16;
+
+	//	static int i = 0;
+	//	static float temp = 0;
+	//	temp += deltaTime;
+	//	if (temp > 0.05)
+	//	{
+	//		temp = 0.0f;
+	//		++i;
+	//		if (i >= tileNumber * tileNumber)
+	//			i = 0;
+	//	}
+	//	int tileID = i;
+
+	//	int GET_GROUP_IDX = tileID % (int32)tileNumber;
+	//	int GET_GROUP_IDY = tileID / (int32)tileNumber;
+
+	//	auto projToView = [tileNumber](float x, float y, float z) -> Vector
+	//	{
+	//		float X = (2.0f * x) / tileNumber - 1.0f;
+	//		float Y = (2.0f * y) / tileNumber - 1.0f;
+	//		return Projection.GetInverse().Transform(Vector(X, Y, z));
+	//	};
+	//	Vector v[4];
+	//	v[0] = projToView(GET_GROUP_IDX, GET_GROUP_IDY, 1.0f);
+	//	v[1] = projToView((GET_GROUP_IDX + 1), GET_GROUP_IDY, 1.0f);
+	//	v[2] = projToView((GET_GROUP_IDX + 1), (GET_GROUP_IDY + 1), 1.0f);
+	//	v[3] = projToView(GET_GROUP_IDX, (GET_GROUP_IDY + 1), 1.0f);
+
+	//	auto Triangle0 = jPrimitiveUtil::CreateTriangle2(Vector::ZeroVector, v[0], v[1], Vector4(1.0f, 0.0f, 0.0f, 0.5f));
+	//	auto Triangle1 = jPrimitiveUtil::CreateTriangle2(Vector::ZeroVector, v[1], v[2], Vector4(0.0f, 1.0f, 0.0f, 0.5f));
+	//	auto Triangle2 = jPrimitiveUtil::CreateTriangle2(Vector::ZeroVector, v[2], v[3], Vector4(0.0f, 0.0f, 1.0f, 0.5f));
+	//	auto Triangle3 = jPrimitiveUtil::CreateTriangle2(Vector::ZeroVector, v[3], v[0], Vector4(1.0f, 0.0f, 1.0f, 0.5f));
+	//	Triangle0->Draw(MainCamera, Shader, {});
+	//	Triangle1->Draw(MainCamera, Shader, {});
+	//	Triangle2->Draw(MainCamera, Shader, {});
+	//	Triangle3->Draw(MainCamera, Shader, {});
+	//	delete Triangle0;
+	//	delete Triangle1;
+	//	delete Triangle2;
+	//	delete Triangle3;
+	//}
+
+	// 2. Light culling step
+	int32 MAX_POINT_LIGHT = 1024;
+
+	// PointLight 구조체 선언
+	struct LightData_LIDR
+	{
+		Vector Pos;
+		float Radius;
+		Vector4 Color;
+	};
+
+	static bool InitLightData = false;
+	static std::vector<LightData_LIDR> PointLight_LIDR;
+	if (PointLight_LIDR.size() != MAX_POINT_LIGHT)
+	{
+		PointLight_LIDR.resize(MAX_POINT_LIGHT);
+		InitLightData = false;
 	}
 
+	// 라이트가 초기화 되지 않았다면 초기화, 그렇지 않으면 라이트를 업데이트 함.
+	if (!InitLightData)
+	{
+		InitLightData = true;
+
+		static constexpr float Interval = 60.0f;
+		constexpr int count = 32;
+		for (int i = 0; i < MAX_POINT_LIGHT; ++i)
+		{
+			int r = i / count;
+			int k = i % count;
+
+			float R = (rand() % 256) / 255.0f;
+			float G = (rand() % 256) / 255.0f;
+			float B = (rand() % 256) / 255.0f;
+
+			auto& LightData = PointLight_LIDR[r * count + k];
+			LightData.Pos = Vector((-count / 2 + r) * Interval, 5.0f, (-count / 2 + k) * Interval);
+			LightData.Color = Vector4(R, G, B, 1.0f);
+			LightData.Radius = 200.0f;
+		}
+	}
+	else
+	{
+		static bool Sign = true;
+		static int32 Temp = 0;
+		for (int i = 0; i < MAX_POINT_LIGHT; ++i)
+		{
+			if (Sign)
+			{
+				if (++Temp > 200000)
+					Sign = false;
+			}
+			else
+			{
+				if (--Temp < -200000)
+					Sign = true;
+			}
+
+			PointLight_LIDR[i].Pos += Vector(
+				0.00001f * sinf(i / 255.0f) * (i % 3 + 1)
+				, 0
+				, 0.00001f * cosf(i / 128.0f)) * (i % 3 + 1) * (float)Temp;
+		}
+	}
+
+	size_t workGroupsX = (SCR_WIDTH + (SCR_WIDTH % 32)) / 32;
+	size_t workGroupsY = (SCR_HEIGHT + (SCR_HEIGHT % 32)) / 32;
+	size_t numOfTiles = workGroupsX * workGroupsY;
+
+	auto cs_lightCullingShader = jShader::GetShader("cs_lightculling");
+	g_rhi->SetShader(cs_lightCullingShader);
+	static auto LightList = static_cast<jShaderStorageBufferObject_OpenGL*>(g_rhi->CreateShaderStorageBufferObject("LightBuffer"));
+	LightList->UpdateBufferData(PointLight_LIDR.data(), PointLight_LIDR.size() * sizeof(PointLight_LIDR[0]));
+	LightList->Bind(cs_lightCullingShader);
+
+	static auto VisibleLightIndicesBuffer = static_cast<jShaderStorageBufferObject_OpenGL*>(g_rhi->CreateShaderStorageBufferObject("VisibleLightIndicesBuffer"));
+	VisibleLightIndicesBuffer->UpdateBufferData(nullptr, numOfTiles * sizeof(int32) * 1024);
+	VisibleLightIndicesBuffer->Bind(cs_lightCullingShader);
+
+	SET_UNIFORM_BUFFER_STATIC(Matrix, "View", (View), cs_lightCullingShader);
+	SET_UNIFORM_BUFFER_STATIC(Matrix, "ProjectionView", (Projection * View), cs_lightCullingShader);
+	SET_UNIFORM_BUFFER_STATIC(Matrix, "InverseProjection", Projection.GetInverse(), cs_lightCullingShader);
+	SET_UNIFORM_BUFFER_STATIC(int32, "LightCount", MAX_POINT_LIGHT, cs_lightCullingShader);
+	SET_UNIFORM_BUFFER_STATIC(Vector2, "ScreenSize", Vector2(SCR_WIDTH, SCR_HEIGHT), cs_lightCullingShader);
+
+	g_rhi->DispatchCompute(workGroupsX, workGroupsY, 1);
+
+	static std::vector<LightData_LIDR> Post_PointLight_LIDR;
+	if (Post_PointLight_LIDR.empty())
+		Post_PointLight_LIDR.resize(MAX_POINT_LIGHT);
+	LightList->GetBufferData(Post_PointLight_LIDR.data(), Post_PointLight_LIDR.size() * sizeof(Post_PointLight_LIDR[0]));
+
+	static std::vector<int> VisibleLightCount;
+	if (VisibleLightCount.empty())
+		VisibleLightCount.resize(numOfTiles * 1024);
+	VisibleLightIndicesBuffer->GetBufferData(VisibleLightCount.data(), VisibleLightCount.size() * sizeof(VisibleLightCount[0]));
+
+	//////////////////////////////////////////////////////////////////////////
+	auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+	auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+	auto EnableDepthTest = true;
+	auto DepthStencilFunc = EComparisonFunc::LESS;
+	auto EnableBlend = true;
+	auto BlendSrc = EBlendSrc::SRC_ALPHA;
+	auto BlendDest = EBlendDest::ONE_MINUS_SRC_ALPHA;
+	auto EnableClear = true;
+	auto Shader = jShader::GetShader("SimpleUniformColor");
+
+	if (EnableClear)
+	{
+		g_rhi->SetClearColor(ClearColor);
+		g_rhi->SetClear(ClearType);
+	}
+
+	g_rhi->EnableDepthTest(EnableDepthTest);
+	g_rhi->EnableBlend(EnableBlend);
+	g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+	g_rhi->SetShader(Shader);
+	MainCamera->BindCamera(Shader);
+
+	//////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////////
+	// 3. Light-only pass
+	{
+		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("ForwardPlus");
+
+		g_rhi->SetClearColor(ClearColor);
+		g_rhi->SetClear(ClearType);
+
+		g_rhi->EnableDepthTest(EnableDepthTest);
+		g_rhi->SetDepthFunc(DepthStencilFunc);
+		g_rhi->SetDepthMask(true);						// Depth write on
+
+		g_rhi->EnableBlend(EnableBlend);				// Blend on
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);		// Src One, Dst Zero
+
+		g_rhi->SetShader(Shader);
+		LightList->Bind(Shader);
+		VisibleLightIndicesBuffer->Bind(Shader);
+		
+		MainCamera->BindCamera(Shader);
+
+		SET_UNIFORM_BUFFER_STATIC(int32, "numOfTilesX", workGroupsX, Shader);
+
+		{
+			const auto& StaticObjectList = jObject::GetStaticObject();
+			for (auto& Object : StaticObjectList)
+				Object->Draw(MainCamera, Shader, { });
+		}
+	}
+	//////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////////
+
+	// PointLight 위치 테스트
+	static bool visibleDebugPointLight = false;
+	if (visibleDebugPointLight)
+	{
+		for (int32 i = 0; i < MAX_POINT_LIGHT; ++i)
+		{
+			//if (i != 8)
+			//	continue;
+
+			auto& PointLight = Post_PointLight_LIDR[i];
+			static jObject* Sphere = jPrimitiveUtil::CreateSphere(Vector::ZeroVector, 1.0f, 10, Vector::OneVector, Vector4::ColorRed);
+			Sphere->RenderObject->Pos = PointLight_LIDR[i].Pos;
+			Sphere->RenderObject->Scale = Vector(PointLight.Radius);
+			if (PointLight.Radius <= 0.0)
+				continue;
+			Sphere->RenderObject->Color = PointLight.Color;
+			Sphere->Draw(MainCamera, Shader, {});
+		}
+	}
+
+	//static auto UIQuad = jPrimitiveUtil::CreateUIQuad(
+	//	Vector2(SCR_WIDTH-200, 0.0), 
+	//	Vector2(200, 200), 
+	//	MainRenderTarget->GetTextureDepth());
+	//if (UIQuad)
+	//{
+	//	EnableClear = false;
+	//	EnableDepthTest = false;
+	//	DepthStencilFunc = EComparisonFunc::LESS;
+	//	EnableBlend = false;
+	//	Shader = jShader::GetShader("UIShader");
+
+	//	if (EnableClear)
+	//	{
+	//		g_rhi->SetClearColor(ClearColor);
+	//		g_rhi->SetClear(ClearType);
+	//	}
+
+	//	g_rhi->EnableDepthTest(EnableDepthTest);
+	//	g_rhi->SetDepthFunc(DepthStencilFunc);
+
+	//	g_rhi->EnableBlend(EnableBlend);
+	//	g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+
+	//	g_rhi->SetShader(Shader);
+
+	//	MainCamera->BindCamera(Shader);
+
+	//	UIQuad->Draw(MainCamera, Shader, {});
+	//}
 }
 
 void jGame::UpdateAppSetting()
@@ -524,7 +781,7 @@ void jGame::SpawnTestPrimitives()
 {
 	RemoveSpawnedObjects();
 
-	auto quad = jPrimitiveUtil::CreateQuad(Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), Vector(1000.0f, 1000.0f, 1000.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	auto quad = jPrimitiveUtil::CreateQuad(Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), Vector(10000.0f, 10000.0f, 10000.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 	quad->SetPlane(jPlane(Vector(0.0, 1.0, 0.0), -0.1f));
 	//quad->SkipShadowMapGen = true;
 	quad->SkipUpdateShadowVolume = true;

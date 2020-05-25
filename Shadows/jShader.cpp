@@ -23,6 +23,7 @@ struct jShaderInfoCreation
 	{
 		// Declare shader
 		DECLARE_SHADER_VS_FS("Simple", "Shaders/color_only_vs.glsl", "Shaders/color_only_fs.glsl");
+		DECLARE_SHADER_VS_FS("SimpleUniformColor", "Shaders/color_only_uniform_vs.glsl", "Shaders/color_only_uniform_fs.glsl");
 		DECLARE_SHADER_VS_FS("ShadowMap", "Shaders/vs_shadowMap.glsl", "Shaders/fs_shadowMap.glsl");
 		DECLARE_SHADER_VS_FS("Base", "Shaders/shadowmap/vs.glsl", "Shaders/shadowmap/fs.glsl");
 		DECLARE_SHADER_VS_GS_FS("ShadowMapOmni", "Shaders/shadowmap/vs_omniDirectionalShadowMap.glsl", "shaders/shadowmap/gs_omniDirectionalShadowMap.glsl", "Shaders/shadowmap/fs_omniDirectionalShadowMap.glsl");
@@ -38,6 +39,9 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_CS("cs", "Shaders/compute/compute_example.glsl");
 		DECLARE_SHADER_CS("cs_sort", "Shaders/compute/compute_sort_linkedlist.glsl");
 		DECLARE_SHADER_CS("cs_link", "Shaders/compute/compute_link_linkedlist.glsl");
+
+		DECLARE_SHADER_CS("cs_lightculling", "Shaders/compute/compute_forwardplus_lightculling.glsl");
+		DECLARE_SHADER_VS_FS("ForwardPlus", "shaders/forwardplus_vs.glsl", "shaders/forwardplus_fs.glsl");
 
 		DECLARE_SHADER_VS_FS("ShadowGen_SSM", "shaders/shadowmap/vs_shadowMap.glsl", "shaders/shadowmap/fs_shadowMap.glsl");
 		DECLARE_SHADER_VS_GS_FS("ShadowGen_Omni_SSM", "shaders/shadowmap/vs_omniDirectionalShadowMap.glsl", "shaders/shadowmap/gs_omniDirectionalShadowMap.glsl", "shaders/shadowmap/fs_omniDirectionalShadowMap.glsl");
@@ -89,6 +93,7 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("GaussianBlurV", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/fullscreen/fs_blur_gaussian_vertical.glsl");
 
 		DECLARE_SHADER_VS_FS("Graph2D", "shaders/vs_graph.glsl", "shaders/fs_graph.glsl");
+		DECLARE_SHADER_VS_FS("DepthOnly", "Shaders/DepthOnly_vs.glsl", "Shaders/DepthOnly_fs.glsl");
 	}
 } s_shaderInfoCreation;
 
