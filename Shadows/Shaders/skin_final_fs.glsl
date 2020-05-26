@@ -158,7 +158,7 @@ void main()
     float LightAtten = 400.0 * 400.0 / dot(LightPos - Pos_, LightPos - Pos_);
 
     vec3 Irr1;
-    float sEnergy = rho_s * texture2D(tex_object6, vec2(ndotL, roughness)).x;
+    float sEnergy = rho_s * texture2D(tex_object, vec2(ndotL, roughness)).x;
     float dEnergy = max(1.0 - sEnergy, 0.0);
     //dEnergy = 1.0;
     vec3 albedo = pow(texture2D(tex_object7, TexCoord_).xyz, vec3(2.2));
@@ -212,7 +212,7 @@ void main()
             }
 
             SeamAlpha = clamp(pow(SeamAlpha, 3), 0.0, 1.0);
-            color.xyz = mix(Irr1 / dEnergy, color.xyz, SeamAlpha);
+            color.xyz = mix(Irr1, color.xyz, SeamAlpha);
         }
 
         // TSM
@@ -236,7 +236,7 @@ void main()
             
             vec2 stretchTap = texture2D(tex_object10, uv).xy;
             float stretchval = 0.5 * (stretchTap.x + stretchTap.y);
-            float textureScale = TextureSize * 0.05 / stretchval;
+            float textureScale = TextureSize * 0.1 / stretchval;
             float blendFactor4 = clamp(textureScale * length(TexCoord_.xy - TSMtap.yz) / (a_values.y * 6.0), 0.0, 1.0);
             float blendFactor5 = clamp(textureScale * length(TexCoord_.xy - TSMtap.yz) / (a_values.z * 6.0), 0.0, 1.0);
             float blendFactor6 = clamp(textureScale * length(TexCoord_.xy - TSMtap.yz) / (a_values.w * 6.0), 0.0, 1.0);
@@ -244,9 +244,12 @@ void main()
             vec2 TSMUV_For_Blur = TSMtap.yz;
             TSMUV_For_Blur.y = 1.0 - TSMUV_For_Blur.y;
 
-            color.xyz += BlurWeights[3] / normConst * fades.y * blendFactor4 * texture2D(tex_object4, TSMUV_For_Blur).xyz;
-            color.xyz += BlurWeights[4] / normConst * fades.z * blendFactor5 * texture2D(tex_object5, TSMUV_For_Blur).xyz;
-            color.xyz += BlurWeights[5] / normConst * fades.w * blendFactor6 * texture2D(tex_object6, TSMUV_For_Blur).xyz;
+            vec3 TSMColor = vec3(0.0);
+            TSMColor += BlurWeights[3] / normConst * fades.y * blendFactor4 * texture2D(tex_object4, TSMUV_For_Blur).xyz;
+            TSMColor += BlurWeights[4] / normConst * fades.z * blendFactor5 * texture2D(tex_object5, TSMUV_For_Blur).xyz;
+            TSMColor += BlurWeights[5] / normConst * fades.w * blendFactor6 * texture2D(tex_object6, TSMUV_For_Blur).xyz;
+
+            color.xyz += TSMColor;
         }
     }
 

@@ -162,7 +162,7 @@ void main()
         float ndotL = dot(normal, ToLight);
 
         // Set a large distance for surface points facing the light
-        float bias = -0.5;
+        float bias = -0.3;
         if (ndotL > 0.0 + bias)
             thicknessToLight = 5000.0;
 

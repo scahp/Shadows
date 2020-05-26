@@ -552,11 +552,11 @@ void jGame::Update(float deltaTime)
 	static auto IrrBlurTemp2 = jRenderTargetPool::GetRenderTarget(info);
 
 	AccumulatedVariance = 0.0f;
-	BLUR_DIFFUSION_PROFILE(IrrBlurTarget2, IrrTarget->GetTexture(), (0.0484f), TEXTURE_SIZE);   // 2
-	BLUR_DIFFUSION_PROFILE(IrrBlurTarget4, IrrBlurTarget2->GetTexture(), (0.187f), TEXTURE_SIZE);  // 4
-	BLUR_DIFFUSION_PROFILE(IrrBlurTarget8, IrrBlurTarget4->GetTexture(), (0.567f), TEXTURE_SIZE);  // 8
-	BLUR_DIFFUSION_PROFILE(IrrBlurTarget16, IrrBlurTarget8->GetTexture(), (1.99f), TEXTURE_SIZE); // 16
-	BLUR_DIFFUSION_PROFILE(IrrBlurTarget32, IrrBlurTarget16->GetTexture(), (7.41f), TEXTURE_SIZE); // 32
+	BLUR_DIFFUSION_PROFILE(IrrBlurTarget2, IrrTarget->GetTexture(),			(0.0484f),	TEXTURE_SIZE);   // 2
+	BLUR_DIFFUSION_PROFILE(IrrBlurTarget4, IrrBlurTarget2->GetTexture(),	(0.187f),	TEXTURE_SIZE);  // 4
+	BLUR_DIFFUSION_PROFILE(IrrBlurTarget8, IrrBlurTarget4->GetTexture(),	(0.567f),	TEXTURE_SIZE);  // 8
+	BLUR_DIFFUSION_PROFILE(IrrBlurTarget16, IrrBlurTarget8->GetTexture(),	(1.99f),	TEXTURE_SIZE); // 16
+	BLUR_DIFFUSION_PROFILE(IrrBlurTarget32, IrrBlurTarget16->GetTexture(),	(7.41f),	TEXTURE_SIZE); // 32
 
 	static std::shared_ptr<jRenderTarget> BlurAlphaDistributionTarget;
 	static bool RenderedBlurAlphaDistributionTarget = false;
@@ -632,10 +632,10 @@ void jGame::Update(float deltaTime)
 		AccumulatedVariance = 0.0;
 
 		// It's enough the gaussian blur until 16.
-		BLUR_DIFFUSION_PROFILE(BlurAlphaDistributionTarget2, BlurAlphaDistributionTarget->GetTexture(), 2, TEXTURE_SIZE);   // 2
-		BLUR_DIFFUSION_PROFILE(BlurAlphaDistributionTarget, BlurAlphaDistributionTarget2->GetTexture(), 2, TEXTURE_SIZE);  // 4
-		BLUR_DIFFUSION_PROFILE(BlurAlphaDistributionTarget2, BlurAlphaDistributionTarget->GetTexture(), 8, TEXTURE_SIZE);  // 8
-		BLUR_DIFFUSION_PROFILE(BlurAlphaDistributionTarget, BlurAlphaDistributionTarget2->GetTexture(), 16, TEXTURE_SIZE); // 16
+		BLUR_DIFFUSION_PROFILE(BlurAlphaDistributionTarget2, BlurAlphaDistributionTarget->GetTexture(), 0.0484f, TEXTURE_SIZE);   // 2
+		BLUR_DIFFUSION_PROFILE(BlurAlphaDistributionTarget, BlurAlphaDistributionTarget2->GetTexture(), 0.187f, TEXTURE_SIZE);  // 4
+		BLUR_DIFFUSION_PROFILE(BlurAlphaDistributionTarget2, BlurAlphaDistributionTarget->GetTexture(), 0.567f, TEXTURE_SIZE);  // 8
+		BLUR_DIFFUSION_PROFILE(BlurAlphaDistributionTarget, BlurAlphaDistributionTarget2->GetTexture(), 1.99f, TEXTURE_SIZE); // 16
 		jRenderTargetPool::ReturnRenderTarget(BlurAlphaDistributionTarget2.get());
 	}
 
@@ -778,7 +778,7 @@ void jGame::Update(float deltaTime)
 		}
 
 		// Bloom
-		static bool IsEnableFastBloom = true;
+		static bool IsEnableFastBloom = false;
 		if (IsEnableFastBloom)
 		{
 #define BLUR_FAST_BLOOM(RENDERTARGET, SRCTEXTURE, CurrentVariance, TextureSize) \
