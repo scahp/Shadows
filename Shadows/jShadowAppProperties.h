@@ -56,6 +56,8 @@ public:
 	bool ShowTSMMap = false;
 	bool ShowPdhBRDFBacked = false;
 	bool ShowShadowMap = false;
+	float GaussianStepScale = 1.0f;
+	bool FastBloomAndTonemap = true;
 
 	virtual void Setup(jAppSettingBase* appSetting) override;
 	virtual void Teardown(jAppSettingBase* appSetting) override;

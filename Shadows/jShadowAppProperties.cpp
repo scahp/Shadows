@@ -76,6 +76,11 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->SetMinMax("SpecularScale", 0.0f, 3.0);
 	appSetting->SetGroup("DirecionalLight_Direction", "SpecularScale");
 
+	appSetting->AddVariable("GaussianStepScale", GaussianStepScale);
+	appSetting->SetStep("GaussianStepScale", 0.1f);
+	appSetting->SetMinMax("GaussianStepScale", 1.0f, 20.0f);
+	appSetting->SetGroup("Skin", "GaussianStepScale");
+
 	appSetting->AddVariable("PreScatterWeight", PreScatterWeight);
 	appSetting->SetStep("PreScatterWeight", 0.01f);
 	appSetting->SetMinMax("PreScatterWeight", 0.0f, 1.0f);
@@ -101,6 +106,8 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->SetGroup("Debug", "ShowShadowMap");
 	appSetting->AddEnumVariable("SkinShading", SkinShading, "ESkinShading", ESkinShadingString);
 	appSetting->SetGroup("Debug", "SkinShading");
+	appSetting->AddVariable("FastBloomAndTonemap", FastBloomAndTonemap);
+	appSetting->SetGroup("Debug", "FastBloomAndTonemap");
 
 	//appSetting->AddVariable("PointLight_PositionX", PointLightPosition.x);
 	//appSetting->SetGroup("PointLight_PositionX", "PointLight");
@@ -209,6 +216,7 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 	appSetting->RemoveVariable("ShowShadowMap");
 	appSetting->RemoveVariable("EnergyConversion");
 	appSetting->RemoveVariable("SkinShading");
+	appSetting->RemoveVariable("GaussianStepScale");	
 }
 
 void jShadowAppSettingProperties::SwitchShadowType(jAppSettingBase* appSetting)

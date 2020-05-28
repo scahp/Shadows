@@ -24,6 +24,7 @@ uniform float SpecularScale;
 uniform int EnableTSM;
 uniform int VisualizeRangeSeam;
 uniform int EnergyConversion;
+uniform int SkinShading;
 
 in vec2 TexCoord_;
 in vec3 Pos_;
@@ -161,7 +162,13 @@ void main()
     float LightAtten = 400.0 * 400.0 / dot(LightPos - Pos_, LightPos - Pos_);
 
     vec3 Irr1;
-    float sEnergy = rho_s * texture2D(tex_object, vec2(ndotL, roughness)).x;
+    vec4 PdtSpecularBRDF = texture2D(tex_object, vec2(ndotL, roughness));
+    if (SkinShading == 7)       // PdtSpecularBRDF
+    {
+        color.xyz = PdtSpecularBRDF.xyz;
+        return;
+    }
+    float sEnergy = rho_s * PdtSpecularBRDF.x;
     float dEnergy = max(1.0 - sEnergy, 0.0);
     if (EnergyConversion <= 0.0)
         dEnergy = 1.0;
@@ -172,6 +179,12 @@ void main()
         vec3 E = ndotL * LightColor;
 
         Irr1 = dEnergy * occlusion * E * pow(albedo, vec3(PreScatterWeight));
+    }
+
+    if (SkinShading == 1)       // Irradiance1
+    {
+        color.xyz = Irr1;
+        return;
     }
 
     {
@@ -189,6 +202,32 @@ void main()
         vec4 IrrGaussian8 = texture2D(tex_object4, uv);
         vec4 IrrGaussian16 = texture2D(tex_object5, uv);
         vec4 IrrGaussian32 = texture2D(tex_object6, uv);
+
+        if (SkinShading == 2)       // Irradiance2
+        {
+            color.xyz = IrrGaussian2.xyz;
+            return;
+        }
+        else if (SkinShading == 3)       // Irradiance3
+        {
+            color.xyz = IrrGaussian4.xyz;
+            return;
+        }
+        else if (SkinShading == 4)       // Irradiance4
+        {
+            color.xyz = IrrGaussian8.xyz;
+            return;
+        }
+        else if (SkinShading == 5)       // Irradiance5
+        {
+            color.xyz = IrrGaussian16.xyz;
+            return;
+        }
+        else if (SkinShading == 6)       // Irradiance6
+        {
+            color.xyz = IrrGaussian32.xyz;
+            return;
+        }
 
         color.xyz = vec3(0.0, 0.0, 0.0);
         color.xyz += BlurWeights[0] * Irr1;
@@ -219,6 +258,12 @@ void main()
             color.xyz = mix(Irr1, color.xyz, SeamAlpha);
         }
 
+        if (SkinShading == 8)       // StretchMap
+        {
+            color.xyz = vec3(texture2D(tex_object10, uv).xy, 0.0);
+            return;
+        }
+
         // TSM
         if (EnableTSM > 0)
         {
@@ -239,7 +284,7 @@ void main()
             
             vec2 stretchTap = texture2D(tex_object10, uv).xy;
             float stretchval = 0.5 * (stretchTap.x + stretchTap.y);
-            float textureScale = TextureSize * 0.1 / stretchval;
+            float textureScale = TextureSize * 0.05 / stretchval;
             float blendFactor4 = clamp(textureScale * length(TexCoord_.xy - TSMtap.yz) / (a_values.y * 6.0), 0.0, 1.0);
             float blendFactor5 = clamp(textureScale * length(TexCoord_.xy - TSMtap.yz) / (a_values.z * 6.0), 0.0, 1.0);
             float blendFactor6 = clamp(textureScale * length(TexCoord_.xy - TSMtap.yz) / (a_values.w * 6.0), 0.0, 1.0);

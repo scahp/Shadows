@@ -224,6 +224,8 @@ void jGame::Update(float deltaTime)
 	const bool ShowShadowMap = appSetting.ShowShadowMap;
 	const bool EnergyConversion = appSetting.EnergyConversion;
 	const ESkinShading SkinShading = appSetting.SkinShading;
+	const float GaussianStepScale = appSetting.GaussianStepScale;
+	const float FastBloomAndTonemap = appSetting.FastBloomAndTonemap;
 
 	static float temp = 300.0f;
 	headModel->RenderObject->Scale = Vector(temp);
@@ -561,17 +563,26 @@ void jGame::Update(float deltaTime)
 	}\
 	AccumulatedVariance += CurrentVariance;\
 
+	float IrrBlurStep[5] = 
+	{ 
+		0.0484f * GaussianStepScale, 
+		0.187f * GaussianStepScale, 
+		0.567f * GaussianStepScale, 
+		1.99f * GaussianStepScale, 
+		7.41f * GaussianStepScale 
+	};
+
 #define BLUR_DIFFUSION_PROFILE(RENDERTARGET, SRCTEXTURE, CurrentVariance, TextureSize) \
 	BLUR(RENDERTARGET, SRCTEXTURE, CurrentVariance, TextureSize, "SkinGaussianBlurX", "SkinGaussianBlurY")
 
 	static auto IrrBlurTemp2 = jRenderTargetPool::GetRenderTarget(info);
 
 	AccumulatedVariance = 0.0f;
-	BLUR_DIFFUSION_PROFILE(IrrBlurTarget2, IrrTarget->GetTexture(),			(0.0484f),	TEXTURE_SIZE);   // 2
-	BLUR_DIFFUSION_PROFILE(IrrBlurTarget4, IrrBlurTarget2->GetTexture(),	(0.187f),	TEXTURE_SIZE);  // 4
-	BLUR_DIFFUSION_PROFILE(IrrBlurTarget8, IrrBlurTarget4->GetTexture(),	(0.567f),	TEXTURE_SIZE);  // 8
-	BLUR_DIFFUSION_PROFILE(IrrBlurTarget16, IrrBlurTarget8->GetTexture(),	(1.99f),	TEXTURE_SIZE); // 16
-	BLUR_DIFFUSION_PROFILE(IrrBlurTarget32, IrrBlurTarget16->GetTexture(),	(7.41f),	TEXTURE_SIZE); // 32
+	BLUR_DIFFUSION_PROFILE(IrrBlurTarget2, IrrTarget->GetTexture(),			IrrBlurStep[0],		TEXTURE_SIZE);
+	BLUR_DIFFUSION_PROFILE(IrrBlurTarget4, IrrBlurTarget2->GetTexture(),	IrrBlurStep[1],		TEXTURE_SIZE);
+	BLUR_DIFFUSION_PROFILE(IrrBlurTarget8, IrrBlurTarget4->GetTexture(),	IrrBlurStep[2],		TEXTURE_SIZE);
+	BLUR_DIFFUSION_PROFILE(IrrBlurTarget16, IrrBlurTarget8->GetTexture(),	IrrBlurStep[3],		TEXTURE_SIZE);
+	BLUR_DIFFUSION_PROFILE(IrrBlurTarget32, IrrBlurTarget16->GetTexture(),	IrrBlurStep[4],		TEXTURE_SIZE);
 
 	static std::shared_ptr<jRenderTarget> BlurAlphaDistributionTarget;
 	static bool RenderedBlurAlphaDistributionTarget = false;
@@ -647,10 +658,10 @@ void jGame::Update(float deltaTime)
 		AccumulatedVariance = 0.0;
 
 		// It's enough the gaussian blur until 16.
-		BLUR_DIFFUSION_PROFILE(BlurAlphaDistributionTarget2, BlurAlphaDistributionTarget->GetTexture(), 0.0484f, TEXTURE_SIZE);   // 2
-		BLUR_DIFFUSION_PROFILE(BlurAlphaDistributionTarget, BlurAlphaDistributionTarget2->GetTexture(), 0.187f, TEXTURE_SIZE);  // 4
-		BLUR_DIFFUSION_PROFILE(BlurAlphaDistributionTarget2, BlurAlphaDistributionTarget->GetTexture(), 0.567f, TEXTURE_SIZE);  // 8
-		BLUR_DIFFUSION_PROFILE(BlurAlphaDistributionTarget, BlurAlphaDistributionTarget2->GetTexture(), 1.99f, TEXTURE_SIZE); // 16
+		BLUR_DIFFUSION_PROFILE(BlurAlphaDistributionTarget2, BlurAlphaDistributionTarget->GetTexture(), IrrBlurStep[0], TEXTURE_SIZE);
+		BLUR_DIFFUSION_PROFILE(BlurAlphaDistributionTarget, BlurAlphaDistributionTarget2->GetTexture(), IrrBlurStep[1], TEXTURE_SIZE);
+		BLUR_DIFFUSION_PROFILE(BlurAlphaDistributionTarget2, BlurAlphaDistributionTarget->GetTexture(), IrrBlurStep[2], TEXTURE_SIZE);
+		BLUR_DIFFUSION_PROFILE(BlurAlphaDistributionTarget, BlurAlphaDistributionTarget2->GetTexture(), IrrBlurStep[3], TEXTURE_SIZE);
 		jRenderTargetPool::ReturnRenderTarget(BlurAlphaDistributionTarget2.get());
 	}
 
@@ -747,6 +758,7 @@ void jGame::Update(float deltaTime)
 			SET_UNIFORM_BUFFER_STATIC(bool, "EnableTSM", EnableTSM, Shader);
 			SET_UNIFORM_BUFFER_STATIC(bool, "VisualizeRangeSeam", VisualizeRangeSeam, Shader);
 			SET_UNIFORM_BUFFER_STATIC(bool, "EnergyConversion", EnergyConversion, Shader);
+			SET_UNIFORM_BUFFER_STATIC(int, "SkinShading", (int32)SkinShading, Shader);
 
 			std::list<const jLight*> lights;
 			lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
@@ -798,8 +810,7 @@ void jGame::Update(float deltaTime)
 		}
 
 		// Bloom
-		static bool IsEnableFastBloom = false;
-		if (IsEnableFastBloom)
+		if (FastBloomAndTonemap)
 		{
 #define BLUR_FAST_BLOOM(RENDERTARGET, SRCTEXTURE, CurrentVariance, TextureSize) \
 	BLUR(RENDERTARGET, SRCTEXTURE, CurrentVariance, TextureSize, "SkinFastBloomX", "SkinFastBloomY")
