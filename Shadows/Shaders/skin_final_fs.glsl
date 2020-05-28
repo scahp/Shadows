@@ -23,6 +23,7 @@ uniform float RoughnessScale;
 uniform float SpecularScale;
 uniform int EnableTSM;
 uniform int VisualizeRangeSeam;
+uniform int EnergyConversion;
 
 in vec2 TexCoord_;
 in vec3 Pos_;
@@ -162,7 +163,9 @@ void main()
     vec3 Irr1;
     float sEnergy = rho_s * texture2D(tex_object, vec2(ndotL, roughness)).x;
     float dEnergy = max(1.0 - sEnergy, 0.0);
-    //dEnergy = 1.0;
+    if (EnergyConversion <= 0.0)
+        dEnergy = 1.0;
+
     vec3 albedo = pow(texture2D(tex_object7, TexCoord_).xyz, vec3(2.2));
     {
         vec3 LightColor = light.Color * Lit * LightAtten;

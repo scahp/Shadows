@@ -84,8 +84,23 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->AddVariable("EnableTSM", EnableTSM);
 	appSetting->SetGroup("Skin", "EnableTSM");
 
+	appSetting->AddVariable("EnergyConversion", EnergyConversion);
+	appSetting->SetGroup("Skin", "EnergyConversion");
+
+	appSetting->AddVariable("ShowIrradianceMap", ShowIrradianceMap);
+	appSetting->SetGroup("Debug", "ShowIrradianceMap");
+	appSetting->AddVariable("ShowStretchMap", ShowStretchMap);
+	appSetting->SetGroup("Debug", "ShowStretchMap");
+	appSetting->AddVariable("TSMMap", ShowTSMMap);
+	appSetting->SetGroup("Debug", "TSMMap");
+	appSetting->AddVariable("PdhBRDFBacked", ShowPdhBRDFBacked);
+	appSetting->SetGroup("Debug", "PdhBRDFBacked");
 	appSetting->AddVariable("VisualizeRangeSeam", VisualizeRangeSeam);
 	appSetting->SetGroup("Debug", "VisualizeRangeSeam");
+	appSetting->AddVariable("ShowShadowMap", ShowShadowMap);
+	appSetting->SetGroup("Debug", "ShowShadowMap");
+	appSetting->AddEnumVariable("SkinShading", SkinShading, "ESkinShading", ESkinShadingString);
+	appSetting->SetGroup("Debug", "SkinShading");
 
 	//appSetting->AddVariable("PointLight_PositionX", PointLightPosition.x);
 	//appSetting->SetGroup("PointLight_PositionX", "PointLight");
@@ -181,6 +196,19 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 	appSetting->RemoveVariable("BloomThreshold");
 	appSetting->RemoveVariable("BloomBlurSigma");
 	appSetting->RemoveVariable("BloomMagnitude");
+
+	appSetting->RemoveVariable("RoughnessScale");
+	appSetting->RemoveVariable("SpecularScale");
+	appSetting->RemoveVariable("PreScatterWeight");
+	appSetting->RemoveVariable("EnableTSM");
+	appSetting->RemoveVariable("VisualizeRangeSeam");
+	appSetting->RemoveVariable("ShowIrradianceMap");
+	appSetting->RemoveVariable("ShowStretchMap");
+	appSetting->RemoveVariable("ShowTSMMap");
+	appSetting->RemoveVariable("ShowPdhBRDFBacked");
+	appSetting->RemoveVariable("ShowShadowMap");
+	appSetting->RemoveVariable("EnergyConversion");
+	appSetting->RemoveVariable("SkinShading");
 }
 
 void jShadowAppSettingProperties::SwitchShadowType(jAppSettingBase* appSetting)

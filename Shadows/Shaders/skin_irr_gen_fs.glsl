@@ -54,7 +54,7 @@ uniform float PreScatterWeight;
 uniform float RoughnessScale;
 uniform float SpecularScale;
 uniform int EnableTSM;
-
+uniform int EnergyConversion;
 
 layout(std140) uniform DirectionalLightBlock
 {
@@ -142,7 +142,8 @@ void main()
     float ndotL = clamp(dot(normal, ToLight), 0.0, 1.0);
     float sEnergy = rho_s * texture2D(tex_object6, vec2(ndotL, roughness)).x;
     float dEnergy = max(1.0 - sEnergy, 0.0);
-    //dEnergy = 1.0;
+    if (EnergyConversion <= 0.0)
+        dEnergy = 1.0;
 
     vec3 albedo = pow(texture2D(tex_object2, TexCoord_).xyz, vec3(2.2));      // to linear space
     vec3 LightColor = light.Color * Lit * LightAtten;

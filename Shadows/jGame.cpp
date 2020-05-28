@@ -217,6 +217,13 @@ void jGame::Update(float deltaTime)
 	const float PreScatterWeight = appSetting.PreScatterWeight;
 	const bool EnableTSM = appSetting.EnableTSM;
 	const bool VisualizeRangeSeam = appSetting.VisualizeRangeSeam;
+	const bool ShowIrradianceMap = appSetting.ShowIrradianceMap;
+	const bool ShowStretchMap = appSetting.ShowStretchMap;
+	const bool ShowTSMMap = appSetting.ShowTSMMap;
+	const bool ShowPdhBRDFBacked = appSetting.ShowPdhBRDFBacked;
+	const bool ShowShadowMap = appSetting.ShowShadowMap;
+	const bool EnergyConversion = appSetting.EnergyConversion;
+	const ESkinShading SkinShading = appSetting.SkinShading;
 
 	static float temp = 300.0f;
 	headModel->RenderObject->Scale = Vector(temp);
@@ -465,7 +472,8 @@ void jGame::Update(float deltaTime)
 		SET_UNIFORM_BUFFER_STATIC(float, "PreScatterWeight", PreScatterWeight, Shader);
 		SET_UNIFORM_BUFFER_STATIC(float, "RoughnessScale", RoughnessScale, Shader);
 		SET_UNIFORM_BUFFER_STATIC(float, "SpecularScale", SpecularScale, Shader);
-		SET_UNIFORM_BUFFER_STATIC(float, "EnableTSM", EnableTSM, Shader);
+		SET_UNIFORM_BUFFER_STATIC(bool, "EnableTSM", EnableTSM, Shader);
+		SET_UNIFORM_BUFFER_STATIC(bool, "EnergyConversion", EnergyConversion, Shader);
 
 		std::list<const jLight*> lights;
 		lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
@@ -738,6 +746,7 @@ void jGame::Update(float deltaTime)
 			SET_UNIFORM_BUFFER_STATIC(float, "SpecularScale", SpecularScale, Shader);
 			SET_UNIFORM_BUFFER_STATIC(bool, "EnableTSM", EnableTSM, Shader);
 			SET_UNIFORM_BUFFER_STATIC(bool, "VisualizeRangeSeam", VisualizeRangeSeam, Shader);
+			SET_UNIFORM_BUFFER_STATIC(bool, "EnergyConversion", EnergyConversion, Shader);
 
 			std::list<const jLight*> lights;
 			lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
@@ -942,52 +951,49 @@ void jGame::Update(float deltaTime)
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
-	static bool Preview = false;
-	if (g_KeyState['z'])
-		Preview = true;
-	if (g_KeyState['x'])
-		Preview = false;
-	if (Preview)
+	if (ShowShadowMap)
 	{
 		PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x * 4, SCR_HEIGHT - PreviewSize.y);
 		PREVIEW_TEXTURE(MainCamera->GetLight(ELightType::DIRECTIONAL)->GetShadowMapRenderTarget()->GetTexture());
+	}
 
-		PreviewUI->Pos.x += PreviewSize.x;
-		PREVIEW_TEXTURE(IrrTarget->GetTexture());
-
-		PreviewUI->Pos.x += PreviewSize.x;
-		PREVIEW_TEXTURE(IrrBlurTarget2->GetTexture());
-
-		PreviewUI->Pos.x += PreviewSize.x;
-		PREVIEW_TEXTURE(IrrBlurTarget4->GetTexture());
-
+	if (ShowStretchMap)
+	{
 		PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x * 4, SCR_HEIGHT - PreviewSize.y * 2);
 		PREVIEW_TEXTURE(StrechTarget->GetTexture());
+	}
 
-		PreviewUI->Pos.x += PreviewSize.x;
+	if (ShowIrradianceMap)
+	{
+		PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x * 3, SCR_HEIGHT - PreviewSize.y);
+		PREVIEW_TEXTURE(IrrTarget->GetTexture());
+
+		PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x * 2, SCR_HEIGHT - PreviewSize.y);
+		PREVIEW_TEXTURE(IrrBlurTarget2->GetTexture());
+
+		PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x * 1, SCR_HEIGHT - PreviewSize.y);
+		PREVIEW_TEXTURE(IrrBlurTarget4->GetTexture());
+
+		PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x * 3, SCR_HEIGHT - PreviewSize.y * 2);
 		PREVIEW_TEXTURE(IrrBlurTarget8->GetTexture());
 
-		PreviewUI->Pos.x += PreviewSize.x;
+		PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x * 2, SCR_HEIGHT - PreviewSize.y * 2);
 		PREVIEW_TEXTURE(IrrBlurTarget16->GetTexture());
 
-		PreviewUI->Pos.x += PreviewSize.x;
+		PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x * 1, SCR_HEIGHT - PreviewSize.y * 2);
 		PREVIEW_TEXTURE(IrrBlurTarget32->GetTexture());
 	}
-	else
-	{
-		static bool Preview2 = false;
-		if (g_KeyState['c'])
-			Preview2 = true;
-		if (g_KeyState['v'])
-			Preview2 = false;
-		if (Preview2)
-		{
-			PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x * 2, SCR_HEIGHT - PreviewSize.y);
-			PREVIEW_TEXTURE(TSMTarget->GetTexture());
 
-			PreviewUI->Pos.x += PreviewSize.x;
-			PREVIEW_TEXTURE(PdtBRDFBackerTarget->GetTexture());
-		}
+	if (ShowTSMMap)
+	{
+		PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x * 2, SCR_HEIGHT - PreviewSize.y);
+		PREVIEW_TEXTURE(TSMTarget->GetTexture());
+	}
+
+	if (ShowPdhBRDFBacked)
+	{
+		PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y);
+		PREVIEW_TEXTURE(PdtBRDFBackerTarget->GetTexture());
 	}
 }
 

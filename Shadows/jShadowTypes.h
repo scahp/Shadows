@@ -50,3 +50,29 @@ static const char* EShadowMapTypeString[] = {
 	"DeepShadowMap_DirectionalLight",
 	"CSM_SSM",
 };
+
+enum class ESkinShading
+{
+	Final = 0,
+	Irradiance1,
+	Irradiance2,
+	Irradiance3,
+	Irradiance4,
+	Irradiance5,
+	Irradiance6,
+	PdhBRDFBacked,
+	Stretch,
+	MAX
+};
+
+static const char* ESkinShadingString[] = {
+	"Final",
+	"Irradiance1",
+	"Irradiance2",
+	"Irradiance3",
+	"Irradiance4",
+	"Irradiance5",
+	"Irradiance6",
+	"PdhBRDFBacked",
+	"Stretch",
+};

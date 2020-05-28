@@ -44,11 +44,18 @@ public:
 	float BloomMagnitude = 0.75f;
 
 	// Skin
+	ESkinShading SkinShading = ESkinShading::Final;
 	float RoughnessScale = 1.0;
 	float SpecularScale = 1.0;
 	float PreScatterWeight = 0.5;
 	bool EnableTSM = true;
+	bool EnergyConversion = true;
 	bool VisualizeRangeSeam = false;
+	bool ShowIrradianceMap = false;
+	bool ShowStretchMap = false;
+	bool ShowTSMMap = false;
+	bool ShowPdhBRDFBacked = false;
+	bool ShowShadowMap = false;
 
 	virtual void Setup(jAppSettingBase* appSetting) override;
 	virtual void Teardown(jAppSettingBase* appSetting) override;
