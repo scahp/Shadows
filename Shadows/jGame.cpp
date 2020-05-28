@@ -212,11 +212,15 @@ void jGame::Update(float deltaTime)
 	if (AutoLightRotating)
 		appSetting.DirecionalLightDirection = RotYMat.Transform(appSetting.DirecionalLightDirection);
 
+	const float RoughnessScale = appSetting.RoughnessScale;
+	const float SpecularScale = appSetting.SpecularScale;
+	const float PreScatterWeight = appSetting.PreScatterWeight;
+	const bool EnableTSM = appSetting.EnableTSM;
+	const bool VisualizeRangeSeam = appSetting.VisualizeRangeSeam;
+
 	static float temp = 300.0f;
 	headModel->RenderObject->Scale = Vector(temp);
 	float ModelSize = headModel->RenderObject->Scale.x;
-
-	static float DiffuseMix = 0.5;
 
 	UpdateAppSetting();
 
@@ -457,8 +461,11 @@ void jGame::Update(float deltaTime)
 		g_rhi->SetDepthBias(DepthConstantBias, DepthSlopeBias);
 
 		g_rhi->SetShader(Shader);
-		g_rhi->SetUniformbuffer(&jUniformBuffer<float>("ModelScale", headModel->RenderObject->Scale.x), Shader);
-		g_rhi->SetUniformbuffer(&jUniformBuffer<float>("DiffuseMix", DiffuseMix), Shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "ModelScale", headModel->RenderObject->Scale.x, Shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "PreScatterWeight", PreScatterWeight, Shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "RoughnessScale", RoughnessScale, Shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "SpecularScale", SpecularScale, Shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "EnableTSM", EnableTSM, Shader);
 
 		std::list<const jLight*> lights;
 		lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
@@ -724,9 +731,13 @@ void jGame::Update(float deltaTime)
 			g_rhi->SetDepthBias(DepthConstantBias, DepthSlopeBias);
 
 			g_rhi->SetShader(Shader);
-			g_rhi->SetUniformbuffer(&jUniformBuffer<float>("TextureSize", TEXTURE_SIZE), Shader);
-			g_rhi->SetUniformbuffer(&jUniformBuffer<float>("ModelScale", headModel->RenderObject->Scale.x), Shader);
-			g_rhi->SetUniformbuffer(&jUniformBuffer<float>("DiffuseMix", DiffuseMix), Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "TextureSize", TEXTURE_SIZE, Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "ModelScale", headModel->RenderObject->Scale.x, Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "PreScatterWeight", PreScatterWeight, Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "RoughnessScale", RoughnessScale, Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "SpecularScale", SpecularScale, Shader);
+			SET_UNIFORM_BUFFER_STATIC(bool, "EnableTSM", EnableTSM, Shader);
+			SET_UNIFORM_BUFFER_STATIC(bool, "VisualizeRangeSeam", VisualizeRangeSeam, Shader);
 
 			std::list<const jLight*> lights;
 			lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());

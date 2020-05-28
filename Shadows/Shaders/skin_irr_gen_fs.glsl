@@ -50,7 +50,11 @@ out vec4 color;
 
 uniform int NumOfDirectionalLight;
 uniform jAmbientLight AmbientLight;
-uniform float DiffuseMix;
+uniform float PreScatterWeight;
+uniform float RoughnessScale;
+uniform float SpecularScale;
+uniform int EnableTSM;
+
 
 layout(std140) uniform DirectionalLightBlock
 {
@@ -130,11 +134,9 @@ void main()
     vec3 ToLight = normalize(LightPos - Pos_);
     float LightAtten = 400.0 * 400.0 / dot(LightPos - Pos_, LightPos - Pos_);
 
-    float rho_s = 0.18;
-    float roughness = 0.3;
     vec3 specularAO = texture2D(tex_object7, TexCoord_).xyz;   // (specular intensity, roughness, occlusion)
-    rho_s = specularAO.x;
-    roughness = specularAO.y;
+    float rho_s = SpecularScale * specularAO.x;
+    float roughness = RoughnessScale * specularAO.y;
     float occlusion = specularAO.z;
 
     float ndotL = clamp(dot(normal, ToLight), 0.0, 1.0);
@@ -145,10 +147,11 @@ void main()
     vec3 albedo = pow(texture2D(tex_object2, TexCoord_).xyz, vec3(2.2));      // to linear space
     vec3 LightColor = light.Color * Lit * LightAtten;
     vec3 E = clamp(dot(normal, ToLight), 0.0, 1.0) * LightColor;
-    color.xyz = dEnergy * occlusion * E * pow(albedo, vec3(DiffuseMix));
+    color.xyz = dEnergy * occlusion * E * pow(albedo, vec3(PreScatterWeight));
 
     // TSM Alpha
     float TSMAlpha = 0.0;
+    if (EnableTSM > 0)
     {
         float DistToLight = length(LightPos - Pos_);
         vec4 TSMTap = texture2D(tex_object4, ShadowPos.xy);

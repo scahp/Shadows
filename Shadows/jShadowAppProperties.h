@@ -43,6 +43,13 @@ public:
 	float BloomBlurSigma = 0.8f;
 	float BloomMagnitude = 0.75f;
 
+	// Skin
+	float RoughnessScale = 1.0;
+	float SpecularScale = 1.0;
+	float PreScatterWeight = 0.5;
+	bool EnableTSM = true;
+	bool VisualizeRangeSeam = false;
+
 	virtual void Setup(jAppSettingBase* appSetting) override;
 	virtual void Teardown(jAppSettingBase* appSetting) override;
 

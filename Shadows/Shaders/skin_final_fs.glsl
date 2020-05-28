@@ -18,7 +18,11 @@ uniform sampler2DShadow shadow_object;
 
 uniform float TextureSize;
 uniform float ModelScale;
-uniform float DiffuseMix;
+uniform float PreScatterWeight;
+uniform float RoughnessScale;
+uniform float SpecularScale;
+uniform int EnableTSM;
+uniform int VisualizeRangeSeam;
 
 in vec2 TexCoord_;
 in vec3 Pos_;
@@ -140,11 +144,9 @@ void main()
 
     float Lit = IsShadowing(ShadowPos, shadow_object);
 
-    float rho_s = 0.18;
-    float roughness = 0.3;
     vec3 specularAO = texture2D(tex_object12, TexCoord_).xyz;   // (specular intensity, roughness, occlusion)
-    rho_s = specularAO.x;
-    roughness = specularAO.y;
+    float rho_s = SpecularScale * specularAO.x;
+    float roughness = RoughnessScale * specularAO.y;
     float occlusion = specularAO.z;
 
     vec3 viewDir = normalize(Eye - Pos_);
@@ -166,7 +168,7 @@ void main()
         vec3 LightColor = light.Color * Lit * LightAtten;
         vec3 E = ndotL * LightColor;
 
-        Irr1 = dEnergy * occlusion * E * pow(albedo, vec3(DiffuseMix));
+        Irr1 = dEnergy * occlusion * E * pow(albedo, vec3(PreScatterWeight));
     }
 
     {
@@ -204,8 +206,7 @@ void main()
         if (SeamAlpha < 1.0)
         {
             // Visualize Seam's problems
-            int VisualizeRangeOfSeam = 0;
-            if (VisualizeRangeOfSeam > 0)
+            if (VisualizeRangeSeam > 0)
             {
                 Irr1.xyz = vec3(1.0, 0.0, 0.0);
                 color.xyz = vec3(0.0, 1.0, 0.0);
@@ -216,8 +217,7 @@ void main()
         }
 
         // TSM
-        int TSMEnable = 1;
-        if (TSMEnable > 0)
+        if (EnableTSM > 0)
         {
             // Compute global scatter from modified TSM
             // TSMtap = (distance to light, u, v)
@@ -255,7 +255,7 @@ void main()
 
     color.w = 1.0;
 
-    color.xyz *= pow(albedo, vec3(1.0 - DiffuseMix));
+    color.xyz *= pow(albedo, vec3(1.0 - PreScatterWeight));
 
     float sBRDF = KS_Skin_Specular(normal, ToLight, viewDir, roughness, rho_s); // White
     vec3 specularLight = vec3(sBRDF) * Lit;
