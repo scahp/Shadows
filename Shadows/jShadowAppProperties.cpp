@@ -67,7 +67,7 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 
 	// Skin
 	appSetting->AddVariable("RoughnessScale", RoughnessScale);
-	appSetting->SetStep("RoughnessScale", 0.01f);
+	appSetting->SetStep("RoughnessScale", 0.003f);
 	appSetting->SetMinMax("RoughnessScale", 0.2f, 1.0f);
 	appSetting->SetGroup("DirecionalLight_Direction", "RoughnessScale");
 
@@ -82,7 +82,7 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->SetGroup("Skin", "GaussianStepScale");
 
 	appSetting->AddVariable("PreScatterWeight", PreScatterWeight);
-	appSetting->SetStep("PreScatterWeight", 0.01f);
+	appSetting->SetStep("PreScatterWeight", 0.003f);
 	appSetting->SetMinMax("PreScatterWeight", 0.0f, 1.0f);
 	appSetting->SetGroup("Skin", "PreScatterWeight");
 
@@ -98,8 +98,8 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->SetGroup("Debug", "ShowStretchMap");
 	appSetting->AddVariable("TSMMap", ShowTSMMap);
 	appSetting->SetGroup("Debug", "TSMMap");
-	appSetting->AddVariable("PdhBRDFBacked", ShowPdhBRDFBacked);
-	appSetting->SetGroup("Debug", "PdhBRDFBacked");
+	appSetting->AddVariable("PdhBRDFBaked", ShowPdhBRDFBaked);
+	appSetting->SetGroup("Debug", "PdhBRDFBaked");
 	appSetting->AddVariable("VisualizeRangeSeam", VisualizeRangeSeam);
 	appSetting->SetGroup("Debug", "VisualizeRangeSeam");
 	appSetting->AddVariable("ShowShadowMap", ShowShadowMap);
@@ -212,7 +212,7 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 	appSetting->RemoveVariable("ShowIrradianceMap");
 	appSetting->RemoveVariable("ShowStretchMap");
 	appSetting->RemoveVariable("ShowTSMMap");
-	appSetting->RemoveVariable("ShowPdhBRDFBacked");
+	appSetting->RemoveVariable("ShowPdhBRDFBaked");
 	appSetting->RemoveVariable("ShowShadowMap");
 	appSetting->RemoveVariable("EnergyConversion");
 	appSetting->RemoveVariable("SkinShading");

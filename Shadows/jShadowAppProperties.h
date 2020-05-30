@@ -54,7 +54,7 @@ public:
 	bool ShowIrradianceMap = false;
 	bool ShowStretchMap = false;
 	bool ShowTSMMap = false;
-	bool ShowPdhBRDFBacked = false;
+	bool ShowPdhBRDFBaked = false;
 	bool ShowShadowMap = false;
 	float GaussianStepScale = 1.0f;
 	bool FastBloomAndTonemap = true;

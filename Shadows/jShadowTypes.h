@@ -60,7 +60,7 @@ enum class ESkinShading
 	Irradiance4,
 	Irradiance5,
 	Irradiance6,
-	PdhBRDFBacked,
+	PdhBRDFBaked,
 	Stretch,
 	MAX
 };
@@ -73,6 +73,6 @@ static const char* ESkinShadingString[] = {
 	"Irradiance4",
 	"Irradiance5",
 	"Irradiance6",
-	"PdhBRDFBacked",
+	"PdhBRDFBaked",
 	"Stretch",
 };

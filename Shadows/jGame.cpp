@@ -220,7 +220,7 @@ void jGame::Update(float deltaTime)
 	const bool ShowIrradianceMap = appSetting.ShowIrradianceMap;
 	const bool ShowStretchMap = appSetting.ShowStretchMap;
 	const bool ShowTSMMap = appSetting.ShowTSMMap;
-	const bool ShowPdhBRDFBacked = appSetting.ShowPdhBRDFBacked;
+	const bool ShowPdhBRDFBaked = appSetting.ShowPdhBRDFBaked;
 	const bool ShowShadowMap = appSetting.ShowShadowMap;
 	const bool EnergyConversion = appSetting.EnergyConversion;
 	const ESkinShading SkinShading = appSetting.SkinShading;
@@ -1001,7 +1001,7 @@ void jGame::Update(float deltaTime)
 		PREVIEW_TEXTURE(TSMTarget->GetTexture());
 	}
 
-	if (ShowPdhBRDFBacked)
+	if (ShowPdhBRDFBaked)
 	{
 		PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y);
 		PREVIEW_TEXTURE(PdtBRDFBackerTarget->GetTexture());
