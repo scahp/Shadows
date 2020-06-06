@@ -63,10 +63,10 @@ uniform jMaterial Material;
 uniform vec3 Eye;
 uniform int Collided;
 
-#if defined(USE_TEXTURE)
-uniform sampler2D tex_object2;
-uniform int TextureSRGB[1];
-#endif // USE_TEXTURE
+//#if defined(USE_TEXTURE)
+//uniform sampler2D tex_object2;
+//uniform int TextureSRGB[1];
+//#endif // USE_TEXTURE
 
 uniform sampler2DShadow shadow_object_point_shadow;
 uniform sampler2D shadow_object_point;
@@ -93,9 +93,9 @@ in vec3 Pos_;
 in vec4 Color_;
 in vec3 Normal_;
 
-#if defined(USE_TEXTURE)
-in vec2 TexCoord_;
-#endif // USE_TEXTURE
+//#if defined(USE_TEXTURE)
+//in vec2 TexCoord_;
+//#endif // USE_TEXTURE
 
 out vec4 color;
 
@@ -162,24 +162,24 @@ void main()
 
 	vec4 diffuse = vec4(1.0);
 
-#if defined(USE_TEXTURE)
-	if (UseTexture > 0)
-	{
-		if (TextureSRGB[0] > 0)
-		{
-			// from sRGB to Linear color
-			vec4 tempColor = texture(tex_object2, TexCoord_);
-			diffuse.xyz *= pow(tempColor.xyz, vec3(2.2));
-			diffuse.w *= tempColor.w;
-		}
-		else
-		{
-			diffuse *= texture(tex_object2, TexCoord_);
-		}
-	}
-#else
+//#if defined(USE_TEXTURE)
+//	if (UseTexture > 0)
+//	{
+//		if (TextureSRGB[0] > 0)
+//		{
+//			// from sRGB to Linear color
+//			vec4 tempColor = texture(tex_object2, TexCoord_);
+//			diffuse.xyz *= pow(tempColor.xyz, vec3(2.2));
+//			diffuse.w *= tempColor.w;
+//		}
+//		else
+//		{
+//			diffuse *= texture(tex_object2, TexCoord_);
+//		}
+//	}
+//#else
 	diffuse = Color_;
-#endif // USE_TEXTURE
+//#endif // USE_TEXTURE
 
 	if (UseUniformColor > 0)
 		diffuse = Color;
@@ -281,6 +281,7 @@ void main()
 #endif	// USE_PCSS
 		}
 
+		//lit = 1.0;
         if (lit > 0.0)
         {
             jDirectionalLight light = DirectionalLight[i];
@@ -294,7 +295,9 @@ void main()
 
 			directColor += GetDirectionalLight(light, normal, viewDir) * lit;
         }
-    }
+	}
+	color = vec4(directColor.xyz, diffuse.w);
+	return;
 
     for(int i=0;i<MAX_NUM_OF_POINT_LIGHT;++i)
     {

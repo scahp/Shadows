@@ -22,115 +22,123 @@ void jForwardRenderer::Setup()
 	PostProcessInput = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
 	PostProcessInput->RenderTarget = RenderTarget.get();
 
-	//////////////////////////////////////////////////////////////////////////
-	// Setup a postprocess chain
-
-	// Luminance And Adaptive Luminance
-	LuminanceRenderTarget = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::R32F, ETextureFormat::R, EFormatType::FLOAT, EDepthBufferType::NONE, LUMINANCE_WIDTH, LUMINANCE_HEIGHT, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR_MIPMAP_LINEAR }));
-	auto luminancePostProcessOutput = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
-	luminancePostProcessOutput->RenderTarget = LuminanceRenderTarget.get();
-	{
-		auto postprocess = new jPostProcess_LuminanceMapGeneration("LuminanceMapGeneration");
-		postprocess->AddInput(PostProcessInput, jSamplerStatePool::GetSamplerState("LinearClamp"));
-		postprocess->SetOutput(luminancePostProcessOutput);
-		PostProcessChain.AddNewPostprocess(postprocess);
-	}
-
-	auto avgLuminancePostProcessOutput = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
-	{
-		auto postprocess = new jPostProcess_AdaptiveLuminance("AdaptiveLuminance");
-		postprocess->AddInput(luminancePostProcessOutput, jSamplerStatePool::GetSamplerState("PointMipmap"));
-		postprocess->SetOutput(avgLuminancePostProcessOutput);
-		PostProcessChain.AddNewPostprocess(postprocess);
-	}
-
-	// Bloom
-	auto bloomThresdholdRT = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::R11G11B10F, ETextureFormat::RGB, EFormatType::FLOAT, EDepthBufferType::NONE, SCR_WIDTH, SCR_HEIGHT, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR }));
-	auto bloomThresholdPostProcessOut = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
-	bloomThresholdPostProcessOut->RenderTarget = bloomThresdholdRT.get();
-	{
-		auto postprocess = new jPostProcess_BloomThreshold("BloomThreshold");
-		postprocess->AddInput(PostProcessInput, jSamplerStatePool::GetSamplerState("LinearClamp"));
-		postprocess->AddInput(avgLuminancePostProcessOutput);
-		postprocess->SetOutput(bloomThresholdPostProcessOut);
-		PostProcessChain.AddNewPostprocess(postprocess);
-	}
-
-	auto scale1_RT = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::R11G11B10F, ETextureFormat::RGB, EFormatType::FLOAT, EDepthBufferType::NONE, SCR_WIDTH / 2, SCR_HEIGHT / 2, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR }));
-	auto scale1_PostProcessOut = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
-	scale1_PostProcessOut->RenderTarget = scale1_RT.get();
-	{
-		auto postprocess = new jPostProcess_Scale("Bloom Downscale");
-		postprocess->AddInput(bloomThresholdPostProcessOut, jSamplerStatePool::GetSamplerState("LinearClamp"));
-		postprocess->SetOutput(scale1_PostProcessOut);
-		PostProcessChain.AddNewPostprocess(postprocess);
-	}
-
-	auto scale2_RT = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::R11G11B10F, ETextureFormat::RGB, EFormatType::FLOAT, EDepthBufferType::NONE, SCR_WIDTH / 4, SCR_HEIGHT / 4, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR }));
-	auto scale2_PostProcessOut = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
-	scale2_PostProcessOut->RenderTarget = scale2_RT.get();
-	{
-		auto postprocess = new jPostProcess_Scale("Bloom Downscale");
-		postprocess->AddInput(scale1_PostProcessOut, jSamplerStatePool::GetSamplerState("LinearClamp"));
-		postprocess->SetOutput(scale2_PostProcessOut);
-		PostProcessChain.AddNewPostprocess(postprocess);
-	}
-
-	auto scale3_RT = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::R11G11B10F, ETextureFormat::RGB, EFormatType::FLOAT, EDepthBufferType::NONE, SCR_WIDTH / 8, SCR_HEIGHT / 8, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR }));
-	auto scale3_PostProcessOut = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
-	scale3_PostProcessOut->RenderTarget = scale3_RT.get();
-	{
-		auto postprocess = new jPostProcess_Scale("Bloom Downscale");
-		postprocess->AddInput(scale2_PostProcessOut, jSamplerStatePool::GetSamplerState("LinearClamp"));
-		postprocess->SetOutput(scale3_PostProcessOut);
-		PostProcessChain.AddNewPostprocess(postprocess);
-	}
-
-	auto gaussianBlurRT = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::R11G11B10F, ETextureFormat::RGB, EFormatType::FLOAT, EDepthBufferType::NONE, SCR_WIDTH / 8, SCR_HEIGHT / 8, 1 }));
-	auto gaussianBlur_PostProcessOut = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
-	gaussianBlur_PostProcessOut->RenderTarget = gaussianBlurRT.get();
-	{
-		for (int i = 0; i < 4; ++i)
-		{
-			{
-				auto postprocess = new jPostProcess_GaussianBlurH("GaussianBlurH");
-				postprocess->AddInput(scale3_PostProcessOut, jSamplerStatePool::GetSamplerState("Point"));
-				postprocess->SetOutput(gaussianBlur_PostProcessOut);
-				PostProcessChain.AddNewPostprocess(postprocess);
-			}
-
-			{
-				auto postprocess = new jPostProcess_GaussianBlurV("GaussianBlurV");
-				postprocess->AddInput(gaussianBlur_PostProcessOut, jSamplerStatePool::GetSamplerState("Point"));
-				postprocess->SetOutput(scale3_PostProcessOut);
-				PostProcessChain.AddNewPostprocess(postprocess);
-			}
-		}
-	}
-
-	{
-		auto postprocess = new jPostProcess_Scale("Bloom Upscale");
-		postprocess->AddInput(scale3_PostProcessOut, jSamplerStatePool::GetSamplerState("LinearClamp"));
-		postprocess->SetOutput(scale2_PostProcessOut);
-		PostProcessChain.AddNewPostprocess(postprocess);
-	}
-
-	{
-		auto postprocess = new jPostProcess_Scale("Bloom Upscale");
-		postprocess->AddInput(scale2_PostProcessOut, jSamplerStatePool::GetSamplerState("LinearClamp"));
-		postprocess->SetOutput(scale1_PostProcessOut);
-		PostProcessChain.AddNewPostprocess(postprocess);
-	}
-
 	// ToneMapAndBloom
 	{
-		auto postprocess = new jPostProcess_Tonemap("TonemapAndBloom");
+		auto postprocess = new jPostProcess_Scale("DrawToBackBuffer");
 		postprocess->AddInput(PostProcessInput, jSamplerStatePool::GetSamplerState("Point"));
-		postprocess->AddInput(avgLuminancePostProcessOutput);
-		postprocess->AddInput(scale1_PostProcessOut, jSamplerStatePool::GetSamplerState("Linear"));
 		postprocess->SetOutput(nullptr);
 		PostProcessChain.AddNewPostprocess(postprocess);
 	}
+
+	////////////////////////////////////////////////////////////////////////////
+	//// Setup a postprocess chain
+
+	//// Luminance And Adaptive Luminance
+	//LuminanceRenderTarget = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::R32F, ETextureFormat::R, EFormatType::FLOAT, EDepthBufferType::NONE, LUMINANCE_WIDTH, LUMINANCE_HEIGHT, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR_MIPMAP_LINEAR }));
+	//auto luminancePostProcessOutput = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
+	//luminancePostProcessOutput->RenderTarget = LuminanceRenderTarget.get();
+	//{
+	//	auto postprocess = new jPostProcess_LuminanceMapGeneration("LuminanceMapGeneration");
+	//	postprocess->AddInput(PostProcessInput, jSamplerStatePool::GetSamplerState("LinearClamp"));
+	//	postprocess->SetOutput(luminancePostProcessOutput);
+	//	PostProcessChain.AddNewPostprocess(postprocess);
+	//}
+
+	//auto avgLuminancePostProcessOutput = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
+	//{
+	//	auto postprocess = new jPostProcess_AdaptiveLuminance("AdaptiveLuminance");
+	//	postprocess->AddInput(luminancePostProcessOutput, jSamplerStatePool::GetSamplerState("PointMipmap"));
+	//	postprocess->SetOutput(avgLuminancePostProcessOutput);
+	//	PostProcessChain.AddNewPostprocess(postprocess);
+	//}
+
+	//// Bloom
+	//auto bloomThresdholdRT = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::R11G11B10F, ETextureFormat::RGB, EFormatType::FLOAT, EDepthBufferType::NONE, SCR_WIDTH, SCR_HEIGHT, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR }));
+	//auto bloomThresholdPostProcessOut = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
+	//bloomThresholdPostProcessOut->RenderTarget = bloomThresdholdRT.get();
+	//{
+	//	auto postprocess = new jPostProcess_BloomThreshold("BloomThreshold");
+	//	postprocess->AddInput(PostProcessInput, jSamplerStatePool::GetSamplerState("LinearClamp"));
+	//	postprocess->AddInput(avgLuminancePostProcessOutput);
+	//	postprocess->SetOutput(bloomThresholdPostProcessOut);
+	//	PostProcessChain.AddNewPostprocess(postprocess);
+	//}
+
+	//auto scale1_RT = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::R11G11B10F, ETextureFormat::RGB, EFormatType::FLOAT, EDepthBufferType::NONE, SCR_WIDTH / 2, SCR_HEIGHT / 2, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR }));
+	//auto scale1_PostProcessOut = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
+	//scale1_PostProcessOut->RenderTarget = scale1_RT.get();
+	//{
+	//	auto postprocess = new jPostProcess_Scale("Bloom Downscale");
+	//	postprocess->AddInput(bloomThresholdPostProcessOut, jSamplerStatePool::GetSamplerState("LinearClamp"));
+	//	postprocess->SetOutput(scale1_PostProcessOut);
+	//	PostProcessChain.AddNewPostprocess(postprocess);
+	//}
+
+	//auto scale2_RT = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::R11G11B10F, ETextureFormat::RGB, EFormatType::FLOAT, EDepthBufferType::NONE, SCR_WIDTH / 4, SCR_HEIGHT / 4, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR }));
+	//auto scale2_PostProcessOut = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
+	//scale2_PostProcessOut->RenderTarget = scale2_RT.get();
+	//{
+	//	auto postprocess = new jPostProcess_Scale("Bloom Downscale");
+	//	postprocess->AddInput(scale1_PostProcessOut, jSamplerStatePool::GetSamplerState("LinearClamp"));
+	//	postprocess->SetOutput(scale2_PostProcessOut);
+	//	PostProcessChain.AddNewPostprocess(postprocess);
+	//}
+
+	//auto scale3_RT = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::R11G11B10F, ETextureFormat::RGB, EFormatType::FLOAT, EDepthBufferType::NONE, SCR_WIDTH / 8, SCR_HEIGHT / 8, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR }));
+	//auto scale3_PostProcessOut = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
+	//scale3_PostProcessOut->RenderTarget = scale3_RT.get();
+	//{
+	//	auto postprocess = new jPostProcess_Scale("Bloom Downscale");
+	//	postprocess->AddInput(scale2_PostProcessOut, jSamplerStatePool::GetSamplerState("LinearClamp"));
+	//	postprocess->SetOutput(scale3_PostProcessOut);
+	//	PostProcessChain.AddNewPostprocess(postprocess);
+	//}
+
+	//auto gaussianBlurRT = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::R11G11B10F, ETextureFormat::RGB, EFormatType::FLOAT, EDepthBufferType::NONE, SCR_WIDTH / 8, SCR_HEIGHT / 8, 1 }));
+	//auto gaussianBlur_PostProcessOut = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
+	//gaussianBlur_PostProcessOut->RenderTarget = gaussianBlurRT.get();
+	//{
+	//	for (int i = 0; i < 4; ++i)
+	//	{
+	//		{
+	//			auto postprocess = new jPostProcess_GaussianBlurH("GaussianBlurH");
+	//			postprocess->AddInput(scale3_PostProcessOut, jSamplerStatePool::GetSamplerState("Point"));
+	//			postprocess->SetOutput(gaussianBlur_PostProcessOut);
+	//			PostProcessChain.AddNewPostprocess(postprocess);
+	//		}
+
+	//		{
+	//			auto postprocess = new jPostProcess_GaussianBlurV("GaussianBlurV");
+	//			postprocess->AddInput(gaussianBlur_PostProcessOut, jSamplerStatePool::GetSamplerState("Point"));
+	//			postprocess->SetOutput(scale3_PostProcessOut);
+	//			PostProcessChain.AddNewPostprocess(postprocess);
+	//		}
+	//	}
+	//}
+
+	//{
+	//	auto postprocess = new jPostProcess_Scale("Bloom Upscale");
+	//	postprocess->AddInput(scale3_PostProcessOut, jSamplerStatePool::GetSamplerState("LinearClamp"));
+	//	postprocess->SetOutput(scale2_PostProcessOut);
+	//	PostProcessChain.AddNewPostprocess(postprocess);
+	//}
+
+	//{
+	//	auto postprocess = new jPostProcess_Scale("Bloom Upscale");
+	//	postprocess->AddInput(scale2_PostProcessOut, jSamplerStatePool::GetSamplerState("LinearClamp"));
+	//	postprocess->SetOutput(scale1_PostProcessOut);
+	//	PostProcessChain.AddNewPostprocess(postprocess);
+	//}
+
+	//// ToneMapAndBloom
+	//{
+	//	auto postprocess = new jPostProcess_Tonemap("TonemapAndBloom");
+	//	postprocess->AddInput(PostProcessInput, jSamplerStatePool::GetSamplerState("Point"));
+	//	postprocess->AddInput(avgLuminancePostProcessOutput);
+	//	postprocess->AddInput(scale1_PostProcessOut, jSamplerStatePool::GetSamplerState("Linear"));
+	//	postprocess->SetOutput(nullptr);
+	//	PostProcessChain.AddNewPostprocess(postprocess);
+	//}
 }
 
 void jForwardRenderer::Teardown()

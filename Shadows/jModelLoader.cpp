@@ -31,7 +31,7 @@ jModelLoader::~jModelLoader()
 jMeshObject* jModelLoader::LoadFromFile(const char* filename)
 {
 	Assimp::Importer importer;
-	const aiScene *scene = importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_FlipUVs);
+	const aiScene *scene = importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
 
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{

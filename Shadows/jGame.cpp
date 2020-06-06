@@ -35,7 +35,7 @@ jGame::~jGame()
 
 void jGame::ProcessInput()
 {
-	static float speed = 1.0f;
+	static float speed = 10.0f;
 
 	// Process Key Event
 	if (g_KeyState['a'] || g_KeyState['A']) MainCamera->MoveShift(-speed);
@@ -55,12 +55,14 @@ void jGame::ProcessInput()
 void jGame::Setup()
 {
 	//////////////////////////////////////////////////////////////////////////
-	const Vector mainCameraPos(172.66f, 166.47f, -180.63f);
+	const Vector mainCameraPos(812.58f, 338.02f, -433.87f);
 	//const Vector mainCameraTarget(171.96f, 166.02f, -180.05f);
 	//const Vector mainCameraPos(165.0f, 125.0f, -136.0f);
 	//const Vector mainCameraPos(300.0f, 100.0f, 300.0f);
-	const Vector mainCameraTarget(0.0f, 0.0f, 0.0f);
-	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(45.0f), 10.0f, 1000.0f, SCR_WIDTH, SCR_HEIGHT, true);
+	const Vector mainCameraTarget(811.81f, 337.78f, -433.36f);
+	const Vector mainCameraUp(812.35f, 338.98f, -433.72f);
+	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraUp
+		, DegreeToRadian(45.0f), 10.0f, 5000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
 
 	// Light creation step
@@ -76,8 +78,8 @@ void jGame::Setup()
 	//AmbientLight = jLight::CreateAmbientLight(Vector(0.7f, 0.8f, 0.8f), Vector(0.1f));
 	AmbientLight = jLight::CreateAmbientLight(Vector(0.2f, 0.5f, 1.0f), Vector(0.05f));		// sky light color
 
-	PointLight = jLight::CreatePointLight(jShadowAppSettingProperties::GetInstance().PointLightPosition, Vector4(2.0f, 0.7f, 0.7f, 1.0f), 500.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
-	SpotLight = jLight::CreateSpotLight(jShadowAppSettingProperties::GetInstance().SpotLightPosition, jShadowAppSettingProperties::GetInstance().SpotLightDirection, Vector4(0.0f, 1.0f, 0.0f, 1.0f), 500.0f, 0.7f, 1.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
+	//PointLight = jLight::CreatePointLight(jShadowAppSettingProperties::GetInstance().PointLightPosition, Vector4(2.0f, 0.7f, 0.7f, 1.0f), 500.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
+	//SpotLight = jLight::CreateSpotLight(jShadowAppSettingProperties::GetInstance().SpotLightPosition, jShadowAppSettingProperties::GetInstance().SpotLightDirection, Vector4(0.0f, 1.0f, 0.0f, 1.0f), 500.0f, 0.7f, 1.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
 
 	DirectionalLightInfo = jPrimitiveUtil::CreateDirectionalLightDebug(Vector(250, 260, 0)*0.5f, Vector::OneVector * 10.0f, 10.0f, MainCamera, DirectionalLight, "Image/sun.png");
 	jObject::AddDebugObject(DirectionalLightInfo);
@@ -85,18 +87,18 @@ void jGame::Setup()
 	DirectionalLightShadowMapUIDebug = jPrimitiveUtil::CreateUIQuad({ 0.0f, 0.0f }, { 150, 150 }, DirectionalLight->GetShadowMap());
 	jObject::AddUIDebugObject(DirectionalLightShadowMapUIDebug);
 
-	PointLightInfo = jPrimitiveUtil::CreatePointLightDebug(Vector(10.0f), MainCamera, PointLight, "Image/bulb.png");
-	//jObject::AddDebugObject(PointLightInfo);
+	//PointLightInfo = jPrimitiveUtil::CreatePointLightDebug(Vector(10.0f), MainCamera, PointLight, "Image/bulb.png");
+	////jObject::AddDebugObject(PointLightInfo);
 
-	SpotLightInfo = jPrimitiveUtil::CreateSpotLightDebug(Vector(10.0f), MainCamera, SpotLight, "Image/spot.png");
-	//jObject::AddDebugObject(SpotLightInfo);
+	//SpotLightInfo = jPrimitiveUtil::CreateSpotLightDebug(Vector(10.0f), MainCamera, SpotLight, "Image/spot.png");
+	////jObject::AddDebugObject(SpotLightInfo);
 
 	MainCamera->AddLight(DirectionalLight);
-	MainCamera->AddLight(PointLight);
-	MainCamera->AddLight(SpotLight);
+	//MainCamera->AddLight(PointLight);
+	//MainCamera->AddLight(SpotLight);
 	MainCamera->AddLight(AmbientLight);
 
-	SpawnObjects(ESpawnedType::TestPrimitive);
+	//SpawnObjects(ESpawnedType::TestPrimitive);
 
 	ShadowPipelineSetMap.insert(std::make_pair(EShadowMapType::SSM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_SSM)));
 	ShadowPipelineSetMap.insert(std::make_pair(EShadowMapType::PCF, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_SSM_PCF)));
@@ -132,6 +134,10 @@ void jGame::Setup()
 	//{
 	//	jObject::AddUIDebugObject(jPrimitiveUtil::CreateUIQuad({ i * 150.0f, 0.0f }, { 150.0f, 150.0f }, DirectionalLight->ShadowMapData->CascadeShadowMapRenderTarget[i]->GetTexture()));
 	//}
+
+	auto shed = jModelLoader::GetInstance().LoadFromFile("LightVolumeModel/shed.sdkmesh.obj");
+	jObject::AddObject(shed);
+	SpawnedObjects.push_back(shed);
 }
 
 void jGame::SpawnObjects(ESpawnedType spawnType)
@@ -186,47 +192,47 @@ void jGame::Update(float deltaTime)
 		light->Update(deltaTime);
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-	// Get the 8 points of the view frustum in world space
-	if (jShadowAppSettingProperties::GetInstance().ShadowMapType != EShadowMapType::DeepShadowMap_DirectionalLight)
-	{
-		Vector frustumCornersWS[8] =
-		{
-			Vector(-1.0f,  1.0f, -1.0f),
-			Vector(1.0f,  1.0f, -1.0f),
-			Vector(1.0f, -1.0f, -1.0f),
-			Vector(-1.0f, -1.0f, -1.0f),
-			Vector(-1.0f,  1.0f, 1.0f),
-			Vector(1.0f,  1.0f, 1.0f),
-			Vector(1.0f, -1.0f, 1.0f),
-			Vector(-1.0f, -1.0f, 1.0f),
-		};
+	////////////////////////////////////////////////////////////////////////////
+	//// Get the 8 points of the view frustum in world space
+	//if (jShadowAppSettingProperties::GetInstance().ShadowMapType != EShadowMapType::DeepShadowMap_DirectionalLight)
+	//{
+	//	Vector frustumCornersWS[8] =
+	//	{
+	//		Vector(-1.0f,  1.0f, -1.0f),
+	//		Vector(1.0f,  1.0f, -1.0f),
+	//		Vector(1.0f, -1.0f, -1.0f),
+	//		Vector(-1.0f, -1.0f, -1.0f),
+	//		Vector(-1.0f,  1.0f, 1.0f),
+	//		Vector(1.0f,  1.0f, 1.0f),
+	//		Vector(1.0f, -1.0f, 1.0f),
+	//		Vector(-1.0f, -1.0f, 1.0f),
+	//	};
 
-		Vector frustumCenter(0.0f);
-		Matrix invViewProj = (MainCamera->Projection * MainCamera->View).GetInverse();
-		for (uint32 i = 0; i < 8; ++i)
-		{
-			frustumCornersWS[i] = invViewProj.Transform(frustumCornersWS[i]);
-			frustumCenter = frustumCenter + frustumCornersWS[i];
-		}
-		frustumCenter = frustumCenter * (1.0f / 8.0f);
+	//	Vector frustumCenter(0.0f);
+	//	Matrix invViewProj = (MainCamera->Projection * MainCamera->View).GetInverse();
+	//	for (uint32 i = 0; i < 8; ++i)
+	//	{
+	//		frustumCornersWS[i] = invViewProj.Transform(frustumCornersWS[i]);
+	//		frustumCenter = frustumCenter + frustumCornersWS[i];
+	//	}
+	//	frustumCenter = frustumCenter * (1.0f / 8.0f);
 
-		auto upDir = Vector::UpVector;
+	//	auto upDir = Vector::UpVector;
 
-		float width = SM_WIDTH;
-		float height = SM_HEIGHT;
-		float nearDist = 10.0f;
-		float farDist = 1000.0f;
+	//	float width = SM_WIDTH;
+	//	float height = SM_HEIGHT;
+	//	float nearDist = 10.0f;
+	//	float farDist = 1000.0f;
 
-		// Get position of the shadow camera
-		Vector shadowCameraPos = frustumCenter + DirectionalLight->Data.Direction * -(farDist - nearDist) / 2.0f;
-	
-		auto shadowCamera = jOrthographicCamera::CreateCamera(shadowCameraPos, frustumCenter, shadowCameraPos + upDir
-			, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
-		shadowCamera->UpdateCamera();
-		DirectionalLight->GetLightCamra()->Projection = shadowCamera->Projection;
-		DirectionalLight->GetLightCamra()->View = shadowCamera->View;
-	}
+	//	// Get position of the shadow camera
+	//	Vector shadowCameraPos = frustumCenter + DirectionalLight->Data.Direction * -(farDist - nearDist) / 2.0f;
+	//
+	//	auto shadowCamera = jOrthographicCamera::CreateCamera(shadowCameraPos, frustumCenter, shadowCameraPos + upDir
+	//		, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
+	//	shadowCamera->UpdateCamera();
+	//	DirectionalLight->GetLightCamra()->Projection = shadowCamera->Projection;
+	//	DirectionalLight->GetLightCamra()->View = shadowCamera->View;
+	//}
 	//////////////////////////////////////////////////////////////////////////
 
 	for (auto iter : jObject::GetStaticObject())
@@ -294,7 +300,7 @@ void jGame::UpdateAppSetting()
 			appSetting.ShowPointLightInfo = false;
 			appSetting.ShowSpotLightInfo = false;
 
-			SpawnObjects(ESpawnedType::Hair);
+			//SpawnObjects(ESpawnedType::Hair);
 		}
 		else
 		{
@@ -312,10 +318,10 @@ void jGame::UpdateAppSetting()
 				Renderer->SetChangePipelineSet(newPipelineSet);
 			}
 
-			if (appSetting.ShadowMapType == EShadowMapType::CSM_SSM)
-				SpawnObjects(ESpawnedType::CubePrimitive);
-			else
-				SpawnObjects(ESpawnedType::TestPrimitive);
+			//if (appSetting.ShadowMapType == EShadowMapType::CSM_SSM)
+			//	SpawnObjects(ESpawnedType::CubePrimitive);
+			//else
+			//	SpawnObjects(ESpawnedType::TestPrimitive);
 		}
 		MainCamera->IsInfinityFar = false;
 	}
@@ -332,7 +338,7 @@ void jGame::UpdateAppSetting()
 			Renderer->SetChangePipelineSet(ShadowVolumePipelineSet);
 		}
 
-		SpawnObjects(ESpawnedType::TestPrimitive);
+		//SpawnObjects(ESpawnedType::TestPrimitive);
 		MainCamera->IsInfinityFar = true;
 	}
 

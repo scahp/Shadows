@@ -10,9 +10,9 @@
 
 namespace jLightUtil
 {
-	void MakeDirectionalLightViewInfo(Vector& outPos, Vector& outTarget, Vector& outUp, const Vector& direction)
+	void MakeDirectionalLightViewInfo(Vector& outPos, Vector& outTarget, Vector& outUp, const Vector& direction, float distance /*= 5000.0f*/)
 	{
-		outPos = Vector(-200.0f) * direction;
+		outPos = Vector(-distance) * direction;
 		outTarget = Vector::ZeroVector;
 		outUp = outPos + Vector(0.0f, 1.0f, 0.0f);
 	}
@@ -26,10 +26,10 @@ namespace jLightUtil
 	jShadowMapData* CreateShadowMap(const Vector& direction, const Vector&)
 	{
 		Vector pos, target, up;
-		pos = Vector(350.0f, 360.0f, 100.0f);
+		pos = Vector(3500.0f, 3600.0f, 1000.0f);
 		//pos = Vector(500.0f, 500.0f, 500.0f);
 		//MakeDirectionalLightViewInfoWithPos(target, up, pos, direction);
-		MakeDirectionalLightViewInfo(pos, target, up, direction);
+		MakeDirectionalLightViewInfo(pos, target, up, direction, 3000);
 
 		// todo remove constant variable
 		auto shadowMapData = new jShadowMapData("DirectionalLight");
@@ -38,8 +38,9 @@ namespace jLightUtil
 		float width = SM_WIDTH;
 		float height = SM_HEIGHT;
 		float nearDist = 10.0f;
-		float farDist = 500.0f;
-		shadowMapData->ShadowMapCamera = jOrthographicCamera::CreateCamera(pos, target, up, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
+		float farDist = 5000.0f;
+		shadowMapData->ShadowMapCamera = jOrthographicCamera::CreateCamera(
+			pos, target, up, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
 		
 		shadowMapData->ShadowMapRenderTarget = jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RG32F, ETextureFormat::RG, EFormatType::FLOAT, EDepthBufferType::DEPTH32, SM_WIDTH, SM_HEIGHT, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR });
 		shadowMapData->ShadowMapSamplerState = jSamplerStatePool::GetSamplerState("LinearClampShadow");
@@ -345,7 +346,8 @@ void jDirectionalLight::Update(float deltaTime)
 	if (ShadowMapData && ShadowMapData->ShadowMapCamera)
 	{
 		auto camera = ShadowMapData->ShadowMapCamera;
-		jLightUtil::MakeDirectionalLightViewInfoWithPos(camera->Target, camera->Up, camera->Pos, Data.Direction);
+		//jLightUtil::MakeDirectionalLightViewInfoWithPos(camera->Target, camera->Up, camera->Pos, Data.Direction);
+		jLightUtil::MakeDirectionalLightViewInfo(camera->Pos, camera->Target, camera->Up, Data.Direction, 3000);
 		camera->UpdateCamera();
 	}
 }

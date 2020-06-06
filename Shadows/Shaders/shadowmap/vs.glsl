@@ -24,9 +24,9 @@ out vec3 Pos_;
 out vec4 Color_;
 out vec3 Normal_;
 
-#if defined(USE_TEXTURE)
-out vec2 TexCoord_;
-#endif // USE_TEXTURE
+//#if defined(USE_TEXTURE)
+//out vec2 TexCoord_;
+//#endif // USE_TEXTURE
 
 #if defined(USE_CSM)
 #define NUM_CASCADES 3
@@ -45,9 +45,9 @@ void main()
 	PosV_ = TransformPos(MV, Pos);
 #endif // USE_CSM
 
-#if defined(USE_TEXTURE)
-    TexCoord_ = TexCoord;
-#endif // USE_TEXTURE
+//#if defined(USE_TEXTURE)
+//    TexCoord_ = TexCoord;
+//#endif // USE_TEXTURE
 
     Color_ = Color;
     Normal_ = TransformNormal(M, Normal);

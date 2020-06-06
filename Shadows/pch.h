@@ -44,8 +44,8 @@ using tchar = wchar_t;
 const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
 
-const unsigned int SM_WIDTH = 512;
-const unsigned int SM_HEIGHT = 512;
+const unsigned int SM_WIDTH = 1024;
+const unsigned int SM_HEIGHT = 1024;
 
 const unsigned int SM_ARRAY_WIDTH = 512;
 const unsigned int SM_ARRAY_HEIGHT = 512;

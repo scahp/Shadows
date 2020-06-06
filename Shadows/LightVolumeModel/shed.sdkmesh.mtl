@@ -1,0 +1,962 @@
+# Materials for converted sdkmesh
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka GRYDIRT1.png
+map_Kd GRYDIRT1.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka WHTPLANK.png
+map_Kd WHTPLANK.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka WHTPLANK.png
+map_Kd WHTPLANK.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka DRIFTWD.png
+map_Kd DRIFTWD.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
+newmtl 
+Ns 10.0000
+Ni 1.5000
+Tr 0.0000
+illum 2
+Ka 0.5880 0.5880 0.5880
+Kd 0.5880 0.5880 0.5880
+Ks 1 0 0
+Ks 1 0 0
+map_Ka BARK5.png
+map_Kd BARK5.png
+
