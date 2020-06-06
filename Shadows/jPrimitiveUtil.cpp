@@ -1446,7 +1446,7 @@ jUIQuadPrimitive* CreateUIQuad(const Vector2& pos, const Vector2& size, jTexture
 
 jFullscreenQuadPrimitive* CreateFullscreenQuad(jTexture* texture)
 {
-	float vertices[] = { 0.0f, 1.0f, 2.0f, 3.0f };
+	float vertices[] = { 0.0f, 1.0f, 2.0f };
 
 	uint32 elementCount = static_cast<uint32>(_countof(vertices));
 	// attribute 추가
@@ -1464,7 +1464,7 @@ jFullscreenQuadPrimitive* CreateFullscreenQuad(jTexture* texture)
 		vertexStreamData->Params.push_back(streamParam);
 	}
 
-	vertexStreamData->PrimitiveType = EPrimitiveType::TRIANGLE_STRIP;
+	vertexStreamData->PrimitiveType = EPrimitiveType::TRIANGLES;
 	vertexStreamData->ElementCount = elementCount;
 
 	auto object = new jFullscreenQuadPrimitive();
