@@ -198,6 +198,7 @@ public:
 
 	jLightUtil::jShadowMapData* ShadowMapData = nullptr;
 	jTexture* GetShadowMap() const;
+	jTexture* GetTextureDepth() const;
 
 	virtual void RenderToShadowMap(const RenderToShadowMapFunc& func, const jShader* shader) const override;
 	virtual void Update(float deltaTime) override;

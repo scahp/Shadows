@@ -331,6 +331,11 @@ jTexture* jDirectionalLight::GetShadowMap() const
 	return (ShadowMapData && ShadowMapData->ShadowMapRenderTarget) ? ShadowMapData->ShadowMapRenderTarget->GetTexture() : nullptr;
 }
 
+jTexture* jDirectionalLight::GetTextureDepth() const
+{
+	return (ShadowMapData && ShadowMapData->ShadowMapRenderTarget) ? ShadowMapData->ShadowMapRenderTarget->GetTextureDepth() : nullptr;
+}
+
 void jDirectionalLight::RenderToShadowMap(const RenderToShadowMapFunc& func, const jShader* shader) const
 {
 	JASSERT(ShadowMapData);

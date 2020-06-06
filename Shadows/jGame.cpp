@@ -21,8 +21,10 @@
 #include "jForwardRenderer.h"
 #include "jPipeline.h"
 #include "jVertexAdjacency.h"
+#include "jSamplerStatePool.h"
 
 jRHI* g_rhi = nullptr;
+jMeshObject* Shed = nullptr;
 
 jGame::jGame()
 {
@@ -135,9 +137,7 @@ void jGame::Setup()
 	//	jObject::AddUIDebugObject(jPrimitiveUtil::CreateUIQuad({ i * 150.0f, 0.0f }, { 150.0f, 150.0f }, DirectionalLight->ShadowMapData->CascadeShadowMapRenderTarget[i]->GetTexture()));
 	//}
 
-	auto shed = jModelLoader::GetInstance().LoadFromFile("LightVolumeModel/shed.sdkmesh.obj");
-	jObject::AddObject(shed);
-	SpawnedObjects.push_back(shed);
+	Shed = jModelLoader::GetInstance().LoadFromFile("LightVolumeModel/shed.sdkmesh.obj");
 }
 
 void jGame::SpawnObjects(ESpawnedType spawnType)
@@ -249,7 +249,173 @@ void jGame::Update(float deltaTime)
 
 	jObject::FlushDirtyState();
 
-	Renderer->Render(MainCamera);
+	jRenderTargetInfo ShadowMapWorldRTInfo;
+	ShadowMapWorldRTInfo.TextureType = ETextureType::TEXTURE_2D;
+	ShadowMapWorldRTInfo.InternalFormat = ETextureFormat::R32F;
+	ShadowMapWorldRTInfo.Format = ETextureFormat::R;
+	ShadowMapWorldRTInfo.FormatType = EFormatType::FLOAT;
+	ShadowMapWorldRTInfo.DepthBufferType = EDepthBufferType::DEPTH32;
+	ShadowMapWorldRTInfo.Width = SM_WIDTH;
+	ShadowMapWorldRTInfo.Height = SM_HEIGHT;
+	ShadowMapWorldRTInfo.TextureCount = 1;
+	ShadowMapWorldRTInfo.Magnification = ETextureFilter::NEAREST;
+	ShadowMapWorldRTInfo.Minification = ETextureFilter::NEAREST;
+
+	auto ShadowMapWorldRT = jRenderTargetPool::GetRenderTarget(ShadowMapWorldRTInfo);
+
+	// [1]. ShadowMap Render
+	{
+		auto EnableClear = true;
+		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto ShadowGenShader = jShader::GetShader("ShadowGen_SSM");
+		JASSERT(ShadowGenShader);
+
+		g_rhi->SetRenderTarget(DirectionalLight->GetShadowMapRenderTarget());
+
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		g_rhi->EnableDepthTest(EnableDepthTest);
+		g_rhi->SetDepthFunc(DepthStencilFunc);
+
+		g_rhi->EnableBlend(false);
+		g_rhi->EnableDepthBias(false);
+
+		g_rhi->SetShader(ShadowGenShader);
+
+		DirectionalLight->GetLightCamra()->BindCamera(ShadowGenShader);
+
+		Shed->Draw(DirectionalLight->GetLightCamra(), ShadowGenShader, {});
+
+		g_rhi->SetRenderTarget(nullptr);
+	}
+
+	// [2]. MainScene Render
+	{
+		auto EnableClear = true;
+		auto ClearColor = Vector4(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);	// light sky blue
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("SSM");
+
+		g_rhi->SetRenderTarget(nullptr);
+
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		g_rhi->EnableDepthTest(EnableDepthTest);
+		g_rhi->SetDepthFunc(DepthStencilFunc);
+
+		g_rhi->EnableBlend(EnableBlend);
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+
+		g_rhi->EnableDepthBias(false);
+		//g_rhi->SetDepthBias(DepthConstantBias, DepthSlopeBias);
+
+		g_rhi->SetShader(Shader);
+
+		MainCamera->BindCamera(Shader);
+		DirectionalLight->BindLight(Shader);
+		jLight::BindLights({ DirectionalLight }, Shader);
+
+		Shed->Draw(MainCamera, Shader, { DirectionalLight });
+
+		g_rhi->SetRenderTarget(nullptr);
+	}
+
+	// [3]. Convert Depth to world space scale
+	static jFullscreenQuadPrimitive* FullScreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
+	{
+		auto EnableClear = true;
+		auto ClearColor = Vector4(0.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("ConvertDepthWorld");
+
+		g_rhi->SetRenderTarget(ShadowMapWorldRT.get());
+
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		g_rhi->EnableDepthTest(false);
+		g_rhi->EnableBlend(false);
+		g_rhi->EnableDepthBias(false);
+
+		g_rhi->SetShader(Shader);
+
+		auto VPInv = (MainCamera->Projection * MainCamera->View).GetInverse();
+		auto LightCamera = DirectionalLight->GetLightCamra();
+
+		Vector LightPos = LightCamera->Pos;
+		Vector LightForward = (LightCamera->Target - LightCamera->Pos).GetNormalize();
+
+		SET_UNIFORM_BUFFER_STATIC(Vector, "LightPos", LightPos, Shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "LightForward", LightForward, Shader);
+		SET_UNIFORM_BUFFER_STATIC(Matrix, "VPInv", VPInv, Shader);
+
+		auto PointSamplerPtr = jSamplerStatePool::GetSamplerState("Point");
+		FullScreenQuad->SetTexture(DirectionalLight->GetTextureDepth(), PointSamplerPtr.get());
+		FullScreenQuad->Draw(MainCamera, Shader, { });
+
+		g_rhi->SetRenderTarget(nullptr);
+	}
+
+	// [4]. Generate Min/Max depth ShadowMap Mip level chain From 2048 to 128 for optimal tracing
+
+	// [5]. Fill the holes
+
+	// [6]. LightVolume 계산
+
+	// [7]. 최종장면에 위에 만든 LightVolume 값을 블랜드 시킴
+
+	//////////////////////////////////////////////////////////////////////////
+	// Debug Textures
+	const Vector2 PreviewSize(300, 300);
+	static auto PreviewUI = jPrimitiveUtil::CreateUIQuad(Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y), PreviewSize, nullptr);
+
+#define PREVIEW_TEXTURE(TEXTURE)\
+	{\
+		auto EnableClear = false;\
+		auto EnableDepthTest = false;\
+		auto DepthStencilFunc = EComparisonFunc::LESS;\
+		auto EnableBlend = false;\
+		auto BlendSrc = EBlendSrc::ONE;\
+		auto BlendDest = EBlendDest::ZERO;\
+		auto Shader = jShader::GetShader("UIShader");\
+		g_rhi->EnableDepthTest(false);\
+		g_rhi->EnableBlend(EnableBlend);\
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);\
+		g_rhi->SetShader(Shader);\
+		MainCamera->BindCamera(Shader);\
+		PreviewUI->RenderObject->tex_object = TEXTURE;\
+		PreviewUI->Draw(MainCamera, Shader, {});\
+	}
+
+	PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x * 3, SCR_HEIGHT - PreviewSize.y);
+	PREVIEW_TEXTURE(DirectionalLight->GetTextureDepth());
+
+	PreviewUI->Pos.x += PreviewSize.x;
+	PREVIEW_TEXTURE(ShadowMapWorldRT->GetTexture());
 }
 
 void jGame::UpdateAppSetting()
