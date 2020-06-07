@@ -451,7 +451,7 @@ void jGame::Update(float deltaTime)
 		auto BlendDest = EBlendDest::ZERO;
 		auto Shader = jShader::GetShader("MinMaxFromMinMax");
 
-		g_rhi->SetRenderTarget(ShadowMapWorldMipsRT[1].get());
+		g_rhi->SetRenderTarget(ShadowMapWorldMipsRT[i + 1].get());
 
 		if (EnableClear)
 		{
@@ -471,7 +471,7 @@ void jGame::Update(float deltaTime)
 		SET_UNIFORM_BUFFER_STATIC(Vector2, "BufferSizeInv", BufferSizeInv, Shader);
 
 		auto PointSamplerPtr = jSamplerStatePool::GetSamplerState("Point");
-		FullScreenQuad->SetTexture(ShadowMapWorldRT->GetTexture(), PointSamplerPtr.get());
+		FullScreenQuad->SetTexture(ShadowMapWorldMipsRT[i]->GetTexture(), PointSamplerPtr.get());
 		FullScreenQuad->Draw(MainCamera, Shader, { });
 
 		g_rhi->SetRenderTarget(nullptr);
@@ -503,7 +503,7 @@ void jGame::Update(float deltaTime)
 		g_rhi->SetShader(Shader);
 
 		auto PointSamplerPtr = jSamplerStatePool::GetSamplerState("Point");
-		FullScreenQuad->SetTexture(ShadowMapWorldRT->GetTexture(), PointSamplerPtr.get());
+		FullScreenQuad->SetTexture(ShadowMapWorldMipsRT[SHADOW_MIPS - 1]->GetTexture(), PointSamplerPtr.get());
 		FullScreenQuad->Draw(MainCamera, Shader, { });
 
 		g_rhi->SetRenderTarget(nullptr);

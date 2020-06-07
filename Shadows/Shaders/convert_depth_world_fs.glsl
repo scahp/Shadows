@@ -3,39 +3,26 @@
 precision mediump float;
 
 uniform sampler2D tex_object;
+uniform vec3 LightPos;
+uniform vec3 LightForward;
+uniform mat4 VPInv;
 
 in vec2 TexCoord_;
 out vec4 color;
 
 void main()
 {
-	vec2 depth1 = texture2D(tex_object, TexCoord_).xy;
-	vec2 depth2 = textureOffset(tex_object, TexCoord_, ivec2(0, 1)).xy;
-	vec2 depth3 = textureOffset(tex_object, TexCoord_, ivec2(1, 1)).xy;
-	vec2 depth4 = textureOffset(tex_object, TexCoord_, ivec2(1, 0)).xy;
-	vec2 depth5 = textureOffset(tex_object, TexCoord_, ivec2(1, -1)).xy;
-	vec2 depth6 = textureOffset(tex_object, TexCoord_, ivec2(0, -1)).xy;
-	vec2 depth7 = textureOffset(tex_object, TexCoord_, ivec2(-1, -1)).xy;
-	vec2 depth8 = textureOffset(tex_object, TexCoord_, ivec2(-1, 0)).xy;
-	vec2 depth9 = textureOffset(tex_object, TexCoord_, ivec2(-1, 1)).xy;
+	float depth = texture2D(tex_object, TexCoord_).x;
 
-	float minDepth = min(depth1.x, depth2.x);
-	minDepth = min(minDepth, depth3.x);
-	minDepth = min(minDepth, depth4.x);
-	minDepth = min(minDepth, depth5.x);
-	minDepth = min(minDepth, depth6.x);
-	minDepth = min(minDepth, depth7.x);
-	minDepth = min(minDepth, depth8.x);
-	minDepth = min(minDepth, depth9.x);
+    vec4 clipPos;
+    clipPos.x = 2.0 * TexCoord_.x - 1.0;
+    clipPos.y = -2.0 * TexCoord_.y + 1.0;
+    clipPos.z = depth;
+    clipPos.w = 1.0;
 
-	float maxDepth = max(depth1.y, depth2.y);
-	maxDepth = max(maxDepth, depth3.y);
-	maxDepth = max(maxDepth, depth4.y);
-	maxDepth = max(maxDepth, depth5.y);
-	maxDepth = max(maxDepth, depth6.y);
-	maxDepth = max(maxDepth, depth7.y);
-	maxDepth = max(maxDepth, depth8.y);
-	maxDepth = max(maxDepth, depth9.y);
+    vec4 posWS = VPInv * clipPos;
+    posWS /= posWS.w;
 
-	color.xy = vec2(minDepth, maxDepth);
+    float WorldZ = dot(posWS.xyz - LightPos, LightForward);
+    color = vec4(WorldZ, WorldZ, WorldZ, 1.0);
 }
