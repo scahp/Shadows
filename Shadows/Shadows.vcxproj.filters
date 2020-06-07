@@ -532,5 +532,14 @@
     <None Include="Shaders\convert_depth_world_fs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\depth_min_max_2_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\depth_min_max_3_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\depth_min_max_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

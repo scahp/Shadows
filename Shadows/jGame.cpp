@@ -261,7 +261,28 @@ void jGame::Update(float deltaTime)
 	ShadowMapWorldRTInfo.Magnification = ETextureFilter::NEAREST;
 	ShadowMapWorldRTInfo.Minification = ETextureFilter::NEAREST;
 
-	auto ShadowMapWorldRT = jRenderTargetPool::GetRenderTarget(ShadowMapWorldRTInfo);
+	static auto ShadowMapWorldRT = jRenderTargetPool::GetRenderTarget(ShadowMapWorldRTInfo);
+
+	static constexpr int32 SHADOW_MIPS = 4;
+	static std::shared_ptr<jRenderTarget> ShadowMapWorldMipsRT[SHADOW_MIPS];
+	static std::shared_ptr<jRenderTarget> ShadowMapWorldScaledOptRT;
+
+	static bool InitializedShadowMaps = false;
+	if (!InitializedShadowMaps)
+	{
+		for (int32 i = 0; i < SHADOW_MIPS; ++i)
+		{
+			ShadowMapWorldRTInfo.InternalFormat = ETextureFormat::RG32F;
+			ShadowMapWorldRTInfo.Format = ETextureFormat::RG;
+			ShadowMapWorldRTInfo.Width /= 2;
+			ShadowMapWorldRTInfo.Height /= 2;
+			ShadowMapWorldMipsRT[i] = jRenderTargetPool::GetRenderTarget(ShadowMapWorldRTInfo);
+
+			if (i == (SHADOW_MIPS - 1))
+				ShadowMapWorldScaledOptRT = jRenderTargetPool::GetRenderTarget(ShadowMapWorldRTInfo);
+		}
+		InitializedShadowMaps = true;
+	}
 
 	// [1]. ShadowMap Render
 	{
@@ -381,6 +402,112 @@ void jGame::Update(float deltaTime)
 	}
 
 	// [4]. Generate Min/Max depth ShadowMap Mip level chain From 2048 to 128 for optimal tracing
+	{
+		auto EnableClear = true;
+		auto ClearColor = Vector4(0.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("MinMaxFromDepth");
+
+		g_rhi->SetRenderTarget(ShadowMapWorldMipsRT[0].get());
+
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		g_rhi->EnableDepthTest(false);
+		g_rhi->EnableBlend(false);
+		g_rhi->EnableDepthBias(false);
+
+		g_rhi->SetShader(Shader);
+
+		Vector2 BufferSizeInv(
+			1.0f / ShadowMapWorldMipsRT[0]->Info.Width,
+			1.0f / ShadowMapWorldMipsRT[0]->Info.Height);
+		SET_UNIFORM_BUFFER_STATIC(Vector2, "BufferSizeInv", BufferSizeInv, Shader);
+
+		auto PointSamplerPtr = jSamplerStatePool::GetSamplerState("Point");
+		FullScreenQuad->SetTexture(ShadowMapWorldRT->GetTexture(), PointSamplerPtr.get());
+		FullScreenQuad->Draw(MainCamera, Shader, { });
+
+		g_rhi->SetRenderTarget(nullptr);
+	}
+
+	for (int32 i = 0; i < SHADOW_MIPS - 1; ++i)
+	{
+		auto EnableClear = true;
+		auto ClearColor = Vector4(0.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("MinMaxFromMinMax");
+
+		g_rhi->SetRenderTarget(ShadowMapWorldMipsRT[1].get());
+
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		g_rhi->EnableDepthTest(false);
+		g_rhi->EnableBlend(false);
+		g_rhi->EnableDepthBias(false);
+
+		g_rhi->SetShader(Shader);
+
+		Vector2 BufferSizeInv(
+			1.0f / ShadowMapWorldMipsRT[i]->Info.Width,
+			1.0f / ShadowMapWorldMipsRT[i]->Info.Height);
+		SET_UNIFORM_BUFFER_STATIC(Vector2, "BufferSizeInv", BufferSizeInv, Shader);
+
+		auto PointSamplerPtr = jSamplerStatePool::GetSamplerState("Point");
+		FullScreenQuad->SetTexture(ShadowMapWorldRT->GetTexture(), PointSamplerPtr.get());
+		FullScreenQuad->Draw(MainCamera, Shader, { });
+
+		g_rhi->SetRenderTarget(nullptr);
+	}
+
+	{
+		auto EnableClear = true;
+		auto ClearColor = Vector4(0.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("MinMax_3x3");
+
+		g_rhi->SetRenderTarget(ShadowMapWorldScaledOptRT.get());
+
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		g_rhi->EnableDepthTest(false);
+		g_rhi->EnableBlend(false);
+		g_rhi->EnableDepthBias(false);
+
+		g_rhi->SetShader(Shader);
+
+		auto PointSamplerPtr = jSamplerStatePool::GetSamplerState("Point");
+		FullScreenQuad->SetTexture(ShadowMapWorldRT->GetTexture(), PointSamplerPtr.get());
+		FullScreenQuad->Draw(MainCamera, Shader, { });
+
+		g_rhi->SetRenderTarget(nullptr);
+	}
 
 	// [5]. Fill the holes
 
@@ -388,6 +515,14 @@ void jGame::Update(float deltaTime)
 
 	// [7]. 최종장면에 위에 만든 LightVolume 값을 블랜드 시킴
 
+
+	static bool IsDebug = false;
+	if (g_KeyState['1'])
+		IsDebug = true;
+	if (g_KeyState['2'])
+		IsDebug = false;
+	if (!IsDebug)
+		return;
 	//////////////////////////////////////////////////////////////////////////
 	// Debug Textures
 	const Vector2 PreviewSize(300, 300);

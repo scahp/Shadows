@@ -91,6 +91,9 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("Graph2D", "shaders/vs_graph.glsl", "shaders/fs_graph.glsl");
 
 		DECLARE_SHADER_VS_FS("ConvertDepthWorld", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/convert_depth_world_fs.glsl");
+		DECLARE_SHADER_VS_FS("MinMaxFromDepth", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/depth_min_max_fs.glsl");
+		DECLARE_SHADER_VS_FS("MinMaxFromMinMax", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/depth_min_max_2_fs.glsl");
+		DECLARE_SHADER_VS_FS("MinMax_3x3", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/depth_min_max_3_fs.glsl");
 	}
 } s_shaderInfoCreation;
 

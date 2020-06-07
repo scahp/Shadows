@@ -281,6 +281,9 @@
     <None Include="Shaders\compute\compute_link_linkedlist.glsl" />
     <None Include="Shaders\compute\compute_sort_linkedlist.glsl" />
     <None Include="Shaders\convert_depth_world_fs.glsl" />
+    <None Include="Shaders\depth_min_max_2_fs.glsl" />
+    <None Include="Shaders\depth_min_max_3_fs.glsl" />
+    <None Include="Shaders\depth_min_max_fs.glsl" />
     <None Include="Shaders\fs_boundvolume.glsl" />
     <None Include="Shaders\fs_graph.glsl" />
     <None Include="Shaders\fs_red.glsl" />
