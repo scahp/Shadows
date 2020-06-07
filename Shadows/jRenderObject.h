@@ -51,9 +51,11 @@ public:
 	const jTexture* tex_object = nullptr;
 	const jTexture* tex_object2 = nullptr;
 	const jTexture* tex_object3 = nullptr;
+	const jTexture* tex_object4 = nullptr;
 	const jSamplerState* samplerState = nullptr;
 	const jSamplerState* samplerState2 = nullptr;
 	const jSamplerState* samplerState3 = nullptr;
+	const jSamplerState* samplerState4 = nullptr;
 
 	jTexture* tex_object_array = nullptr;
 	jSamplerState* samplerStateTexArray = nullptr;

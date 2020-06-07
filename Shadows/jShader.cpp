@@ -94,6 +94,10 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("MinMaxFromDepth", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/depth_min_max_fs.glsl");
 		DECLARE_SHADER_VS_FS("MinMaxFromMinMax", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/depth_min_max_2_fs.glsl");
 		DECLARE_SHADER_VS_FS("MinMax_3x3", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/depth_min_max_3_fs.glsl");
+		DECLARE_SHADER_VS_FS("Fill_The_Hole_Min", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/fill_the_hole_min_fs.glsl");
+		DECLARE_SHADER_VS_FS("Fill_The_Hole_Min2", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/fill_the_hole_min_2_fs.glsl");
+		DECLARE_SHADER_VS_FS("Fill_The_Hole_Max", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/fill_the_hole_max_fs.glsl");
+		DECLARE_SHADER_VS_FS("GenerateLightVolume", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/generate_lightvolume_fs.glsl");		
 	}
 } s_shaderInfoCreation;
 

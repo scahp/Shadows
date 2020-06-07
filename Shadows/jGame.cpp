@@ -266,6 +266,7 @@ void jGame::Update(float deltaTime)
 	static constexpr int32 SHADOW_MIPS = 4;
 	static std::shared_ptr<jRenderTarget> ShadowMapWorldMipsRT[SHADOW_MIPS];
 	static std::shared_ptr<jRenderTarget> ShadowMapWorldScaledOptRT;
+	static std::shared_ptr<jRenderTarget> ShadowMapHoleRT[2];
 
 	static bool InitializedShadowMaps = false;
 	if (!InitializedShadowMaps)
@@ -279,7 +280,13 @@ void jGame::Update(float deltaTime)
 			ShadowMapWorldMipsRT[i] = jRenderTargetPool::GetRenderTarget(ShadowMapWorldRTInfo);
 
 			if (i == (SHADOW_MIPS - 1))
+			{
+				ShadowMapWorldRTInfo.InternalFormat = ETextureFormat::R32F;
+				ShadowMapWorldRTInfo.Format = ETextureFormat::R;
 				ShadowMapWorldScaledOptRT = jRenderTargetPool::GetRenderTarget(ShadowMapWorldRTInfo);
+				ShadowMapHoleRT[0] = jRenderTargetPool::GetRenderTarget(ShadowMapWorldRTInfo);
+				ShadowMapHoleRT[1] = jRenderTargetPool::GetRenderTarget(ShadowMapWorldRTInfo);
+			}
 		}
 		InitializedShadowMaps = true;
 	}
@@ -317,6 +324,20 @@ void jGame::Update(float deltaTime)
 		g_rhi->SetRenderTarget(nullptr);
 	}
 
+	jRenderTargetInfo MainSceneRTInfo;
+	MainSceneRTInfo.TextureType = ETextureType::TEXTURE_2D;
+	MainSceneRTInfo.InternalFormat = ETextureFormat::RGBA;
+	MainSceneRTInfo.Format = ETextureFormat::RGBA;
+	MainSceneRTInfo.FormatType = EFormatType::BYTE;
+	MainSceneRTInfo.DepthBufferType = EDepthBufferType::DEPTH32;
+	MainSceneRTInfo.Width = SCR_WIDTH;
+	MainSceneRTInfo.Height = SCR_HEIGHT;
+	MainSceneRTInfo.TextureCount = 1;
+	MainSceneRTInfo.Magnification = ETextureFilter::NEAREST;
+	MainSceneRTInfo.Minification = ETextureFilter::NEAREST;
+
+	static auto MainSceneRT = jRenderTargetPool::GetRenderTarget(MainSceneRTInfo);
+
 	// [2]. MainScene Render
 	{
 		auto EnableClear = true;
@@ -329,7 +350,7 @@ void jGame::Update(float deltaTime)
 		auto BlendDest = EBlendDest::ZERO;
 		auto Shader = jShader::GetShader("SSM");
 
-		g_rhi->SetRenderTarget(nullptr);
+		g_rhi->SetRenderTarget(MainSceneRT.get());
 
 		if (EnableClear)
 		{
@@ -510,11 +531,220 @@ void jGame::Update(float deltaTime)
 	}
 
 	// [5]. Fill the holes
+	{
+		auto EnableClear = true;
+		auto ClearColor = Vector4(0.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("Fill_The_Hole_Min");
+
+		g_rhi->SetRenderTarget(ShadowMapHoleRT[0].get());
+
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		g_rhi->EnableDepthTest(false);
+		g_rhi->EnableBlend(false);
+		g_rhi->EnableDepthBias(false);
+
+		g_rhi->SetShader(Shader);
+
+		auto PointSamplerPtr = jSamplerStatePool::GetSamplerState("Point");
+		FullScreenQuad->SetTexture(ShadowMapWorldMipsRT[SHADOW_MIPS - 1]->GetTexture(), PointSamplerPtr.get());
+		FullScreenQuad->Draw(MainCamera, Shader, { });
+
+		g_rhi->SetRenderTarget(nullptr);
+	}
+
+	for (int32 i = 0; i < 2; ++i)
+	{
+		const int32 Flip = (i % 2);
+
+		auto EnableClear = true;
+		auto ClearColor = Vector4(0.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("Fill_The_Hole_Min2");
+
+		g_rhi->SetRenderTarget(ShadowMapHoleRT[1 - Flip].get());
+
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		g_rhi->EnableDepthTest(false);
+		g_rhi->EnableBlend(false);
+		g_rhi->EnableDepthBias(false);
+
+		g_rhi->SetShader(Shader);
+
+		auto PointSamplerPtr = jSamplerStatePool::GetSamplerState("Point");
+		FullScreenQuad->SetTexture(ShadowMapHoleRT[Flip]->GetTexture(), PointSamplerPtr.get());
+		FullScreenQuad->Draw(MainCamera, Shader, { });
+
+		g_rhi->SetRenderTarget(nullptr);
+	}
+
+	for (int32 i = 0; i < 5; ++i)
+	{
+		const int32 Flip = (i % 2);
+
+		auto EnableClear = true;
+		auto ClearColor = Vector4(0.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("Fill_The_Hole_Max");
+
+		g_rhi->SetRenderTarget(ShadowMapHoleRT[1 - Flip].get());
+
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		g_rhi->EnableDepthTest(false);
+		g_rhi->EnableBlend(false);
+		g_rhi->EnableDepthBias(false);
+
+		g_rhi->SetShader(Shader);
+
+		auto PointSamplerPtr = jSamplerStatePool::GetSamplerState("Point");
+		FullScreenQuad->SetTexture(ShadowMapHoleRT[Flip]->GetTexture(), PointSamplerPtr.get());
+		FullScreenQuad->Draw(MainCamera, Shader, { });
+
+		g_rhi->SetRenderTarget(nullptr);
+	}
+
+	float Scale = 4.0f;
+	jRenderTargetInfo LightVolumeHDRRTInfo;
+	LightVolumeHDRRTInfo.TextureType = ETextureType::TEXTURE_2D;
+	LightVolumeHDRRTInfo.InternalFormat = ETextureFormat::RGBA32F;
+	LightVolumeHDRRTInfo.Format = ETextureFormat::R;
+	LightVolumeHDRRTInfo.FormatType = EFormatType::FLOAT;
+	LightVolumeHDRRTInfo.DepthBufferType = EDepthBufferType::NONE;
+	LightVolumeHDRRTInfo.Width = SCR_WIDTH / Scale;
+	LightVolumeHDRRTInfo.Height = SCR_HEIGHT / Scale;
+	LightVolumeHDRRTInfo.TextureCount = 1;
+	LightVolumeHDRRTInfo.Magnification = ETextureFilter::NEAREST;
+	LightVolumeHDRRTInfo.Minification = ETextureFilter::NEAREST;
+
+	static auto LightVolumeHDRRT = jRenderTargetPool::GetRenderTarget(LightVolumeHDRRTInfo);
 
 	// [6]. LightVolume 계산
+	{
+		auto EnableClear = true;
+		auto ClearColor = Vector4(0.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("GenerateLightVolume");
+
+		g_rhi->SetRenderTarget(LightVolumeHDRRT.get());
+
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		g_rhi->EnableDepthTest(false);
+		g_rhi->EnableBlend(false);
+		g_rhi->EnableDepthBias(false);
+
+		g_rhi->SetShader(Shader);
+
+		Vector2 BufferSizeInv(
+			1.0f / LightVolumeHDRRTInfo.Width,
+			1.0f / LightVolumeHDRRTInfo.Height);
+		SET_UNIFORM_BUFFER_STATIC(Vector2, "BufferSizeInv", BufferSizeInv, Shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "CoarseDepthTexelSize", static_cast<float>(SM_WIDTH) / LightVolumeHDRRTInfo.Width, Shader);
+
+		auto CameraVPInv = (MainCamera->Projection * MainCamera->View).GetInverse();
+
+		SET_UNIFORM_BUFFER_STATIC(Matrix, "CameraVPInv", CameraVPInv, Shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "EyePos", MainCamera->Pos, Shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "EyeForward", (MainCamera->Target - MainCamera->Pos).GetNormalize(), Shader);
+
+		SET_UNIFORM_BUFFER_STATIC(float, "CameraNear", MainCamera->Near, Shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "CameraFar", MainCamera->Far, Shader);
+
+		auto LightCamera = DirectionalLight->GetLightCamra();
+		SET_UNIFORM_BUFFER_STATIC(Vector, "CameraFar", LightCamera->Pos, Shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "CameraFar", (LightCamera->Target - LightCamera->Pos).GetNormalize(), Shader);
+		
+		auto LightVPInv = (LightCamera->Projection * LightCamera->View).GetInverse();
+		SET_UNIFORM_BUFFER_STATIC(Matrix, "LightVP", LightVPInv, Shader);
+
+		SET_UNIFORM_BUFFER_STATIC(Vector, "LightRight", LightCamera->GetRightVector(), Shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "LightUp", LightCamera->GetUpVector(), Shader);
+
+		auto PointSamplerPtr = jSamplerStatePool::GetSamplerState("Point");
+		FullScreenQuad->SetTexture(0, MainSceneRT->GetTextureDepth(), PointSamplerPtr.get());
+		FullScreenQuad->SetTexture(1, ShadowMapWorldRT->GetTexture(), PointSamplerPtr.get());
+		FullScreenQuad->SetTexture(2, ShadowMapWorldScaledOptRT->GetTexture(), PointSamplerPtr.get());
+		FullScreenQuad->SetTexture(3, ShadowMapHoleRT[1]->GetTexture(), PointSamplerPtr.get());
+		FullScreenQuad->Draw(MainCamera, Shader, { });
+
+		g_rhi->SetRenderTarget(nullptr);
+	}
 
 	// [7]. 최종장면에 위에 만든 LightVolume 값을 블랜드 시킴
 
+
+	//////////////////////////////////////////////////////////////////////////
+	{
+		auto EnableClear = true;
+		auto ClearColor = Vector4(0.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("Scale");
+
+		g_rhi->SetRenderTarget(nullptr);
+
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		g_rhi->EnableDepthTest(false);
+		g_rhi->EnableBlend(false);
+		g_rhi->EnableDepthBias(false);
+
+		g_rhi->SetShader(Shader);
+
+		auto PointSamplerPtr = jSamplerStatePool::GetSamplerState("Point");
+		FullScreenQuad->SetTexture(LightVolumeHDRRT->GetTexture(), PointSamplerPtr.get());
+		FullScreenQuad->Draw(MainCamera, Shader, { });
+
+		g_rhi->SetRenderTarget(nullptr);
+	}
+	//////////////////////////////////////////////////////////////////////////
 
 	static bool IsDebug = false;
 	if (g_KeyState['1'])

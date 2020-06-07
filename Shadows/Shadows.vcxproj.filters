@@ -541,5 +541,17 @@
     <None Include="Shaders\depth_min_max_fs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\fill_the_hole_max_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\fill_the_hole_min_2_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\fill_the_hole_min_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\generate_lightvolume_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

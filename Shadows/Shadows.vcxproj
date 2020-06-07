@@ -284,6 +284,9 @@
     <None Include="Shaders\depth_min_max_2_fs.glsl" />
     <None Include="Shaders\depth_min_max_3_fs.glsl" />
     <None Include="Shaders\depth_min_max_fs.glsl" />
+    <None Include="Shaders\fill_the_hole_max_fs.glsl" />
+    <None Include="Shaders\fill_the_hole_min_2_fs.glsl" />
+    <None Include="Shaders\fill_the_hole_min_fs.glsl" />
     <None Include="Shaders\fs_boundvolume.glsl" />
     <None Include="Shaders\fs_graph.glsl" />
     <None Include="Shaders\fs_red.glsl" />
@@ -302,6 +305,7 @@
     <None Include="Shaders\fullscreen\fs_scale.glsl" />
     <None Include="Shaders\fullscreen\fs_tonemap.glsl" />
     <None Include="Shaders\fullscreen\vs_fullscreen_common.glsl" />
+    <None Include="Shaders\generate_lightvolume_fs.glsl" />
     <None Include="Shaders\shadow.glsl" />
     <None Include="Shaders\shadowmap\fs.glsl" />
     <None Include="Shaders\shadowmap\fs_deepShadowMap.glsl" />
