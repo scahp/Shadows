@@ -21,6 +21,8 @@ uniform mat4 M;
 // out vec3 ShadowPos_;
 // out vec3 ShadowCameraPos_;
 out vec3 Pos_;
+out vec3 Pos2_;
+
 out vec4 Color_;
 out vec3 Normal_;
 
@@ -52,4 +54,8 @@ void main()
     Color_ = Color;
     Normal_ = TransformNormal(M, Normal);
     Pos_ = TransformPos(M, Pos);
+
+	vec4 Pos2 =  MVP * vec4(Pos, 1.0);
+	Pos2 = Pos2 / Pos2.w;
+	Pos2_ = Pos2.xyz;
 }

@@ -92,6 +92,7 @@ uniform int CSMDebugOn;
 in vec3 Pos_;
 in vec4 Color_;
 in vec3 Normal_;
+in vec3 Pos2_;
 
 //#if defined(USE_TEXTURE)
 //in vec2 TexCoord_;
@@ -143,6 +144,10 @@ float IsShadowingCSM(sampler2DShadow csm_sampler, vec4 lightClipScapePos, int ca
 
 void main()
 {
+	//color.xyz = Pos_;
+	//color.w = Pos2_.z;
+	//return;
+
 #if defined(USE_VSM)
     float vsmBiasForOmniDirectional = 0.1;
 #endif // defined(USE_VSM) || defined(USE_EVSM)

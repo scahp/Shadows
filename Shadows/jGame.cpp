@@ -326,9 +326,9 @@ void jGame::Update(float deltaTime)
 
 	jRenderTargetInfo MainSceneRTInfo;
 	MainSceneRTInfo.TextureType = ETextureType::TEXTURE_2D;
-	MainSceneRTInfo.InternalFormat = ETextureFormat::RGBA;
+	MainSceneRTInfo.InternalFormat = ETextureFormat::RGBA32F;
 	MainSceneRTInfo.Format = ETextureFormat::RGBA;
-	MainSceneRTInfo.FormatType = EFormatType::BYTE;
+	MainSceneRTInfo.FormatType = EFormatType::FLOAT;
 	MainSceneRTInfo.DepthBufferType = EDepthBufferType::DEPTH32;
 	MainSceneRTInfo.Width = SCR_WIDTH;
 	MainSceneRTInfo.Height = SCR_HEIGHT;
@@ -337,6 +337,12 @@ void jGame::Update(float deltaTime)
 	MainSceneRTInfo.Minification = ETextureFilter::NEAREST;
 
 	static auto MainSceneRT = jRenderTargetPool::GetRenderTarget(MainSceneRTInfo);
+
+	static bool IsDebug = false;
+	if (g_KeyState['1'])
+		IsDebug = true;
+	if (g_KeyState['2'])
+		IsDebug = false;
 
 	// [2]. MainScene Render
 	{
@@ -350,7 +356,10 @@ void jGame::Update(float deltaTime)
 		auto BlendDest = EBlendDest::ZERO;
 		auto Shader = jShader::GetShader("SSM");
 
-		g_rhi->SetRenderTarget(MainSceneRT.get());
+		//if (IsDebug)
+			g_rhi->SetRenderTarget(MainSceneRT.get());
+		//else
+		//	g_rhi->SetRenderTarget(nullptr);
 
 		if (EnableClear)
 		{
@@ -377,6 +386,10 @@ void jGame::Update(float deltaTime)
 
 		g_rhi->SetRenderTarget(nullptr);
 	}
+
+	//if (!IsDebug)
+	//	return;
+
 
 	// [3]. Convert Depth to world space scale
 	static jFullscreenQuadPrimitive* FullScreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
@@ -405,15 +418,17 @@ void jGame::Update(float deltaTime)
 
 		g_rhi->SetShader(Shader);
 
-		auto VPInv = (MainCamera->Projection * MainCamera->View).GetInverse();
 		auto LightCamera = DirectionalLight->GetLightCamra();
+		auto LightVP = (LightCamera->Projection * LightCamera->View);
+		auto LightVPInv = (LightCamera->Projection * LightCamera->View).GetInverse();
+
+		SET_UNIFORM_BUFFER_STATIC(Matrix, "LightVPInv", LightVPInv, Shader);
 
 		Vector LightPos = LightCamera->Pos;
 		Vector LightForward = (LightCamera->Target - LightCamera->Pos).GetNormalize();
 
 		SET_UNIFORM_BUFFER_STATIC(Vector, "LightPos", LightPos, Shader);
 		SET_UNIFORM_BUFFER_STATIC(Vector, "LightForward", LightForward, Shader);
-		SET_UNIFORM_BUFFER_STATIC(Matrix, "VPInv", VPInv, Shader);
 
 		auto PointSamplerPtr = jSamplerStatePool::GetSamplerState("Point");
 		FullScreenQuad->SetTexture(DirectionalLight->GetTextureDepth(), PointSamplerPtr.get());
@@ -633,15 +648,16 @@ void jGame::Update(float deltaTime)
 		g_rhi->SetRenderTarget(nullptr);
 	}
 
+
 	float Scale = 4.0f;
 	jRenderTargetInfo LightVolumeHDRRTInfo;
 	LightVolumeHDRRTInfo.TextureType = ETextureType::TEXTURE_2D;
 	LightVolumeHDRRTInfo.InternalFormat = ETextureFormat::RGBA32F;
-	LightVolumeHDRRTInfo.Format = ETextureFormat::R;
+	LightVolumeHDRRTInfo.Format = ETextureFormat::RGBA;
 	LightVolumeHDRRTInfo.FormatType = EFormatType::FLOAT;
 	LightVolumeHDRRTInfo.DepthBufferType = EDepthBufferType::NONE;
-	LightVolumeHDRRTInfo.Width = SCR_WIDTH / Scale;
-	LightVolumeHDRRTInfo.Height = SCR_HEIGHT / Scale;
+	LightVolumeHDRRTInfo.Width = SCR_WIDTH / 4.0f;
+	LightVolumeHDRRTInfo.Height = SCR_HEIGHT / 4.0f;
 	LightVolumeHDRRTInfo.TextureCount = 1;
 	LightVolumeHDRRTInfo.Magnification = ETextureFilter::NEAREST;
 	LightVolumeHDRRTInfo.Minification = ETextureFilter::NEAREST;
@@ -680,8 +696,14 @@ void jGame::Update(float deltaTime)
 		SET_UNIFORM_BUFFER_STATIC(Vector2, "BufferSizeInv", BufferSizeInv, Shader);
 		SET_UNIFORM_BUFFER_STATIC(float, "CoarseDepthTexelSize", static_cast<float>(SM_WIDTH) / LightVolumeHDRRTInfo.Width, Shader);
 
+		auto LightCamera = DirectionalLight->GetLightCamra();
+
+		auto CameraPInv = (MainCamera->Projection).GetInverse();
+		auto CameraVInv = (MainCamera->View).GetInverse();
 		auto CameraVPInv = (MainCamera->Projection * MainCamera->View).GetInverse();
 
+		SET_UNIFORM_BUFFER_STATIC(Matrix, "CameraPInv", CameraPInv, Shader);
+		SET_UNIFORM_BUFFER_STATIC(Matrix, "CameraVInv", CameraVInv, Shader);
 		SET_UNIFORM_BUFFER_STATIC(Matrix, "CameraVPInv", CameraVPInv, Shader);
 		SET_UNIFORM_BUFFER_STATIC(Vector, "EyePos", MainCamera->Pos, Shader);
 		SET_UNIFORM_BUFFER_STATIC(Vector, "EyeForward", (MainCamera->Target - MainCamera->Pos).GetNormalize(), Shader);
@@ -689,12 +711,15 @@ void jGame::Update(float deltaTime)
 		SET_UNIFORM_BUFFER_STATIC(float, "CameraNear", MainCamera->Near, Shader);
 		SET_UNIFORM_BUFFER_STATIC(float, "CameraFar", MainCamera->Far, Shader);
 
-		auto LightCamera = DirectionalLight->GetLightCamra();
-		SET_UNIFORM_BUFFER_STATIC(Vector, "CameraFar", LightCamera->Pos, Shader);
-		SET_UNIFORM_BUFFER_STATIC(Vector, "CameraFar", (LightCamera->Target - LightCamera->Pos).GetNormalize(), Shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "LightPos", LightCamera->Pos, Shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "LightForward", LightCamera->GetForwardVector(), Shader);
 		
-		auto LightVPInv = (LightCamera->Projection * LightCamera->View).GetInverse();
-		SET_UNIFORM_BUFFER_STATIC(Matrix, "LightVP", LightVPInv, Shader);
+		auto LightVP = (LightCamera->Projection * LightCamera->View);
+		SET_UNIFORM_BUFFER_STATIC(Matrix, "LightVP", LightVP, Shader);
+
+		Vector Loc(LightCamera->GetForwardVector());
+		auto Result = LightVP.Transform(Loc);
+		auto Result2 = LightVP.Transform(Loc * 10.0f);
 
 		SET_UNIFORM_BUFFER_STATIC(Vector, "LightRight", LightCamera->GetRightVector(), Shader);
 		SET_UNIFORM_BUFFER_STATIC(Vector, "LightUp", LightCamera->GetUpVector(), Shader);
@@ -739,6 +764,7 @@ void jGame::Update(float deltaTime)
 		g_rhi->SetShader(Shader);
 
 		auto PointSamplerPtr = jSamplerStatePool::GetSamplerState("Point");
+		//FullScreenQuad->SetTexture(MainSceneRT->GetTexture(), PointSamplerPtr.get());
 		FullScreenQuad->SetTexture(LightVolumeHDRRT->GetTexture(), PointSamplerPtr.get());
 		FullScreenQuad->Draw(MainCamera, Shader, { });
 
@@ -746,13 +772,7 @@ void jGame::Update(float deltaTime)
 	}
 	//////////////////////////////////////////////////////////////////////////
 
-	static bool IsDebug = false;
-	if (g_KeyState['1'])
-		IsDebug = true;
-	if (g_KeyState['2'])
-		IsDebug = false;
-	if (!IsDebug)
-		return;
+	return;
 	//////////////////////////////////////////////////////////////////////////
 	// Debug Textures
 	const Vector2 PreviewSize(300, 300);

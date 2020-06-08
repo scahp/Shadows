@@ -5,7 +5,7 @@ precision mediump float;
 uniform sampler2D tex_object;
 uniform vec3 LightPos;
 uniform vec3 LightForward;
-uniform mat4 VPInv;
+uniform mat4 LightVPInv;
 
 in vec2 TexCoord_;
 out vec4 color;
@@ -16,11 +16,11 @@ void main()
 
     vec4 clipPos;
     clipPos.x = 2.0 * TexCoord_.x - 1.0;
-    clipPos.y = -2.0 * TexCoord_.y + 1.0;
-    clipPos.z = depth;
+    clipPos.y = 2.0 * TexCoord_.y - 1.0;
+    clipPos.z = 2.0 * depth - 1.0;
     clipPos.w = 1.0;
 
-    vec4 posWS = VPInv * clipPos;
+    vec4 posWS = LightVPInv * clipPos;
     posWS /= posWS.w;
 
     float WorldZ = dot(posWS.xyz - LightPos, LightForward);
