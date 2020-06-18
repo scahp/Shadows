@@ -281,9 +281,10 @@ void jGame::Update(float deltaTime)
 
 			if (i == (SHADOW_MIPS - 1))
 			{
+				ShadowMapWorldScaledOptRT = jRenderTargetPool::GetRenderTarget(ShadowMapWorldRTInfo);
+
 				ShadowMapWorldRTInfo.InternalFormat = ETextureFormat::R32F;
 				ShadowMapWorldRTInfo.Format = ETextureFormat::R;
-				ShadowMapWorldScaledOptRT = jRenderTargetPool::GetRenderTarget(ShadowMapWorldRTInfo);
 				ShadowMapHoleRT[0] = jRenderTargetPool::GetRenderTarget(ShadowMapWorldRTInfo);
 				ShadowMapHoleRT[1] = jRenderTargetPool::GetRenderTarget(ShadowMapWorldRTInfo);
 			}
@@ -293,6 +294,8 @@ void jGame::Update(float deltaTime)
 
 	// [1]. ShadowMap Render
 	{
+		g_rhi->BeginDebugEvent("[1]. ShadowMapRender");
+
 		auto EnableClear = true;
 		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
 		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
@@ -322,6 +325,8 @@ void jGame::Update(float deltaTime)
 		Shed->Draw(DirectionalLight->GetLightCamra(), ShadowGenShader, {});
 
 		g_rhi->SetRenderTarget(nullptr);
+
+		g_rhi->EndDebugEvent();
 	}
 
 	jRenderTargetInfo MainSceneRTInfo;
@@ -346,6 +351,8 @@ void jGame::Update(float deltaTime)
 
 	// [2]. MainScene Render
 	{
+		g_rhi->BeginDebugEvent("[2]. MainScene Render");
+
 		auto EnableClear = true;
 		auto ClearColor = Vector4(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);	// light sky blue
 		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
@@ -385,6 +392,8 @@ void jGame::Update(float deltaTime)
 		Shed->Draw(MainCamera, Shader, { DirectionalLight });
 
 		g_rhi->SetRenderTarget(nullptr);
+
+		g_rhi->EndDebugEvent();
 	}
 
 	//if (!IsDebug)
@@ -394,6 +403,8 @@ void jGame::Update(float deltaTime)
 	// [3]. Convert Depth to world space scale
 	static jFullscreenQuadPrimitive* FullScreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
 	{
+		g_rhi->BeginDebugEvent("[3]. Depth to world scale");
+
 		auto EnableClear = true;
 		auto ClearColor = Vector4(0.0f);
 		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
@@ -435,10 +446,13 @@ void jGame::Update(float deltaTime)
 		FullScreenQuad->Draw(MainCamera, Shader, { });
 
 		g_rhi->SetRenderTarget(nullptr);
+		g_rhi->EndDebugEvent();
 	}
 
 	// [4]. Generate Min/Max depth ShadowMap Mip level chain From 2048 to 128 for optimal tracing
+	g_rhi->BeginDebugEvent("[4]. Generate Min/Max ShadowMap Mip");
 	{
+
 		auto EnableClear = true;
 		auto ClearColor = Vector4(0.0f);
 		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
@@ -544,9 +558,12 @@ void jGame::Update(float deltaTime)
 
 		g_rhi->SetRenderTarget(nullptr);
 	}
+	g_rhi->EndDebugEvent();
 
 	// [5]. Fill the holes
+	g_rhi->BeginDebugEvent("[5]. Fill the holes");
 	{
+
 		auto EnableClear = true;
 		auto ClearColor = Vector4(0.0f);
 		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
@@ -647,6 +664,7 @@ void jGame::Update(float deltaTime)
 
 		g_rhi->SetRenderTarget(nullptr);
 	}
+	g_rhi->EndDebugEvent();
 
 
 	float Scale = 4.0f;
@@ -666,6 +684,7 @@ void jGame::Update(float deltaTime)
 
 	// [6]. LightVolume 계산
 	{
+		g_rhi->BeginDebugEvent("[6]. LightVolume Calc");
 		auto EnableClear = true;
 		auto ClearColor = Vector4(0.0f);
 		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
@@ -732,13 +751,28 @@ void jGame::Update(float deltaTime)
 		FullScreenQuad->Draw(MainCamera, Shader, { });
 
 		g_rhi->SetRenderTarget(nullptr);
+
+		g_rhi->EndDebugEvent();
 	}
 
-	// [7]. 최종장면에 위에 만든 LightVolume 값을 블랜드 시킴
-
-
 	//////////////////////////////////////////////////////////////////////////
+	// [7]. ConvertDepthWorldNormalzed
+	jRenderTargetInfo ConvertDepthWorldNormalizedInfo;
+	ConvertDepthWorldNormalizedInfo.TextureType = ETextureType::TEXTURE_2D;
+	ConvertDepthWorldNormalizedInfo.InternalFormat = ETextureFormat::R32F;
+	ConvertDepthWorldNormalizedInfo.Format = ETextureFormat::R;
+	ConvertDepthWorldNormalizedInfo.FormatType = EFormatType::FLOAT;
+	ConvertDepthWorldNormalizedInfo.DepthBufferType = EDepthBufferType::NONE;
+	ConvertDepthWorldNormalizedInfo.Width = SCR_WIDTH;
+	ConvertDepthWorldNormalizedInfo.Height = SCR_HEIGHT;
+	ConvertDepthWorldNormalizedInfo.TextureCount = 1;
+	ConvertDepthWorldNormalizedInfo.Magnification = ETextureFilter::NEAREST;
+	ConvertDepthWorldNormalizedInfo.Minification = ETextureFilter::NEAREST;
+
+	static auto ConvertDepthWorldNormalizedRT = jRenderTargetPool::GetRenderTarget(ConvertDepthWorldNormalizedInfo);
 	{
+		g_rhi->BeginDebugEvent("[7]. ConvertDepthWorldNormalzed");
+
 		auto EnableClear = true;
 		auto ClearColor = Vector4(0.0f);
 		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
@@ -747,9 +781,9 @@ void jGame::Update(float deltaTime)
 		auto EnableBlend = true;
 		auto BlendSrc = EBlendSrc::ONE;
 		auto BlendDest = EBlendDest::ZERO;
-		auto Shader = jShader::GetShader("Scale");
+		auto Shader = jShader::GetShader("ConvertDepthWorldNormalized");
 
-		g_rhi->SetRenderTarget(nullptr);
+		g_rhi->SetRenderTarget(ConvertDepthWorldNormalizedRT.get());
 
 		if (EnableClear)
 		{
@@ -763,12 +797,199 @@ void jGame::Update(float deltaTime)
 
 		g_rhi->SetShader(Shader);
 
+		Matrix VPInv = (MainCamera->Projection * MainCamera->View).GetInverse();
+
+		SET_UNIFORM_BUFFER_STATIC(Vector, "EyePos", MainCamera->Pos, Shader);
+		SET_UNIFORM_BUFFER_STATIC(Matrix, "VPInv", VPInv, Shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "WorldFront", MainCamera->GetForwardVector(), Shader);
+
 		auto PointSamplerPtr = jSamplerStatePool::GetSamplerState("Point");
-		//FullScreenQuad->SetTexture(MainSceneRT->GetTexture(), PointSamplerPtr.get());
-		FullScreenQuad->SetTexture(LightVolumeHDRRT->GetTexture(), PointSamplerPtr.get());
+		FullScreenQuad->SetTexture(MainSceneRT->GetTextureDepth(), PointSamplerPtr.get());
 		FullScreenQuad->Draw(MainCamera, Shader, { });
 
 		g_rhi->SetRenderTarget(nullptr);
+
+		g_rhi->EndDebugEvent();
+	}
+
+	jRenderTargetInfo EdgeDetectionRTInfo;
+	EdgeDetectionRTInfo.TextureType = ETextureType::TEXTURE_2D;
+	EdgeDetectionRTInfo.InternalFormat = ETextureFormat::RG32F;
+	EdgeDetectionRTInfo.Format = ETextureFormat::RG;
+	EdgeDetectionRTInfo.FormatType = EFormatType::FLOAT;
+	EdgeDetectionRTInfo.DepthBufferType = EDepthBufferType::NONE;
+	EdgeDetectionRTInfo.Width = SCR_WIDTH / 4.0f;
+	EdgeDetectionRTInfo.Height = SCR_HEIGHT / 4.0f;
+	EdgeDetectionRTInfo.TextureCount = 1;
+	EdgeDetectionRTInfo.Magnification = ETextureFilter::NEAREST;
+	EdgeDetectionRTInfo.Minification = ETextureFilter::NEAREST;
+
+	static auto EdgeDetectionRT = jRenderTargetPool::GetRenderTarget(EdgeDetectionRTInfo);
+
+	// [8]. EdgeDetectionSobel
+	{
+		g_rhi->BeginDebugEvent("[8]. EdgeDetectionSobel");
+		auto EnableClear = true;
+		auto ClearColor = Vector4(0.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("EdgeDetection");
+
+		g_rhi->SetRenderTarget(EdgeDetectionRT.get());
+
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		g_rhi->EnableDepthTest(false);
+		g_rhi->EnableBlend(false);
+		g_rhi->EnableDepthBias(false);
+
+		g_rhi->SetShader(Shader);
+
+		SET_UNIFORM_BUFFER_STATIC(float, "CoarseTextureWidthInv", 1.0f / EdgeDetectionRTInfo.Width, Shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "CoarseTextureHeightInv", 1.0f / EdgeDetectionRTInfo.Height, Shader);
+
+		auto LinearSamplerPtr = jSamplerStatePool::GetSamplerState("LinearClamp");
+		FullScreenQuad->SetTexture(ConvertDepthWorldNormalizedRT->GetTexture(), LinearSamplerPtr.get());
+		FullScreenQuad->Draw(MainCamera, Shader, { });
+
+		g_rhi->SetRenderTarget(nullptr);
+		g_rhi->EndDebugEvent();
+	}
+
+	jRenderTargetInfo EdgeBlurRTInfo;
+	EdgeBlurRTInfo.TextureType = ETextureType::TEXTURE_2D;
+	EdgeBlurRTInfo.InternalFormat = ETextureFormat::R32F;
+	EdgeBlurRTInfo.Format = ETextureFormat::R;
+	EdgeBlurRTInfo.FormatType = EFormatType::FLOAT;
+	EdgeBlurRTInfo.DepthBufferType = EDepthBufferType::NONE;
+	EdgeBlurRTInfo.Width = SCR_WIDTH / 4.0f;
+	EdgeBlurRTInfo.Height = SCR_HEIGHT / 4.0f;
+	EdgeBlurRTInfo.TextureCount = 1;
+	EdgeBlurRTInfo.Magnification = ETextureFilter::NEAREST;
+	EdgeBlurRTInfo.Minification = ETextureFilter::NEAREST;
+
+	static auto EdgeGradientBlurRT = jRenderTargetPool::GetRenderTarget(EdgeBlurRTInfo);
+	static auto ImageBlurRT = jRenderTargetPool::GetRenderTarget(EdgeBlurRTInfo);
+
+	// [9]. EdgeGradientBlur
+	{
+		g_rhi->BeginDebugEvent("[9]. EdgeGradientBlur");
+		auto EnableClear = true;
+		auto ClearColor = Vector4(0.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("EdgeGradientBlur");
+
+		g_rhi->SetRenderTarget(EdgeGradientBlurRT.get());
+
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		g_rhi->EnableDepthTest(false);
+		g_rhi->EnableBlend(false);
+		g_rhi->EnableDepthBias(false);
+
+		g_rhi->SetShader(Shader);
+
+		SET_UNIFORM_BUFFER_STATIC(float, "CoarseTextureWidthInv", 1.0f / EdgeDetectionRTInfo.Width, Shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "CoarseTextureHeightInv", 1.0f / EdgeDetectionRTInfo.Height, Shader);
+
+		auto LinearSamplerPtr = jSamplerStatePool::GetSamplerState("LinearClamp");
+		FullScreenQuad->SetTexture(EdgeDetectionRT->GetTexture(), LinearSamplerPtr.get());
+		FullScreenQuad->SetTexture2(LightVolumeHDRRT->GetTexture(), LinearSamplerPtr.get());
+		FullScreenQuad->Draw(MainCamera, Shader, { });
+
+		g_rhi->SetRenderTarget(nullptr);
+		g_rhi->EndDebugEvent();
+	}
+
+	// [10]. ImageBlurRT
+	{
+		g_rhi->BeginDebugEvent("[10]. ImageBlurRT");
+		auto EnableClear = true;
+		auto ClearColor = Vector4(0.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("EdgeImageBlur");
+
+		g_rhi->SetRenderTarget(ImageBlurRT.get());
+
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		g_rhi->EnableDepthTest(false);
+		g_rhi->EnableBlend(false);
+		g_rhi->EnableDepthBias(false);
+
+		g_rhi->SetShader(Shader);
+
+		auto LinearSamplerPtr = jSamplerStatePool::GetSamplerState("LinearClamp");
+		FullScreenQuad->SetTexture(EdgeGradientBlurRT->GetTexture(), LinearSamplerPtr.get());
+		FullScreenQuad->Draw(MainCamera, Shader, { });
+
+		g_rhi->SetRenderTarget(nullptr);
+		g_rhi->EndDebugEvent();
+	}
+
+	// [9]. 최종장면에 위에 만든 LightVolume 값을 블랜드 시킴
+	//////////////////////////////////////////////////////////////////////////
+	{
+		g_rhi->BeginDebugEvent("[9]. FinalResultBlending");
+
+		auto EnableClear = true;
+		auto ClearColor = Vector4(0.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("LightVolumeFinal");
+
+		g_rhi->SetRenderTarget(nullptr);
+
+		EnableClear = false;
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		g_rhi->EnableDepthTest(false);
+		g_rhi->EnableBlend(false);
+		g_rhi->EnableDepthBias(false);
+
+		g_rhi->SetShader(Shader);
+
+		auto LinearSamplerPtr = jSamplerStatePool::GetSamplerState("LinearClamp");
+		FullScreenQuad->SetTexture(MainSceneRT->GetTexture(), LinearSamplerPtr.get());
+		FullScreenQuad->SetTexture2(ImageBlurRT->GetTexture(), LinearSamplerPtr.get());
+		FullScreenQuad->Draw(MainCamera, Shader, { });
+
+		g_rhi->SetRenderTarget(nullptr);
+		g_rhi->EndDebugEvent();
 	}
 	//////////////////////////////////////////////////////////////////////////
 

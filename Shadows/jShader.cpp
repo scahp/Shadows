@@ -97,7 +97,12 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("Fill_The_Hole_Min", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/fill_the_hole_min_fs.glsl");
 		DECLARE_SHADER_VS_FS("Fill_The_Hole_Min2", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/fill_the_hole_min_2_fs.glsl");
 		DECLARE_SHADER_VS_FS("Fill_The_Hole_Max", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/fill_the_hole_max_fs.glsl");
-		DECLARE_SHADER_VS_FS("GenerateLightVolume", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/generate_lightvolume_fs.glsl");		
+		DECLARE_SHADER_VS_FS("GenerateLightVolume", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/generate_lightvolume_fs.glsl");
+		DECLARE_SHADER_VS_FS("LightVolumeFinal", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/fs_LightVolumeFinal.glsl");
+		DECLARE_SHADER_VS_FS("ConvertDepthWorldNormalized", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/ConvertDepthWorldNormalized_fs.glsl");
+		DECLARE_SHADER_VS_FS("EdgeDetection", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/EdgeDetectionSobel_fs.glsl");
+		DECLARE_SHADER_VS_FS("EdgeGradientBlur", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/EdgeDetectionGradientBlur_fs.glsl");
+		DECLARE_SHADER_VS_FS("EdgeImageBlur", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/EdgeDetectionImageBlur_fs.glsl");
 	}
 } s_shaderInfoCreation;
 

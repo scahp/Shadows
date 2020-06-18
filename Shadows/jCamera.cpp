@@ -197,6 +197,8 @@ Matrix jCameraUtil::CreatePerspectiveMatrix(float width, float height, float fov
 	projMat.m[1][0] = 0.0f;					projMat.m[1][1] = F;         projMat.m[1][2] = 0.0f;									projMat.m[1][3] = 0.0f;
 	projMat.m[2][0] = 0.0f;					projMat.m[2][1] = 0.0f;      projMat.m[2][2] = -(farDist + nearDist) / farSubNear;		projMat.m[2][3] = -(2.0f*nearDist*farDist) / farSubNear;
 	projMat.m[3][0] = 0.0f;					projMat.m[3][1] = 0.0f;      projMat.m[3][2] = -1.0f;									projMat.m[3][3] = 0.0f;
+	//projMat.m[2][0] = 0.0f;					projMat.m[2][1] = 0.0f;      projMat.m[2][2] = farDist / (farSubNear);					projMat.m[2][3] = -(nearDist * farDist) / farSubNear;
+	//projMat.m[3][0] = 0.0f;					projMat.m[3][1] = 0.0f;      projMat.m[3][2] = 1.0f;									projMat.m[3][3] = 0.0f;
 	return projMat;
 }
 

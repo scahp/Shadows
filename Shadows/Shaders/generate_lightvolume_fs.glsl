@@ -1,6 +1,6 @@
 #version 330 core
 
-precision mediump float;
+precision highp float;
 
 #define MAX_STEPS 2000
 
@@ -38,6 +38,8 @@ void main()
     vec4 posWS = CameraVPInv * clipPos;
     posWS /= posWS.w;
 
+	float DebugZ = posWS.z;
+
 	bool debugWS = false;
 	if (debugWS)
 	{
@@ -59,7 +61,7 @@ void main()
     //vecForward *= exp(dotViewLight * dotViewLight);
 
     //vecForward *= g_rSamplingRate * 2.0;
-    vecForward *= 2.0 * (1.0 / 4.0);
+    vecForward *= 4.0 * (1.0 / 4.0);
 
     int stepsNum = int(min(traceDistance / length(vecForward), float(MAX_STEPS)));
 
@@ -107,9 +109,7 @@ void main()
 
 		// Use point sampling. Linear sampling can cause the whole coarse step being incorrect
 		// 현재 위치에서 Shadow 가 드리우는 정도를 fetch 해옴
-		float haha = texture2D(tex_object2, coordinates.xy).x;
-		float test = float(haha > coordinates.z);
-		sampleFine = test;
+		sampleFine = float(texture2D(tex_object2, coordinates.xy).x > coordinates.z);
 
 		//float zStart = textureLod(tex_object4, coordinates.xy, 0).x;
 
@@ -126,9 +126,10 @@ void main()
 
 		//attenuation *= attenuation2;
 
-		////// Use this value to incerase light factor for "indoor" areas
-		//float density = float(texture(tex_object4, coordinates.xy).x > coordinates.z);
-		//////float density = s1.SampleCmpLevelZero(samplerPoint_Greater, coordinates.xy, coordinates.z);
+		//// Use this value to incerase light factor for "indoor" areas
+		float density = float(texture(tex_object4, coordinates.xy).x < coordinates.z);
+
+		density *= 10.0;
 		//density *= 10.0 * attenuation;
 		//density += 0.25f;
 		//sampleFine *= density;
@@ -159,12 +160,7 @@ void main()
 		{
 			light += scale * sampleFine;
 			coordinates += coordinateDelta;
-
-			if (sampleFine > 0)
-			{
-				cnt++;
-				TTtest = haha;
-			}
+			cnt++;
 		}
 
 		////if (sampleFine > 0.0)
@@ -175,5 +171,7 @@ void main()
 		//}
 	}
 
-	color = vec4(vec3(light), cnt);
+	color = vec4(vec3(light), 1.0);
+	//color = vec4(vec3(light), DebugZ);
+	//color = vec4(vec3(traceDistance, length(vecForward), 1.0), cnt);
 }

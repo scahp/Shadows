@@ -553,5 +553,20 @@
     <None Include="Shaders\generate_lightvolume_fs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\ConvertDepthWorldNormalized_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\EdgeDetectionSobel_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\EdgeDetectionImageBlur_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\EdgeDetectionGradientBlur_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\fs_LightVolumeFinal.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
