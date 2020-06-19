@@ -674,8 +674,8 @@ void jGame::Update(float deltaTime)
 	LightVolumeHDRRTInfo.Format = ETextureFormat::RGBA;
 	LightVolumeHDRRTInfo.FormatType = EFormatType::FLOAT;
 	LightVolumeHDRRTInfo.DepthBufferType = EDepthBufferType::NONE;
-	LightVolumeHDRRTInfo.Width = SCR_WIDTH / 4.0f;
-	LightVolumeHDRRTInfo.Height = SCR_HEIGHT / 4.0f;
+	LightVolumeHDRRTInfo.Width = SCR_WIDTH;
+	LightVolumeHDRRTInfo.Height = SCR_HEIGHT;
 	LightVolumeHDRRTInfo.TextureCount = 1;
 	LightVolumeHDRRTInfo.Magnification = ETextureFilter::NEAREST;
 	LightVolumeHDRRTInfo.Minification = ETextureFilter::NEAREST;
@@ -735,10 +735,6 @@ void jGame::Update(float deltaTime)
 		
 		auto LightVP = (LightCamera->Projection * LightCamera->View);
 		SET_UNIFORM_BUFFER_STATIC(Matrix, "LightVP", LightVP, Shader);
-
-		Vector Loc(LightCamera->GetForwardVector());
-		auto Result = LightVP.Transform(Loc);
-		auto Result2 = LightVP.Transform(Loc * 10.0f);
 
 		SET_UNIFORM_BUFFER_STATIC(Vector, "LightRight", LightCamera->GetRightVector(), Shader);
 		SET_UNIFORM_BUFFER_STATIC(Vector, "LightUp", LightCamera->GetUpVector(), Shader);
@@ -983,8 +979,12 @@ void jGame::Update(float deltaTime)
 
 		g_rhi->SetShader(Shader);
 
+
+		auto PointSamplerPtr = jSamplerStatePool::GetSamplerState("Point");
+		FullScreenQuad->SetTexture(LightVolumeHDRRT->GetTexture(), PointSamplerPtr.get());
+
 		auto LinearSamplerPtr = jSamplerStatePool::GetSamplerState("LinearClamp");
-		FullScreenQuad->SetTexture(MainSceneRT->GetTexture(), LinearSamplerPtr.get());
+		//FullScreenQuad->SetTexture(MainSceneRT->GetTexture(), LinearSamplerPtr.get());
 		FullScreenQuad->SetTexture2(ImageBlurRT->GetTexture(), LinearSamplerPtr.get());
 		FullScreenQuad->Draw(MainCamera, Shader, { });
 
