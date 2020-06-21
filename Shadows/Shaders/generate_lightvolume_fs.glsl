@@ -54,6 +54,14 @@ void main()
 	//return;
 	traceDistance = clamp(traceDistance, 0.0, 2500.0); // Far trace distance
 
+	vec3 HAHA = EyePos.xyz + vecForward * 350.0;
+	vec3 HH = (HAHA - posWS.xyz);
+	if (sqrt(dot(HH, HH)) < 10.0)
+	{
+		color.xyz = vec3(0.0, 0.0, 1.0);
+		return;
+	}
+
 	posWS.xyz = EyePos.xyz + vecForward * CameraNear;
 
     //// Optimization
@@ -99,6 +107,7 @@ void main()
     coordinateEnd.z = dot(curPosition - LightPos, LightForward);
 
     vec3 coordinateDelta = coordinateEnd - coordinates;
+	//coordinateDelta.y -= 0.0003;
 
     //vec2 vecForwardProjection;
     //vecForwardProjection.x = dot(LightRight, vecForward);
@@ -111,10 +120,22 @@ void main()
 	float light = 0.0;
 
 	float l = length(vecForward);
+	vec3 coordinatesStart;
+	vec3 coordinatesEnd;
 
 	//for (int i = 0; i < clamp(stepsNum, 0, 700); i++)
 	for (int i = 0; i < stepsNum; i++)
 	{
+		//vec3 curPosition = posWS.xyz;
+		//shadowUV = LightVP * vec4(curPosition, 1.0);
+		//vec3 coordinatesggg = shadowUV.xyz / shadowUV.w;
+		//coordinatesggg.xy = (coordinatesggg.xy + vec2(1.0)) * 0.5;
+		//coordinatesggg.z = dot(curPosition - LightPos, LightForward);
+		//posWS.xyz += vecForward;
+
+		//coordinatesStart = coordinatesEnd;
+		//coordinatesEnd = coordinatesggg;
+
 		//if (coordinates.x < 0.0 || coordinates.x > 1.0)
 		//	continue;
 
@@ -124,12 +145,14 @@ void main()
 		float ShadowMapWorld = texture2D(tex_object2, coordinates.xy).x;
 		sampleFine = float(ShadowMapWorld > coordinates.z - 1.0);
 		//if (coordinates.z > 1000.0)
-		if (ShadowMapWorld < 650.0)
-		if (i == stepsNum - 1)
-		{
-			color.xyz = vec3(1.0, 0.0, 0.0);
-			return;
-		}
+		//if (ShadowMapWorld < 650.0)
+		//if (i == stepsNum - 1)
+		//{
+		//	//vec3 result = coordinatesEnd - coordinatesStart;
+
+		//	color.xyz = vec3(coordinates.xy, 0.0);
+		//	return;
+		//}
 		if (sampleFine > 0.0 && coordinates.z > 400.0)
 			light += scale;
 		//light += scale * sampleFine;

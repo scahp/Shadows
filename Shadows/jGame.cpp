@@ -57,12 +57,9 @@ void jGame::ProcessInput()
 void jGame::Setup()
 {
 	//////////////////////////////////////////////////////////////////////////
-	const Vector mainCameraPos(812.58f, 338.02f, -433.87f);
-	//const Vector mainCameraTarget(171.96f, 166.02f, -180.05f);
-	//const Vector mainCameraPos(165.0f, 125.0f, -136.0f);
-	//const Vector mainCameraPos(300.0f, 100.0f, 300.0f);
-	const Vector mainCameraTarget(811.81f, 337.78f, -433.36f);
-	const Vector mainCameraUp(812.35f, 338.98f, -433.72f);
+	const Vector mainCameraPos(0.0f, 0.0f, 0.0f);
+	const Vector mainCameraTarget(0.0f, 0.0f, 1.0f);
+	const Vector mainCameraUp(0.0f, 1.0f, 0.0f);
 	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraUp
 		, DegreeToRadian(45.0f), 10.0f, 5000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
@@ -735,6 +732,25 @@ void jGame::Update(float deltaTime)
 		
 		auto LightVP = (LightCamera->Projection * LightCamera->View);
 		SET_UNIFORM_BUFFER_STATIC(Matrix, "LightVP", LightVP, Shader);
+
+		static float temp1 = 0.0;
+		static float temp2 = 0.0;
+		static float temp3 = 1.0;
+
+		Vector R2;
+		{
+			auto LightVP = LightCamera->Projection * LightCamera->View;
+			auto LightVPInv = LightVP.GetInverse();
+
+			auto R = LightVP.Transform(Vector(10, 10, 10));
+			R2 = LightVPInv.Transform(R);
+		}
+
+		//Vector r1 = CameraVP.Transform(MainCamera->Pos);
+		//Vector r2 = CameraVP.Transform(MainCamera->Pos + Vector(temp1, temp2, temp3));
+		//r1 = (r1 + 1.0) * 0.5;
+		//r2 = (r2 + 1.0) * 0.5;
+		//Vector r3 = r2 - r1;
 
 		SET_UNIFORM_BUFFER_STATIC(Vector, "LightRight", LightCamera->GetRightVector(), Shader);
 		SET_UNIFORM_BUFFER_STATIC(Vector, "LightUp", LightCamera->GetUpVector(), Shader);

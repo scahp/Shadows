@@ -37,11 +37,11 @@ namespace jLightUtil
 		//shadowMapData->ShadowMapCamera = jCamera::CreateCamera(tempPos, target, up, DegreeToRadian(90.0f), 10.0f, 900.0f, SM_WIDTH, SM_HEIGHT, false);
 		float width = 1024.0f;
 		float height = 1024.0f;
-		float nearDist = 10.0f;
-		float farDist = 5000.0f;
-		//shadowMapData->ShadowMapCamera = jOrthographicCamera::CreateCamera(
-		//	pos, target, up, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
-		shadowMapData->ShadowMapCamera = jCamera::CreateCamera(pos, target, up, DegreeToRadian(90.0f), nearDist, farDist, width, height, true);		// todo for deep shadow map. it should be replaced
+		float nearDist = 1.0f;
+		float farDist = 10000.0f;
+		shadowMapData->ShadowMapCamera = jOrthographicCamera::CreateCamera(
+			pos, target, up, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
+		//shadowMapData->ShadowMapCamera = jCamera::CreateCamera(pos, target, up, DegreeToRadian(90.0f), nearDist, farDist, width, height, true);		// todo for deep shadow map. it should be replaced
 
 		shadowMapData->ShadowMapRenderTarget = jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RG32F, ETextureFormat::RG, EFormatType::FLOAT, EDepthBufferType::DEPTH32, SM_WIDTH, SM_HEIGHT, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR });
 		shadowMapData->ShadowMapSamplerState = jSamplerStatePool::GetSamplerState("LinearClampShadow");
