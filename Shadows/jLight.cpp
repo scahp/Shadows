@@ -35,8 +35,8 @@ namespace jLightUtil
 		auto shadowMapData = new jShadowMapData("DirectionalLight");
 		//shadowMapData->ShadowMapCamera = jCamera::CreateCamera(tempPos, target, up, 3.14f / 4.0f, 300.0f, 900.0f, SM_WIDTH, SM_HEIGHT, true);		// todo for deep shadow map. it should be replaced
 		//shadowMapData->ShadowMapCamera = jCamera::CreateCamera(tempPos, target, up, DegreeToRadian(90.0f), 10.0f, 900.0f, SM_WIDTH, SM_HEIGHT, false);
-		float width = 1024.0f;
-		float height = 1024.0f;
+		float width = 2500.0f;
+		float height = 2500.0f;
 		float nearDist = 1.0f;
 		float farDist = 10000.0f;
 		shadowMapData->ShadowMapCamera = jOrthographicCamera::CreateCamera(

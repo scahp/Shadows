@@ -11,7 +11,7 @@ void main()
 {
 	vec4 Color = texture(tex_object, TexCoord_);
 	float LightBlend = texture(tex_object2, TexCoord_).x;
-	//FragColor = LightBlend * 0.75 + Color;
+	FragColor = LightBlend * 0.75 + Color;
 	//FragColor = vec4(vec3(LightBlend), 1.0);
-	FragColor = Color;
+	//FragColor = Color;
 }
