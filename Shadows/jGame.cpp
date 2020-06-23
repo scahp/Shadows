@@ -189,63 +189,10 @@ void jGame::Update(float deltaTime)
 		light->Update(deltaTime);
 	}
 
-	////////////////////////////////////////////////////////////////////////////
-	//// Get the 8 points of the view frustum in world space
-	//if (jShadowAppSettingProperties::GetInstance().ShadowMapType != EShadowMapType::DeepShadowMap_DirectionalLight)
-	//{
-	//	Vector frustumCornersWS[8] =
-	//	{
-	//		Vector(-1.0f,  1.0f, -1.0f),
-	//		Vector(1.0f,  1.0f, -1.0f),
-	//		Vector(1.0f, -1.0f, -1.0f),
-	//		Vector(-1.0f, -1.0f, -1.0f),
-	//		Vector(-1.0f,  1.0f, 1.0f),
-	//		Vector(1.0f,  1.0f, 1.0f),
-	//		Vector(1.0f, -1.0f, 1.0f),
-	//		Vector(-1.0f, -1.0f, 1.0f),
-	//	};
-
-	//	Vector frustumCenter(0.0f);
-	//	Matrix invViewProj = (MainCamera->Projection * MainCamera->View).GetInverse();
-	//	for (uint32 i = 0; i < 8; ++i)
-	//	{
-	//		frustumCornersWS[i] = invViewProj.Transform(frustumCornersWS[i]);
-	//		frustumCenter = frustumCenter + frustumCornersWS[i];
-	//	}
-	//	frustumCenter = frustumCenter * (1.0f / 8.0f);
-
-	//	auto upDir = Vector::UpVector;
-
-	//	float width = SM_WIDTH;
-	//	float height = SM_HEIGHT;
-	//	float nearDist = 10.0f;
-	//	float farDist = 1000.0f;
-
-	//	// Get position of the shadow camera
-	//	Vector shadowCameraPos = frustumCenter + DirectionalLight->Data.Direction * -(farDist - nearDist) / 2.0f;
-	//
-	//	auto shadowCamera = jOrthographicCamera::CreateCamera(shadowCameraPos, frustumCenter, shadowCameraPos + upDir
-	//		, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
-	//	shadowCamera->UpdateCamera();
-	//	DirectionalLight->GetLightCamra()->Projection = shadowCamera->Projection;
-	//	DirectionalLight->GetLightCamra()->View = shadowCamera->View;
-	//}
-	//////////////////////////////////////////////////////////////////////////
-
-	for (auto iter : jObject::GetStaticObject())
-		iter->Update(deltaTime);
-
-	for (auto& iter : jObject::GetBoundBoxObject())
-		iter->Update(deltaTime);
-
-	for (auto& iter : jObject::GetBoundSphereObject())
-		iter->Update(deltaTime);
-
-	for (auto& iter : jObject::GetDebugObject())
-		iter->Update(deltaTime);
-
 	jObject::FlushDirtyState();
 
+	//////////////////////////////////////////////////////////////////////////
+	// LightVolume Start
 	jRenderTargetInfo ShadowMapWorldRTInfo;
 	ShadowMapWorldRTInfo.TextureType = ETextureType::TEXTURE_2D;
 	ShadowMapWorldRTInfo.InternalFormat = ETextureFormat::R32F;
@@ -360,10 +307,7 @@ void jGame::Update(float deltaTime)
 		auto BlendDest = EBlendDest::ZERO;
 		auto Shader = jShader::GetShader("SSM");
 
-		//if (IsDebug)
-			g_rhi->SetRenderTarget(MainSceneRT.get());
-		//else
-		//	g_rhi->SetRenderTarget(nullptr);
+		g_rhi->SetRenderTarget(MainSceneRT.get());
 
 		if (EnableClear)
 		{
@@ -393,14 +337,10 @@ void jGame::Update(float deltaTime)
 		g_rhi->EndDebugEvent();
 	}
 
-	//if (!IsDebug)
-	//	return;
-
-
-	// [3]. Convert Depth to world space scale
+	// [3]. Convert ShadowMap to world space scale
 	static jFullscreenQuadPrimitive* FullScreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
 	{
-		g_rhi->BeginDebugEvent("[3]. Depth to world scale");
+		g_rhi->BeginDebugEvent("[3]. ShadowMap to world scale");
 
 		auto EnableClear = true;
 		auto ClearColor = Vector4(0.0f);
@@ -748,7 +688,6 @@ void jGame::Update(float deltaTime)
 		g_rhi->EndDebugEvent();
 	}
 
-	//////////////////////////////////////////////////////////////////////////
 	// [7]. ConvertDepthWorldNormalzed
 	jRenderTargetInfo ConvertDepthWorldNormalizedInfo;
 	ConvertDepthWorldNormalizedInfo.TextureType = ETextureType::TEXTURE_2D;
@@ -946,10 +885,10 @@ void jGame::Update(float deltaTime)
 		g_rhi->EndDebugEvent();
 	}
 
-	// [9]. 최종장면에 위에 만든 LightVolume 값을 블랜드 시킴
+	// [11]. 최종장면에 위에 만든 LightVolume 값을 블랜드 시킴
 	//////////////////////////////////////////////////////////////////////////
 	{
-		g_rhi->BeginDebugEvent("[9]. FinalResultBlending");
+		g_rhi->BeginDebugEvent("[11]. FinalResultBlending");
 
 		auto EnableClear = true;
 		auto ClearColor = Vector4(0.0f);
@@ -976,10 +915,6 @@ void jGame::Update(float deltaTime)
 
 		g_rhi->SetShader(Shader);
 
-
-		//auto PointSamplerPtr = jSamplerStatePool::GetSamplerState("Point");
-		//FullScreenQuad->SetTexture(LightVolumeHDRRT->GetTexture(), PointSamplerPtr.get());
-
 		auto LinearSamplerPtr = jSamplerStatePool::GetSamplerState("LinearClamp");
 		FullScreenQuad->SetTexture(MainSceneRT->GetTexture(), LinearSamplerPtr.get());
 		FullScreenQuad->SetTexture2(ImageBlurRT->GetTexture(), LinearSamplerPtr.get());
@@ -990,6 +925,8 @@ void jGame::Update(float deltaTime)
 	}
 	//////////////////////////////////////////////////////////////////////////
 
+	// LightVolume End
+	//////////////////////////////////////////////////////////////////////////
 	return;
 	//////////////////////////////////////////////////////////////////////////
 	// Debug Textures

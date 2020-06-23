@@ -17,7 +17,7 @@ void main()
     vec4 clipPos;
     clipPos.x = 2.0 * TexCoord_.x - 1.0;
     clipPos.y = 2.0 * TexCoord_.y - 1.0;
-    clipPos.z = 2.0 * depth - 1.0;
+    clipPos.z = 2.0 * depth - 1.0;          // OpenGL은 NDC 공간이 Z : -1 ~ 1
     clipPos.w = 1.0;
 
     vec4 posWS = LightVPInv * clipPos;

@@ -20,6 +20,8 @@ void main()
 
 	float result = 0.0f;
 
+	// 에지의 방향을 기준으로 블러를 진행한다. Sobel 은 Edge가 아닌 부분은 모두 0이 됩니다.
+	// 또한 X와 Y의 Edge 탐지를 별도로 합니다.
 	for (int iSample = -7; iSample < 8; iSample++)
 		result += texture(tex_object2, TexCoord_ + offset * iSample).x;
 
