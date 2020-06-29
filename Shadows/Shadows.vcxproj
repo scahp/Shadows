@@ -49,7 +49,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -310,6 +310,7 @@
     <None Include="Shaders\shadowmap\fs_omniDirectionalEVSM.glsl" />
     <None Include="Shaders\shadowmap\fs_omniDirectionalExponentialShadowMap.glsl" />
     <None Include="Shaders\shadowmap\fs_omniDirectionalShadowMap.glsl" />
+    <None Include="Shaders\shadowmap\vs_psm_shadowMap.glsl" />
     <None Include="Shaders\shadowmap\fs_shadowMap.glsl" />
     <None Include="Shaders\shadowmap\fs_varianceShadowMap.glsl" />
     <None Include="Shaders\shadowmap\gs_cascadeShadowMap.glsl" />

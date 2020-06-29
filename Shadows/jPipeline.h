@@ -336,7 +336,7 @@ START_CREATE_PIPELINE_SET_INFO(Name, Prefix, PipelineSetType) \
 //////////////////////////////////////////////////////////////////////////
 // jForwardPipelineSet_SSM
 START_CREATE_PIPELINE_SET_INFO_WITH_DEBUG_RENDER(SSM, Forward, EPipelineSetType::Forward)
-	ADD_PIPELINE_AT_RENDERPASS(ShadowPrePass, "Forward_ShadowMapGen_SSM_Pipeline");
+	ADD_PIPELINE_AT_RENDERPASS(ShadowPrePass, "Forward_ShadowMapGen_PSM_Pipeline");
 	ADD_PIPELINE_AT_RENDERPASS(RenderPass, "Forward_SSM_Pipeline");
 END_CREATE_PIPELINE_SET_INFO()
 
@@ -445,3 +445,22 @@ START_CREATE_PIPELINE_SET_INFO_WITH_DEBUG_RENDER(ShadowVolume, Forward, EPipelin
 	ADD_PIPELINE_WITH_CREATE_AND_SETUP_AT_RENDERPASS(RenderPass, jForward_ShadowVolume_Pipeline);
 END_CREATE_PIPELINE_SET_INFO()
 
+
+//////////////////////////////////////////////////////////////////////////
+// jForward_ShadowMapGen_PSM_Pipeline
+class jForward_ShadowMapGen_PSM_Pipeline : public jRenderPipeline
+{
+public:
+	jForward_ShadowMapGen_PSM_Pipeline(const char* directionalLightShaderName, const char* omniDirectionalLightShaderName)
+		: DirectionalLightShaderName(directionalLightShaderName), OmniDirectionalLightShaderName(omniDirectionalLightShaderName)
+	{ }
+
+	virtual void Setup() override;
+	virtual void Do(const jPipelineContext& pipelineContext) const override;
+
+	jShader* ShadowGenShader = nullptr;
+	jShader* OmniShadowGenShader = nullptr;
+
+	const char* DirectionalLightShaderName = nullptr;
+	const char* OmniDirectionalLightShaderName = nullptr;
+};

@@ -20,12 +20,12 @@ public:
 	bool IsGPUShadowVolume = true;
 	EShadowMapType ShadowMapType = EShadowMapType::SSM;
 	bool UsePoissonSample = true;
-	bool ShowDirectionalLightMap = false;
+	bool ShowDirectionalLightMap = true;
 	bool UseTonemap = true;
 	float AutoExposureKeyValue = 0.5f;
 	bool DirectionalLightOn = true;
-	bool PointLightOn = true;
-	bool SpotLightOn = true;
+	bool PointLightOn = false;
+	bool SpotLightOn = false;
 	bool ShowDirectionalLightInfo = true;
 	bool ShowPointLightInfo = false;
 	bool ShowSpotLightInfo = false;

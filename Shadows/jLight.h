@@ -125,7 +125,7 @@ public:
 	virtual std::shared_ptr<jRenderTarget> GetShadowMapRenderTargetPtr() const { return nullptr; }
 	virtual jCamera* GetLightCamra(int index = 0) const { return nullptr; }
 	virtual void RenderToShadowMap(const RenderToShadowMapFunc& func, const jShader* shader) const {}
-	virtual void Update(float deltaTime) { }
+	virtual void Update(float deltaTime, jCamera* curCamera) { }
 
 	const ELightType Type = ELightType::MAX;
 	jObject* LightDebugObject = nullptr;
@@ -200,7 +200,7 @@ public:
 	jTexture* GetShadowMap() const;
 
 	virtual void RenderToShadowMap(const RenderToShadowMapFunc& func, const jShader* shader) const override;
-	virtual void Update(float deltaTime) override;
+	virtual void Update(float deltaTime, jCamera* curCamera) override;
 
 };
 
@@ -262,7 +262,7 @@ public:
 	jLightUtil::jShadowMapArrayData* ShadowMapData = nullptr;
 
 	virtual void RenderToShadowMap(const RenderToShadowMapFunc& func, const jShader* shader) const override;
-	virtual void Update(float deltaTime) override;
+	virtual void Update(float deltaTime, jCamera* curCamera) override;
 
 };
 
@@ -323,6 +323,6 @@ public:
 
 
 	virtual void RenderToShadowMap(const RenderToShadowMapFunc& func, const jShader* shader) const override;
-	virtual void Update(float deltaTime) override;
+	virtual void Update(float deltaTime, jCamera* curCamera) override;
 
 };

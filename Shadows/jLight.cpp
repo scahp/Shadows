@@ -39,7 +39,8 @@ namespace jLightUtil
 		float height = SM_HEIGHT;
 		float nearDist = 10.0f;
 		float farDist = 500.0f;
-		shadowMapData->ShadowMapCamera = jOrthographicCamera::CreateCamera(pos, target, up, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
+		//shadowMapData->ShadowMapCamera = jOrthographicCamera::CreateCamera(pos, target, up, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
+		shadowMapData->ShadowMapCamera = jCamera::CreateCamera(pos, target, up, DegreeToRadian(90.0f), nearDist, farDist, SM_WIDTH, SM_HEIGHT, true);
 		
 		shadowMapData->ShadowMapRenderTarget = jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RG32F, ETextureFormat::RG, EFormatType::FLOAT, EDepthBufferType::DEPTH32, SM_WIDTH, SM_HEIGHT, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR });
 		shadowMapData->ShadowMapSamplerState = jSamplerStatePool::GetSamplerState("LinearClampShadow");
@@ -340,13 +341,13 @@ void jDirectionalLight::RenderToShadowMap(const RenderToShadowMapFunc& func, con
 	func(ShadowMapData->ShadowMapRenderTarget.get(), 0, ShadowMapData->ShadowMapCamera, viewports);
 }
 
-void jDirectionalLight::Update(float deltaTime)
+void jDirectionalLight::Update(float deltaTime, jCamera* curCamera)
 {
 	if (ShadowMapData && ShadowMapData->ShadowMapCamera)
 	{
-		auto camera = ShadowMapData->ShadowMapCamera;
-		jLightUtil::MakeDirectionalLightViewInfoWithPos(camera->Target, camera->Up, camera->Pos, Data.Direction);
-		camera->UpdateCamera();
+		auto ShadowMapCamera = ShadowMapData->ShadowMapCamera;
+		jLightUtil::MakeDirectionalLightViewInfoWithPos(ShadowMapCamera->Target, ShadowMapCamera->Up, ShadowMapCamera->Pos, Data.Direction);
+		ShadowMapCamera->UpdateCamera();
 	}
 }
 
@@ -522,7 +523,7 @@ void jPointLight::RenderToShadowMap(const RenderToShadowMapFunc& func, const jSh
 	}
 }
 
-void jPointLight::Update(float deltaTime)
+void jPointLight::Update(float deltaTime, jCamera* curCamera)
 {
 	if (ShadowMapData)
 	{
@@ -663,7 +664,7 @@ void jSpotLight::RenderToShadowMap(const RenderToShadowMapFunc& func, const jSha
 	}
 }
 
-void jSpotLight::Update(float deltaTime)
+void jSpotLight::Update(float deltaTime, jCamera* curCamera)
 {
 	auto camers = ShadowMapData->ShadowMapCamera;
 	for (int32 i = 0; i < 6; ++i)

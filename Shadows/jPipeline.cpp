@@ -57,6 +57,7 @@ struct jShadowPipelinCreation
 		ADD_FORWARD_SHADOWMAP_GEN_PIPELINE(Forward_ShadowMapGen_VSM_Pipeline, "ShadowGen_VSM", "ShadowGen_Omni_SSM");
 		ADD_FORWARD_SHADOWMAP_GEN_PIPELINE(Forward_ShadowMapGen_ESM_Pipeline, "ShadowGen_ESM", "ShadowGen_Omni_ESM");
 		ADD_FORWARD_SHADOWMAP_GEN_PIPELINE(Forward_ShadowMapGen_EVSM_Pipeline, "ShadowGen_EVSM", "ShadowGen_Omni_EVSM");
+		IPipeline::AddPipeline("Forward_ShadowMapGen_PSM_Pipeline", new jForward_ShadowMapGen_PSM_Pipeline("ShadowGen_PSM", "ShadowGen_Omni_SSM"));
 
 		ADD_FORWARD_SHADOW_PIPELINE(Forward_SSM_Pipeline, "SSM");
 		ADD_FORWARD_SHADOW_PIPELINE(Forward_SSM_PCF_Pipeline, "SSM_PCF");
@@ -925,3 +926,76 @@ void jForward_UIObject_Pipeline::Setup()
 	Shader = jShader::GetShader(ShaderName);
 }
 
+//////////////////////////////////////////////////////////////////////////
+// jForward_ShadowMapGen_PSM_Pipeline
+void jForward_ShadowMapGen_PSM_Pipeline::Setup()
+{
+	ClearColor = Vector4(1.0f);
+	ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+	EnableDepthTest = true;
+	DepthStencilFunc = EComparisonFunc::LESS;
+	ShadowGenShader = jShader::GetShader(DirectionalLightShaderName);
+	JASSERT(ShadowGenShader);
+	OmniShadowGenShader = jShader::GetShader(OmniDirectionalLightShaderName);
+	JASSERT(OmniShadowGenShader);
+}
+
+void jForward_ShadowMapGen_PSM_Pipeline::Do(const jPipelineContext& pipelineContext) const
+{
+	SCOPE_DEBUG_EVENT(g_rhi, Name.c_str());
+
+	//light->Update(0); // todo remove
+	g_rhi->SetRenderTarget(pipelineContext.DefaultRenderTarget);
+
+	for (auto light : pipelineContext.Lights)
+	{
+		JASSERT(light);
+
+		bool skip = false;
+
+		jShader* currentShader = nullptr;
+		switch (light->Type)
+		{
+		case ELightType::DIRECTIONAL:
+			currentShader = ShadowGenShader;
+			break;
+		case ELightType::POINT:
+		case ELightType::SPOT:
+			currentShader = OmniShadowGenShader;
+			break;
+		case ELightType::AMBIENT:
+			skip = true;
+			break;
+		default:
+			JASSERT(0);
+			return;
+		}
+
+		if (skip)
+			continue;
+
+		light->RenderToShadowMap([&pipelineContext, currentShader, light, this](const jRenderTarget* renderTarget
+			, int32 renderTargetIndex, const jCamera* camera, const std::vector<jViewport>& viewports)
+			{
+				g_rhi->SetRenderTarget(renderTarget, renderTargetIndex);
+				if (viewports.empty())
+					g_rhi->SetViewport({ 0, 0, renderTarget->Info.Width, renderTarget->Info.Height });
+				else
+					g_rhi->SetViewportIndexedArray(0, static_cast<int32>(viewports.size()), &viewports[0]);
+
+				g_rhi->SetShader(currentShader);
+
+				if (light->Type == ELightType::DIRECTIONAL)	// todo : psm 특수 코드, 제거 필요
+				{
+					// Psm : light projection * light view * camera projection * camera view
+					Matrix PSM_MV = camera->Projection * camera->View * pipelineContext.Camera->Projection* pipelineContext.Camera->View;
+
+					SET_UNIFORM_BUFFER_STATIC(Matrix, "PSM_MV", PSM_MV, currentShader);
+				}
+
+				this->jRenderPipeline::Draw(jPipelineContext(pipelineContext.DefaultRenderTarget, pipelineContext.Objects, camera, { light }), currentShader);
+			}, currentShader);
+	}
+
+	g_rhi->SetRenderTarget(pipelineContext.DefaultRenderTarget);
+}
