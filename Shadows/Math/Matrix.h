@@ -125,7 +125,7 @@ struct Matrix
 		//-(m32 * m20 - m30 * m22) * E;
 		//(m33 * m20 - m30 * m23) * D;
 		float const det = A * L -B * K + C * J + G * F -H * E + I * D;
-		if (0.0f != det)
+		if (0.0f == det)
 		{
 			JASSERT("역행렬을 구할 수 없습니다.");
 			return *this;
@@ -659,7 +659,7 @@ struct Matrix3
 		float const I = m22 * m01 - m21 * m02;
 
 		float const det = m00 * F - m01 * E + m02 * D;
-		if (0.0f != det)
+		if (0.0f == det)
 		{
 			JASSERT("역행렬을 구할 수 없습니다.");
 			return *this;
