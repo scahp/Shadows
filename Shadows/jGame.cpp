@@ -186,71 +186,177 @@ void jGame::Update(float deltaTime)
 		light->Update(deltaTime, MainCamera);
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-	// Get the 8 points of the view frustum in world space
-	if (jShadowAppSettingProperties::GetInstance().ShadowMapType != EShadowMapType::DeepShadowMap_DirectionalLight)
-	{
-		Vector frustumCornersWS[8] =
-		{
-			Vector(-1.0f,  1.0f, -1.0f),
-			Vector(1.0f,  1.0f, -1.0f),
-			Vector(1.0f, -1.0f, -1.0f),
-			Vector(-1.0f, -1.0f, -1.0f),
-			Vector(-1.0f,  1.0f, 1.0f),
-			Vector(1.0f,  1.0f, 1.0f),
-			Vector(1.0f, -1.0f, 1.0f),
-			Vector(-1.0f, -1.0f, 1.0f),
-		};
+	////////////////////////////////////////////////////////////////////////////
+	//// Get the 8 points of the view frustum in world space
+	//if (jShadowAppSettingProperties::GetInstance().ShadowMapType != EShadowMapType::DeepShadowMap_DirectionalLight)
+	//{
+	//	Vector frustumCornersWS[8] =
+	//	{
+	//		Vector(-1.0f,  1.0f, -1.0f),
+	//		Vector(1.0f,  1.0f, -1.0f),
+	//		Vector(1.0f, -1.0f, -1.0f),
+	//		Vector(-1.0f, -1.0f, -1.0f),
+	//		Vector(-1.0f,  1.0f, 1.0f),
+	//		Vector(1.0f,  1.0f, 1.0f),
+	//		Vector(1.0f, -1.0f, 1.0f),
+	//		Vector(-1.0f, -1.0f, 1.0f),
+	//	};
 
-		Vector frustumCenter(0.0f);
-		Matrix invViewProj = (MainCamera->Projection * MainCamera->View).GetInverse();
-		for (uint32 i = 0; i < 8; ++i)
-		{
-			frustumCornersWS[i] = invViewProj.Transform(frustumCornersWS[i]);
-			frustumCenter = frustumCenter + frustumCornersWS[i];
-		}
-		frustumCenter = frustumCenter * (1.0f / 8.0f);
+	//	Vector frustumCenter(0.0f);
+	//	Matrix invViewProj = (MainCamera->Projection * MainCamera->View).GetInverse();
+	//	for (uint32 i = 0; i < 8; ++i)
+	//	{
+	//		frustumCornersWS[i] = invViewProj.Transform(frustumCornersWS[i]);
+	//		frustumCenter = frustumCenter + frustumCornersWS[i];
+	//	}
+	//	frustumCenter = frustumCenter * (1.0f / 8.0f);
 
-		auto upDir = Vector::UpVector;
+	//	auto upDir = Vector::UpVector;
 
-		float width = SM_WIDTH;
-		float height = SM_HEIGHT;
-		float nearDist = 10.0f;
-		float farDist = 1000.0f;
+	//	float width = SM_WIDTH;
+	//	float height = SM_HEIGHT;
+	//	float nearDist = 10.0f;
+	//	float farDist = 1000.0f;
 
-		// Get position of the shadow camera
-		Vector shadowCameraPos = frustumCenter + DirectionalLight->Data.Direction * -(farDist - nearDist) / 2.0f;
-	
-		auto shadowCamera = jOrthographicCamera::CreateCamera(shadowCameraPos, frustumCenter, shadowCameraPos + upDir
-			, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
-		shadowCamera->UpdateCamera();
-		DirectionalLight->GetLightCamra()->Projection = shadowCamera->Projection;
-		DirectionalLight->GetLightCamra()->View = shadowCamera->View;
-	}
-	//////////////////////////////////////////////////////////////////////////
+	//	// Get position of the shadow camera
+	//	Vector shadowCameraPos = frustumCenter + DirectionalLight->Data.Direction * -(farDist - nearDist) / 2.0f;
+	//
+	//	auto shadowCamera = jOrthographicCamera::CreateCamera(shadowCameraPos, frustumCenter, shadowCameraPos + upDir
+	//		, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
+	//	shadowCamera->UpdateCamera();
+	//	DirectionalLight->GetLightCamra()->Projection = shadowCamera->Projection;
+	//	DirectionalLight->GetLightCamra()->View = shadowCamera->View;
+	//}
+	////////////////////////////////////////////////////////////////////////////
+
+	//for (auto iter : jObject::GetStaticObject())
+	//	iter->Update(deltaTime);
+
+	//for (auto& iter : jObject::GetBoundBoxObject())
+	//	iter->Update(deltaTime);
+
+	//for (auto& iter : jObject::GetBoundSphereObject())
+	//	iter->Update(deltaTime);
+
+	//for (auto& iter : jObject::GetDebugObject())
+	//	iter->Update(deltaTime);
+
+	//jObject::FlushDirtyState();
+
+	//Renderer->Render(MainCamera);
+
+	std::list<const jLight*> lights;
+	lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
 
 	for (auto iter : jObject::GetStaticObject())
 		iter->Update(deltaTime);
 
-	for (auto& iter : jObject::GetBoundBoxObject())
-		iter->Update(deltaTime);
-
-	for (auto& iter : jObject::GetBoundSphereObject())
-		iter->Update(deltaTime);
-
-	for (auto& iter : jObject::GetDebugObject())
-		iter->Update(deltaTime);
-
 	jObject::FlushDirtyState();
 
-	Renderer->Render(MainCamera);
+	//static auto PSMRT = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({
+	//		ETextureType::TEXTURE_2D,
+	//		ETextureFormat::RGBA,
+	//		ETextureFormat::RGBA,
+	//		EFormatType::BYTE,
+	//		EDepthBufferType::DEPTH24_STENCIL8,
+	//		SCR_WIDTH,
+	//		SCR_HEIGHT,
+	//		1 }));
+
+	if (DirectionalLight->GetShadowMapRenderTarget()->Begin())
+	{
+		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableClear = true;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = false;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+
+		auto Shader = jShader::GetShader("ShadowGen_SSM");
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+		g_rhi->EnableDepthTest(EnableDepthTest);
+		g_rhi->EnableBlend(EnableBlend);
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+		g_rhi->SetShader(Shader);
+		
+		const jCamera* ShadowMapCamera = DirectionalLight->ShadowMapData->ShadowMapCamera;
+		ShadowMapCamera->BindCamera(Shader);
+
+		for (auto iter : jObject::GetStaticObject())
+			iter->Draw(ShadowMapCamera, Shader, lights);
+
+		DirectionalLight->GetShadowMapRenderTarget()->End();
+	}	
+
+	{
+		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableClear = true;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = false;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+
+		auto Shader = jShader::GetShader("PSM");
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+		g_rhi->EnableDepthTest(EnableDepthTest);
+		g_rhi->EnableBlend(EnableBlend);
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+		g_rhi->SetShader(Shader);
+
+		MainCamera->BindCamera(Shader);
+		jLight::BindLights(lights, Shader);
+
+		for (auto iter : jObject::GetStaticObject())
+			iter->Draw(MainCamera, Shader, lights);
+	}
+
+	const Vector2 PreviewSize(300, 300);
+	static auto PreviewUI = jPrimitiveUtil::CreateUIQuad(Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y), PreviewSize, nullptr);
+#define PREVIEW_TEXTURE(TEXTURE)\
+	{\
+		auto EnableClear = false;\
+		auto EnableDepthTest = false;\
+		auto DepthStencilFunc = EComparisonFunc::LESS;\
+		auto EnableBlend = false;\
+		auto BlendSrc = EBlendSrc::ONE;\
+		auto BlendDest = EBlendDest::ZERO;\
+		auto Shader = jShader::GetShader("UIShader");\
+		g_rhi->EnableDepthTest(false);\
+		g_rhi->EnableBlend(EnableBlend);\
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);\
+		g_rhi->SetShader(Shader);\
+		MainCamera->BindCamera(Shader);\
+		PreviewUI->RenderObject->tex_object = TEXTURE;\
+		PreviewUI->Draw(MainCamera, Shader, {});\
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+
+	if (DirectionalLight->GetShadowMapRenderTarget()->GetTexture())
+	{
+		PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y);
+		PREVIEW_TEXTURE(DirectionalLight->GetShadowMapRenderTarget()->GetTexture());
+	}
 }
 
 void jGame::UpdateAppSetting()
 {
 	auto& appSetting =  jShadowAppSettingProperties::GetInstance();
 
-	appSetting.SpotLightDirection = Matrix::MakeRotateY(0.01).Transform(appSetting.SpotLightDirection);
+	appSetting.SpotLightDirection = Matrix::MakeRotateY(0.01f).Transform(appSetting.SpotLightDirection);
 
 	bool changedDirectionalLight = false;
 	if (appSetting.ShadowMapType == EShadowMapType::CSM_SSM)
@@ -564,7 +670,7 @@ void jGame::SpawnGraphTestFunc()
 			}
 
 			for (int i = 0; i < _countof(PerspectiveVector); ++i)
-				PerspectiveVector[i].z = (PerspectiveVector[i].z + 1.0) * 0.5;
+				PerspectiveVector[i].z = (PerspectiveVector[i].z + 1.0f) * 0.5f;
 		}
 		{
 			static jCamera* pCamera = jCamera::CreateCamera(Vector(0.0), Vector(0.0, 0.0, 1.0), Vector(0.0, 1.0, 0.0), DegreeToRadian(90), 10.0, 100.0, 100.0, 100.0, false);
@@ -577,7 +683,7 @@ void jGame::SpawnGraphTestFunc()
 			}
 
 			for (int i = 0; i < _countof(OrthographicVector); ++i)
-				OrthographicVector[i].z = (OrthographicVector[i].z + 1.0) * 0.5;
+				OrthographicVector[i].z = (OrthographicVector[i].z + 1.0f) * 0.5f;
 		}
 	}
 	std::vector<Vector2> graph1;
@@ -585,9 +691,9 @@ void jGame::SpawnGraphTestFunc()
 
 	float scale = 100.0f;
 	for (int i = 0; i < _countof(PerspectiveVector); ++i)
-		graph1.push_back(Vector2(i*2, PerspectiveVector[i].z * scale));
+		graph1.push_back(Vector2((float)i*2, PerspectiveVector[i].z * scale));
 	for (int i = 0; i < _countof(OrthographicVector); ++i)
-		graph2.push_back(Vector2(i*2, OrthographicVector[i].z* scale));
+		graph2.push_back(Vector2((float)i*2, OrthographicVector[i].z* scale));
 
 	auto graphObj1 = jPrimitiveUtil::CreateGraph2D({ 360, 350 }, {360, 300}, graph1);
 	jObject::AddUIDebugObject(graphObj1);
