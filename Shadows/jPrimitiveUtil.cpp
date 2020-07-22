@@ -1822,14 +1822,16 @@ void jSpotLightPrimitive::Draw(const jCamera* camera, const jShader* shader, con
 
 void jFrustumPrimitive::Update(float deltaTime)
 {
-	const auto& origin = TargetCamera->Pos;
+	const auto origin = TargetCamera->Pos + Offset;
 	const float fovRad = TargetCamera->FOVRad;
 	const float n = TargetCamera->Near;
 	const float f = TargetCamera->Far;
 
+	float InvAspect = (TargetCamera->Width / TargetCamera->Height);
+
 	Vector targetVec = TargetCamera->GetForwardVector().GetNormalize();
 	float length = tanf(fovRad / 2.0f) * f;
-	Vector rightVec = TargetCamera->GetRightVector() * length;
+	Vector rightVec = TargetCamera->GetRightVector() * length * InvAspect;
 	Vector upVec = TargetCamera->GetUpVector() * length;
 
 	Vector rightUp = (targetVec * f + rightVec + upVec).GetNormalize();
@@ -1846,6 +1848,21 @@ void jFrustumPrimitive::Update(float deltaTime)
 	Vector near_rt = origin + rightUp * n;
 	Vector near_lb = origin + leftDown * n;
 	Vector near_rb = origin + rightDown * n;
+
+	if (PostPerspective)
+	{
+		auto ProjView = TargetCamera->Projection * TargetCamera->View;
+
+		far_lt = ProjView.Transform(far_lt);
+		far_rt = ProjView.Transform(far_rt);
+		far_lb = ProjView.Transform(far_lb);
+		far_rb = ProjView.Transform(far_rb);
+
+		near_lt = ProjView.Transform(near_lt);
+		near_rt = ProjView.Transform(near_rt);
+		near_lb = ProjView.Transform(near_lb);
+		near_rb = ProjView.Transform(near_rb);
+	}
 
 	const Vector4 white(1.0f);
 	Segments[0]->UpdateSegment(origin, far_rt, white);
@@ -1936,7 +1953,7 @@ void jFrustumPrimitive::Update(float deltaTime)
 		vertexStreamData->PrimitiveType = EPrimitiveType::TRIANGLES;
 		vertexStreamData->ElementCount = elementCount;
 
-		RenderObject->UpdateVertexStream(vertexStreamData);
+		quad->RenderObject->UpdateVertexStream(vertexStreamData);
 	};
 
 	updateQuadFunc(Plane[0], far_lt, near_lt, far_lb, near_lb, Vector4(0.0f, 1.0f, 0.0f, 0.3f));

@@ -30,6 +30,7 @@ layout (std140) uniform DirectionalLightShadowMapBlock
 uniform vec3 Eye;
 uniform int Collided;
 uniform int ShadowOn;
+uniform mat4 PSM;
 
 in vec3 Pos_;
 in vec4 Color_;
@@ -42,7 +43,7 @@ void main()
     vec3 normal = normalize(Normal_);
     vec3 viewDir = normalize(Eye - Pos_);
 
-    vec4 tempShadowPos = (ShadowVP * vec4(Pos_, 1.0));
+    vec4 tempShadowPos = (PSM * vec4(Pos_, 1.0));
     tempShadowPos /= tempShadowPos.w;
     vec3 ShadowPos = tempShadowPos.xyz * 0.5 + 0.5;        // Transform NDC space coordinate from [-1.0 ~ 1.0] into [0.0 ~ 1.0].
 
@@ -72,5 +73,5 @@ void main()
 
 	directColor *= 1.0 / 3.14;
 
-    color = vec4(directColor, 1.0);
+    color = vec4(directColor + vec3(0.1), 1.0);
 }

@@ -189,6 +189,8 @@ public:
 	jSegmentPrimitive* Segments[12] = { };
 	jQuadPrimitive* Plane[6] = { };
 	const jCamera* TargetCamera = nullptr;
+	bool PostPerspective = false;
+	Vector Offset;
 };
 
 class jGraph2D : public jObject
