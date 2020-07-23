@@ -186,10 +186,11 @@ public:
 	virtual void Update(float deltaTime) override;
 	virtual void Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount = 0) override;
 
-	jSegmentPrimitive* Segments[12] = { };
+	jSegmentPrimitive* Segments[16] = { };
 	jQuadPrimitive* Plane[6] = { };
 	const jCamera* TargetCamera = nullptr;
 	bool PostPerspective = false;
+	bool DrawPlane = false;
 	Vector Offset;
 };
 

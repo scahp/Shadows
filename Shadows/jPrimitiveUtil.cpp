@@ -1664,7 +1664,7 @@ jSpotLightPrimitive* CreateSpotLightDebug(const Vector& scale, jCamera* targetCa
 jFrustumPrimitive* CreateFrustumDebug(const jCamera* targetCamera)
 {
 	jFrustumPrimitive* frustumPrimitive = new jFrustumPrimitive(targetCamera);
-	for (int32 i = 0; i < 12; ++i)
+	for (int32 i = 0; i < 16; ++i)
 		frustumPrimitive->Segments[i] = CreateSegment(Vector::ZeroVector, Vector::ZeroVector, 1.0f, Vector4(1.0f));
 
 	for (int32 i = 0; i < 6; ++i)
@@ -1746,13 +1746,14 @@ void jDirectionalLightPrimitive::Draw(const jCamera* camera, const jShader* shad
 
 void jSegmentPrimitive::UpdateSegment()
 {
-	if (RenderObject->VertexStream->Params.size() <= 0)
+	if (RenderObject->VertexStream->Params.size() < 2)
 	{
 		JASSERT(0);
 		return;
 	}
 
 	delete RenderObject->VertexStream->Params[0];
+	delete RenderObject->VertexStream->Params[1];
 	const auto currentEnd = GetCurrentEnd();
 	
 	const float vertices[] = {
@@ -1770,8 +1771,19 @@ void jSegmentPrimitive::UpdateSegment()
 		streamParam->Data.resize(_countof(vertices));
 		memcpy(&streamParam->Data[0], &vertices[0], sizeof(vertices));
 		RenderObject->VertexStream->Params[0] = streamParam;
-		g_rhi->UpdateVertexBuffer(RenderObject->VertexBuffer, streamParam, 0);
 	}
+
+	{
+		auto streamParam = new jStreamParam<float>();
+		streamParam->BufferType = EBufferType::STATIC;
+		streamParam->ElementType = EBufferElementType::FLOAT;
+		streamParam->ElementTypeSize = sizeof(float);
+		streamParam->Stride = sizeof(float) * 4;
+		streamParam->Name = "Color";
+		streamParam->Data = std::move(jPrimitiveUtil::GenerateColor(Color, 2));
+		RenderObject->VertexStream->Params[1] = streamParam;
+	}
+	g_rhi->UpdateVertexBuffer(RenderObject->VertexBuffer, RenderObject->VertexStream);
 }
 
 void jSegmentPrimitive::UpdateSegment(const Vector& start, const Vector& end, const Vector4& color, float time)
@@ -1870,16 +1882,22 @@ void jFrustumPrimitive::Update(float deltaTime)
 	Segments[2]->UpdateSegment(origin, far_rb, white);
 	Segments[3]->UpdateSegment(origin, far_lb, white);
 
-	const Vector4 red(1.0f, 0.0f, 0.0f, 1.0f);
-	Segments[4]->UpdateSegment(near_lt, near_rt, red);
-	Segments[5]->UpdateSegment(near_lb, near_rb, red);
-	Segments[6]->UpdateSegment(near_lt, near_lb, red);
-	Segments[7]->UpdateSegment(near_rt, near_rb, red);
+	const Vector4 blue(0.0f, 1.0f, 0.0f, 1.0f);
+	Segments[4]->UpdateSegment(near_lt, near_rt, blue);
+	Segments[5]->UpdateSegment(near_lb, near_rb, blue);
+	Segments[6]->UpdateSegment(near_lt, near_lb, blue);
+	Segments[7]->UpdateSegment(near_rt, near_rb, blue);
 
+	const Vector4 red(1.0f, 0.0f, 0.0f, 1.0f);
 	Segments[8]->UpdateSegment(far_lt, far_rt, red);
 	Segments[9]->UpdateSegment(far_lb, far_rb, red);
 	Segments[10]->UpdateSegment(far_lt, far_lb, red);
 	Segments[11]->UpdateSegment(far_rt, far_rb, red);
+
+	Segments[12]->UpdateSegment(origin, near_rt, white);
+	Segments[13]->UpdateSegment(origin, near_rb, white);
+	Segments[14]->UpdateSegment(origin, near_lb, white);
+	Segments[15]->UpdateSegment(origin, near_rb, white);
 
 	auto updateQuadFunc = [this](jQuadPrimitive* quad, const Vector& p1, const Vector& p2, const Vector& p3, const Vector& p4, const Vector4& color)
 	{
@@ -1963,7 +1981,7 @@ void jFrustumPrimitive::Update(float deltaTime)
 	updateQuadFunc(Plane[4], near_lt, near_rt, near_lb, near_rb, Vector4(1.0f, 1.0f, 1.0f, 0.3f));
 	updateQuadFunc(Plane[5], far_lt, far_rt, far_lb, far_rb, Vector4(1.0f, 1.0f, 1.0f, 0.3f));
 
-	for (int32 i = 0; i < 12; ++i)
+	for (int32 i = 0; i < 16; ++i)
 		Segments[i]->Update(deltaTime);
 
 	for (int32 i = 0; i < 6; ++i)
@@ -1973,11 +1991,14 @@ void jFrustumPrimitive::Update(float deltaTime)
 void jFrustumPrimitive::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 1 */)
 {
 	__super::Draw(camera, shader, lights);
-	for (int32 i = 0; i < 12; ++i)
+	for (int32 i = 0; i < 16; ++i)
 		Segments[i]->Draw(camera, shader, lights);
 
-	for (int32 i = 0; i < 6; ++i)
-		Plane[i]->Draw(camera, shader, lights);
+	if (DrawPlane)
+	{
+		for (int32 i = 0; i < 6; ++i)
+			Plane[i]->Draw(camera, shader, lights);
+	}
 }
 
 void jGraph2D::Update(float deltaTime)
