@@ -63,6 +63,7 @@ public:
 	bool Visible = true;
 	bool DirtyObjectState = false;
 	
+	bool IsPostUpdate = true;
 	std::function<void(jObject*, float)> PostUpdateFunc;
 
 	// todo 현재는 보유만 하고있음.

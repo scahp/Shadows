@@ -65,8 +65,6 @@ public:
 	jLight* AmbientLight = nullptr;
 	jCamera* MainCamera = nullptr;
 
-	jObject* Sphere = nullptr;
-
 	jRenderer* Renderer = nullptr;
 
 	std::map<EShadowType, jRenderer*> ShadowRendererMap;
@@ -89,5 +87,13 @@ public:
 	jUIQuadPrimitive* DirectionalLightShadowMapUIDebug = nullptr;
 
 	std::vector<jObject*> SpawnedObjects;
+
+	jObject* Cube = nullptr;
+	jObject* CubePP = nullptr;
+	Vector OffsetPP = Vector::ZeroVector;
+	Vector ScalePP = Vector::OneVector;
+
+	jObject* Sphere = nullptr;
+	jObject* SpherePP = nullptr;
 };
 

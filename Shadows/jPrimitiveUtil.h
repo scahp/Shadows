@@ -192,6 +192,7 @@ public:
 	bool PostPerspective = false;
 	bool DrawPlane = false;
 	Vector Offset;
+	Vector Scale = Vector::OneVector;
 };
 
 class jGraph2D : public jObject

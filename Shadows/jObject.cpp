@@ -180,7 +180,7 @@ void jObject::Update(float deltaTime)
 	if (VertexAdjacency)
 		VertexAdjacency->Update(this);
 
-	if (PostUpdateFunc)
+	if (IsPostUpdate && PostUpdateFunc)
 		PostUpdateFunc(this, deltaTime);
 }
 

@@ -12,6 +12,11 @@ public:
 		return *_instance;
 	}
 
+	Vector MockCameraPos = Vector(0.0f, 100.0f, -150.0f);
+	Vector MockCameraTarget = Vector(0.0f, 100.0f, 0.0f);
+	Vector CubePos = Vector(0.0f, 100.0f, 0.0f);
+	Vector CubeScale = Vector(50.0f, 50.0f, 50.0f);
+
 	bool ShadowOn = true;
 	EShadowType ShadowType = EShadowType::ShadowMap;
 	bool ShowSilhouette_DirectionalLight = false;

@@ -821,6 +821,56 @@ jObject* CreateCube(const Vector& pos, const Vector& size, const Vector& scale, 
 		0.0f, -1.0f, 0.0f,
 	};
 
+	float colors[] = {
+		// z +
+		0.0f, 0.0f, 1.0f, 1.0f,
+		0.0f, 0.0f,	1.0f, 1.0f,
+		0.0f, 0.0f,	1.0f, 1.0f,
+		0.0f, 0.0f,	1.0f, 1.0f,
+		0.0f, 0.0f,	1.0f, 1.0f,
+		0.0f, 0.0f,	1.0f, 1.0f,
+
+		// z -
+		0.0f, 0.0f, 0.5f, 1.0f,
+		0.0f, 0.0f,	0.5f, 1.0f,
+		0.0f, 0.0f,	0.5f, 1.0f,
+		0.0f, 0.0f,	0.5f, 1.0f,
+		0.0f, 0.0f,	0.5f, 1.0f,
+		0.0f, 0.0f,	0.5f, 1.0f,
+
+		// x +
+		1.0f, 0.0f, 0.0f, 1.0f,
+		1.0f, 0.0f,	0.0f, 1.0f,
+		1.0f, 0.0f,	0.0f, 1.0f,
+		1.0f, 0.0f,	0.0f, 1.0f,
+		1.0f, 0.0f,	0.0f, 1.0f,
+		1.0f, 0.0f,	0.0f, 1.0f,		
+
+		// x -
+		0.5f, 0.0f, 0.0f, 1.0f,
+		0.5f, 0.0f,	0.0f, 1.0f,
+		0.5f, 0.0f,	0.0f, 1.0f,
+		0.5f, 0.0f,	0.0f, 1.0f,
+		0.5f, 0.0f,	0.0f, 1.0f,
+		0.5f, 0.0f,	0.0f, 1.0f,
+
+		// y +
+		0.0f, 1.0f, 0.0f, 1.0f,
+		0.0f, 1.0f,	0.0f, 1.0f,
+		0.0f, 1.0f,	0.0f, 1.0f,
+		0.0f, 1.0f,	0.0f, 1.0f,
+		0.0f, 1.0f,	0.0f, 1.0f,
+		0.0f, 1.0f,	0.0f, 1.0f,	
+
+		// y -
+		0.0f, 0.5f, 0.0f, 1.0f,
+		0.0f, 0.5f,	0.0f, 1.0f,
+		0.0f, 0.5f,	0.0f, 1.0f,
+		0.0f, 0.5f,	0.0f, 1.0f,
+		0.0f, 0.5f,	0.0f, 1.0f,
+		0.0f, 0.5f,	0.0f, 1.0f,
+	};
+
 	int32 elementCount = _countof(vertices) / 3;
 
 	// attribute 추가
@@ -845,7 +895,8 @@ jObject* CreateCube(const Vector& pos, const Vector& size, const Vector& scale, 
 		streamParam->ElementTypeSize = sizeof(float);
 		streamParam->Stride = sizeof(float) * 4;
 		streamParam->Name = "Color";
-		streamParam->Data = std::move(GenerateColor(color, elementCount));
+		streamParam->Data.resize(elementCount * 4);
+		memcpy(&streamParam->Data[0], colors, sizeof(colors));
 		vertexStreamData->Params.push_back(streamParam);
 	}
 
@@ -1665,7 +1716,10 @@ jFrustumPrimitive* CreateFrustumDebug(const jCamera* targetCamera)
 {
 	jFrustumPrimitive* frustumPrimitive = new jFrustumPrimitive(targetCamera);
 	for (int32 i = 0; i < 16; ++i)
+	{
 		frustumPrimitive->Segments[i] = CreateSegment(Vector::ZeroVector, Vector::ZeroVector, 1.0f, Vector4(1.0f));
+		frustumPrimitive->Segments[i]->IsPostUpdate = false;
+	}
 
 	for (int32 i = 0; i < 6; ++i)
 		frustumPrimitive->Plane[i] = CreateQuad(Vector::ZeroVector, Vector::OneVector, Vector::OneVector, Vector4(1.0f));
@@ -1834,7 +1888,7 @@ void jSpotLightPrimitive::Draw(const jCamera* camera, const jShader* shader, con
 
 void jFrustumPrimitive::Update(float deltaTime)
 {
-	const auto origin = TargetCamera->Pos + Offset;
+	const auto origin = TargetCamera->Pos;
 	const float fovRad = TargetCamera->FOVRad;
 	const float n = TargetCamera->Near;
 	const float f = TargetCamera->Far;
@@ -1877,16 +1931,16 @@ void jFrustumPrimitive::Update(float deltaTime)
 	}
 
 	const Vector4 white(1.0f);
-	Segments[0]->UpdateSegment(origin, far_rt, white);
-	Segments[1]->UpdateSegment(origin, far_lt, white);
-	Segments[2]->UpdateSegment(origin, far_rb, white);
-	Segments[3]->UpdateSegment(origin, far_lb, white);
+	Segments[0]->UpdateSegment(near_rt, far_rt, white);
+	Segments[1]->UpdateSegment(near_lt, far_lt, white);
+	Segments[2]->UpdateSegment(near_rb, far_rb, white);
+	Segments[3]->UpdateSegment(near_lb, far_lb, white);
 
-	const Vector4 blue(0.0f, 1.0f, 0.0f, 1.0f);
-	Segments[4]->UpdateSegment(near_lt, near_rt, blue);
-	Segments[5]->UpdateSegment(near_lb, near_rb, blue);
-	Segments[6]->UpdateSegment(near_lt, near_lb, blue);
-	Segments[7]->UpdateSegment(near_rt, near_rb, blue);
+	const Vector4 green(0.0f, 1.0f, 0.0f, 1.0f);
+	Segments[4]->UpdateSegment(near_lt, near_rt, green);
+	Segments[5]->UpdateSegment(near_lb, near_rb, green);
+	Segments[6]->UpdateSegment(near_lt, near_lb, Vector4(1.0f, 1.0f, 0.0f, 1.0f));
+	Segments[7]->UpdateSegment(near_rt, near_rb, green);
 
 	const Vector4 red(1.0f, 0.0f, 0.0f, 1.0f);
 	Segments[8]->UpdateSegment(far_lt, far_rt, red);
@@ -1894,10 +1948,10 @@ void jFrustumPrimitive::Update(float deltaTime)
 	Segments[10]->UpdateSegment(far_lt, far_lb, red);
 	Segments[11]->UpdateSegment(far_rt, far_rb, red);
 
-	Segments[12]->UpdateSegment(origin, near_rt, white);
-	Segments[13]->UpdateSegment(origin, near_rb, white);
-	Segments[14]->UpdateSegment(origin, near_lb, white);
-	Segments[15]->UpdateSegment(origin, near_rb, white);
+	Segments[12]->UpdateSegment(far_rt, near_rt, white);
+	Segments[13]->UpdateSegment(far_rb, near_rb, white);
+	Segments[14]->UpdateSegment(far_lb, near_lb, white);
+	Segments[15]->UpdateSegment(far_rb, near_rb, white);
 
 	auto updateQuadFunc = [this](jQuadPrimitive* quad, const Vector& p1, const Vector& p2, const Vector& p3, const Vector& p4, const Vector4& color)
 	{
@@ -1982,10 +2036,18 @@ void jFrustumPrimitive::Update(float deltaTime)
 	updateQuadFunc(Plane[5], far_lt, far_rt, far_lb, far_rb, Vector4(1.0f, 1.0f, 1.0f, 0.3f));
 
 	for (int32 i = 0; i < 16; ++i)
+	{
+		Segments[i]->RenderObject->Pos = Offset;
+		Segments[i]->RenderObject->Scale = Scale;
 		Segments[i]->Update(deltaTime);
+	}
 
 	for (int32 i = 0; i < 6; ++i)
+	{
+		Plane[i]->RenderObject->Pos = Offset;
+		Plane[i]->RenderObject->Scale = Scale;
 		Plane[i]->Update(deltaTime);
+	}
 }
 
 void jFrustumPrimitive::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 1 */)
