@@ -25,6 +25,53 @@
 
 jRHI* g_rhi = nullptr;
 
+struct BoundingBox
+{
+	Vector Min;
+	Vector Max;
+
+	Vector GetPoint(int32 index) const
+	{
+		return Vector((index & 1) ? Min.x : Max.x, (index & 2) ? Min.y : Max.y, (index & 4) ? Min.z : Max.z);
+	}
+};
+
+struct BoundingSphere
+{
+	Vector Center;
+	float Radius;
+
+	BoundingSphere()
+		: Center(Vector::ZeroVector), Radius(0.0f)
+	{}
+
+	BoundingSphere(const std::vector<Vector>& points)
+	{
+		Radius = 0.0f;
+
+		JASSERT(points.size() > 0);
+		std::vector<Vector>::const_iterator ptIt = points.begin();
+
+		Radius = 0.f;
+		Center = *ptIt++;
+
+		while (ptIt != points.end())
+		{
+			const Vector& tmp = *ptIt++;
+			Vector cVec = tmp - Center;
+			float d = cVec.DotProduct(cVec);
+			if (d > Radius * Radius)
+			{
+				d = sqrtf(d);
+				float r = 0.5f * (d + Radius);
+				float scale = (r - Radius) / d;
+				Center = Center + scale * cVec;
+				Radius = r;
+			}
+		}
+	}
+};
+
 jGame::jGame()
 {
 	g_rhi = new jRHI_OpenGL();
@@ -36,7 +83,7 @@ jGame::~jGame()
 
 void jGame::ProcessInput()
 {
-	static float speed = 1.0f;
+	static float speed = 4.6f;
 
 	// Process Key Event
 	if (g_KeyState['a'] || g_KeyState['A']) MainCamera->MoveShift(-speed);
@@ -58,7 +105,7 @@ void jGame::Setup()
 	//////////////////////////////////////////////////////////////////////////
 	const Vector mainCameraPos(-156.032f, 160.992f, -502.611f);
 	const Vector mainCameraUp(0.0f, 1.0f, 0.0f);
-	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraPos + Vector::FowardVector, mainCameraPos + mainCameraUp, DegreeToRadian(45.0f), 1.0f, 800.0f, SCR_WIDTH, SCR_HEIGHT, true);
+	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraPos + Vector::FowardVector, mainCameraPos + mainCameraUp, DegreeToRadian(45.0f), 10.0f, 2000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
 
 	// Light creation step
@@ -77,10 +124,10 @@ void jGame::Setup()
 	//PointLight = jLight::CreatePointLight(jShadowAppSettingProperties::GetInstance().PointLightPosition, Vector4(2.0f, 0.7f, 0.7f, 1.0f), 500.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
 	//SpotLight = jLight::CreateSpotLight(jShadowAppSettingProperties::GetInstance().SpotLightPosition, jShadowAppSettingProperties::GetInstance().SpotLightDirection, Vector4(0.0f, 1.0f, 0.0f, 1.0f), 500.0f, 0.7f, 1.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
 
-	DirectionalLightInfo = jPrimitiveUtil::CreateDirectionalLightDebug(Vector(250, 260, 0)*0.5f, Vector::OneVector * 10.0f, 10.0f, MainCamera, DirectionalLight, "Image/sun.png");
+	DirectionalLightInfo = jPrimitiveUtil::CreateDirectionalLightDebug(Vector(250, 260, 0) * 0.5f, Vector::OneVector * 10.0f, 10.0f, MainCamera, DirectionalLight, "Image/sun.png");
 	jObject::AddDebugObject(DirectionalLightInfo);
 
-	DirectionalLightShadowMapUIDebug = jPrimitiveUtil::CreateUIQuad({ SCR_HEIGHT-300, 0.0f }, { 300, 300 }, DirectionalLight->GetShadowMap());
+	DirectionalLightShadowMapUIDebug = jPrimitiveUtil::CreateUIQuad({ SCR_HEIGHT - 300, 0.0f }, { 300, 300 }, DirectionalLight->GetShadowMap());
 	jObject::AddUIDebugObject(DirectionalLightShadowMapUIDebug);
 
 	//PointLightInfo = jPrimitiveUtil::CreatePointLightDebug(Vector(10.0f), MainCamera, PointLight, "Image/bulb.png");
@@ -109,7 +156,7 @@ void jGame::Setup()
 	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::PCSS, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_SSM_PCSS_Poisson)));
 	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::VSM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_VSM)));
 	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::ESM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_ESM)));
-	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::EVSM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_EVSM)));	
+	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::EVSM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_EVSM)));
 	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::CSM_SSM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_CSM_SSM)));
 
 	CurrentShadowMapType = jShadowAppSettingProperties::GetInstance().ShadowMapType;
@@ -118,8 +165,8 @@ void jGame::Setup()
 	ShadowVolumePipelineSet = CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_ShadowVolume);
 
 	// todo 정리 필요
-	const auto currentShadowPipelineSet = (jShadowAppSettingProperties::GetInstance().ShadowType == EShadowType::ShadowMap) 
-		? ShadowPipelineSetMap[CurrentShadowMapType]  : ShadowVolumePipelineSet;
+	const auto currentShadowPipelineSet = (jShadowAppSettingProperties::GetInstance().ShadowType == EShadowType::ShadowMap)
+		? ShadowPipelineSetMap[CurrentShadowMapType] : ShadowVolumePipelineSet;
 	ForwardRenderer = new jForwardRenderer(currentShadowPipelineSet);
 	ForwardRenderer->Setup();
 
@@ -183,65 +230,7 @@ void jGame::Update(float deltaTime)
 		JASSERT(light);
 		light->Update(deltaTime, MainCamera);
 	}
-
-	////////////////////////////////////////////////////////////////////////////
-	//// Get the 8 points of the view frustum in world space
-	//if (jShadowAppSettingProperties::GetInstance().ShadowMapType != EShadowMapType::DeepShadowMap_DirectionalLight)
-	//{
-	//	Vector frustumCornersWS[8] =
-	//	{
-	//		Vector(-1.0f,  1.0f, -1.0f),
-	//		Vector(1.0f,  1.0f, -1.0f),
-	//		Vector(1.0f, -1.0f, -1.0f),
-	//		Vector(-1.0f, -1.0f, -1.0f),
-	//		Vector(-1.0f,  1.0f, 1.0f),
-	//		Vector(1.0f,  1.0f, 1.0f),
-	//		Vector(1.0f, -1.0f, 1.0f),
-	//		Vector(-1.0f, -1.0f, 1.0f),
-	//	};
-
-	//	Vector frustumCenter(0.0f);
-	//	Matrix invViewProj = (MainCamera->Projection * MainCamera->View).GetInverse();
-	//	for (uint32 i = 0; i < 8; ++i)
-	//	{
-	//		frustumCornersWS[i] = invViewProj.Transform(frustumCornersWS[i]);
-	//		frustumCenter = frustumCenter + frustumCornersWS[i];
-	//	}
-	//	frustumCenter = frustumCenter * (1.0f / 8.0f);
-
-	//	auto upDir = Vector::UpVector;
-
-	//	float width = SM_WIDTH;
-	//	float height = SM_HEIGHT;
-	//	float nearDist = 10.0f;
-	//	float farDist = 1000.0f;
-
-	//	// Get position of the shadow camera
-	//	Vector shadowCameraPos = frustumCenter + DirectionalLight->Data.Direction * -(farDist - nearDist) / 2.0f;
-	//
-	//	auto shadowCamera = jOrthographicCamera::CreateCamera(shadowCameraPos, frustumCenter, shadowCameraPos + upDir
-	//		, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
-	//	shadowCamera->UpdateCamera();
-	//	DirectionalLight->GetLightCamra()->Projection = shadowCamera->Projection;
-	//	DirectionalLight->GetLightCamra()->View = shadowCamera->View;
-	//}
-	////////////////////////////////////////////////////////////////////////////
-
-	//for (auto iter : jObject::GetStaticObject())
-	//	iter->Update(deltaTime);
-
-	//for (auto& iter : jObject::GetBoundBoxObject())
-	//	iter->Update(deltaTime);
-
-	//for (auto& iter : jObject::GetBoundSphereObject())
-	//	iter->Update(deltaTime);
-
-	//for (auto& iter : jObject::GetDebugObject())
-	//	iter->Update(deltaTime);
-
-	//jObject::FlushDirtyState();
-
-	//Renderer->Render(MainCamera);
+	//////////////////////////////////////////////////////////////////////////
 
 	auto CreateViewMatrix = [](const Vector& pos, const Vector& target, const Vector& up)
 	{
@@ -288,16 +277,48 @@ void jGame::Update(float deltaTime)
 
 	jShadowAppSettingProperties& Settings = jShadowAppSettingProperties::GetInstance();
 
-	static jCamera* MockCamera = jCamera::CreateCamera({ 0.0f, 100.0f, -150.0f }, { 0.0f, 100.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }
-		, MainCamera->FOVRad, MainCamera->Near, MainCamera->Far, 300.0f, 300.0f, MainCamera->IsPerspectiveProjection);
+	static jCamera* MockCamera = jCamera::CreateCamera({ 0.0f, 100.0f, -150.0f }, { 0.0f, 100.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }
+	, Settings.MockCameraFov, Settings.MockCameraNear, Settings.MockCameraFar, 300.0f, 300.0f, MainCamera->IsPerspectiveProjection);
 
-	MockCamera->Pos = Settings.MockCameraPos;
-	MockCamera->Target = Settings.MockCameraTarget;
-	MockCamera->Up = Vector::UpVector + MockCamera->Pos;
-	MockCamera->UpdateCamera();
+	static jCamera* NDCCamera = jCamera::CreateCamera({ 0.0f, 0.0f, 2.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }
+	, DegreeToRadian(45.0f), 1.0f, 100.0f, 300.0f, 300.0f, true);
+
+	{
+		MockCamera->Pos = Settings.MockCameraPos;
+		MockCamera->Target = Settings.MockCameraTarget;
+		MockCamera->FOVRad = Settings.MockCameraFov;
+		MockCamera->Near = Settings.MockCameraNear;
+		MockCamera->Far = Settings.MockCameraFar;
+
+		Vector MockCameraForward = (MockCamera->Target - MockCamera->Pos).GetNormalize();
+		Vector Axis = Vector::UpVector;
+		if (fabsf(MockCameraForward.DotProduct(Vector::UpVector)) >= 0.99f)
+			Axis = Vector::RightVector;
+		Vector MockCameraRight = MockCameraForward.CrossProduct(Axis).GetNormalize();
+		MockCamera->Up = MockCameraRight.CrossProduct(MockCameraForward).GetNormalize() + MockCamera->Pos;
+		MockCamera->UpdateCamera();
+
+		//MockCamera->View = CreateViewMatrix(MockCamera->Pos, MockCamera->Target, MockCamera->Up);
+		//MockCamera->Projection = CreatePerspectiveLH(1.0f, MockCamera->FOVRad, MockCamera->Near, MockCamera->Far);
+	}
+
+	{
+		NDCCamera->Pos = Settings.NDCCameraPos;
+		NDCCamera->Target = Settings.NDCCameraTarget;
+
+		Vector NDCCameraForward = (NDCCamera->Target - NDCCamera->Pos).GetNormalize();
+		Vector Axis = Vector::UpVector;
+		if (fabsf(NDCCameraForward.DotProduct(Vector::UpVector)) >= 0.99f)
+			Axis = Vector::RightVector;
+		Vector NDCCameraRight = NDCCameraForward.CrossProduct(Axis).GetNormalize();
+		NDCCamera->Up = NDCCameraRight.CrossProduct(NDCCameraForward).GetNormalize() + NDCCamera->Pos;
+		NDCCamera->UpdateCamera();
+	}
+
+	//MockCamera->Projection = CreatePerspectiveLH(1.0f, MockCamera->FOVRad, MockCamera->Near, MockCamera->Far);
 
 	Matrix MockView = MockCamera->View;
-	Matrix MockProj = MainCamera->Projection;
+	Matrix MockProj = MockCamera->Projection;
 
 	//MockView = CreateViewMatrix(MockCamera->Pos, MockCamera->Target, MockCamera->Up);
 	//MockProj = CreatePerspectiveLH(MockCamera->Height / MockCamera->Width, MockCamera->FOVRad, MockCamera->Near, MockCamera->Far);
@@ -344,14 +365,15 @@ void jGame::Update(float deltaTime)
 	{
 		Vector TransformedVector = ProjectionView.Transform(Vertices[i]);
 
-		FloatMaxZ = Max(-TransformedVector.z , FloatMaxZ);
+		FloatMaxZ = Max(-TransformedVector.z, FloatMaxZ);
 		FloatMinZ = Min(-TransformedVector.z, FloatMinZ);
 	}
 
 	// 1. VirtualCamera의 View, Proj, ViewProj 만듬
 	Matrix VCView = MockView;
-	Matrix VCProj = jCameraUtil::CreatePerspectiveMatrix(
-		SCR_WIDTH, SCR_HEIGHT, DegreeToRadian(60.0f), FloatMaxZ, FloatMinZ);
+	Matrix VCProj = MockProj;
+	//Matrix VCProj = jCameraUtil::CreatePerspectiveMatrix(
+	//	SCR_WIDTH, SCR_HEIGHT, DegreeToRadian(60.0f), FloatMaxZ, FloatMinZ);
 	Matrix VCViewProj = VCProj * VCView;
 	//D3DXMatrixPerspectiveFovLH(&virtualCameraProj, D3DXToRadian(60.f), m_fAspect, m_zNear, m_zFar);
 
@@ -364,7 +386,7 @@ void jGame::Update(float deltaTime)
 	// 4. 라이트가 Eye의 뒤쪽에 있는지 판단한다.
 	bool LightIsBehindOfEye = (LightPP.w < 0.0f);
 
-	const float W_EPSILON = 0.001f;
+	static float W_EPSILON = 0.01f;
 	bool IsOrthoMatrix = (fabsf(LightPP.w) <= W_EPSILON);
 
 	// 5. PP 공간의 LightDir로 변경한 후, LightDir을 LightPos으로 변경함.
@@ -386,7 +408,7 @@ void jGame::Update(float deltaTime)
 	// 8. Up 벡터를 선택함, LookAtCubePP와 Vector::UpVector가 거의 일치하면 Vector::RightVector를 UpVector로 설정
 	Vector UpVector = Vector::UpVector;
 	if (fabsf(Vector::UpVector.DotProduct(LookAtCubePP)) > 0.99f)
-		UpVector = Vector(0.0f, 0.0f, 1.0f);
+		UpVector = Vector::RightVector;
 
 	// 9. PP에서의 라이트 위치, PP의 중심, 위에서 구한 Up벡터를 사용해서 PP에서의 ViewMatrix 구함.
 	//Matrix ViewPP = CreateViewMatrix(LightPosPP, CubeCenterPP, (LightPosPP + UpVector));
@@ -399,117 +421,125 @@ void jGame::Update(float deltaTime)
 	float AspectPP = 1.0f;
 
 	static float testBias = 0.0f;
-	float NearPP = std::max(testBias + 0.1f, DistLookAtCubePP - 2.0f * CubeRadiusPP);
+	float NearPP = std::max(testBias + 0.1f, DistLookAtCubePP - CubeRadiusPP);
 	float FarPP = DistLookAtCubePP + 2.0f * CubeRadiusPP;
 
-	struct BoundingBox
-	{
-		Vector Min;
-		Vector Max;
-
-		Vector GetPoint(int32 index) const
-		{
-			return Vector((index & 1) ? Min.x : Max.x, (index & 2) ? Min.y : Max.y, (index & 4) ? Min.z : Max.z);
-		}
-	};
-
-	struct BoundingSphere
-	{
-		Vector Center;
-		float Radius;
-
-		BoundingSphere()
-			: Center(Vector::ZeroVector), Radius(0.0f) 
-		{}
-
-		BoundingSphere(const std::vector<Vector>& points)
-		{
-			Radius = 0.0f;
-
-			JASSERT(points.size() > 0);
-			std::vector<Vector>::const_iterator ptIt = points.begin();
-
-			Radius = 0.f;
-			Center = *ptIt++;
-
-			while (ptIt != points.end())
-			{
-				const Vector& tmp = *ptIt++;
-				Vector cVec = tmp - Center;
-				float d = cVec.DotProduct(cVec);
-				if (d > Radius * Radius)
-				{
-					d = sqrtf(d);
-					float r = 0.5f * (d + Radius);
-					float scale = (r - Radius) / d;
-					Center = Center + scale * cVec;
-					Radius = r;
-				}
-			}
-		}
-	};
-
 	Matrix ProjPP;
-	if (LightIsBehindOfEye)
+	float WidthPP = 1.0f;
+	float HeightPP = 1.0f;
+	if (IsOrthoMatrix)
 	{
-		BoundingBox BBox;
-		BBox.Min = -Vector::OneVector;
-		BBox.Max = Vector::OneVector;
+		//Vector LightPPDirection(LightPP.x, LightPP.y, LightPP.z);
+		//LightPPDirection.SetNormalize();
 
-		std::vector<Vector> Points;
-		for (int i = 0; i < 8; ++i)
-		{
-			Points.push_back(BBox.GetPoint(i));
-		}
+		//D3DXVECTOR3 ppLightDirection(ppLight.x, ppLight.y, ppLight.z);
+		//D3DXVec3Normalize(&ppLightDirection, &ppLightDirection);
 
-		BoundingSphere BSphere(Points);
+		//BoundingBox ppUnitBox; ppUnitBox.maxPt = D3DXVECTOR3(1, 1, 1); ppUnitBox.minPt = D3DXVECTOR3(-1, -1, 0);
+		//D3DXVECTOR3 cubeCenter; ppUnitBox.Centroid(&cubeCenter);
+		//float t;
 
-		Vector ToBSphereDirection = BSphere.Center - LightPosPP;
-		float DistToBSphereDirection = ToBSphereDirection.Length();
-		ToBSphereDirection = ToBSphereDirection.GetNormalize();
+		//ppUnitBox.Intersect(&t, &cubeCenter, &ppLightDirection);
+		//D3DXVECTOR3 lightPos = cubeCenter + 2.f * t * ppLightDirection;
+		//D3DXVECTOR3 axis = yAxis;
 
-		Vector YAxis = Vector::UpVector;
-		if (fabsf(YAxis.DotProduct(ToBSphereDirection)) > 0.99f)
-			YAxis = Vector::FowardVector;
+		////  if the yAxis and the view direction are aligned, choose a different up vector, to avoid singularity
+		////  artifacts
+		//if (fabsf(D3DXVec3Dot(&ppLightDirection, &yAxis)) > 0.99f)
+		//	axis = zAxis;
 
-		Matrix LookAt = jCameraUtil::CreateViewMatrix(LightPosPP, (LightPosPP + ToBSphereDirection), LightPosPP + YAxis);
+		//D3DXMatrixLookAtLH(&lightView, &lightPos, &cubeCenter, &axis);
+		//XFormBoundingBox(&ppUnitBox, &ppUnitBox, &lightView);
+		//D3DXMatrixOrthoOffCenterLH(&lightProj, ppUnitBox.minPt.x, ppUnitBox.maxPt.x, ppUnitBox.minPt.y, ppUnitBox.maxPt.y, ppUnitBox.minPt.z, ppUnitBox.maxPt.z);
+		//m_ppNear = ppUnitBox.minPt.z;
+		//m_ppFar = ppUnitBox.maxPt.z;
+		//m_fSlideBack = 0.f;
 
-		NearPP = 1e32f;
-		FarPP = 0.0f;
+		//Vector LightDirPP(LightPP.x, LightPP.y, LightPP.z);
+		//LightPosPP = CubeCenterPP + (LightIsBehindOfEye ? 1.0f : -1.0f) * 2.0f * CubeRadiusPP * LightDirPP;
+		////LightPosPP = CubeCenterPP - 2.0f * CubeRadiusPP * LightDirPP;
+		//ViewPP = jCameraUtil::CreateViewMatrix(LightPosPP, CubeCenterPP, (LightPosPP + UpVector));
 
-		float maxx = 0.f, maxy = 0.f;
-		for (int32 i = 0; i < Points.size(); i++)
-		{
-			Vector tmp = LookAt.Transform(Points[i]);
-
-			float InvZ = -tmp.z;
-
-			maxx = Max(maxx, fabsf(tmp.x / InvZ));
-			maxy = Max(maxy, fabsf(tmp.y / InvZ));
-			NearPP = Min(NearPP, InvZ);
-			FarPP = Max(FarPP, InvZ);
-		}
-
-		float fovx = atanf(maxx);
-		float fovy = atanf(maxy);
-
-		static float TempScale = 0.1f;
-
-		NearPP = Max(TempScale, NearPP * 0.3f);
-
-		FarPP = NearPP;
-		NearPP = -NearPP;
-
-		FovPP = 2.0f * atanf(BSphere.Radius / DistToBSphereDirection);
-
-		ProjPP = jCameraUtil::CreatePerspectiveMatrix(2.f * tanf(fovx) * NearPP
-			, 2.f * tanf(fovy) * NearPP
-			, FovPP, FarPP, NearPP);
+		ProjPP = jCameraUtil::CreateOrthogonalMatrix(2.0f, 2.0f, FarPP, NearPP);
 	}
 	else
 	{
-		ProjPP = jCameraUtil::CreatePerspectiveMatrix(1.0f, 1.0f, FovPP, FarPP, NearPP);
+		if (LightIsBehindOfEye)
+		{
+			BoundingBox BBox;
+			BBox.Min = -Vector::OneVector;
+			BBox.Max = Vector::OneVector;
+
+			std::vector<Vector> Points;
+			for (int i = 0; i < 8; ++i)
+			{
+				Points.push_back(BBox.GetPoint(i));
+			}
+
+			BoundingSphere BSphere(Points);
+
+			Vector ToBSphereDirection = BSphere.Center - LightPosPP;
+			float DistToBSphereDirection = ToBSphereDirection.Length();
+			ToBSphereDirection = ToBSphereDirection.GetNormalize();
+			
+			//static float test = 0.0f;
+			//if (test > 0.0f)
+			//{
+			//	LightPosPP = BSphere.Center - ToBSphereDirection * (BSphere.Radius);
+
+				//static float Temp = Min(DistToBSphereDirection, 30.0f);
+				//LightPosPP = BSphere.Center - ToBSphereDirection * Temp;
+				//DistToBSphereDirection = (BSphere.Center - LightPosPP).Length();
+
+				//ViewPP = jCameraUtil::CreateViewMatrix(LightPosPP, CubeCenterPP, (LightPosPP + UpVector));
+			//}
+
+			Vector YAxis = Vector::UpVector;
+			if (fabsf(YAxis.DotProduct(ToBSphereDirection)) > 0.99f)
+				YAxis = Vector::RightVector;
+
+			Matrix LookAt = jCameraUtil::CreateViewMatrix(LightPosPP, (LightPosPP + ToBSphereDirection), LightPosPP + YAxis);
+
+			NearPP = 1e32f;
+			FarPP = 0.0f;
+
+			float maxx = 0.f, maxy = 0.f;
+			for (int32 i = 0; i < Points.size(); i++)
+			{
+				Vector tmp = LookAt.Transform(Points[i]);
+
+				float InvZ = -tmp.z;
+
+				maxx = Max(maxx, fabsf(tmp.x / InvZ));
+				maxy = Max(maxy, fabsf(tmp.y / InvZ));
+				NearPP = Min(NearPP, InvZ);
+				FarPP = Max(FarPP, InvZ);
+			}
+
+			float fovx = atanf(maxx);
+			float fovy = atanf(maxy);
+
+			static float TempScale = 0.1f;
+
+			NearPP = Max(TempScale, NearPP);
+
+			FarPP = NearPP;
+			NearPP = -NearPP;
+
+			FovPP = 2.0f * atanf(BSphere.Radius / DistToBSphereDirection);
+
+			ProjPP = jCameraUtil::CreatePerspectiveMatrix(2.f * tanf(fovx) * NearPP
+				, 2.f * tanf(fovy) * NearPP
+				, FovPP, FarPP, NearPP);
+		}
+		else
+		{
+			ProjPP = jCameraUtil::CreatePerspectiveMatrix(1.0f, 1.0f, FovPP, FarPP, NearPP);
+		}
 	}
+	jCamera* PPCamera = jCamera::CreateCamera(LightPosPP, CubeCenterPP, (LightPosPP + UpVector)
+		, FovPP, NearPP, FarPP, WidthPP, HeightPP, !IsOrthoMatrix);
+	PPCamera->UpdateCamera();
 	//Matrix ProjPP = CreatePerspectiveLH(AspectPP, FovPP, NearPP, FarPP);
 
 	//ProjPP = CreatePerspectiveLH(1.0f, DegreeToRadian(60.0f), 0.001, 5.0f);
@@ -517,7 +547,9 @@ void jGame::Update(float deltaTime)
 	// 11. PSM 용 Matrix 생성
 	// ProjPP * ViewPP * VirtualCameraProj(별도로 만든 Proj) * VirtualCameraView(현재 카메라의 View)
 	Matrix PSM_Mat = ProjPP * ViewPP * VCProj * VCView;
+	//Matrix PSM_Mat = ProjPP * ViewPP * MockCamera->Projection * MockCamera->View;
 
+	std::list<jObject*> ObjectPPs;
 
 	//DistLookAtCubePP = 2.0f;
 	//FovPP = 2.0f * atanf(CubeRadiusPP / DistLookAtCubePP);
@@ -540,8 +572,10 @@ void jGame::Update(float deltaTime)
 	if (g_KeyState['j'])
 		test2 = false;
 
-	OffsetPP = Vector(-300.0f, 100.0f, 50.0f);
-	ScalePP = Vector(100.0f);
+	OffsetPP = Vector(-400.0f, 100.0f, 50.0f);
+	ScalePP = Vector(50.0f);
+
+	//ScalePP = Vector(1.0f);
 
 	//auto CameraClone = test ? *MockCamera : *CameraPP;
 	static auto FrustumObject = jPrimitiveUtil::CreateFrustumDebug(MockCamera);
@@ -559,10 +593,20 @@ void jGame::Update(float deltaTime)
 	FrustumObject2->Update(deltaTime);
 	FrustumObject2->Offset = OffsetPP;
 	FrustumObject2->Scale = ScalePP;
+	ObjectPPs.push_back(FrustumObject2);
+
+	static auto FrustumObject3 = jPrimitiveUtil::CreateFrustumDebug(PPCamera);
+	FrustumObject3->TargetCamera = PPCamera;
+	FrustumObject3->PostPerspective = false;
+	FrustumObject3->DrawPlane = false;
+	FrustumObject3->Update(deltaTime);
+	FrustumObject3->Offset = OffsetPP;
+	FrustumObject3->Scale = ScalePP;
 
 	std::vector<jObject*> FrustumList;
 	FrustumList.push_back(FrustumObject);
 	FrustumList.push_back(FrustumObject2);
+	FrustumList.push_back(FrustumObject3);
 
 	auto& appSetting = jShadowAppSettingProperties::GetInstance();
 	Cube->RenderObject->Pos = appSetting.CubePos;
@@ -573,7 +617,7 @@ void jGame::Update(float deltaTime)
 		CubePP->RenderObject->Pos = OffsetPP;
 		CubePP->RenderObject->Rot = Vector::ZeroVector;
 		CubePP->RenderObject->Scale = ScalePP;
-		
+
 		auto posMatrix = Matrix::MakeTranslate(Cube->RenderObject->Pos);
 		auto rotMatrix = Matrix::MakeRotate(Cube->RenderObject->Rot);
 		auto scaleMatrix = Matrix::MakeScale(Cube->RenderObject->Scale);
@@ -593,8 +637,11 @@ void jGame::Update(float deltaTime)
 			Vector& ThisObjectPos = *(pThisObjectData + i);
 
 			ThisObjectPos = ProjView.Transform(CubePos);
+
+			ThisObjectPos.x = -ThisObjectPos.x;				// NDC 좌표계 -> OpenGL 좌표계로 변환, X축이 서로 반전되어있으므로 그 부분을 추가 해줌.
 		}
 		CubePP->RenderObject->UpdateVertexStream();
+		ObjectPPs.push_back(CubePP);
 	}
 
 	// SpherePP의 위치로 Transform 시킨다.
@@ -622,13 +669,16 @@ void jGame::Update(float deltaTime)
 			Vector& ThisObjectPos = *(pThisObjectData + i);
 
 			ThisObjectPos = ProjView.Transform(SpherePos);
+
+			ThisObjectPos.x = -ThisObjectPos.x;				// NDC 좌표계 -> OpenGL 좌표계로 변환, X축이 서로 반전되어있으므로 그 부분을 추가 해줌.
 		}
 		SpherePP->RenderObject->UpdateVertexStream();
+		ObjectPPs.push_back(SpherePP);
 	}
 
 	if (DirectionalLight->GetShadowMapRenderTarget()->Begin())
 	{
-		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+		auto ClearColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
 		auto EnableClear = true;
 		auto EnableDepthTest = true;
@@ -669,8 +719,8 @@ void jGame::Update(float deltaTime)
 		auto BlendSrc = EBlendSrc::ONE;
 		auto BlendDest = EBlendDest::ZERO;
 
-		//auto Shader = jShader::GetShader("PSM");
-		auto Shader = jShader::GetShader("Simple");
+		auto Shader = jShader::GetShader("PSM");
+		//auto Shader = jShader::GetShader("Simple");
 		if (EnableClear)
 		{
 			g_rhi->SetClearColor(ClearColor);
@@ -690,7 +740,6 @@ void jGame::Update(float deltaTime)
 			iter->Draw(MainCamera, Shader, lights);
 	}
 
-	for (uint32 i = 0; i < FrustumList.size(); ++i)
 	{
 		auto EnableClear = true;
 		auto EnableDepthTest = true;
@@ -708,10 +757,15 @@ void jGame::Update(float deltaTime)
 		MainCamera->BindCamera(Shader);
 		jLight::BindLights(lights, Shader);
 
-		FrustumList[i]->Draw(MainCamera, Shader, lights);
+		for (uint32 i = 0; i < FrustumList.size(); ++i)
+			FrustumList[i]->Draw(MainCamera, Shader, lights);
+
+		CubePP->Draw(MainCamera, Shader, lights);
+		SpherePP->Draw(MainCamera, Shader, lights);
 	}
 
-	auto TestRTInfo = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA
+
+	static auto TestRTInfo = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA
 	, ETextureFormat::RGBA, EFormatType::BYTE, EDepthBufferType::DEPTH24_STENCIL8, 300, 300, 1 }));
 	if (TestRTInfo->Begin())
 	{
@@ -738,12 +792,50 @@ void jGame::Update(float deltaTime)
 		MockCamera->BindCamera(Shader);
 		jLight::BindLights(lights, Shader);
 
-		SET_UNIFORM_BUFFER_STATIC(Matrix, "PSM", PSM_Mat, Shader);
-
 		for (auto iter : jObject::GetStaticObject())
 			iter->Draw(MockCamera, Shader, lights);
 
 		TestRTInfo->End();
+	}
+
+	static auto NDCRTInfo = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA
+		, ETextureFormat::RGBA, EFormatType::BYTE, EDepthBufferType::DEPTH24_STENCIL8, 300, 300, 1 }));
+	if (NDCRTInfo->Begin())
+	{
+		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableClear = true;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = false;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+
+		auto Shader = jShader::GetShader("Simple");
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+		g_rhi->EnableDepthTest(EnableDepthTest);
+		g_rhi->EnableBlend(EnableBlend);
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+		g_rhi->SetShader(Shader);
+
+		PPCamera->BindCamera(Shader);
+		jLight::BindLights(lights, Shader);
+
+		for (auto iter : ObjectPPs)
+		{
+			if (iter->RenderObject)
+			{
+				iter->RenderObject->Pos = Vector::ZeroVector;
+				iter->RenderObject->Scale = Vector::OneVector;
+			}
+			iter->Draw(PPCamera, Shader, lights);
+		}
+
+		NDCRTInfo->End();
 	}
 
 	const Vector2 PreviewSize(150, 150);
@@ -776,12 +868,15 @@ void jGame::Update(float deltaTime)
 	}
 
 	PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x * 2, SCR_HEIGHT - PreviewSize.y);
-	PREVIEW_TEXTURE(TestRTInfo->GetTexture());	
+	PREVIEW_TEXTURE(TestRTInfo->GetTexture());
+
+	PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x * 3, SCR_HEIGHT - PreviewSize.y);
+	PREVIEW_TEXTURE(NDCRTInfo->GetTexture());
 }
 
 void jGame::UpdateAppSetting()
 {
-	auto& appSetting =  jShadowAppSettingProperties::GetInstance();
+	auto& appSetting = jShadowAppSettingProperties::GetInstance();
 
 	appSetting.SpotLightDirection = Matrix::MakeRotateY(0.01f).Transform(appSetting.SpotLightDirection);
 
@@ -896,43 +991,43 @@ void jGame::UpdateAppSetting()
 			jObject::AddDebugObject(DirectionalLightInfo);
 		else
 			jObject::RemoveDebugObject(DirectionalLightInfo);
-	});
+		});
 
 	compareFunc(s_showDirectionalLightOn, appSetting.DirectionalLightOn, [this](const auto& param) {
 		if (param)
 			MainCamera->AddLight(DirectionalLight);
 		else
 			MainCamera->RemoveLight(DirectionalLight);
-	});
+		});
 
 	compareFunc(s_showPointLightInfo, appSetting.ShowPointLightInfo, [this](const auto& param) {
 		if (param)
 			jObject::AddDebugObject(PointLightInfo);
 		else
 			jObject::RemoveDebugObject(PointLightInfo);
-	});
+		});
 
 	compareFunc(s_showPointLightOn, appSetting.PointLightOn, [this](const auto& param) {
 		if (param)
 			MainCamera->AddLight(PointLight);
 		else
 			MainCamera->RemoveLight(PointLight);
-	});
+		});
 
 	compareFunc(s_showSpotLightInfo, appSetting.ShowSpotLightInfo, [this](const auto& param) {
 		if (param)
 			jObject::AddDebugObject(SpotLightInfo);
 		else
 			jObject::RemoveDebugObject(SpotLightInfo);
-	});
+		});
 
 	compareFunc(s_showSpotLightOn, appSetting.SpotLightOn, [this](const auto& param) {
 		if (param)
 			MainCamera->AddLight(SpotLight);
 		else
 			MainCamera->RemoveLight(SpotLight);
-	});
-	
+		});
+
 	// todo debug test, should remove this
 	if (DirectionalLight)
 		DirectionalLight->Data.Direction = appSetting.DirecionalLightDirection;
@@ -1012,9 +1107,8 @@ void jGame::SpawnTestPrimitives()
 	SpawnedObjects.push_back(Cube);
 
 	CubePP = jPrimitiveUtil::CreateCube(Vector(0.0f, 100.0f, 0.0f), Vector::OneVector, Vector(50.0f, 50.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
-	jObject::AddObject(CubePP);
+	//jObject::AddObject(CubePP);
 	SpawnedObjects.push_back(CubePP);
-
 
 	Sphere = jPrimitiveUtil::CreateSphere(Vector(0.0f, 100.0f, 0.0f), 1.0, 16, Vector(30.0f), Vector4(0.8f, 0.0f, 0.0f, 1.0f));
 	Sphere->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
@@ -1025,7 +1119,7 @@ void jGame::SpawnTestPrimitives()
 	SpawnedObjects.push_back(Sphere);
 
 	SpherePP = jPrimitiveUtil::CreateSphere(Vector(0.0f, 100.0f, 0.0f), 1.0, 16, Vector(30.0f), Vector4(0.8f, 0.0f, 0.0f, 1.0f));
-	jObject::AddObject(SpherePP);
+	//jObject::AddObject(SpherePP);
 	SpawnedObjects.push_back(SpherePP);
 
 	//auto cube2 = jPrimitiveUtil::CreateCube(Vector(-65.0f, 35.0f, 10.0f), Vector::OneVector, Vector(50.0f, 50.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
@@ -1135,11 +1229,11 @@ void jGame::SpawnGraphTestFunc()
 
 	float scale = 100.0f;
 	for (int i = 0; i < _countof(PerspectiveVector); ++i)
-		graph1.push_back(Vector2((float)i*2, PerspectiveVector[i].z * scale));
+		graph1.push_back(Vector2((float)i * 2, PerspectiveVector[i].z * scale));
 	for (int i = 0; i < _countof(OrthographicVector); ++i)
-		graph2.push_back(Vector2((float)i*2, OrthographicVector[i].z* scale));
+		graph2.push_back(Vector2((float)i * 2, OrthographicVector[i].z * scale));
 
-	auto graphObj1 = jPrimitiveUtil::CreateGraph2D({ 360, 350 }, {360, 300}, graph1);
+	auto graphObj1 = jPrimitiveUtil::CreateGraph2D({ 360, 350 }, { 360, 300 }, graph1);
 	jObject::AddUIDebugObject(graphObj1);
 
 	auto graphObj2 = jPrimitiveUtil::CreateGraph2D({ 360, 700 }, { 360, 300 }, graph2);

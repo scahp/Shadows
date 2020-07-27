@@ -4,8 +4,8 @@
 
 #include "shadow.glsl"
 
-precision mediump float;
-precision mediump sampler2DArray;
+precision highp float;
+precision highp sampler2DArray;
 
 #define MAX_NUM_OF_DIRECTIONAL_LIGHT 1
 
@@ -38,6 +38,16 @@ in vec3 Normal_;
 
 out vec4 color;
 
+#define PSM_SHADOW_BIAS_DIRECTIONAL 0.0
+float IsPSMShadowing(vec3 lightClipPos, sampler2DShadow shadow_object)
+{
+    if (IsInShadowMapSpace(lightClipPos))
+        return texture(shadow_object, vec3(lightClipPos.xy, lightClipPos.z - SHADOW_BIAS_DIRECTIONAL));
+
+    return 1.0;
+}
+
+
 void main()
 {
     vec3 normal = normalize(Normal_);
@@ -61,7 +71,7 @@ void main()
 
 		if (ShadowOn > 0)
 		{
-            lit = IsShadowing(ShadowPos, shadow_object);
+            lit = IsPSMShadowing(ShadowPos, shadow_object);
 		}
 
         if (lit > 0.0)

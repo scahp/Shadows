@@ -1945,7 +1945,7 @@ void jFrustumPrimitive::Update(float deltaTime)
 	const Vector4 red(1.0f, 0.0f, 0.0f, 1.0f);
 	Segments[8]->UpdateSegment(far_lt, far_rt, red);
 	Segments[9]->UpdateSegment(far_lb, far_rb, red);
-	Segments[10]->UpdateSegment(far_lt, far_lb, red);
+	Segments[10]->UpdateSegment(far_lt, far_lb, Vector4(0.0f, 1.0f, 1.0f, 1.0f));
 	Segments[11]->UpdateSegment(far_rt, far_rb, red);
 
 	Segments[12]->UpdateSegment(far_rt, near_rt, white);

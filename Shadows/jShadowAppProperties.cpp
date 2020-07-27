@@ -134,6 +134,14 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->AddVariable("PosZ", MockCameraPos.z);
 	appSetting->SetGroup("PosZ", "MockCamera");
 
+	appSetting->AddVariable("MockCameraFov", MockCameraFov);
+	appSetting->SetGroup("MockCameraFov", "MockCamera");
+	appSetting->SetStep("MockCameraFov", 0.01f);
+	appSetting->AddVariable("MockCameraNear", MockCameraNear);
+	appSetting->SetGroup("MockCameraNear", "MockCamera");
+	appSetting->AddVariable("MockCameraFar", MockCameraFar);
+	appSetting->SetGroup("MockCameraFar", "MockCamera");
+
 	appSetting->AddVariable("TargetX", MockCameraTarget.x);
 	appSetting->SetGroup("TargetX", "MockCamera");
 	appSetting->AddVariable("TargetY", MockCameraTarget.y);

@@ -12,10 +12,17 @@ public:
 		return *_instance;
 	}
 
-	Vector MockCameraPos = Vector(0.0f, 100.0f, -150.0f);
+	Vector MockCameraPos = Vector(0.0f, 100.0f, -400.0f);
 	Vector MockCameraTarget = Vector(0.0f, 100.0f, 0.0f);
-	Vector CubePos = Vector(0.0f, 100.0f, 0.0f);
+	float MockCameraFov = DegreeToRadian(45.0f);
+	float MockCameraNear = 200.0f;
+	float MockCameraFar = 800.0f;
+
+	Vector CubePos = Vector(50.0f, 100.0f, 0.0f);
 	Vector CubeScale = Vector(50.0f, 50.0f, 50.0f);
+
+	Vector NDCCameraPos = Vector(0.0f, 0.0f, -2.5f);
+	Vector NDCCameraTarget = Vector(0.0f, 0.0f, 0.0f);
 
 	bool ShadowOn = true;
 	EShadowType ShadowType = EShadowType::ShadowMap;
@@ -36,7 +43,8 @@ public:
 	bool ShowSpotLightInfo = false;
 	bool ShowBoundBox = false;
 	bool ShowBoundSphere = false;
-	Vector DirecionalLightDirection = Vector(0.0f, -100.0f, -100.0f).GetNormalize();
+	//Vector DirecionalLightDirection = Vector(0.0f, -100.0f, -100.0f).GetNormalize();
+	Vector DirecionalLightDirection = Vector(-0.01f, -1.0f, 0.03f);
 	Vector PointLightPosition = Vector(10.0f, 100.0f, 10.0f);
 	Vector SpotLightPosition = Vector(0.0f, 60.0f, 5.0f);
 	Vector SpotLightDirection = Vector(-1.0f, -1.0f, -0.4f).GetNormalize();
