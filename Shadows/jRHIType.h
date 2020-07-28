@@ -93,7 +93,12 @@ struct jVertexStreamData : public std::enable_shared_from_this<jVertexStreamData
 
 struct jIndexStreamData : public std::enable_shared_from_this<jIndexStreamData>
 {
-	IStreamParam* Param;
+	~jIndexStreamData()
+	{
+		delete Param;
+		Param = nullptr;
+	}
+	IStreamParam* Param = nullptr;
 	int32 ElementCount = 0;
 };
 
