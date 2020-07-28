@@ -115,6 +115,8 @@ void jGame::ProcessInput()
 
 void jGame::Setup()
 {
+	jShadowAppSettingProperties& Settings = jShadowAppSettingProperties::GetInstance();
+
 	//////////////////////////////////////////////////////////////////////////
 	const Vector mainCameraPos(-156.032f, 160.992f, -502.611f);
 	const Vector mainCameraUp(0.0f, 1.0f, 0.0f);
@@ -122,10 +124,10 @@ void jGame::Setup()
 	jCamera::AddCamera(0, MainCamera);
 
 	// Light creation step
-	NormalDirectionalLight = jLight::CreateDirectionalLight(jShadowAppSettingProperties::GetInstance().DirecionalLightDirection
+	NormalDirectionalLight = jLight::CreateDirectionalLight(Settings.DirecionalLightDirection
 		, Vector4(0.6f)
 		, Vector(1.0f), Vector(1.0f), 64);
-	CascadeDirectionalLight = jLight::CreateCascadeDirectionalLight(jShadowAppSettingProperties::GetInstance().DirecionalLightDirection
+	CascadeDirectionalLight = jLight::CreateCascadeDirectionalLight(Settings.DirecionalLightDirection
 		, Vector4(0.6f)
 		, Vector(1.0f), Vector(1.0f), 64);
 
@@ -172,13 +174,13 @@ void jGame::Setup()
 	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::EVSM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_EVSM)));
 	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::CSM_SSM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_CSM_SSM)));
 
-	CurrentShadowMapType = jShadowAppSettingProperties::GetInstance().ShadowMapType;
+	CurrentShadowMapType = Settings.ShadowMapType;
 
 	//ForwardRenderer = new jForwardRenderer(ShadowPipelineSetMap[CurrentShadowMapType]);
 	ShadowVolumePipelineSet = CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_ShadowVolume);
 
 	// todo 정리 필요
-	const auto currentShadowPipelineSet = (jShadowAppSettingProperties::GetInstance().ShadowType == EShadowType::ShadowMap)
+	const auto currentShadowPipelineSet = (Settings.ShadowType == EShadowType::ShadowMap)
 		? ShadowPipelineSetMap[CurrentShadowMapType] : ShadowVolumePipelineSet;
 	ForwardRenderer = new jForwardRenderer(currentShadowPipelineSet);
 	ForwardRenderer->Setup();
@@ -190,6 +192,9 @@ void jGame::Setup()
 	//{
 	//	jObject::AddUIDebugObject(jPrimitiveUtil::CreateUIQuad({ i * 150.0f, 0.0f }, { 150.0f, 150.0f }, DirectionalLight->ShadowMapData->CascadeShadowMapRenderTarget[i]->GetTexture()));
 	//}
+		
+	MockCamera = jCamera::CreateCamera({ 0.0f, 100.0f, -150.0f }, { 0.0f, 100.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }
+		, Settings.MockCameraFov, Settings.MockCameraNear, Settings.MockCameraFar, 300.0f, 300.0f, MainCamera->IsPerspectiveProjection);
 }
 
 void jGame::SpawnObjects(ESpawnedType spawnType)
@@ -290,11 +295,8 @@ void jGame::Update(float deltaTime)
 
 	jShadowAppSettingProperties& Settings = jShadowAppSettingProperties::GetInstance();
 
-	MockCamera = jCamera::CreateCamera({ 0.0f, 100.0f, -150.0f }, { 0.0f, 100.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }
-		, Settings.MockCameraFov, Settings.MockCameraNear, Settings.MockCameraFar, 300.0f, 300.0f, MainCamera->IsPerspectiveProjection);
-
 	static jCamera* NDCCamera = jCamera::CreateCamera({ 0.0f, 0.0f, 2.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }
-	, DegreeToRadian(45.0f), 1.0f, 100.0f, 300.0f, 300.0f, true);
+		, DegreeToRadian(45.0f), 1.0f, 100.0f, 300.0f, 300.0f, true);
 
 	{
 		MockCamera->Pos = Settings.MockCameraPos;
@@ -449,6 +451,7 @@ void jGame::Update(float deltaTime)
 	float NearPP = std::max(testBias + 0.1f, DistLookAtCubePP - CubeRadiusPP);
 	float FarPP = DistLookAtCubePP + 2.0f * CubeRadiusPP;
 
+	static std::shared_ptr<jCamera> PPCamera = nullptr;
 	Matrix ProjPP;
 	float WidthPP = 1.0f;
 	float HeightPP = 1.0f;
@@ -492,6 +495,9 @@ void jGame::Update(float deltaTime)
 
 		ViewPP = jCameraUtil::CreateViewMatrix(LightPosPP, CubeCenterPP, (LightPosPP + UpVector));
 		ProjPP = jCameraUtil::CreateOrthogonalMatrix(CubeRadiusPP, CubeRadiusPP, FarPP, NearPP);
+
+		PPCamera = std::shared_ptr<jCamera>(jCamera::CreateCamera(LightPosPP, CubeCenterPP, (LightPosPP + UpVector)
+			, FovPP, NearPP, FarPP, CubeRadiusPP, CubeRadiusPP, !IsOrthoMatrix));
 	}
 	else
 	{
@@ -567,10 +573,11 @@ void jGame::Update(float deltaTime)
 		{
 			ProjPP = jCameraUtil::CreatePerspectiveMatrix(1.0f, 1.0f, FovPP, FarPP, NearPP);
 		}
+		PPCamera = std::shared_ptr<jCamera>(jCamera::CreateCamera(LightPosPP, CubeCenterPP, (LightPosPP + UpVector)
+			, FovPP, NearPP, FarPP, WidthPP, HeightPP, !IsOrthoMatrix));
 	}
-	jCamera* PPCamera = jCamera::CreateCamera(LightPosPP, CubeCenterPP, (LightPosPP + UpVector)
-		, FovPP, NearPP, FarPP, WidthPP, HeightPP, !IsOrthoMatrix);
 	PPCamera->UpdateCamera();
+
 	//Matrix ProjPP = CreatePerspectiveLH(AspectPP, FovPP, NearPP, FarPP);
 
 	//ProjPP = CreatePerspectiveLH(1.0f, DegreeToRadian(60.0f), 0.001, 5.0f);
@@ -587,8 +594,8 @@ void jGame::Update(float deltaTime)
 	//NearPP = std::max(0.001f, DistLookAtCubePP - 2.0f * CubeRadiusPP);
 	//FarPP = DistLookAtCubePP + 2.0f * CubeRadiusPP;
 	//static auto CameraPP = jCamera::CreateCamera(-Vector::FowardVector * 2.0f, Vector::ZeroVector, Vector::UpVector, FovPP, NearPP, FarPP, 1, 1, true);
-	auto CameraPP = jCamera::CreateCamera(
-		LightPosPP, CubeCenterPP, (LightPosPP + UpVector), FovPP, NearPP, FarPP, 1, 1, true);
+	static std::shared_ptr<jCamera> CameraPP = std::shared_ptr<jCamera>(jCamera::CreateCamera(
+		LightPosPP, CubeCenterPP, (LightPosPP + UpVector), FovPP, NearPP, FarPP, 1, 1, true));
 	CameraPP->UpdateCamera();
 
 	static bool test = false;
@@ -626,8 +633,8 @@ void jGame::Update(float deltaTime)
 	FrustumObject2->Scale = ScalePP;
 	ObjectPPs.push_back(FrustumObject2);
 
-	static auto FrustumObject3 = jPrimitiveUtil::CreateFrustumDebug(PPCamera);
-	FrustumObject3->TargetCamera = PPCamera;
+	static auto FrustumObject3 = jPrimitiveUtil::CreateFrustumDebug(PPCamera.get());
+	FrustumObject3->TargetCamera = PPCamera.get();
 	FrustumObject3->PostPerspective = false;
 	FrustumObject3->DrawPlane = false;
 	FrustumObject3->Update(deltaTime);
@@ -865,7 +872,7 @@ void jGame::Update(float deltaTime)
 				iter->RenderObject->Pos = Vector::ZeroVector;
 				iter->RenderObject->Scale = Vector::OneVector;
 			}
-			iter->Draw(PPCamera, Shader, lights);
+			iter->Draw(PPCamera.get(), Shader, lights);
 		}
 
 		NDCRTInfo->End();

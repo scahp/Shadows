@@ -78,14 +78,20 @@ struct jStreamParam : public IStreamParam
 	virtual size_t GetElementSize() const override { return ElementSize; }
 };
 
-struct jVertexStreamData : std::enable_shared_from_this<jVertexStreamData>
+struct jVertexStreamData : public std::enable_shared_from_this<jVertexStreamData>
 {
+	~jVertexStreamData()
+	{
+		for (auto param : Params)
+			delete param;
+		Params.clear();
+	}
 	std::vector<IStreamParam*> Params;
 	EPrimitiveType PrimitiveType;
 	int ElementCount = 0;
 };
 
-struct jIndexStreamData : std::enable_shared_from_this<jIndexStreamData>
+struct jIndexStreamData : public std::enable_shared_from_this<jIndexStreamData>
 {
 	IStreamParam* Param;
 	int32 ElementCount = 0;
