@@ -1888,53 +1888,85 @@ void jSpotLightPrimitive::Draw(const jCamera* camera, const jShader* shader, con
 
 void jFrustumPrimitive::Update(float deltaTime)
 {
+	Vector far_lt;
+	Vector far_rt;
+	Vector far_lb;
+	Vector far_rb;
+
+	Vector near_lt;
+	Vector near_rt;
+	Vector near_lb;
+	Vector near_rb;
+
 	const auto origin = TargetCamera->Pos;
-	const float fovRad = TargetCamera->FOVRad;
 	const float n = TargetCamera->Near;
 	const float f = TargetCamera->Far;
 
-	float InvAspect = (TargetCamera->Width / TargetCamera->Height);
-
-	Vector targetVec = TargetCamera->GetForwardVector().GetNormalize();
-	float length = tanf(fovRad / 2.0f) * f;
-	Vector rightVec = TargetCamera->GetRightVector() * length * InvAspect;
-	Vector upVec = TargetCamera->GetUpVector() * length;
-
-	Vector rightUp = (targetVec * f + rightVec + upVec).GetNormalize();
-	Vector leftUp = (targetVec * f - rightVec + upVec).GetNormalize();
-	Vector rightDown = (targetVec * f + rightVec - upVec).GetNormalize();
-	Vector leftDown = (targetVec * f - rightVec - upVec).GetNormalize();
-
-	Vector far_lt = origin + leftUp * f;
-	Vector far_rt = origin + rightUp * f;
-	Vector far_lb = origin + leftDown * f;
-	Vector far_rb = origin + rightDown * f;
-
-	Vector near_lt = origin + leftUp * n;
-	Vector near_rt = origin + rightUp * n;
-	Vector near_lb = origin + leftDown * n;
-	Vector near_rb = origin + rightDown * n;
-
-	if (PostPerspective)
+	if (TargetCamera->IsPerspectiveProjection)
 	{
-		auto ProjView = TargetCamera->Projection * TargetCamera->View;
+		const float fovRad = TargetCamera->FOVRad;
 
-		far_lt = ProjView.Transform(far_lt);
-		far_rt = ProjView.Transform(far_rt);
-		far_lb = ProjView.Transform(far_lb);
-		far_rb = ProjView.Transform(far_rb);
+		float InvAspect = (TargetCamera->Width / TargetCamera->Height);
+		float length = tanf(fovRad / 2.0f) * f;
+		Vector targetVec = TargetCamera->GetForwardVector().GetNormalize();
+		Vector rightVec = TargetCamera->GetRightVector() * length * InvAspect;
+		Vector upVec = TargetCamera->GetUpVector() * length;
 
-		near_lt = ProjView.Transform(near_lt);
-		near_rt = ProjView.Transform(near_rt);
-		near_lb = ProjView.Transform(near_lb);
-		near_rb = ProjView.Transform(near_rb);
+		Vector rightUp = (targetVec * f + rightVec + upVec).GetNormalize();
+		Vector leftUp = (targetVec * f - rightVec + upVec).GetNormalize();
+		Vector rightDown = (targetVec * f + rightVec - upVec).GetNormalize();
+		Vector leftDown = (targetVec * f - rightVec - upVec).GetNormalize();
+
+		far_lt = origin + leftUp * f;
+		far_rt = origin + rightUp * f;
+		far_lb = origin + leftDown * f;
+		far_rb = origin + rightDown * f;
+
+		near_lt = origin + leftUp * n;
+		near_rt = origin + rightUp * n;
+		near_lb = origin + leftDown * n;
+		near_rb = origin + rightDown * n;
+
+		if (PostPerspective)
+		{
+			auto ProjView = TargetCamera->Projection * TargetCamera->View;
+
+			far_lt = ProjView.Transform(far_lt);
+			far_rt = ProjView.Transform(far_rt);
+			far_lb = ProjView.Transform(far_lb);
+			far_rb = ProjView.Transform(far_rb);
+
+			near_lt = ProjView.Transform(near_lt);
+			near_rt = ProjView.Transform(near_rt);
+			near_lb = ProjView.Transform(near_lb);
+			near_rb = ProjView.Transform(near_rb);
+		}
+	}
+	else
+	{
+		const float w = TargetCamera->Width;
+		const float h = TargetCamera->Height;
+
+		Vector targetVec = TargetCamera->GetForwardVector().GetNormalize();
+		Vector rightVec = TargetCamera->GetRightVector().GetNormalize();
+		Vector upVec = TargetCamera->GetUpVector().GetNormalize();
+
+		far_lt = origin + targetVec * f - rightVec * w * 0.5f + upVec * h * 0.5f;
+		far_rt = origin + targetVec * f + rightVec * w * 0.5f + upVec * h * 0.5f;
+		far_lb = origin + targetVec * f - rightVec * w * 0.5f - upVec * h * 0.5f;
+		far_rb = origin + targetVec * f + rightVec * w * 0.5f - upVec * h * 0.5f;
+
+		near_lt = origin + targetVec * n - rightVec * w * 0.5f + upVec * h * 0.5f;
+		near_rt = origin + targetVec * n + rightVec * w * 0.5f + upVec * h * 0.5f;
+		near_lb = origin + targetVec * n - rightVec * w * 0.5f - upVec * h * 0.5f;
+		near_rb = origin + targetVec * n + rightVec * w * 0.5f - upVec * h * 0.5f;
 	}
 
-	const Vector4 white(1.0f);
-	Segments[0]->UpdateSegment(near_rt, far_rt, white);
-	Segments[1]->UpdateSegment(near_lt, far_lt, white);
-	Segments[2]->UpdateSegment(near_rb, far_rb, white);
-	Segments[3]->UpdateSegment(near_lb, far_lb, white);
+	const Vector4 baseColor = (TargetCamera->IsPerspectiveProjection ? Vector4(1.0f) : Vector4(0.0f, 0.0f, 1.0f, 1.0f));
+	Segments[0]->UpdateSegment(near_rt, far_rt, baseColor);
+	Segments[1]->UpdateSegment(near_lt, far_lt, baseColor);
+	Segments[2]->UpdateSegment(near_rb, far_rb, baseColor);
+	Segments[3]->UpdateSegment(near_lb, far_lb, baseColor);
 
 	const Vector4 green(0.0f, 1.0f, 0.0f, 1.0f);
 	Segments[4]->UpdateSegment(near_lt, near_rt, green);
@@ -1948,10 +1980,10 @@ void jFrustumPrimitive::Update(float deltaTime)
 	Segments[10]->UpdateSegment(far_lt, far_lb, Vector4(0.0f, 1.0f, 1.0f, 1.0f));
 	Segments[11]->UpdateSegment(far_rt, far_rb, red);
 
-	Segments[12]->UpdateSegment(far_rt, near_rt, white);
-	Segments[13]->UpdateSegment(far_rb, near_rb, white);
-	Segments[14]->UpdateSegment(far_lb, near_lb, white);
-	Segments[15]->UpdateSegment(far_rb, near_rb, white);
+	Segments[12]->UpdateSegment(far_rt, near_rt, baseColor);
+	Segments[13]->UpdateSegment(far_rb, near_rb, baseColor);
+	Segments[14]->UpdateSegment(far_lb, near_lb, baseColor);
+	Segments[15]->UpdateSegment(far_rb, near_rb, baseColor);
 
 	auto updateQuadFunc = [this](jQuadPrimitive* quad, const Vector& p1, const Vector& p2, const Vector& p3, const Vector& p4, const Vector4& color)
 	{
