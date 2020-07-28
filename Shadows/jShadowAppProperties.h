@@ -27,6 +27,9 @@ public:
 	bool PossessMockCamera = false;
 	bool PossessMockCameraOnlyShadow = false;
 
+	Vector OffsetPP = Vector(-500.0f, 150.0f, 50.0f);
+	Vector ScalePP = Vector(60.0f);
+
 	bool ShadowOn = true;
 	EShadowType ShadowType = EShadowType::ShadowMap;
 	bool ShowSilhouette_DirectionalLight = false;
@@ -47,7 +50,7 @@ public:
 	bool ShowBoundBox = false;
 	bool ShowBoundSphere = false;
 	//Vector DirecionalLightDirection = Vector(0.0f, -100.0f, -100.0f).GetNormalize();
-	Vector DirecionalLightDirection = Vector(-0.01f, -1.0f, 0.03f);
+	Vector DirecionalLightDirection = Vector(0.0f, -1.0f, 0.0f);
 	Vector PointLightPosition = Vector(10.0f, 100.0f, 10.0f);
 	Vector SpotLightPosition = Vector(0.0f, 60.0f, 5.0f);
 	Vector SpotLightDirection = Vector(-1.0f, -1.0f, -0.4f).GetNormalize();

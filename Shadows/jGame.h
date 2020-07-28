@@ -91,8 +91,6 @@ public:
 
 	jObject* Cube = nullptr;
 	jObject* CubePP = nullptr;
-	Vector OffsetPP = Vector::ZeroVector;
-	Vector ScalePP = Vector::OneVector;
 
 	jObject* Sphere = nullptr;
 	jObject* SpherePP = nullptr;

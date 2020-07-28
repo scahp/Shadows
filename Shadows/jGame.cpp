@@ -236,11 +236,6 @@ void jGame::Update(float deltaTime)
 
 	MainCamera->UpdateCamera();
 
-	//DirectionalLight->ShadowMapData->ShadowMapCamera->Pos = MainCamera->Pos - Vector(1000.0f, 500.0f, 1000.0f) * DirectionalLight->Data.Direction;
-	//jLightUtil::MakeDirectionalLightViewInfoWithPos(DirectionalLight->ShadowMapData->ShadowMapCamera->Target, DirectionalLight->ShadowMapData->ShadowMapCamera->Up
-	//	, DirectionalLight->ShadowMapData->ShadowMapCamera->Pos, DirectionalLight->Data.Direction);
-	//DirectionalLight->ShadowMapData->ShadowMapCamera->UpdateCamera();
-
 	const int32 numOfLights = MainCamera->GetNumOfLight();
 	for (int32 i = 0; i < numOfLights; ++i)
 	{
@@ -267,9 +262,6 @@ void jGame::Update(float deltaTime)
 		InvRot.m[2][0] = zAxis.x;
 		InvRot.m[2][1] = zAxis.y;
 		InvRot.m[2][2] = zAxis.z;
-
-		// auto InvPos = Matrix::MakeTranslate(-pos.x, -pos.y, -pos.z);
-		// return InvRot * InvPos;
 
 		auto InvPos = Vector4(-pos.x, -pos.y, -pos.z, 1.0);
 		InvRot.m[0][3] = InvRot.GetRow(0).DotProduct(InvPos);
@@ -312,9 +304,6 @@ void jGame::Update(float deltaTime)
 		Vector MockCameraRight = MockCameraForward.CrossProduct(Axis).GetNormalize();
 		MockCamera->Up = MockCameraRight.CrossProduct(MockCameraForward).GetNormalize() + MockCamera->Pos;
 		MockCamera->UpdateCamera();
-
-		//MockCamera->View = CreateViewMatrix(MockCamera->Pos, MockCamera->Target, MockCamera->Up);
-		//MockCamera->Projection = CreatePerspectiveLH(1.0f, MockCamera->FOVRad, MockCamera->Near, MockCamera->Far);
 	}
 
 	{
@@ -330,13 +319,8 @@ void jGame::Update(float deltaTime)
 		NDCCamera->UpdateCamera();
 	}
 
-	//MockCamera->Projection = CreatePerspectiveLH(1.0f, MockCamera->FOVRad, MockCamera->Near, MockCamera->Far);
-
 	Matrix MockView = MockCamera->View;
 	Matrix MockProj = MockCamera->Projection;
-
-	//MockView = CreateViewMatrix(MockCamera->Pos, MockCamera->Target, MockCamera->Up);
-	//MockProj = CreatePerspectiveLH(MockCamera->Height / MockCamera->Width, MockCamera->FOVRad, MockCamera->Near, MockCamera->Far);
 
 	std::list<const jLight*> lights;
 	lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
@@ -354,7 +338,6 @@ void jGame::Update(float deltaTime)
 	IStreamParam* StreamParam = Cube->RenderObject->VertexStream->Params[0];
 	jStreamParam<float>* FloatStreamParam = static_cast<jStreamParam<float>*>(StreamParam);
 	auto ElementCount = FloatStreamParam->Data.size() / 3;
-	//FloatStreamParam->GetBufferData();
 	std::vector<Vector> Vertices;
 	Vertices.resize(ElementCount);
 	memcpy(&Vertices[0], FloatStreamParam->GetBufferData(), sizeof(Vector) * ElementCount);
@@ -391,204 +374,173 @@ void jGame::Update(float deltaTime)
 		VCProj = jCameraUtil::CreatePerspectiveMatrix(SCR_WIDTH, SCR_HEIGHT, MainCamera->FOVRad, MainCamera->Far, MainCamera->Near + 200.0f);
 	}
 
-	Matrix VCViewProj = VCProj * VCView;
-	//D3DXMatrixPerspectiveFovLH(&virtualCameraProj, D3DXToRadian(60.f), m_fAspect, m_zNear, m_zFar);
-
-	// 2. Camera 공간의 LightDir 구함
-	Vector EyeLightDir = VCView.Transform(Vector4(LightDir, 0.0f));
-
-	// 3. Camera 공간의 LightDir을 PP 공간으로 이동시킴
-	Vector4 LightPP = VCProj.Transform(Vector4(EyeLightDir, 0.0f));
-
-	// 4. 라이트가 Eye의 뒤쪽에 있는지 판단한다.
-	bool LightIsBehindOfEye = (LightPP.w < 0.0f);
-
-	static float W_EPSILON = 0.01f;
-	bool IsOrthoMatrix = (fabsf(LightPP.w) <= W_EPSILON);
-
-	// 5. PP 공간의 LightDir로 변경한 후, LightDir을 LightPos으로 변경함.
-	Vector LightPosPP;
-	float wRecip = 1.0f / LightPP.w;
-	LightPosPP.x = LightPP.x * wRecip;
-	LightPosPP.y = LightPP.y * wRecip;
-	LightPosPP.z = LightPP.z * wRecip;
-
-	// 6. PP 공간의 큐브의 반지름을 구함. (OpenGL은 NDC 공간이 X, Y, Z 모두 길이 2임)
-	float CubeRadiusPP = Vector::OneVector.Length();
-	Vector CubeCenterPP = Vector::ZeroVector;
-
-	// 7. LightPP위치에서 CubeCenter를 바라보는 벡터와 그 벡터의 거리를 구함.
-	Vector LookAtCubePP = (CubeCenterPP - LightPosPP);
-	float DistLookAtCubePP = LookAtCubePP.Length();
-	LookAtCubePP /= DistLookAtCubePP;
-
-	// 8. Up 벡터를 선택함, LookAtCubePP와 Vector::UpVector가 거의 일치하면 Vector::RightVector를 UpVector로 설정
-	Vector UpVector = Vector::UpVector;
-	if (fabsf(Vector::UpVector.DotProduct(LookAtCubePP)) > 0.99f)
-		UpVector = Vector::RightVector;
-
-	// 9. PP에서의 라이트 위치, PP의 중심, 위에서 구한 Up벡터를 사용해서 PP에서의 ViewMatrix 구함.
-	Matrix ViewPP = jCameraUtil::CreateViewMatrix(LightPosPP, CubeCenterPP, (LightPosPP + UpVector));
-
-	//ViewPP = CreateViewMatrix(-Vector::FowardVector * 0.5f, Vector::ZeroVector, Vector::UpVector);
-
-	// 10. PP의 Cube에 딱 맞는 Proj Mat을 생성함.
-	float FovPP = 2.0f * atanf(CubeRadiusPP / DistLookAtCubePP);
-	float AspectPP = 1.0f;
-
-	static float testBias = 0.0f;
-	float NearPP = std::max(testBias + 0.1f, DistLookAtCubePP - CubeRadiusPP);
-	float FarPP = DistLookAtCubePP + 2.0f * CubeRadiusPP;
-
-	static std::shared_ptr<jCamera> PPCamera = nullptr;
 	Matrix ProjPP;
-	float WidthPP = 1.0f;
-	float HeightPP = 1.0f;
-	if (IsOrthoMatrix)
+	Matrix ViewPP;
+	Vector LightPosPP;
+	Vector UpVector;
+	Vector CubeCenterPP = Vector::ZeroVector;
+	float CubeRadiusPP = Vector::OneVector.Length();	// 6. PP 공간의 큐브의 반지름을 구함. (OpenGL은 NDC 공간이 X, Y, Z 모두 길이 2임)
+	float FovPP = 0.0f;
+	float NearPP = 0.0f;
+	float FarPP = 0.0f;
+	static std::shared_ptr<jCamera> PPCamera = nullptr;
+
+	auto MakePPInfo = [&](const Matrix& InView, const Matrix& InProj, bool InUpdatePPCamera)
 	{
-		Vector LightDirPP(LightPP.x, LightPP.y, LightPP.z);
+		// 2. Camera 공간의 LightDir 구함
+		Vector EyeLightDir = InView.Transform(Vector4(LightDir, 0.0f));
 
-		LightPosPP = CubeCenterPP + 2.0f * CubeRadiusPP * LightDirPP;
-		float DistToCenter = LightPosPP.Length();
+		// 3. Camera 공간의 LightDir을 PP 공간으로 이동시킴
+		Vector4 LightPP = InProj.Transform(Vector4(EyeLightDir, 0.0f));
 
-		NearPP = DistToCenter - CubeRadiusPP;
-		FarPP = DistToCenter + CubeRadiusPP;
+		// 4. 라이트가 Eye의 뒤쪽에 있는지 판단한다.
+		bool LightIsBehindOfEye = (LightPP.w < 0.0f);
 
-		ViewPP = jCameraUtil::CreateViewMatrix(LightPosPP, CubeCenterPP, (LightPosPP + UpVector));
-		ProjPP = jCameraUtil::CreateOrthogonalMatrix(CubeRadiusPP, CubeRadiusPP, FarPP, NearPP);
+		static float W_EPSILON = 0.01f;
+		bool IsOrthoMatrix = (fabsf(LightPP.w) <= W_EPSILON);
 
-		PPCamera = std::shared_ptr<jCamera>(jCamera::CreateCamera(LightPosPP, CubeCenterPP, (LightPosPP + UpVector)
-			, FovPP, NearPP, FarPP, CubeRadiusPP * 2, CubeRadiusPP * 2, !IsOrthoMatrix));
-	}
-	else
-	{
-		if (LightIsBehindOfEye)
+		float WidthPP = 1.0f;
+		float HeightPP = 1.0f;
+		if (IsOrthoMatrix)
 		{
-			BoundingBox BBox;
-			BBox.Min = -Vector::OneVector;
-			BBox.Max = Vector::OneVector;
+			Vector LightDirPP(LightPP.x, LightPP.y, LightPP.z);
 
-			std::vector<Vector> Points;
-			for (int i = 0; i < 8; ++i)
+			LightPosPP = CubeCenterPP + 2.0f * CubeRadiusPP * LightDirPP;
+			float DistToCenter = LightPosPP.Length();
+
+			NearPP = DistToCenter - CubeRadiusPP;
+			FarPP = DistToCenter + CubeRadiusPP;
+
+			ViewPP = jCameraUtil::CreateViewMatrix(LightPosPP, CubeCenterPP, (LightPosPP + UpVector));
+			ProjPP = jCameraUtil::CreateOrthogonalMatrix(CubeRadiusPP, CubeRadiusPP, FarPP, NearPP);
+
+			if (InUpdatePPCamera)
 			{
-				Points.push_back(BBox.GetPoint(i));
+				PPCamera = std::shared_ptr<jCamera>(jCamera::CreateCamera(LightPosPP, CubeCenterPP, (LightPosPP + UpVector)
+					, FovPP, NearPP, FarPP, CubeRadiusPP * 2, CubeRadiusPP * 2, !IsOrthoMatrix));
 			}
-
-			BoundingSphere BSphere(Points);
-
-			Vector ToBSphereDirection = BSphere.Center - LightPosPP;
-			float DistToBSphereDirection = ToBSphereDirection.Length();
-			ToBSphereDirection = ToBSphereDirection.GetNormalize();
-
-			Vector YAxis = Vector::UpVector;
-			if (fabsf(YAxis.DotProduct(ToBSphereDirection)) > 0.99f)
-				YAxis = Vector::RightVector;
-
-			Matrix LookAt = jCameraUtil::CreateViewMatrix(LightPosPP, (LightPosPP + ToBSphereDirection), LightPosPP + YAxis);
-
-			NearPP = 1e32f;
-			FarPP = 0.0f;
-
-			float maxx = 0.f, maxy = 0.f;
-			for (int32 i = 0; i < Points.size(); i++)
-			{
-				Vector tmp = LookAt.Transform(Points[i]);
-
-				float InvZ = -tmp.z;
-
-				maxx = Max(maxx, fabsf(tmp.x / InvZ));
-				maxy = Max(maxy, fabsf(tmp.y / InvZ));
-				NearPP = Min(NearPP, InvZ);
-				FarPP = Max(FarPP, InvZ);
-			}
-
-			float fovx = atanf(maxx);
-			float fovy = atanf(maxy);
-
-			static float TempScale = 0.1f;
-
-			NearPP = Max(TempScale, NearPP);
-
-			FarPP = NearPP;
-			NearPP = -NearPP;
-
-			FovPP = 2.0f * atanf(BSphere.Radius / DistToBSphereDirection);
-
-			ProjPP = jCameraUtil::CreatePerspectiveMatrix(2.f * tanf(fovx) * NearPP
-				, 2.f * tanf(fovy) * NearPP
-				, FovPP, FarPP, NearPP);
 		}
 		else
 		{
-			ProjPP = jCameraUtil::CreatePerspectiveMatrix(1.0f, 1.0f, FovPP, FarPP, NearPP);
+			// 5. PP 공간의 LightDir로 변경한 후, LightDir을 LightPos으로 변경함.
+			float wRecip = 1.0f / LightPP.w;
+			LightPosPP.x = LightPP.x * wRecip;
+			LightPosPP.y = LightPP.y * wRecip;
+			LightPosPP.z = LightPP.z * wRecip;
+
+			//////////////////////////////////////////////////////////////////////////
+			// 7. LightPP위치에서 CubeCenter를 바라보는 벡터와 그 벡터의 거리를 구함.
+			Vector LookAtCubePP = (CubeCenterPP - LightPosPP);
+			float DistLookAtCubePP = LookAtCubePP.Length();
+			LookAtCubePP /= DistLookAtCubePP;
+
+			if (LightIsBehindOfEye)
+			{
+				BoundingBox BBox;
+				BBox.Min = -Vector::OneVector;
+				BBox.Max = Vector::OneVector;
+
+				std::vector<Vector> Points;
+				for (int i = 0; i < 8; ++i)
+					Points.push_back(BBox.GetPoint(i));
+
+				BoundingSphere BSphere(Points);
+				Vector ToBSphereDirection = BSphere.Center - LightPosPP;
+				float DistToBSphereDirection = ToBSphereDirection.Length();
+				ToBSphereDirection = ToBSphereDirection.GetNormalize();
+
+				Vector YAxis = Vector::UpVector;
+				if (fabsf(YAxis.DotProduct(ToBSphereDirection)) > 0.99f)
+					YAxis = Vector::RightVector;
+
+				Matrix LookAt = jCameraUtil::CreateViewMatrix(LightPosPP, (LightPosPP + ToBSphereDirection), LightPosPP + YAxis);
+				NearPP = 1e32f;
+				FarPP = 0.0f;
+
+				float maxx = 0.f, maxy = 0.f;
+				for (int32 i = 0; i < Points.size(); i++)
+				{
+					Vector tmp = LookAt.Transform(Points[i]);
+					float InvZ = -tmp.z;
+
+					maxx = Max(maxx, fabsf(tmp.x / InvZ));
+					maxy = Max(maxy, fabsf(tmp.y / InvZ));
+					NearPP = Min(NearPP, InvZ);
+					FarPP = Max(FarPP, InvZ);
+				}
+
+				float fovx = atanf(maxx);
+				float fovy = atanf(maxy);
+
+				NearPP = Max(0.1f, NearPP);
+				FarPP = NearPP;
+				NearPP = -NearPP;
+
+				FovPP = 2.0f * atanf(BSphere.Radius / DistToBSphereDirection);
+				ProjPP = jCameraUtil::CreatePerspectiveMatrix(2.f * tanf(fovx) * NearPP
+					, 2.f * tanf(fovy) * NearPP
+					, FovPP, FarPP, NearPP);
+			}
+			else
+			{
+				// 10. PP의 Cube에 딱 맞는 Proj Mat을 생성함.
+				FovPP = 2.0f * atanf(CubeRadiusPP / DistLookAtCubePP);
+				float AspectPP = 1.0f;
+
+				static float testBias = 0.0f;
+				NearPP = std::max(testBias + 0.1f, DistLookAtCubePP - CubeRadiusPP);
+				FarPP = DistLookAtCubePP + 2.0f * CubeRadiusPP;
+				//////////////////////////////////////////////////////////////////////////
+
+				ProjPP = jCameraUtil::CreatePerspectiveMatrix(1.0f, 1.0f, FovPP, FarPP, NearPP);
+			}
+
+			// 8. Up 벡터를 선택함, LookAtCubePP와 Vector::UpVector가 거의 일치하면 Vector::RightVector를 UpVector로 설정
+			UpVector = Vector::UpVector;
+			if (fabsf(Vector::UpVector.DotProduct(LookAtCubePP)) > 0.99f)
+				UpVector = Vector::RightVector;
+
+			// 9. PP에서의 라이트 위치, PP의 중심, 위에서 구한 Up벡터를 사용해서 PP에서의 ViewMatrix 구함.
+			ViewPP = jCameraUtil::CreateViewMatrix(LightPosPP, CubeCenterPP, (LightPosPP + UpVector));
+
+			if (InUpdatePPCamera)
+			{
+				PPCamera = std::shared_ptr<jCamera>(jCamera::CreateCamera(LightPosPP, CubeCenterPP, (LightPosPP + UpVector)
+					, FovPP, NearPP, FarPP, WidthPP, HeightPP, !IsOrthoMatrix));
+			}
 		}
-		PPCamera = std::shared_ptr<jCamera>(jCamera::CreateCamera(LightPosPP, CubeCenterPP, (LightPosPP + UpVector)
-			, FovPP, NearPP, FarPP, WidthPP, HeightPP, !IsOrthoMatrix));
+		if (InUpdatePPCamera)
+			PPCamera->UpdateCamera();
+	};
+
+	MakePPInfo(MockView, MockProj, true);
+
+	if (Settings.PossessMockCamera || Settings.PossessMockCameraOnlyShadow)
+	{
+		VCView = MockView;
+		VCProj = MockProj;
 	}
-	PPCamera->UpdateCamera();
+	else
+	{
+		VCView = MainCamera->View;
+		VCProj = jCameraUtil::CreatePerspectiveMatrix(SCR_WIDTH, SCR_HEIGHT, MainCamera->FOVRad, MainCamera->Far, MainCamera->Near + 200.0f);
+		MakePPInfo(VCView, VCProj, false);
+	}
 
 	// 11. PSM 용 Matrix 생성
 	// ProjPP * ViewPP * VirtualCameraProj(별도로 만든 Proj) * VirtualCameraView(현재 카메라의 View)
 	Matrix PSM_Mat = ProjPP * ViewPP * VCProj * VCView;
 
 	std::list<jObject*> ObjectPPs;
-
-	static std::shared_ptr<jCamera> CameraPP = std::shared_ptr<jCamera>(jCamera::CreateCamera(
-		LightPosPP, CubeCenterPP, (LightPosPP + UpVector), FovPP, NearPP, FarPP, 1, 1, true));
-	CameraPP->UpdateCamera();
-
-	static bool test = false;
-	if (g_KeyState['n'])
-		test = true;
-	if (g_KeyState['m'])
-		test = false;
-
-	static bool test2 = false;
-	if (g_KeyState['h'])
-		test2 = true;
-	if (g_KeyState['j'])
-		test2 = false;
-
-	OffsetPP = Vector(-400.0f, 100.0f, 50.0f);
-	ScalePP = Vector(50.0f);
-
-	static auto MockCameraFrustumDebug = jPrimitiveUtil::CreateFrustumDebug(MockCamera);
-	MockCameraFrustumDebug->TargetCamera = MockCamera;
-	MockCameraFrustumDebug->PostPerspective = false;
-	MockCameraFrustumDebug->DrawPlane = test2;
-	MockCameraFrustumDebug->Update(deltaTime);
-
-	static auto MockCameraPPFrustumDebug = jPrimitiveUtil::CreateFrustumDebug(MockCamera);
-	MockCameraPPFrustumDebug->TargetCamera = MockCamera;
-	MockCameraPPFrustumDebug->PostPerspective = true;
-	MockCameraPPFrustumDebug->DrawPlane = test2;
-	MockCameraPPFrustumDebug->Update(deltaTime);
-	MockCameraPPFrustumDebug->Offset = OffsetPP;
-	MockCameraPPFrustumDebug->Scale = ScalePP;
-	ObjectPPs.push_back(MockCameraPPFrustumDebug);
-
-	static auto PPCameraFrustumDebug = jPrimitiveUtil::CreateFrustumDebug(PPCamera.get());
-	PPCameraFrustumDebug->TargetCamera = PPCamera.get();
-	PPCameraFrustumDebug->PostPerspective = false;
-	PPCameraFrustumDebug->DrawPlane = false;
-	PPCameraFrustumDebug->Update(deltaTime);
-	PPCameraFrustumDebug->Offset = OffsetPP;
-	PPCameraFrustumDebug->Scale = ScalePP;
-
-	std::vector<jObject*> FrustumList;
-	FrustumList.push_back(MockCameraFrustumDebug);
-	FrustumList.push_back(MockCameraPPFrustumDebug);
-	FrustumList.push_back(PPCameraFrustumDebug);
-
-	auto& appSetting = jShadowAppSettingProperties::GetInstance();
+auto& appSetting = jShadowAppSettingProperties::GetInstance();
 	Cube->RenderObject->Pos = appSetting.CubePos;
 	Cube->RenderObject->Scale = appSetting.CubeScale;
 
 	// CubePP 의 위치로 Transform 시킨다.
 	{
-		CubePP->RenderObject->Pos = OffsetPP;
+		CubePP->RenderObject->Pos = Settings.OffsetPP;
 		CubePP->RenderObject->Rot = Vector::ZeroVector;
-		CubePP->RenderObject->Scale = ScalePP;
+		CubePP->RenderObject->Scale = Settings.ScalePP;
 
 		auto posMatrix = Matrix::MakeTranslate(Cube->RenderObject->Pos);
 		auto rotMatrix = Matrix::MakeRotate(Cube->RenderObject->Rot);
@@ -605,7 +557,7 @@ void jGame::Update(float deltaTime)
 		Vector* pThisObjectData = (Vector*)thisObjectParam->GetBufferData();
 		for (int32 i = 0; i < ElementCount; ++i)
 		{
-			Vector CubePos = *(pCubeData + i);
+			const Vector& CubePos = *(pCubeData + i);
 			Vector& ThisObjectPos = *(pThisObjectData + i);
 
 			ThisObjectPos = ProjView.Transform(CubePos);
@@ -618,9 +570,9 @@ void jGame::Update(float deltaTime)
 
 	// SpherePP의 위치로 Transform 시킨다.
 	{
-		SpherePP->RenderObject->Pos = OffsetPP;
+		SpherePP->RenderObject->Pos = Settings.OffsetPP;
 		SpherePP->RenderObject->Rot = Vector::ZeroVector;
-		SpherePP->RenderObject->Scale = ScalePP;
+		SpherePP->RenderObject->Scale = Settings.ScalePP;
 
 		auto posMatrix = Matrix::MakeTranslate(Sphere->RenderObject->Pos);
 		auto rotMatrix = Matrix::MakeRotate(Sphere->RenderObject->Rot);
@@ -637,7 +589,7 @@ void jGame::Update(float deltaTime)
 		Vector* pThisObjectData = (Vector*)thisObjectParam->GetBufferData();
 		for (int32 i = 0; i < ElementCount; ++i)
 		{
-			Vector SpherePos = *(pSphereData + i);
+			const Vector& SpherePos = *(pSphereData + i);
 			Vector& ThisObjectPos = *(pThisObjectData + i);
 
 			ThisObjectPos = ProjView.Transform(SpherePos);
@@ -648,6 +600,7 @@ void jGame::Update(float deltaTime)
 		ObjectPPs.push_back(SpherePP);
 	}
 
+	// Draw PSM ShadowMap
 	if (DirectionalLight->GetShadowMapRenderTarget()->Begin())
 	{
 		auto ClearColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -681,6 +634,7 @@ void jGame::Update(float deltaTime)
 		DirectionalLight->GetShadowMapRenderTarget()->End();
 	}
 
+	// Draw MainScene
 	{
 		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
 		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
@@ -712,6 +666,36 @@ void jGame::Update(float deltaTime)
 		for (auto iter : jObject::GetStaticObject())
 			iter->Draw(CurrentCamera, Shader, lights);
 	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// Draw FrustumInfo
+	static auto MockCameraFrustumDebug = jPrimitiveUtil::CreateFrustumDebug(MockCamera);
+	MockCameraFrustumDebug->TargetCamera = MockCamera;
+	MockCameraFrustumDebug->PostPerspective = false;
+	MockCameraFrustumDebug->DrawPlane = false;
+	MockCameraFrustumDebug->Update(deltaTime);
+
+	static auto MockCameraPPFrustumDebug = jPrimitiveUtil::CreateFrustumDebug(MockCamera);
+	MockCameraPPFrustumDebug->TargetCamera = MockCamera;
+	MockCameraPPFrustumDebug->PostPerspective = true;
+	MockCameraPPFrustumDebug->DrawPlane = false;
+	MockCameraPPFrustumDebug->Update(deltaTime);
+	MockCameraPPFrustumDebug->Offset = Settings.OffsetPP;
+	MockCameraPPFrustumDebug->Scale = Settings.ScalePP;
+	ObjectPPs.push_back(MockCameraPPFrustumDebug);
+
+	static auto PPCameraFrustumDebug = jPrimitiveUtil::CreateFrustumDebug(PPCamera.get());
+	PPCameraFrustumDebug->TargetCamera = PPCamera.get();
+	PPCameraFrustumDebug->PostPerspective = false;
+	PPCameraFrustumDebug->DrawPlane = false;
+	PPCameraFrustumDebug->Update(deltaTime);
+	PPCameraFrustumDebug->Offset = Settings.OffsetPP;
+	PPCameraFrustumDebug->Scale = Settings.ScalePP;
+
+	std::vector<jObject*> FrustumList;
+	FrustumList.push_back(MockCameraFrustumDebug);
+	FrustumList.push_back(MockCameraPPFrustumDebug);
+	FrustumList.push_back(PPCameraFrustumDebug);
 
 	if (!Settings.PossessMockCamera)
 	{
@@ -772,46 +756,6 @@ void jGame::Update(float deltaTime)
 		TestRTInfo->End();
 	}
 
-	static auto NDCRTInfo = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA
-		, ETextureFormat::RGBA, EFormatType::BYTE, EDepthBufferType::DEPTH24_STENCIL8, 300, 300, 1 }));
-	if (NDCRTInfo->Begin())
-	{
-		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
-		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
-		auto EnableClear = true;
-		auto EnableDepthTest = true;
-		auto DepthStencilFunc = EComparisonFunc::LESS;
-		auto EnableBlend = false;
-		auto BlendSrc = EBlendSrc::ONE;
-		auto BlendDest = EBlendDest::ZERO;
-
-		auto Shader = jShader::GetShader("Simple");
-		if (EnableClear)
-		{
-			g_rhi->SetClearColor(ClearColor);
-			g_rhi->SetClear(ClearType);
-		}
-		g_rhi->EnableDepthTest(EnableDepthTest);
-		g_rhi->EnableBlend(EnableBlend);
-		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
-		g_rhi->SetShader(Shader);
-
-		PPCamera->BindCamera(Shader);
-		jLight::BindLights(lights, Shader);
-
-		for (auto iter : ObjectPPs)
-		{
-			if (iter->RenderObject)
-			{
-				iter->RenderObject->Pos = Vector::ZeroVector;
-				iter->RenderObject->Scale = Vector::OneVector;
-			}
-			iter->Draw(PPCamera.get(), Shader, lights);
-		}
-
-		NDCRTInfo->End();
-	}
-
 	const Vector2 PreviewSize(150, 150);
 	static auto PreviewUI = jPrimitiveUtil::CreateUIQuad(Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y), PreviewSize, nullptr);
 #define PREVIEW_TEXTURE(TEXTURE)\
@@ -843,9 +787,6 @@ void jGame::Update(float deltaTime)
 
 	PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x * 2, SCR_HEIGHT - PreviewSize.y);
 	PREVIEW_TEXTURE(TestRTInfo->GetTexture());
-
-	PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x * 3, SCR_HEIGHT - PreviewSize.y);
-	PREVIEW_TEXTURE(NDCRTInfo->GetTexture());
 }
 
 void jGame::UpdateAppSetting()

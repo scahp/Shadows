@@ -169,6 +169,19 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->AddVariable("CubeScaleZ", CubeScale.z);
 	appSetting->SetGroup("CubeScaleZ", "Cube");
 
+	appSetting->AddVariable("OffsetPPX", OffsetPP.x);
+	appSetting->SetGroup("OffsetPPX", "PostPerspectiveSpace");
+	appSetting->AddVariable("OffsetPPY", OffsetPP.y);
+	appSetting->SetGroup("OffsetPPY", "PostPerspectiveSpace");
+	appSetting->AddVariable("OffsetPPZ", OffsetPP.z);
+	appSetting->SetGroup("OffsetPPZ", "PostPerspectiveSpace");
+
+	appSetting->AddVariable("ScalePPX", ScalePP.x);
+	appSetting->SetGroup("ScalePPX", "PostPerspectiveSpace");
+	appSetting->AddVariable("ScalePPY", ScalePP.y);
+	appSetting->SetGroup("ScalePPY", "PostPerspectiveSpace");
+	appSetting->AddVariable("ScalePPZ", ScalePP.z);
+	appSetting->SetGroup("ScalePPZ", "PostPerspectiveSpace");
 }
 
 void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
