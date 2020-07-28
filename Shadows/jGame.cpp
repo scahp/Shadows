@@ -370,10 +370,14 @@ void jGame::Update(float deltaTime)
 	}
 
 	// 1. VirtualCamera의 View, Proj, ViewProj 만듬
-	Matrix VCView = MockView;
-	Matrix VCProj = MockProj;
+	//Matrix VCView = MockView;
+	//Matrix VCProj = MockProj;
+
+	Matrix VCView = MainCamera->View;
+	Matrix VCProj = jCameraUtil::CreatePerspectiveMatrix(SCR_WIDTH, SCR_HEIGHT, MainCamera->FOVRad, MainCamera->Far, MainCamera->Near + 200.0f);
 	//Matrix VCProj = jCameraUtil::CreatePerspectiveMatrix(
 	//	SCR_WIDTH, SCR_HEIGHT, DegreeToRadian(60.0f), FloatMaxZ, FloatMinZ);
+
 	Matrix VCViewProj = VCProj * VCView;
 	//D3DXMatrixPerspectiveFovLH(&virtualCameraProj, D3DXToRadian(60.f), m_fAspect, m_zNear, m_zFar);
 
@@ -455,12 +459,18 @@ void jGame::Update(float deltaTime)
 		//m_ppFar = ppUnitBox.maxPt.z;
 		//m_fSlideBack = 0.f;
 
-		//Vector LightDirPP(LightPP.x, LightPP.y, LightPP.z);
-		//LightPosPP = CubeCenterPP + (LightIsBehindOfEye ? 1.0f : -1.0f) * 2.0f * CubeRadiusPP * LightDirPP;
-		////LightPosPP = CubeCenterPP - 2.0f * CubeRadiusPP * LightDirPP;
-		//ViewPP = jCameraUtil::CreateViewMatrix(LightPosPP, CubeCenterPP, (LightPosPP + UpVector));
+		Vector LightDirPP(LightPP.x, LightPP.y, LightPP.z);
+		//LightPosPP = CubeCenterPP + (LightIsBehindOfEye ? -1.0f : 1.0f) * 2.0f * CubeRadiusPP * LightDirPP;
 
-		ProjPP = jCameraUtil::CreateOrthogonalMatrix(2.0f, 2.0f, FarPP, NearPP);
+		Vector Temp = 2.0f * CubeRadiusPP * LightDirPP;
+		LightPosPP = CubeCenterPP + Temp;
+		float DistToCenter = Temp.Length();
+
+		NearPP = DistToCenter;
+		FarPP = DistToCenter * 2;
+
+		ViewPP = jCameraUtil::CreateViewMatrix(LightPosPP, CubeCenterPP, (LightPosPP + UpVector));
+		ProjPP = jCameraUtil::CreateOrthogonalMatrix(CubeRadiusPP, CubeRadiusPP, FarPP, NearPP);
 	}
 	else
 	{

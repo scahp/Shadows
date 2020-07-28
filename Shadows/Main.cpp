@@ -25,6 +25,8 @@ jEngine g_Engine;
 
 int main()
 {
+	ShowWindow(GetConsoleWindow(), SW_HIDE);
+
 	// glfw: initialize and configure
 	// ------------------------------
 	glfwInit();
