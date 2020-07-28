@@ -85,19 +85,32 @@ void jGame::ProcessInput()
 {
 	static float speed = 4.6f;
 
+	jShadowAppSettingProperties& Settings = jShadowAppSettingProperties::GetInstance();
+
+	auto CurrentCamera = Settings.PossessMockCamera ? MockCamera : MainCamera;
+	JASSERT(CurrentCamera);
+	if (!CurrentCamera)
+		return;
+
 	// Process Key Event
-	if (g_KeyState['a'] || g_KeyState['A']) MainCamera->MoveShift(-speed);
-	if (g_KeyState['d'] || g_KeyState['D']) MainCamera->MoveShift(speed);
+	if (g_KeyState['a'] || g_KeyState['A']) CurrentCamera->MoveShift(-speed);
+	if (g_KeyState['d'] || g_KeyState['D']) CurrentCamera->MoveShift(speed);
 	//if (g_KeyState['1']) MainCamera->RotateForwardAxis(-0.1f);
 	//if (g_KeyState['2']) MainCamera->RotateForwardAxis(0.1f);
 	//if (g_KeyState['3']) MainCamera->RotateUpAxis(-0.1f);
 	//if (g_KeyState['4']) MainCamera->RotateUpAxis(0.1f);
 	//if (g_KeyState['5']) MainCamera->RotateRightAxis(-0.1f);
 	//if (g_KeyState['6']) MainCamera->RotateRightAxis(0.1f);
-	if (g_KeyState['w'] || g_KeyState['W']) MainCamera->MoveForward(speed);
-	if (g_KeyState['s'] || g_KeyState['S']) MainCamera->MoveForward(-speed);
+	if (g_KeyState['w'] || g_KeyState['W']) CurrentCamera->MoveForward(speed);
+	if (g_KeyState['s'] || g_KeyState['S']) CurrentCamera->MoveForward(-speed);
 	if (g_KeyState['+']) speed = Max(speed + 0.1f, 0.0f);
 	if (g_KeyState['-']) speed = Max(speed - 0.1f, 0.0f);
+
+	if (Settings.PossessMockCamera)
+	{
+		Settings.MockCameraPos = MockCamera->Pos;
+		Settings.MockCameraTarget = MockCamera->Target;
+	}
 }
 
 void jGame::Setup()
@@ -277,8 +290,8 @@ void jGame::Update(float deltaTime)
 
 	jShadowAppSettingProperties& Settings = jShadowAppSettingProperties::GetInstance();
 
-	static jCamera* MockCamera = jCamera::CreateCamera({ 0.0f, 100.0f, -150.0f }, { 0.0f, 100.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }
-	, Settings.MockCameraFov, Settings.MockCameraNear, Settings.MockCameraFar, 300.0f, 300.0f, MainCamera->IsPerspectiveProjection);
+	MockCamera = jCamera::CreateCamera({ 0.0f, 100.0f, -150.0f }, { 0.0f, 100.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }
+		, Settings.MockCameraFov, Settings.MockCameraNear, Settings.MockCameraFar, 300.0f, 300.0f, MainCamera->IsPerspectiveProjection);
 
 	static jCamera* NDCCamera = jCamera::CreateCamera({ 0.0f, 0.0f, 2.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }
 	, DegreeToRadian(45.0f), 1.0f, 100.0f, 300.0f, 300.0f, true);
@@ -370,11 +383,19 @@ void jGame::Update(float deltaTime)
 	}
 
 	// 1. VirtualCamera의 View, Proj, ViewProj 만듬
-	//Matrix VCView = MockView;
-	//Matrix VCProj = MockProj;
+	Matrix VCView;
+	Matrix VCProj;
 
-	Matrix VCView = MainCamera->View;
-	Matrix VCProj = jCameraUtil::CreatePerspectiveMatrix(SCR_WIDTH, SCR_HEIGHT, MainCamera->FOVRad, MainCamera->Far, MainCamera->Near + 200.0f);
+	if (Settings.PossessMockCamera || Settings.PossessMockCameraOnlyShadow)
+	{
+		VCView = MockView;
+		VCProj = MockProj;
+	}
+	else
+	{
+		VCView = MainCamera->View;
+		VCProj = jCameraUtil::CreatePerspectiveMatrix(SCR_WIDTH, SCR_HEIGHT, MainCamera->FOVRad, MainCamera->Far, MainCamera->Near + 200.0f);
+	}
 	//Matrix VCProj = jCameraUtil::CreatePerspectiveMatrix(
 	//	SCR_WIDTH, SCR_HEIGHT, DegreeToRadian(60.0f), FloatMaxZ, FloatMinZ);
 
@@ -466,8 +487,8 @@ void jGame::Update(float deltaTime)
 		LightPosPP = CubeCenterPP + Temp;
 		float DistToCenter = Temp.Length();
 
-		NearPP = DistToCenter;
-		FarPP = DistToCenter * 2;
+		NearPP = DistToCenter - CubeRadiusPP;
+		FarPP = DistToCenter + CubeRadiusPP;
 
 		ViewPP = jCameraUtil::CreateViewMatrix(LightPosPP, CubeCenterPP, (LightPosPP + UpVector));
 		ProjPP = jCameraUtil::CreateOrthogonalMatrix(CubeRadiusPP, CubeRadiusPP, FarPP, NearPP);
@@ -741,15 +762,17 @@ void jGame::Update(float deltaTime)
 		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
 		g_rhi->SetShader(Shader);
 
-		MainCamera->BindCamera(Shader);
+		auto CurrentCamera = Settings.PossessMockCamera ? MockCamera : MainCamera;
+		CurrentCamera->BindCamera(Shader);
 		jLight::BindLights(lights, Shader);
 
 		SET_UNIFORM_BUFFER_STATIC(Matrix, "PSM", PSM_Mat, Shader);
 
 		for (auto iter : jObject::GetStaticObject())
-			iter->Draw(MainCamera, Shader, lights);
+			iter->Draw(CurrentCamera, Shader, lights);
 	}
 
+	if (!Settings.PossessMockCamera)
 	{
 		auto EnableClear = true;
 		auto EnableDepthTest = true;
@@ -1057,10 +1080,23 @@ void jGame::OnMouseMove(int32 xOffset, int32 yOffset)
 {
 	if (g_MouseState[EMouseButtonType::LEFT])
 	{
+		jShadowAppSettingProperties& Settings = jShadowAppSettingProperties::GetInstance();
+
+		auto CurrentCamera = Settings.PossessMockCamera ? MockCamera : MainCamera;
+		JASSERT(CurrentCamera);
+		if (!CurrentCamera)
+			return;
+
 		if (abs(xOffset))
-			MainCamera->RotateYAxis(xOffset * -0.005f);
+			CurrentCamera->RotateYAxis(xOffset * -0.005f);
 		if (abs(yOffset))
-			MainCamera->RotateRightAxis(yOffset * -0.005f);
+			CurrentCamera->RotateRightAxis(yOffset * -0.005f);
+
+		if (Settings.PossessMockCamera)
+		{
+			Settings.MockCameraPos = MockCamera->Pos;
+			Settings.MockCameraTarget = MockCamera->Target;
+		}
 	}
 }
 

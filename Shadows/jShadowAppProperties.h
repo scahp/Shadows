@@ -24,6 +24,9 @@ public:
 	Vector NDCCameraPos = Vector(0.0f, 0.0f, -2.5f);
 	Vector NDCCameraTarget = Vector(0.0f, 0.0f, 0.0f);
 
+	bool PossessMockCamera = false;
+	bool PossessMockCameraOnlyShadow = false;
+
 	bool ShadowOn = true;
 	EShadowType ShadowType = EShadowType::ShadowMap;
 	bool ShowSilhouette_DirectionalLight = false;

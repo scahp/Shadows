@@ -64,6 +64,7 @@ public:
 	jSpotLight* SpotLight = nullptr;
 	jLight* AmbientLight = nullptr;
 	jCamera* MainCamera = nullptr;
+	jCamera* MockCamera = nullptr;
 
 	jRenderer* Renderer = nullptr;
 

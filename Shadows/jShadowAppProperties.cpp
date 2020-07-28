@@ -142,6 +142,12 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->AddVariable("MockCameraFar", MockCameraFar);
 	appSetting->SetGroup("MockCameraFar", "MockCamera");
 
+	appSetting->AddVariable("PossessCamera", PossessMockCamera);
+	appSetting->SetGroup("PossessMockCamera", "PossessCamera");
+
+	appSetting->AddVariable("OnlyShadow", PossessMockCameraOnlyShadow);
+	appSetting->SetGroup("OnlyShadow", "PossessCamera");
+
 	appSetting->AddVariable("TargetX", MockCameraTarget.x);
 	appSetting->SetGroup("TargetX", "MockCamera");
 	appSetting->AddVariable("TargetY", MockCameraTarget.y);
@@ -173,6 +179,12 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 	appSetting->RemoveVariable("TargetX");
 	appSetting->RemoveVariable("TargetY");
 	appSetting->RemoveVariable("TargetZ");
+
+	appSetting->RemoveVariable("MockCameraFov");
+	appSetting->RemoveVariable("MockCameraNear");
+	appSetting->RemoveVariable("MockCameraFar");
+	appSetting->RemoveVariable("PossessMockCamera");
+	appSetting->RemoveVariable("OnlyShadow");
 
 	appSetting->RemoveVariable("CubePosX");
 	appSetting->RemoveVariable("CubePosY");
