@@ -30,6 +30,11 @@ public:
 	Vector OffsetPP = Vector(-500.0f, 150.0f, 50.0f);
 	Vector ScalePP = Vector(60.0f);
 
+	bool CameraFit = false;
+	float ConstBias = 1.0f;
+	float SlopBias = 0.0f;
+	float MainCameraNearBias = 200.0f;
+
 	bool ShadowOn = true;
 	EShadowType ShadowType = EShadowType::ShadowMap;
 	bool ShowSilhouette_DirectionalLight = false;

@@ -89,10 +89,44 @@ public:
 
 	std::vector<jObject*> SpawnedObjects;
 
+	// 1
 	jObject* Cube = nullptr;
 	jObject* CubePP = nullptr;
 
+	// 2
 	jObject* Sphere = nullptr;
 	jObject* SpherePP = nullptr;
+
+	// 3
+	jObject* Cube2 = nullptr;
+	jObject* Cube2PP = nullptr;
+
+	// 4
+	jObject* Capsule = nullptr;
+	jObject* CapsulePP = nullptr;
+
+	// 5
+	jObject* Cone = nullptr;
+	jObject* ConePP = nullptr;
+
+	// 6
+	jObject* Cylinder = nullptr;
+	jObject* CylinderPP = nullptr;
+
+	// 7
+	jObject* Quad2 = nullptr;
+	jObject* Quad2PP = nullptr;
+
+	// 8
+	jObject* Sphere2 = nullptr;
+	jObject* Sphere2PP = nullptr;
+
+	// 9
+	jObject* Sphere3 = nullptr;
+	jObject* Sphere3PP = nullptr;
+
+	// 10
+	jObject* Billboard = nullptr;
+	jObject* BillboardPP = nullptr;
 };
 

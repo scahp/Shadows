@@ -23,6 +23,16 @@ struct jPlane
 		return jPlane(normal, distance);
 	}
 
+	float DotProductWithNormal(const Vector& direction)
+	{
+		return n.DotProduct(direction);
+	}
+
+	float DotProductWithPosition(const Vector& position)
+	{
+		return (n.x * position.x + n.y * position.y + n.z * position.z + d);
+	}
+
 	Vector n;
 	float d;
 };

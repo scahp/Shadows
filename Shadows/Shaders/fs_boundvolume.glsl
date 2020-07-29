@@ -2,11 +2,11 @@
 
 precision mediump float;
 
-uniform vec4 Color;
+uniform vec4 BoundBoxColor;
 
 out vec4 color;
 
 void main()
 {
-    color = vec4(Color);
+    color = vec4(BoundBoxColor);
 }

@@ -81,6 +81,8 @@ class jBoundBoxObject : public jObject
 public:
 	virtual void Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount = 0) override;
 	void SetUniformBuffer(const jShader* shader);
+	void UpdateBoundBox(const jBoundBox& boundBox);
+	void UpdateBoundBox();
 
 	Vector4 Color = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
 	jBoundBox BoundBox;

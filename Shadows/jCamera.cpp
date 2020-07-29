@@ -22,6 +22,7 @@ Matrix jCamera::CreateView() const
 
 Matrix jCamera::CreateProjection() const
 {
+	JASSERT(Near < Far);
 	if (IsPerspectiveProjection)
 	{
 		if (IsInfinityFar)
