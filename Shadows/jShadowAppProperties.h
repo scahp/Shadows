@@ -33,7 +33,8 @@ public:
 	bool CameraFit = false;
 	float ConstBias = 1.0f;
 	float SlopBias = 0.0f;
-	float MainCameraNearBias = 200.0f;
+	float MainCameraNearBias = 100.0f;
+	EPSMUnitCubeType PSMUnitCubeType = EPSMUnitCubeType::MockCamera;
 
 	bool ShadowOn = true;
 	EShadowType ShadowType = EShadowType::ShadowMap;

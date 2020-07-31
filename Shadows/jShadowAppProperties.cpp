@@ -90,12 +90,12 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	//appSetting->SetGroup("SpotLight_Direction", "SpotLight");
 	//appSetting->SetLabel("SpotLight_Direction", "Direction");
 
-	//////////////////////////////////////////////////////////////////////////
-	// Box Group
-	appSetting->AddVariable("Box", ShowBoundBox);
-	appSetting->SetGroup("Box", "Bound");
-	appSetting->AddVariable("Sphere", ShowBoundSphere);
-	appSetting->SetGroup("Sphere", "Bound");
+	////////////////////////////////////////////////////////////////////////////
+	//// Box Group
+	//appSetting->AddVariable("Box", ShowBoundBox);
+	//appSetting->SetGroup("Box", "Bound");
+	//appSetting->AddVariable("Sphere", ShowBoundSphere);
+	//appSetting->SetGroup("Sphere", "Bound");
 
 	////////////////////////////////////////////////////////////////////////////
 	//// Deep Shadow Option
@@ -194,6 +194,8 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->AddVariable("MainCameraNearBias", MainCameraNearBias);
 	appSetting->SetGroup("MainCameraNearBias", "ShadowBias");
 	
+	appSetting->AddEnumVariable("PSMUnitCubeType", PSMUnitCubeType, "EPSMUnitCubeType", EPSMUnitCubeTypeString);
+	appSetting->SetGroup("PSMUnitCubeType", "UnitCubeDebug");
 }
 
 void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
@@ -221,7 +223,9 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 	appSetting->RemoveVariable("CameraFit");
 	appSetting->RemoveVariable("ConstBias");
 	appSetting->RemoveVariable("SlopBias");
-	appSetting->RemoveVariable("MainCameraNearBias");	
+	appSetting->RemoveVariable("MainCameraNearBias");
+	appSetting->RemoveVariable("PSMUnitCubeType");
+
 
 	appSetting->RemoveVariable("ShadowOn");
 	//appSetting->RemoveVariable("EShadowType");

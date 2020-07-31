@@ -81,7 +81,7 @@ void main()
         }
     }
 
-	directColor *= 1.0 / 3.14;
+	//directColor *= 1.0 / 3.14;
 
     color = vec4(directColor + vec3(0.1), 1.0);
 }
