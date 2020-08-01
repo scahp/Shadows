@@ -165,6 +165,8 @@ void jGame::ProcessInput()
 	jShadowAppSettingProperties& Settings = jShadowAppSettingProperties::GetInstance();
 
 	auto CurrentCamera = Settings.PossessMockCamera ? MockCamera : MainCamera;
+	if (IsMovingUnitCubeWindow)
+		CurrentCamera = UnitCubeCamera;
 	JASSERT(CurrentCamera);
 	if (!CurrentCamera)
 		return;
@@ -272,7 +274,15 @@ void jGame::Setup()
 	//}
 
 	MockCamera = jCamera::CreateCamera({ 0.0f, 100.0f, -150.0f }, { 0.0f, 100.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }
-	, Settings.MockCameraFov, Settings.MockCameraNear, Settings.MockCameraFar, 300.0f, 300.0f, MainCamera->IsPerspectiveProjection);
+		, Settings.MockCameraFov, Settings.MockCameraNear, Settings.MockCameraFar, 300.0f, 300.0f, MainCamera->IsPerspectiveProjection);
+
+
+	float UnitCubeSize = SCR_WIDTH / 4;
+	UnitCubeRect = { SCR_WIDTH - UnitCubeSize, SCR_HEIGHT - UnitCubeSize, UnitCubeSize, UnitCubeSize };
+
+	UnitCubeCamera = jCamera::CreateCamera(Vector(0.0f, 0.0f, -500.0f), Vector(0.0f, 0.0f, 0.0f)
+		, Vector(0.0f, 0.0f, -400.0f) + Vector::UpVector, MainCamera->FOVRad, MainCamera->Near, MainCamera->Far, UnitCubeRect.W, UnitCubeRect.H, true);
+
 }
 
 void jGame::SpawnObjects(ESpawnedType spawnType)
@@ -313,18 +323,22 @@ void jGame::Update(float deltaTime)
 	UpdateAppSetting();
 
 	static float YRotSpeed = 0.0f;
-	if (g_KeyState['1'])
+	if (g_KeyState['i'] || g_KeyState['I'])
 		YRotSpeed = 0.03f;
-	else if (g_KeyState['2'])
+	else if (g_KeyState['o'] || g_KeyState['O'])
 		YRotSpeed = -0.03f;
-	else if (g_KeyState['3'])
+	else if (g_KeyState['p'] || g_KeyState['P'])
 		YRotSpeed = 0.0f;
 
 	jShadowAppSettingProperties& Settings = jShadowAppSettingProperties::GetInstance();
 	const auto transformMatrix = Matrix::MakeRotate(Vector::UpVector, YRotSpeed);
 	Settings.DirecionalLightDirection = transformMatrix.Transform(Settings.DirecionalLightDirection);
 
+	MainCamera->Near = Settings.MainCameraNear;
+	MainCamera->Far = Settings.MainCameraFar;
 	MainCamera->UpdateCamera();
+
+	UnitCubeCamera->UpdateCamera();
 
 	const int32 numOfLights = MainCamera->GetNumOfLight();
 	for (int32 i = 0; i < numOfLights; ++i)
@@ -547,12 +561,74 @@ void jGame::Update(float deltaTime)
 		else
 		{
 			// MainCamera의 View와 Projection을 MainCamera의 View, Projection로 설정
-			auto posMatrix = Matrix::MakeTranslate((-Vector(0.0f, 0.0f, 1.0f) * Settings.MainCameraNearBias));
-			VCView = posMatrix * MainCamera->View;
+			//auto posMatrix = Matrix::MakeTranslate((-Vector(0.0f, 0.0f, 1.0f) * Settings.VirtualSliderBack));
+
+			auto PrevUp = MainCamera->GetUpVector();
+			Vector Pos = MainCamera->Pos - Settings.VirtualSliderBack * MainCamera->GetForwardVector();
+			Vector Target = MainCamera->Target;
+			Vector Up = Pos + PrevUp;
+			VCView = jCameraUtil::CreateViewMatrix(Pos, Target, Up);
 			VCProj = jCameraUtil::CreatePerspectiveMatrix(SCR_WIDTH, SCR_HEIGHT, MainCamera->FOVRad
-				, MainCamera->Far, MainCamera->Near + Settings.MainCameraNearBias);
+				, MainCamera->Far, MainCamera->Near + /*Settings.MainCameraNearBias + */Settings.VirtualSliderBack);
 		}
 	}
+
+	//////////////////////////////////////////////////////////////////////////
+	//BoundingBox ShadowCastersBoundBoxPP;
+	//for (auto obj : jObject::GetStaticObject())
+	//{
+	//	if (!obj->SkipShadowMapGen)
+	//	{
+	//		IStreamParam* StreamParam = obj->RenderObject->VertexStream->Params[0];
+	//		jStreamParam<float>* FloatStreamParam = static_cast<jStreamParam<float>*>(StreamParam);
+	//		auto ElementCount = FloatStreamParam->Data.size() / 3;
+	//		std::vector<Vector> Vertices;
+	//		Vertices.resize(ElementCount);
+	//		memcpy(&Vertices[0], FloatStreamParam->GetBufferData(), sizeof(Vector) * ElementCount);
+
+	//		auto posMatrix = Matrix::MakeTranslate(obj->RenderObject->Pos);
+	//		auto rotMatrix = Matrix::MakeRotate(obj->RenderObject->Rot);
+	//		auto scaleMatrix = Matrix::MakeScale(obj->RenderObject->Scale);
+
+	//		Matrix World = posMatrix * rotMatrix * scaleMatrix;
+	//		Matrix PP = VCProj * VCView * World;
+
+	//		for (const Vector& Vertex : Vertices)
+	//		{
+	//			Vector TransformedVertex = PP.Transform(Vertex);
+	//			TransformedVertex.x = -TransformedVertex.x;
+	//			ShadowCastersBoundBoxPP.Merge(TransformedVertex);
+	//		}
+	//	}
+	//}
+	////ShadowCastersBoundBoxPP.Merge(MainCamera->Pos);
+
+	//Matrix PP = VCProj * VCView;
+	////ShadowCastersBoundBoxPP.MinPoint = PP.Transform(ShadowCastersBoundBox.MinPoint);
+	////ShadowCastersBoundBoxPP.MaxPoint = PP.Transform(ShadowCastersBoundBox.MaxPoint);
+	//
+
+	//// Shadow Caster AABB를 렌더링 해줄 오브젝트 생성
+	//static auto ShadowCasterBoundBoxObjectPP = jPrimitiveUtil::CreateBoundBox(
+	//	{ ShadowCastersBoundBoxPP.MinPoint, ShadowCastersBoundBoxPP.MaxPoint }, nullptr, Vector4(0.37f, 0.62f, 0.47f, 1.0f));
+	//ShadowCasterBoundBoxObjectPP->Update(deltaTime);
+
+	//jBoundBox BoundForRender = { ShadowCastersBoundBoxPP.MinPoint, ShadowCastersBoundBoxPP.MaxPoint };
+	////BoundForRender.Min.x = -BoundForRender.Min.x;				// NDC 좌표계 -> OpenGL 좌표계로 변환, X축이 서로 반전되어있으므로 그 부분을 추가 해줌.
+	////BoundForRender.Max.x = -BoundForRender.Max.x;				// NDC 좌표계 -> OpenGL 좌표계로 변환, X축이 서로 반전되어있으므로 그 부분을 추가 해줌.
+	////if (BoundForRender.Max.x < BoundForRender.Min.x)
+	////{
+	////	auto temp = BoundForRender.Max.x;
+	////	BoundForRender.Max.x = BoundForRender.Min.x;
+	////	BoundForRender.Min.x = temp;
+	////}
+	//ShadowCasterBoundBoxObjectPP->UpdateBoundBox(BoundForRender);
+	//ShadowCasterBoundBoxObjectPP->RenderObject->Pos = Settings.OffsetPP;
+	//ShadowCasterBoundBoxObjectPP->RenderObject->Rot = Vector::ZeroVector;
+	//ShadowCasterBoundBoxObjectPP->RenderObject->Scale = Settings.ScalePP;
+	////////////////////////////////////////////////////////////////////////////
+
+	static bool IsUnitCubeClip = false;
 
 	// 2. PostPerspective 공간에서 사용할 Projection, View Marix를 구한다.
 	Matrix ProjPP;
@@ -615,6 +691,12 @@ void jGame::Update(float deltaTime)
 			LightPosPP.y = LightPP.y * wRecip;
 			LightPosPP.z = LightPP.z * wRecip;
 
+			//if (IsUnitCubeClip)
+			//{
+			//	CubeCenterPP = (BoundForRender.Max + BoundForRender.Min) * 0.5f;
+			//	CubeRadiusPP = (BoundForRender.Max - BoundForRender.Min).Length() * 0.5f;
+			//}
+
 			// 2.6.2 LightPP위치에서 CubeCenter를 바라보는 벡터와 그 벡터의 거리를 구함.
 			Vector LookAtCubePP = (CubeCenterPP - LightPosPP);
 			float DistLookAtCubePP = LookAtCubePP.Length();
@@ -626,6 +708,12 @@ void jGame::Update(float deltaTime)
 				BoundingBox BBox;
 				BBox.MinPoint = -Vector::OneVector;
 				BBox.MaxPoint = Vector::OneVector;
+
+				//if (IsUnitCubeClip)
+				//{
+				//	BBox.MaxPoint = BoundForRender.Max;
+				//	BBox.MinPoint = BoundForRender.Min;
+				//}
 
 				std::vector<Vector> Points;
 				for (int i = 0; i < 8; ++i)
@@ -785,7 +873,7 @@ void jGame::Update(float deltaTime)
 	// 4. PSM ShadowMap 생성
 	if (DirectionalLight->GetShadowMapRenderTarget()->Begin())
 	{
-		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+		auto ClearColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
 		auto EnableClear = true;
 		auto EnableDepthTest = true;
@@ -860,6 +948,9 @@ void jGame::Update(float deltaTime)
 		jLight::BindLights(lights, Shader);
 		ShadowCasterBoundBoxObject->SetUniformBuffer(Shader);
 		ShadowCasterBoundBoxObject->Draw(CurrentCamera, Shader, lights);
+
+		//ShadowCasterBoundBoxObjectPP->SetUniformBuffer(Shader);
+		//ShadowCasterBoundBoxObjectPP->Draw(CurrentCamera, Shader, lights);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -887,14 +978,50 @@ void jGame::Update(float deltaTime)
 	PPCameraFrustumDebug->Scale = Settings.ScalePP;
 
 	std::vector<jObject*> FrustumList;
-	FrustumList.push_back(MockCameraFrustumDebug);
+	//FrustumList.push_back(MockCameraFrustumDebug);
 	FrustumList.push_back(MockCameraPPFrustumDebug);
 	FrustumList.push_back(PPCameraFrustumDebug);
+
+	static auto UnitCubeRT = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA
+		, ETextureFormat::RGBA, EFormatType::BYTE, EDepthBufferType::DEPTH24_STENCIL8, static_cast<int32>(UnitCubeRect.W), static_cast<int32>(UnitCubeRect.H), 1 }));
 
 	// MockCamera로 화면을 렌더링하는 상황이 아닌 경우만 디버깅용 PP 공간의 오브젝트들이나 Frustum 정보를 출력
 	if (!Settings.PossessMockCamera)
 	{
-		auto EnableClear = true;
+		if (UnitCubeRT->Begin())
+		{
+			auto ClearColor = Vector4(0.1f, 0.1f, 0.1f, 1.0f);
+			auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+			auto EnableClear = true;
+			auto EnableDepthTest = true;
+			auto DepthStencilFunc = EComparisonFunc::LESS;
+			auto EnableBlend = false;
+			auto BlendSrc = EBlendSrc::ONE;
+			auto BlendDest = EBlendDest::ZERO;
+
+			auto Shader = jShader::GetShader("Simple");
+			if (EnableClear)
+			{
+				g_rhi->SetClearColor(ClearColor);
+				g_rhi->SetClear(ClearType);
+			}
+			g_rhi->EnableDepthTest(EnableDepthTest);
+			g_rhi->EnableBlend(EnableBlend);
+			g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+			g_rhi->SetShader(Shader);
+
+			UnitCubeCamera->BindCamera(Shader);
+			jLight::BindLights(lights, Shader);
+
+			for (uint32 i = 0; i < FrustumList.size(); ++i)
+				FrustumList[i]->Draw(UnitCubeCamera, Shader, lights);
+
+			for (uint32 i = 0; i < ObjectPPs.size(); ++i)
+				ObjectPPs[i]->Draw(UnitCubeCamera, Shader, lights);
+			
+			UnitCubeRT->End();
+		}
+
 		auto EnableDepthTest = true;
 		auto DepthStencilFunc = EComparisonFunc::LESS;
 		auto EnableBlend = false;
@@ -909,14 +1036,8 @@ void jGame::Update(float deltaTime)
 
 		MainCamera->BindCamera(Shader);
 		jLight::BindLights(lights, Shader);
-
-		for (uint32 i = 0; i < FrustumList.size(); ++i)
-			FrustumList[i]->Draw(MainCamera, Shader, lights);
-
-		for (uint32 i = 0; i < ObjectPPs.size(); ++i)
-			ObjectPPs[i]->Draw(MainCamera, Shader, lights);
+		MockCameraFrustumDebug->Draw(MainCamera, Shader, lights);
 	}
-
 
 	static auto TestRTInfo = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA
 	, ETextureFormat::RGBA, EFormatType::BYTE, EDepthBufferType::DEPTH24_STENCIL8, 300, 300, 1 }));
@@ -972,7 +1093,7 @@ void jGame::Update(float deltaTime)
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+	g_rhi->SetViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
 	if (DirectionalLight->GetShadowMapRenderTarget()->GetTexture())
 	{
@@ -982,6 +1103,25 @@ void jGame::Update(float deltaTime)
 
 	PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x * 2, SCR_HEIGHT - PreviewSize.y);
 	PREVIEW_TEXTURE(TestRTInfo->GetTexture());
+
+	static auto UnitCubePreViewUI = jPrimitiveUtil::CreateUIQuad(
+		Vector2(UnitCubeRect.X, UnitCubeRect.Y - SCR_HEIGHT + UnitCubeRect.H), Vector2(UnitCubeRect.W, UnitCubeRect.H), nullptr);
+	{
+		auto EnableClear = false; 
+		auto EnableDepthTest = false; 
+		auto DepthStencilFunc = EComparisonFunc::LESS; 
+		auto EnableBlend = false; 
+		auto BlendSrc = EBlendSrc::ONE; 
+		auto BlendDest = EBlendDest::ZERO; 
+		auto Shader = jShader::GetShader("UIShader"); 
+		g_rhi->EnableDepthTest(false); 
+		g_rhi->EnableBlend(EnableBlend); 
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest); 
+		g_rhi->SetShader(Shader); 
+		MainCamera->BindCamera(Shader);
+		UnitCubePreViewUI->RenderObject->tex_object = UnitCubeRT->GetTexture();
+		UnitCubePreViewUI->Draw(MainCamera, Shader, {});
+	}	
 }
 
 void jGame::UpdateAppSetting()
@@ -1160,6 +1300,8 @@ void jGame::OnMouseMove(int32 xOffset, int32 yOffset)
 		jShadowAppSettingProperties& Settings = jShadowAppSettingProperties::GetInstance();
 
 		auto CurrentCamera = Settings.PossessMockCamera ? MockCamera : MainCamera;
+		if (IsMovingUnitCubeWindow)
+			CurrentCamera = UnitCubeCamera;
 		JASSERT(CurrentCamera);
 		if (!CurrentCamera)
 			return;
@@ -1177,9 +1319,26 @@ void jGame::OnMouseMove(int32 xOffset, int32 yOffset)
 	}
 }
 
+void jGame::OnMouseInput(EMouseButtonType buttonType, Vector2 pos, bool buttonDown, bool isChanged)
+{
+	if (isChanged)
+	{
+		if (buttonDown && (EMouseButtonType::LEFT == buttonType))
+			IsMovingUnitCubeWindow = IsInUnitCubeWindow(pos);
+		if (!buttonDown)
+			IsMovingUnitCubeWindow = false;
+	}
+}
+
 void jGame::Teardown()
 {
 	Renderer->Teardown();
+}
+
+bool jGame::IsInUnitCubeWindow(const Vector2& pos) const
+{
+	return (UnitCubeRect.X <= pos.x) && ((UnitCubeRect.X + UnitCubeRect.W) >= pos.x)
+		&& (UnitCubeRect.Y <= pos.y) && ((UnitCubeRect.Y + UnitCubeRect.H) >= pos.y);
 }
 
 void jGame::SpawnHairObjects()
@@ -1249,11 +1408,11 @@ void jGame::SpawnTestPrimitives()
 	SpawnedObjects.push_back(SpherePP);
 
 	// 3
-	Cube2 = jPrimitiveUtil::CreateCube(Vector(-65.0f, 35.0f, 10.0f), Vector::OneVector, Vector(50.0f, 50.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
+	Cube2 = jPrimitiveUtil::CreateCube(Vector(-265.0f, 35.0f, 10.0f), Vector::OneVector, Vector(50.0f, 150.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
 	jObject::AddObject(Cube2);
 	SpawnedObjects.push_back(Cube2);
 
-	Cube2PP = jPrimitiveUtil::CreateCube(Vector(-65.0f, 35.0f, 10.0f), Vector::OneVector, Vector(50.0f, 50.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
+	Cube2PP = jPrimitiveUtil::CreateCube(Vector(-165.0f, 35.0f, 10.0f), Vector::OneVector, Vector(50.0f, 150.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
 	SpawnedObjects.push_back(Cube2PP);
 
 	// 4

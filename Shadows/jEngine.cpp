@@ -57,3 +57,8 @@ void jEngine::OnMouseMove(int32 xOffset, int32 yOffset)
 {
 	Game.OnMouseMove(xOffset, yOffset);
 }
+
+void jEngine::OnMouseInput(EMouseButtonType buttonType, Vector2 pos, bool buttonDown, bool isChanged)
+{
+	Game.OnMouseInput(buttonType, pos, buttonDown, isChanged);
+}

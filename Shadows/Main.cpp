@@ -302,7 +302,13 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 		return;
 	}
 
+	const bool Changed = g_MouseState[buttonType] != buttonDown;
 	g_MouseState[buttonType] = buttonDown;
+	
+	double X, Y;
+	glfwGetCursorPos(window, &X, &Y);
+	
+	g_Engine.OnMouseInput(buttonType, Vector2(X, Y), buttonDown, Changed);
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)

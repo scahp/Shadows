@@ -55,7 +55,17 @@ public:
 	void UpdateAppSetting();
 
 	void OnMouseMove(int32 xOffset, int32 yOffset);
+	void OnMouseInput(EMouseButtonType buttonType, Vector2 pos, bool buttonDown, bool isChanged);
 	void Teardown();
+
+	struct UnitCubeWindowRect
+	{
+		float X, Y;
+		float W, H;
+	};
+	UnitCubeWindowRect UnitCubeRect;
+	bool IsMovingUnitCubeWindow = false;
+	bool IsInUnitCubeWindow(const Vector2& pos) const;
 
 	jDirectionalLight* DirectionalLight = nullptr;
 	jDirectionalLight* NormalDirectionalLight = nullptr;
@@ -65,6 +75,7 @@ public:
 	jLight* AmbientLight = nullptr;
 	jCamera* MainCamera = nullptr;
 	jCamera* MockCamera = nullptr;
+	jCamera* UnitCubeCamera = nullptr;
 
 	jRenderer* Renderer = nullptr;
 

@@ -27,14 +27,19 @@ public:
 	bool PossessMockCamera = false;
 	bool PossessMockCameraOnlyShadow = false;
 
-	Vector OffsetPP = Vector(-500.0f, 150.0f, 50.0f);
+	//Vector OffsetPP;// = Vector(-500.0f, 150.0f, 50.0f);
+	Vector OffsetPP = Vector::ZeroVector;
 	Vector ScalePP = Vector(60.0f);
 
 	bool CameraFit = false;
 	float ConstBias = 1.0f;
 	float SlopBias = 0.0f;
 	float MainCameraNearBias = 100.0f;
-	EPSMUnitCubeType PSMUnitCubeType = EPSMUnitCubeType::MockCamera;
+	EPSMUnitCubeType PSMUnitCubeType = EPSMUnitCubeType::MainCamera;
+
+	float MainCameraNear = 10.0f;
+	float MainCameraFar = 2000.0f;
+	float VirtualSliderBack = 50.0f;
 
 	bool ShadowOn = true;
 	EShadowType ShadowType = EShadowType::ShadowMap;

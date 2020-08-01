@@ -5,7 +5,10 @@ jShadowAppSettingProperties* jShadowAppSettingProperties::_instance = nullptr;
 
 void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 {
-	appSetting->AddVariable("ShadowOn", ShadowOn);
+	appSetting->AddVariable("MainCameraNear", MainCameraNear);
+	appSetting->AddVariable("MainCameraFar", MainCameraFar);
+	appSetting->AddVariable("VirtualSliderBack", VirtualSliderBack);
+	//appSetting->AddVariable("ShadowOn", ShadowOn);
 
 	//appSetting->AddEnumVariable("ShadowType", ShadowType, "EShadowType", EShadowTypeString);
 	//appSetting->AddEnumVariable("ShadowMapType", ShadowMapType, "EShadowMapType", EShadowMapTypeString);
@@ -200,6 +203,10 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 
 void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 {
+	appSetting->RemoveVariable("MainCameraNear");
+	appSetting->RemoveVariable("MainCameraFar");
+	appSetting->RemoveVariable("VirtualSliderBack");	
+
 	appSetting->RemoveVariable("PosX");
 	appSetting->RemoveVariable("PosY");
 	appSetting->RemoveVariable("PosZ");
@@ -227,7 +234,7 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 	appSetting->RemoveVariable("PSMUnitCubeType");
 
 
-	appSetting->RemoveVariable("ShadowOn");
+	//appSetting->RemoveVariable("ShadowOn");
 	//appSetting->RemoveVariable("EShadowType");
 	//appSetting->RemoveVariable("DirectionalLightSilhouette");
 	//appSetting->RemoveVariable("PointLightSilhouette");

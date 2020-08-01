@@ -2,7 +2,7 @@
 
 #include "common.glsl"
 
-precision mediump float;
+precision highp float;
 
 void main()
 {
