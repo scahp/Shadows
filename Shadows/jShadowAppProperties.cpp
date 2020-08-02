@@ -194,11 +194,6 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->AddVariable("SlopBias", SlopBias);
 	appSetting->SetStep("SlopBias", 0.01f);
 	appSetting->SetGroup("SlopBias", "ShadowBias");
-	appSetting->AddVariable("MainCameraNearBias", MainCameraNearBias);
-	appSetting->SetGroup("MainCameraNearBias", "ShadowBias");
-	
-	appSetting->AddEnumVariable("PSMUnitCubeType", PSMUnitCubeType, "EPSMUnitCubeType", EPSMUnitCubeTypeString);
-	appSetting->SetGroup("PSMUnitCubeType", "UnitCubeDebug");
 }
 
 void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
@@ -230,9 +225,6 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 	appSetting->RemoveVariable("CameraFit");
 	appSetting->RemoveVariable("ConstBias");
 	appSetting->RemoveVariable("SlopBias");
-	appSetting->RemoveVariable("MainCameraNearBias");
-	appSetting->RemoveVariable("PSMUnitCubeType");
-
 
 	//appSetting->RemoveVariable("ShadowOn");
 	//appSetting->RemoveVariable("EShadowType");

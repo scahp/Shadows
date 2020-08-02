@@ -50,15 +50,3 @@ static const char* EShadowMapTypeString[] = {
 	"DeepShadowMap_DirectionalLight",
 	"CSM_SSM",
 };
-
-enum class EPSMUnitCubeType
-{
-	MockCamera = 0,
-	MainCamera,
-	MAX,
-};
-
-static const char* EPSMUnitCubeTypeString[] = {
-	"MockCamera",
-	"MainCamera",
-};

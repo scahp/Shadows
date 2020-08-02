@@ -31,11 +31,9 @@ public:
 	Vector OffsetPP = Vector::ZeroVector;
 	Vector ScalePP = Vector(60.0f);
 
-	bool CameraFit = false;
+	bool CameraFit = true;
 	float ConstBias = 1.0f;
 	float SlopBias = 0.0f;
-	float MainCameraNearBias = 100.0f;
-	EPSMUnitCubeType PSMUnitCubeType = EPSMUnitCubeType::MainCamera;
 
 	float MainCameraNear = 10.0f;
 	float MainCameraFar = 2000.0f;
