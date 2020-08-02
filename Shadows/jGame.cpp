@@ -324,9 +324,9 @@ void jGame::Update(float deltaTime)
 
 	static float YRotSpeed = 0.0f;
 	if (g_KeyState['i'] || g_KeyState['I'])
-		YRotSpeed = 0.03f;
+		YRotSpeed = 0.05f;
 	else if (g_KeyState['o'] || g_KeyState['O'])
-		YRotSpeed = -0.03f;
+		YRotSpeed = -0.05f;
 	else if (g_KeyState['p'] || g_KeyState['P'])
 		YRotSpeed = 0.0f;
 
@@ -372,6 +372,9 @@ void jGame::Update(float deltaTime)
 	lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
 
 	for (auto iter : jObject::GetStaticObject())
+		iter->Update(deltaTime);
+	
+	for (auto iter : jObject::GetDebugObject())
 		iter->Update(deltaTime);
 
 	jObject::FlushDirtyState();
@@ -431,9 +434,9 @@ void jGame::Update(float deltaTime)
 			MainCamera->Near = MinZ;
 	}
 
-	const bool IsMockCameraMode = Settings.PossessMockCamera || Settings.PossessMockCameraOnlyShadow;
+	const bool IsMockCameraMode = Settings.PossessMockCamera;
 
-	// 1. VirtualCamera의 Projection, View Matrix를 구한다.
+	// 3. VirtualCamera의 Projection, View Matrix를 구한다.
 	Matrix VCView;
 	Matrix VCProj;
 
@@ -454,9 +457,9 @@ void jGame::Update(float deltaTime)
 			, MainCamera->Far, MainCamera->Near + Settings.VirtualSliderBack);
 	}
 
-	// 2. PostPerspective 공간에서 사용할 Projection, View Marix를 구한다.
-	auto MakePPInfo = [&](std::shared_ptr<jCamera>& OutPPCamera
-		, Matrix& OutProjPP, Matrix& OutViewPP, const Matrix& InView, const Matrix& InProj)
+	// 4. PostPerspective 공간에서 사용할 Projection, View Marix를 구한다.
+	auto MakePPInfo = [&](std::shared_ptr<jCamera>& OutPPCamera, Matrix& OutProjPP, Matrix& OutViewPP
+						, const Matrix& InView, const Matrix& InProj)
 	{
 		Vector CubeCenterPP = Vector::ZeroVector;
 		float CubeRadiusPP = Vector::OneVector.Length();	// 6. PP 공간의 큐브의 반지름을 구함. (OpenGL은 NDC 공간이 X, Y, Z 모두 길이 2임)
@@ -465,17 +468,17 @@ void jGame::Update(float deltaTime)
 		float NearPP = 0.0f;
 		float FarPP = 0.0f;
 
-		// 2.1 Camera 공간의 LightDir 구함
+		// Camera 공간의 LightDir 구함
 		Vector EyeLightDir = InView.Transform(Vector4(LightDir, 0.0f));
 
-		// 2.2 Camera 공간의 LightDir을 PP 공간으로 이동시킴
+		// Camera 공간의 LightDir을 PP 공간으로 이동시킴
 		Vector4 LightPP = InProj.Transform(Vector4(EyeLightDir, 0.0f));
 
-		// 2.3 라이트가 Eye의 뒤쪽에 있는지 판단한다.
+		// 라이트가 Eye의 뒤쪽에 있는지 판단한다.
 		bool LightIsBehindOfEye = (LightPP.w < 0.0f);
 
-		// 2.4 시야 방향과 라이트가 직교하는 상태인지 확인하고, 직교하면 OrthoMatrix 사용
-		static float W_EPSILON = 0.001f;
+		// 시야 방향과 라이트가 직교하는 상태인지 확인하고, 직교하면 OrthoMatrix 사용
+		static float W_EPSILON = 0.01f;
 		bool IsOrthoMatrix = (fabsf(LightPP.w) <= W_EPSILON);
 
 		float WidthPP = 1.0f;
@@ -484,7 +487,7 @@ void jGame::Update(float deltaTime)
 		{
 			Vector LightDirPP(LightPP.x, LightPP.y, LightPP.z);
 
-			// 2.5.1 NDC Unit Cube를 딱 감쌀 수 있는 View와 Projection Matrix를 생성합니다.
+			// NDC Unit Cube를 딱 감쌀 수 있는 View와 Projection Matrix를 생성합니다.
 			LightPosPP = CubeCenterPP + 2.0f * CubeRadiusPP * LightDirPP;
 			float DistToCenter = LightPosPP.Length();
 
@@ -504,20 +507,20 @@ void jGame::Update(float deltaTime)
 		}
 		else
 		{
-			// 2.6.1 PP 공간의 LightDir로 변경한 후, LightDir을 LightPos으로 변경함.
+			// PP 공간의 LightDir로 변경한 후, LightDir을 LightPos으로 변경함.
 			float wRecip = 1.0f / LightPP.w;
 			LightPosPP.x = LightPP.x * wRecip;
 			LightPosPP.y = LightPP.y * wRecip;
 			LightPosPP.z = LightPP.z * wRecip;
 
-			// 2.6.2 LightPP위치에서 CubeCenter를 바라보는 벡터와 그 벡터의 거리를 구함.
+			// LightPP위치에서 CubeCenter를 바라보는 벡터와 그 벡터의 거리를 구함.
 			Vector LookAtCubePP = (CubeCenterPP - LightPosPP);
 			float DistLookAtCubePP = LookAtCubePP.Length();
 			LookAtCubePP /= DistLookAtCubePP;
 
 			if (LightIsBehindOfEye)
 			{
-				// 2.6.3 NDC Unit Cube 공간의 바운드박스를 만듬
+				// NDC Unit Cube 공간의 바운드박스를 만듬
 				BoundingBox BBox;
 				BBox.MinPoint = -Vector::OneVector;
 				BBox.MaxPoint = Vector::OneVector;
@@ -535,12 +538,12 @@ void jGame::Update(float deltaTime)
 				if (fabsf(YAxis.DotProduct(ToBSphereDirection)) > 0.99f)
 					YAxis = Vector::RightVector;
 
-				// 2.6.3 NDC Unit Cube 공간을 바라보는 View Matrix 생성
+				// NDC Unit Cube 공간을 바라보는 View Matrix 생성
 				Matrix LookAt = jCameraUtil::CreateViewMatrix(LightPosPP, (LightPosPP + ToBSphereDirection), LightPosPP + YAxis);
 				NearPP = 1e32f;
 				FarPP = 0.0f;
 
-				// 2.6.4 View 공간으로 NDC Unit Cube의 모든 Vertex를 Transform 시키고, MaxX, MaxY 그리고 Near, Far를 구함.
+				// View 공간으로 NDC Unit Cube의 모든 Vertex를 Transform 시키고, MaxX, MaxY 그리고 Near, Far를 구함.
 				for (int32 i = 0; i < Points.size(); i++)
 				{
 					Vector tmp = LookAt.Transform(Points[i]);
@@ -551,24 +554,24 @@ void jGame::Update(float deltaTime)
 
 				FovPP = 2.0f * atanf(BSphere.Radius / DistToBSphereDirection);
 
-				// 2.6.5 Perspective Matrix의 Near를 마이너스로 두는 트릭을 사용함.
+				// Perspective Matrix의 Near를 마이너스로 두는 트릭을 사용함.
 				NearPP = Max(0.1f, NearPP);
 				FarPP = NearPP;
 				NearPP = -NearPP;
 
-				// 2.6.6 PostPerspective 공간에서 사용할 Projection 을 계산
+				// PostPerspective 공간에서 사용할 Projection 을 계산
 				OutProjPP = jCameraUtil::CreatePerspectiveMatrix(1.0f, 1.0f, FovPP, FarPP, NearPP);
 			}
 			else
 			{
-				// 2.7.1 NDC Unit Cube 공간의 바운드박스를 만듬
+				// NDC Unit Cube 공간의 바운드박스를 만듬
 				FovPP = 2.0f * atanf(CubeRadiusPP / DistLookAtCubePP);
 				float AspectPP = 1.0f;
 
 				NearPP = std::max(0.1f, DistLookAtCubePP - CubeRadiusPP);
 				FarPP = DistLookAtCubePP + CubeRadiusPP;
 
-				// 2.7.2 PostPerspective 공간에서 사용할 Projection 을 계산
+				// PostPerspective 공간에서 사용할 Projection 을 계산
 				OutProjPP = jCameraUtil::CreatePerspectiveMatrix(1.0f, 1.0f, FovPP, FarPP, NearPP);
 			}
 
@@ -576,7 +579,7 @@ void jGame::Update(float deltaTime)
 			if (fabsf(Vector::UpVector.DotProduct(LookAtCubePP)) > 0.99f)
 				UpVector = Vector::RightVector;
 
-			// 2.8. PP에서의 라이트 위치, PP의 중심, 위에서 구한 Up벡터를 사용해서 PP에서의 ViewMatrix 구함.
+			// PP에서의 라이트 위치, PP의 중심, 위에서 구한 Up벡터를 사용해서 PP에서의 ViewMatrix 구함.
 			OutViewPP = jCameraUtil::CreateViewMatrix(LightPosPP, CubeCenterPP, (LightPosPP + UpVector));
 
 			// PP 공간 디버깅용 카메라 업데이트
@@ -595,11 +598,11 @@ void jGame::Update(float deltaTime)
 	else
 		MakePPInfo(PPCamera, ProjPP, ViewPP, VCView, VCProj);
 
-	// 3. PSM 용 Matrix 생성
+	// 5. PSM 용 Matrix 생성
 	// ProjPP * ViewPP * VirtualCameraProj(별도로 만든 Proj) * VirtualCameraView(현재 카메라의 View)
 	Matrix PSM_Mat = ProjPP * ViewPP * VCProj * VCView;
 
-	// 4. PSM ShadowMap 생성
+	// 6. PSM ShadowMap 생성
 	if (DirectionalLight->GetShadowMapRenderTarget()->Begin())
 	{
 		auto ClearColor = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -636,7 +639,7 @@ void jGame::Update(float deltaTime)
 		DirectionalLight->GetShadowMapRenderTarget()->End();
 	}
 
-	// 5. 메인장면 렌더링
+	// 7. 메인장면 렌더링
 	{
 		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
 		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
@@ -683,10 +686,14 @@ void jGame::Update(float deltaTime)
 		jLight::BindLights(lights, Shader);
 		ShadowCasterBoundBoxObject->SetUniformBuffer(Shader);
 		ShadowCasterBoundBoxObject->Draw(CurrentCamera, Shader, lights);
+
+		Shader = jShader::GetShader("DebugObjectShader");
+		for (auto iter : jObject::GetDebugObject())
+			iter->Draw(MainCamera, Shader, lights);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	// 6. PP 공간 시각화 디버깅용 오브젝트 갱신
+	// 8. PP 공간 시각화 디버깅용 오브젝트 갱신
 	static auto UnitCubeRT = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA
 		, ETextureFormat::RGBA, EFormatType::BYTE, EDepthBufferType::DEPTH24_STENCIL8, static_cast<int32>(UnitCubeRect.W), static_cast<int32>(UnitCubeRect.H), 1 }));
 
@@ -706,12 +713,11 @@ void jGame::Update(float deltaTime)
 		Matrix World = posMatrix * rotMatrix * scaleMatrix;
 
 		jCamera* CurrentCamera = nullptr;
+		Matrix ProjView;
 		if (IsMockCameraMode)
-			CurrentCamera = MockCamera;
+			ProjView = MockCamera->Projection * MockCamera->View * World;
 		else
-			CurrentCamera = MainCamera;
-
-		auto ProjView = CurrentCamera->Projection * CurrentCamera->View * World;
+			ProjView = VCProj * VCView * World;
 
 		jStreamParam<float>* thisObjectParam = dynamic_cast<jStreamParam<float>*>(ObjectPP->RenderObject->VertexStream->Params[0]);
 		jStreamParam<float>* sourceObjectParam = dynamic_cast<jStreamParam<float>*>(Source->RenderObject->VertexStream->Params[0]);
@@ -1149,34 +1155,27 @@ void jGame::SpawnTestPrimitives()
 	jObject::AddObject(quad);
 	SpawnedObjects.push_back(quad);
 
-	//auto gizmo = jPrimitiveUtil::CreateGizmo(Vector::ZeroVector, Vector::ZeroVector, Vector::OneVector);
-	//gizmo->SkipShadowMapGen = true;
-	//jObject::AddObject(gizmo);
-	//SpawnedObjects.push_back(gizmo);
-
-	//auto triangle = jPrimitiveUtil::CreateTriangle(Vector(60.0, 100.0, 20.0), Vector::OneVector, Vector(40.0, 40.0, 40.0), Vector4(0.5f, 0.1f, 1.0f, 1.0f));
-	//triangle->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
-	//{
-	//	thisObject->RenderObject->Rot.x += 0.05f;
-	//};
-	//jObject::AddObject(triangle);
-	//SpawnedObjects.push_back(triangle);
-
 	// 1
-	Cube = jPrimitiveUtil::CreateCube(Vector(0.0f, 100.0f, 0.0f), Vector::OneVector, Vector(50.0f, 50.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
+	Vector CubePos = Vector(0.0f, 100.0f, 0.0f);
+	Vector CubeScale = Vector(50.0f, 50.0f, 50.0f);
+	Vector4 CubeColor = Vector4(0.7f, 0.7f, 0.7f, 1.0f);
+	Cube = jPrimitiveUtil::CreateCube(CubePos, Vector::OneVector, CubeScale, CubeColor);
 	Cube->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
-		//thisObject->RenderObject->Rot.z += 0.005f;
+		thisObject->RenderObject->Rot.z += 0.005f;
 	};
 	jObject::AddObject(Cube);
 	SpawnedObjects.push_back(Cube);
 
-	CubePP = jPrimitiveUtil::CreateCube(Vector(0.0f, 100.0f, 0.0f), Vector::OneVector, Vector(50.0f, 50.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
+	CubePP = jPrimitiveUtil::CreateCube(CubePos, Vector::OneVector, CubeScale, CubeColor);
 	//jObject::AddObject(CubePP);
 	SpawnedObjects.push_back(CubePP);
 
 	// 2
-	Sphere = jPrimitiveUtil::CreateSphere(Vector(0.0f, 100.0f, 0.0f), 1.0, 16, Vector(30.0f), Vector4(0.8f, 0.0f, 0.0f, 1.0f));
+	Vector SpherePos = Vector(0.0f, 100.0f, 0.0f);
+	Vector SphereScale = Vector(30.0f);
+	Vector4 SphereColor = Vector4(0.8f, 0.0f, 0.0f, 1.0f);
+	Sphere = jPrimitiveUtil::CreateSphere(SpherePos, 1.0, 16, SphereScale, SphereColor);
 	Sphere->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
 		thisObject->RenderObject->Rot.z = DegreeToRadian(180.0f);
@@ -1184,20 +1183,26 @@ void jGame::SpawnTestPrimitives()
 	jObject::AddObject(Sphere);
 	SpawnedObjects.push_back(Sphere);
 
-	SpherePP = jPrimitiveUtil::CreateSphere(Vector(0.0f, 100.0f, 0.0f), 1.0, 16, Vector(30.0f), Vector4(0.8f, 0.0f, 0.0f, 1.0f));
+	SpherePP = jPrimitiveUtil::CreateSphere(SpherePos, 1.0, 16, SphereScale, SphereColor);
 	//jObject::AddObject(SpherePP);
 	SpawnedObjects.push_back(SpherePP);
 
 	// 3
-	Cube2 = jPrimitiveUtil::CreateCube(Vector(-265.0f, 35.0f, 10.0f), Vector::OneVector, Vector(50.0f, 150.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
+	Vector Cube2Pos = Vector(-65.0f, 35.0f, 10.0f);
+	Vector Cube2Scale = Vector(50.0f, 50.0f, 50.0f);
+	Vector4 Cube2Color = Vector4(0.7f, 0.7f, 0.7f, 1.0f);
+	Cube2 = jPrimitiveUtil::CreateCube(Cube2Pos, Vector::OneVector, Cube2Scale, Cube2Color);
 	jObject::AddObject(Cube2);
 	SpawnedObjects.push_back(Cube2);
 
-	Cube2PP = jPrimitiveUtil::CreateCube(Vector(-165.0f, 35.0f, 10.0f), Vector::OneVector, Vector(50.0f, 150.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
+	Cube2PP = jPrimitiveUtil::CreateCube(Cube2Pos, Vector::OneVector, Cube2Scale, Cube2Color);
 	SpawnedObjects.push_back(Cube2PP);
 
 	// 4
-	Capsule = jPrimitiveUtil::CreateCapsule(Vector(30.0f, 30.0f, -80.0f), 40.0f, 10.0f, 20, Vector(1.0f), Vector4(1.0f, 1.0f, 0.0f, 1.0f));
+	Vector CapsulePos = Vector(30.0f, 30.0f, -80.0f);
+	Vector CapsuleScale = Vector(1.0f);
+	Vector4 CapsuleColor = Vector4(1.0f, 1.0f, 0.0f, 1.0f);
+	Capsule = jPrimitiveUtil::CreateCapsule(CapsulePos, 40.0f, 10.0f, 20, CapsuleScale, CapsuleColor);
 	Capsule->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
 		thisObject->RenderObject->Rot.x -= 0.01f;
@@ -1205,7 +1210,7 @@ void jGame::SpawnTestPrimitives()
 	jObject::AddObject(Capsule);
 	SpawnedObjects.push_back(Capsule);
 
-	CapsulePP = jPrimitiveUtil::CreateCapsule(Vector(30.0f, 30.0f, -80.0f), 40.0f, 10.0f, 20, Vector(1.0f), Vector4(1.0f, 1.0f, 0.0f, 1.0f));
+	CapsulePP = jPrimitiveUtil::CreateCapsule(CapsulePos, 40.0f, 10.0f, 20, CapsuleScale, CapsuleColor);
 	CapsulePP->PostUpdateFunc = [&](jObject* thisObject, float deltaTime)
 	{
 		thisObject->RenderObject->Rot.x = Capsule->RenderObject->Rot.x;
@@ -1213,7 +1218,10 @@ void jGame::SpawnTestPrimitives()
 	SpawnedObjects.push_back(CapsulePP);
 
 	// 5
-	Cone = jPrimitiveUtil::CreateCone(Vector(0.0f, 50.0f, 60.0f), 40.0f, 20.0f, 15, Vector::OneVector, Vector4(1.0f, 1.0f, 0.0f, 1.0f));
+	Vector ConePos = Vector(0.0f, 50.0f, 60.0f);
+	Vector ConeScale = Vector(1.0f);
+	Vector4 ConeColor = Vector4(1.0f, 1.0f, 0.0f, 1.0f);
+	Cone = jPrimitiveUtil::CreateCone(ConePos, 40.0f, 20.0f, 15, ConeScale, ConeColor);
 	Cone->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
 		thisObject->RenderObject->Rot.y += 0.03f;
@@ -1221,7 +1229,7 @@ void jGame::SpawnTestPrimitives()
 	jObject::AddObject(Cone);
 	SpawnedObjects.push_back(Cone);
 
-	ConePP = jPrimitiveUtil::CreateCone(Vector(0.0f, 50.0f, 60.0f), 40.0f, 20.0f, 15, Vector::OneVector, Vector4(1.0f, 1.0f, 0.0f, 1.0f));
+	ConePP = jPrimitiveUtil::CreateCone(ConePos, 40.0f, 20.0f, 15, ConeScale, ConeColor);
 	ConePP->PostUpdateFunc = [&](jObject* thisObject, float deltaTime)
 	{
 		thisObject->RenderObject->Rot.y = Cone->RenderObject->Rot.y;
@@ -1229,7 +1237,10 @@ void jGame::SpawnTestPrimitives()
 	SpawnedObjects.push_back(ConePP);
 
 	// 6
-	Cylinder = jPrimitiveUtil::CreateCylinder(Vector(-30.0f, 60.0f, -60.0f), 20.0f, 10.0f, 20, Vector::OneVector, Vector4(0.0f, 0.0f, 1.0f, 1.0f));
+	Vector CylinderPos = Vector(-30.0f, 60.0f, -60.0f);
+	Vector CylinderScale = Vector(1.0f);
+	Vector4 CylinderColor = Vector4(0.0f, 0.0f, 1.0f, 1.0f);
+	Cylinder = jPrimitiveUtil::CreateCylinder(CylinderPos, 20.0f, 10.0f, 20, CylinderScale, CylinderColor);
 	Cylinder->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
 		thisObject->RenderObject->Rot.x += 0.05f;
@@ -1237,7 +1248,7 @@ void jGame::SpawnTestPrimitives()
 	jObject::AddObject(Cylinder);
 	SpawnedObjects.push_back(Cylinder);
 
-	CylinderPP = jPrimitiveUtil::CreateCylinder(Vector(-30.0f, 60.0f, -60.0f), 20.0f, 10.0f, 20, Vector::OneVector, Vector4(0.0f, 0.0f, 1.0f, 1.0f));
+	CylinderPP = jPrimitiveUtil::CreateCylinder(CylinderPos, 20.0f, 10.0f, 20, CylinderScale, CylinderColor);
 	CylinderPP->PostUpdateFunc = [&](jObject* thisObject, float deltaTime)
 	{
 		thisObject->RenderObject->Rot.x = Cylinder->RenderObject->Rot.x;
@@ -1245,7 +1256,10 @@ void jGame::SpawnTestPrimitives()
 	SpawnedObjects.push_back(CylinderPP);
 
 	// 7
-	Quad2 = jPrimitiveUtil::CreateQuad(Vector(-20.0f, 80.0f, 40.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(0.0f, 0.0f, 1.0f, 1.0f));
+	Vector Quad2Pos = Vector(-20.0f, 80.0f, 40.0f);
+	Vector Quad2Scale = Vector(20.0f, 20.0f, 20.0f);
+	Vector4 Quad2Color = Vector4(0.0f, 0.0f, 1.0f, 1.0f);
+	Quad2 = jPrimitiveUtil::CreateQuad(Quad2Pos, Vector::OneVector, Quad2Scale, Quad2Color);
 	Quad2->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
 		thisObject->RenderObject->Rot.z += 0.08f;
@@ -1253,7 +1267,7 @@ void jGame::SpawnTestPrimitives()
 	jObject::AddObject(Quad2);
 	SpawnedObjects.push_back(Quad2);
 
-	Quad2PP = jPrimitiveUtil::CreateQuad(Vector(-20.0f, 80.0f, 40.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(0.0f, 0.0f, 1.0f, 1.0f));
+	Quad2PP = jPrimitiveUtil::CreateQuad(Quad2Pos, Vector::OneVector, Quad2Scale, Quad2Color);
 	Quad2PP->PostUpdateFunc = [&](jObject* thisObject, float deltaTime)
 	{
 		thisObject->RenderObject->Rot.z = Quad2->RenderObject->Rot.z;
@@ -1261,7 +1275,10 @@ void jGame::SpawnTestPrimitives()
 	SpawnedObjects.push_back(Quad2PP);
 
 	// 8
-	Sphere2 = jPrimitiveUtil::CreateSphere(Vector(65.0f, 35.0f, 10.0f), 1.0, 16, Vector(30.0f), Vector4(0.8f, 0.0f, 0.0f, 1.0f));
+	Vector Sphere2Pos = Vector(65.0f, 35.0f, 10.0f);
+	Vector Sphere2Scale = Vector(30.0f);
+	Vector4 Sphere2Color = Vector4(0.8f, 0.0f, 0.0f, 1.0f);
+	Sphere2 = jPrimitiveUtil::CreateSphere(Sphere2Pos, 1.0, 16, Sphere2Scale, Sphere2Color);
 	Sphere2->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
 		thisObject->RenderObject->Rot.z = DegreeToRadian(180.0f);
@@ -1269,7 +1286,7 @@ void jGame::SpawnTestPrimitives()
 	jObject::AddObject(Sphere2);
 	SpawnedObjects.push_back(Sphere2);
 
-	Sphere2PP = jPrimitiveUtil::CreateSphere(Vector(65.0f, 35.0f, 10.0f), 1.0, 16, Vector(30.0f), Vector4(0.8f, 0.0f, 0.0f, 1.0f));
+	Sphere2PP = jPrimitiveUtil::CreateSphere(Sphere2Pos, 1.0, 16, Sphere2Scale, Sphere2Color);
 	Sphere2PP->PostUpdateFunc = [&](jObject* thisObject, float deltaTime)
 	{
 		thisObject->RenderObject->Rot.z = Sphere2->RenderObject->Rot.z;
@@ -1277,7 +1294,10 @@ void jGame::SpawnTestPrimitives()
 	SpawnedObjects.push_back(Sphere2PP);
 
 	// 9
-	Sphere3 = jPrimitiveUtil::CreateSphere(Vector(150.0f, 5.0f, 0.0f), 1.0, 16, Vector(10.0f), Vector4(0.8f, 0.4f, 0.6f, 1.0f));
+	Vector Sphere3Pos = Vector(150.0f, 5.0f, 0.0f);
+	Vector Sphere3Scale = Vector(10.0f);
+	Vector4 Sphere3Color = Vector4(0.8f, 0.4f, 0.6f, 1.0f);
+	Sphere3 = jPrimitiveUtil::CreateSphere(Sphere3Pos, 1.0, 16, Sphere3Scale, Sphere3Color);
 	Sphere3->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
 		const float startY = 5.0f;
@@ -1294,7 +1314,7 @@ void jGame::SpawnTestPrimitives()
 	jObject::AddObject(Sphere3);
 	SpawnedObjects.push_back(Sphere3);
 
-	Sphere3PP = jPrimitiveUtil::CreateSphere(Vector(150.0f, 5.0f, 0.0f), 1.0, 16, Vector(10.0f), Vector4(0.8f, 0.4f, 0.6f, 1.0f));
+	Sphere3PP = jPrimitiveUtil::CreateSphere(Sphere3Pos, 1.0, 16, Sphere3Scale, Sphere3Color);
 	Sphere3PP->PostUpdateFunc = [&](jObject* thisObject, float deltaTime)
 	{
 		thisObject->RenderObject->Pos.y = Sphere3->RenderObject->Pos.y;
@@ -1302,11 +1322,14 @@ void jGame::SpawnTestPrimitives()
 	SpawnedObjects.push_back(Sphere3PP);
 
 	// 10
-	Billboard = jPrimitiveUtil::CreateBillobardQuad(Vector(0.0f, 60.0f, 80.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(1.0f, 0.0f, 1.0f, 1.0f), MainCamera);
+	Vector BillboardPos = Vector(0.0f, 60.0f, 80.0f);
+	Vector BillboardScale = Vector(20.0f, 20.0f, 20.0f);
+	Vector4 BillboardColor = Vector4(1.0f, 0.0f, 1.0f, 1.0f);
+	Billboard = jPrimitiveUtil::CreateBillobardQuad(BillboardPos, Vector::OneVector, BillboardScale, BillboardColor, MainCamera);
 	jObject::AddObject(Billboard);
 	SpawnedObjects.push_back(Billboard);
 
-	BillboardPP = jPrimitiveUtil::CreateBillobardQuad(Vector(0.0f, 60.0f, 80.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(1.0f, 0.0f, 1.0f, 1.0f), MainCamera);
+	BillboardPP = jPrimitiveUtil::CreateBillobardQuad(BillboardPos, Vector::OneVector, BillboardScale, BillboardColor, MainCamera);
 	SpawnedObjects.push_back(BillboardPP);
 }
 
