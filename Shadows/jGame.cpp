@@ -348,8 +348,8 @@ void jGame::Update(float deltaTime)
 	// 0. 라이트 방향은 라이트쪽을 바라보는 방향임.
 	Vector LightDir = -DirectionalLight->Data.Direction.GetNormalize();
 
-	// 1. Shadow Caster의 AABB 바운드 박스를 생성합니다. 
-	BoundingBox ShadowCastersBoundBox;
+	// 1. ShadowReciver의 AABB 바운드 박스를 생성합니다. 
+	BoundingBox ShadowReceiversBoundBox;
 	for (auto obj : jObject::GetStaticObject())
 	{
 		if (obj->SkipShadowMapGen)
@@ -372,11 +372,11 @@ void jGame::Update(float deltaTime)
 		for (const Vector& Vertex : Vertices)
 		{
 			Vector TransformedVertex = World.Transform(Vertex);
-			ShadowCastersBoundBox.Merge(TransformedVertex);
+			ShadowReceiversBoundBox.Merge(TransformedVertex);
 		}
 	}
 
-	// 2. CameraFit 모드인 경우. MainCamera의 Near을 ShadowCaster의 AABB 바운드 박스에 맞게 Near을 키워줌.
+	// 2. CameraFit 모드인 경우. MainCamera의 Near을 ShadowReciver의 AABB 바운드 박스에 맞게 Near을 키워줌.
 	float MinZ = FLT_MAX;
 	float MaxZ = -FLT_MAX;
 	if (Settings.CameraFit)
@@ -386,7 +386,7 @@ void jGame::Update(float deltaTime)
 
 		for (int i = 0; i < 8; ++i)
 		{
-			auto ToBB = (ShadowCastersBoundBox.GetPoint(i) - MainCamera->Pos);
+			auto ToBB = (ShadowReceiversBoundBox.GetPoint(i) - MainCamera->Pos);
 			float Z = MainCameraForward.DotProduct(ToBB);
 			float X = MainCameraRight.DotProduct(ToBB);
 
@@ -619,21 +619,21 @@ void jGame::Update(float deltaTime)
 		for (auto iter : jObject::GetStaticObject())
 			iter->Draw(CurrentCamera, Shader, lights);
 
-		// Shadow Caster AABB를 렌더링 해줄 오브젝트 생성
-		static auto ShadowCasterBoundBoxObject = jPrimitiveUtil::CreateBoundBox(
-			{ ShadowCastersBoundBox.MinPoint, ShadowCastersBoundBox.MaxPoint }, nullptr, Vector4(0.37f, 0.62f, 0.47f, 1.0f));
-		ShadowCasterBoundBoxObject->Update(deltaTime);
-		ShadowCasterBoundBoxObject->UpdateBoundBox({ ShadowCastersBoundBox.MinPoint, ShadowCastersBoundBox.MaxPoint });
+		// ShadowReciver AABB를 렌더링 해줄 오브젝트 생성
+		static auto ShadowReceiverBoundBoxObject = jPrimitiveUtil::CreateBoundBox(
+			{ ShadowReceiversBoundBox.MinPoint, ShadowReceiversBoundBox.MaxPoint }, nullptr, Vector4(0.37f, 0.62f, 0.47f, 1.0f));
+		ShadowReceiverBoundBoxObject->Update(deltaTime);
+		ShadowReceiverBoundBoxObject->UpdateBoundBox({ ShadowReceiversBoundBox.MinPoint, ShadowReceiversBoundBox.MaxPoint });
 
-		// Shadow Caster AABB 렌더링
+		// ShadowReciver AABB 렌더링
 		if (Settings.ShowMergedBoundBox)
 		{
 			Shader = jShader::GetShader("BoundVolumeShader");
 			g_rhi->SetShader(Shader);
 			CurrentCamera->BindCamera(Shader);
 			jLight::BindLights(lights, Shader);
-			ShadowCasterBoundBoxObject->SetUniformBuffer(Shader);
-			ShadowCasterBoundBoxObject->Draw(CurrentCamera, Shader, lights);
+			ShadowReceiverBoundBoxObject->SetUniformBuffer(Shader);
+			ShadowReceiverBoundBoxObject->Draw(CurrentCamera, Shader, lights);
 		}
 
 		Shader = jShader::GetShader("DebugObjectShader");
