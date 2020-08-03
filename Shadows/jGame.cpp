@@ -747,9 +747,7 @@ void jGame::Update(float deltaTime)
 			UnitCubeCamera->BindCamera(Shader);
 			jLight::BindLights(lights, Shader);
 
-			if (!Settings.PossessMockCamera)
-				MockCameraPPFrustumDebug->Draw(UnitCubeCamera, Shader, lights);
-
+			MockCameraPPFrustumDebug->Draw(UnitCubeCamera, Shader, lights);
 			PPCameraFrustumDebug->Draw(UnitCubeCamera, Shader, lights);
 
 			for (uint32 i = 0; i < ObjectPPs.size(); ++i)
