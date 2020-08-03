@@ -28,15 +28,17 @@ public:
 
 	//Vector OffsetPP;// = Vector(-500.0f, 150.0f, 50.0f);
 	Vector OffsetPP = Vector::ZeroVector;
-	Vector ScalePP = Vector(60.0f);
+	float ScalePP = 60.0f;
 
 	bool CameraFit = true;
-	float ConstBias = 1.0f;
+	float ConstBias = 2.0f;
 	float SlopBias = 0.0f;
 
 	float MainCameraNear = 10.0f;
 	float MainCameraFar = 2000.0f;
 	float VirtualSliderBack = 50.0f;
+
+	bool ShowMergedBoundBox = false;
 
 	bool ShadowOn = true;
 	EShadowType ShadowType = EShadowType::ShadowMap;

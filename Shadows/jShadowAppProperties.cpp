@@ -6,14 +6,21 @@ jShadowAppSettingProperties* jShadowAppSettingProperties::_instance = nullptr;
 void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 {
 	appSetting->AddVariable("MainCameraNear", MainCameraNear);
+	appSetting->SetGroup("MainCameraNear", "MainCamera");
 	appSetting->AddVariable("MainCameraFar", MainCameraFar);
+	appSetting->SetGroup("MainCameraFar", "MainCamera");
 	appSetting->AddVariable("VirtualSliderBack", VirtualSliderBack);
-	//appSetting->AddVariable("ShadowOn", ShadowOn);
+	appSetting->SetGroup("VirtualSliderBack", "MainCamera");
+	appSetting->AddVariable("CameraFit", CameraFit);
+	appSetting->SetGroup("CameraFit", "MainCamera");
+	appSetting->AddVariable("ShowMergedBoundBox", ShowMergedBoundBox);
+	appSetting->SetGroup("ShowMergedBoundBox", "MainCamera");
 
+	//appSetting->AddVariable("ShadowOn", ShadowOn);
 	//appSetting->AddEnumVariable("ShadowType", ShadowType, "EShadowType", EShadowTypeString);
 	//appSetting->AddEnumVariable("ShadowMapType", ShadowMapType, "EShadowMapType", EShadowMapTypeString);
 	//appSetting->AddVariable("UsePoissonSample", UsePoissonSample);
-	appSetting->AddVariable("DirectionalLightMap", ShowDirectionalLightMap);
+	//appSetting->AddVariable("DirectionalLightMap", ShowDirectionalLightMap);
 	//appSetting->AddVariable("UseTonemap", UseTonemap);
 	//appSetting->AddVariable("AdaptationRate", AdaptationRate);
 	//appSetting->SetStep("AdaptationRate", 0.01f);
@@ -176,14 +183,8 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->AddVariable("OffsetPPZ", OffsetPP.z);
 	appSetting->SetGroup("OffsetPPZ", "PostPerspectiveSpace");
 
-	appSetting->AddVariable("ScalePPX", ScalePP.x);
-	appSetting->SetGroup("ScalePPX", "PostPerspectiveSpace");
-	appSetting->AddVariable("ScalePPY", ScalePP.y);
-	appSetting->SetGroup("ScalePPY", "PostPerspectiveSpace");
-	appSetting->AddVariable("ScalePPZ", ScalePP.z);
-	appSetting->SetGroup("ScalePPZ", "PostPerspectiveSpace");
-
-	appSetting->AddVariable("CameraFit", CameraFit);
+	appSetting->AddVariable("ScalePP", ScalePP);
+	appSetting->SetGroup("ScalePP", "PostPerspectiveSpace");
 
 	appSetting->AddVariable("ConstBias", ConstBias);
 	appSetting->SetStep("ConstBias", 0.01f);
@@ -197,7 +198,9 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 {
 	appSetting->RemoveVariable("MainCameraNear");
 	appSetting->RemoveVariable("MainCameraFar");
-	appSetting->RemoveVariable("VirtualSliderBack");	
+	appSetting->RemoveVariable("VirtualSliderBack");
+	appSetting->RemoveVariable("CameraFit");
+	appSetting->RemoveVariable("ShowMergedBoundBox");	
 
 	appSetting->RemoveVariable("PosX");
 	appSetting->RemoveVariable("PosY");
@@ -219,7 +222,6 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 	appSetting->RemoveVariable("CubeScaleY");
 	appSetting->RemoveVariable("CubeScaleZ");
 
-	appSetting->RemoveVariable("CameraFit");
 	appSetting->RemoveVariable("ConstBias");
 	appSetting->RemoveVariable("SlopBias");
 
@@ -231,7 +233,7 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 	//appSetting->RemoveVariable("IsGPUShadowVolume");	
 	//appSetting->RemoveVariable("ShadowMapType");
 	//appSetting->RemoveVariable("UsePoissonSample");
-	appSetting->RemoveVariable("DirectionalLightMap");
+	//appSetting->RemoveVariable("DirectionalLightMap");
 	//appSetting->RemoveVariable("UseTonemap");
 	appSetting->RemoveVariable("DirectionalLight_Info");
 	//appSetting->RemoveVariable("PointLight_Info");

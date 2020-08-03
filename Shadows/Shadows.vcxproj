@@ -312,6 +312,7 @@
     <None Include="Shaders\shadowmap\fs_omniDirectionalShadowMap.glsl" />
     <None Include="Shaders\shadowmap\psm_ps.glsl" />
     <None Include="Shaders\shadowmap\psm_vs.glsl" />
+    <None Include="Shaders\shadowmap\ps_psm_shadowMap.glsl" />
     <None Include="Shaders\shadowmap\vs_psm_shadowMap.glsl" />
     <None Include="Shaders\shadowmap\fs_shadowMap.glsl" />
     <None Include="Shaders\shadowmap\fs_varianceShadowMap.glsl" />

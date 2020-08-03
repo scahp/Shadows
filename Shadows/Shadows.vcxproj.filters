@@ -538,5 +538,8 @@
     <None Include="Shaders\shadowmap\psm_vs.glsl">
       <Filter>Shaders\shadowmap</Filter>
     </None>
+    <None Include="Shaders\shadowmap\ps_psm_shadowMap.glsl">
+      <Filter>Shaders\shadowmap</Filter>
+    </None>
   </ItemGroup>
 </Project>
