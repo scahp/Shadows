@@ -37,7 +37,7 @@ in vec3 Normal_;
 
 out vec4 color;
 
-#define PSM_SHADOW_BIAS_DIRECTIONAL 0.00001
+#define PSM_SHADOW_BIAS_DIRECTIONAL 0.0
 float IsPSMShadowing(vec3 lightClipPos, sampler2DShadow shadow_object)
 {
     if (IsInShadowMapSpace(lightClipPos))

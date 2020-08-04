@@ -37,7 +37,7 @@ public:
 
 	float MainCameraNear = 10.0f;
 	float MainCameraFar = 2000.0f;
-	float VirtualSliderBack = 50.0f;
+	float VirtualSliderBack = 100.0f;
 
 	bool ShowMergedBoundBox = false;
 
