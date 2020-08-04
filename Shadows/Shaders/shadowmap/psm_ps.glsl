@@ -28,7 +28,6 @@ layout (std140) uniform DirectionalLightShadowMapBlock
 };
 
 uniform vec3 Eye;
-uniform int Collided;
 uniform int ShadowOn;
 uniform mat4 PSM;
 
@@ -46,7 +45,6 @@ float IsPSMShadowing(vec3 lightClipPos, sampler2DShadow shadow_object)
 
     return 1.0;
 }
-
 
 void main()
 {
@@ -80,8 +78,6 @@ void main()
 			directColor += GetDirectionalLight(light, normal, viewDir) * lit;
         }
     }
-
-	//directColor *= 1.0 / 3.14;
 
     color = vec4(Color_.xyz * (directColor + vec3(0.3)), 1.0);
 }

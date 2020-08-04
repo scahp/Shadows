@@ -53,14 +53,14 @@ struct BoundingBox
 		}
 	}
 
-	void Merge(const Vector& vec)
+	void Merge(const Vector& newPoint)
 	{
-		MinPoint.x = Min(MinPoint.x, vec.x);
-		MinPoint.y = Min(MinPoint.y, vec.y);
-		MinPoint.z = Min(MinPoint.z, vec.z);
-		MaxPoint.x = Max(MaxPoint.x, vec.x);
-		MaxPoint.y = Max(MaxPoint.y, vec.y);
-		MaxPoint.z = Max(MaxPoint.z, vec.z);
+		MinPoint.x = Min(MinPoint.x, newPoint.x);
+		MinPoint.y = Min(MinPoint.y, newPoint.y);
+		MinPoint.z = Min(MinPoint.z, newPoint.z);
+		MaxPoint.x = Max(MaxPoint.x, newPoint.x);
+		MaxPoint.y = Max(MaxPoint.y, newPoint.y);
+		MaxPoint.z = Max(MaxPoint.z, newPoint.z);
 	}
 
 	bool Intersect(float* hitDist, const Vector& origPt, const Vector& dir) const
@@ -490,7 +490,7 @@ void jGame::Update(float deltaTime)
 				const float DistToBSphereDirection = ToBSphereDirection.Length();
 				ToBSphereDirection = ToBSphereDirection.GetNormalize();
 
-				float NearPP = DistToBSphereDirection - CubeRadiusPP;
+				NearPP = DistToBSphereDirection - CubeRadiusPP;
 				FovPP = 2.0f * atanf(CubeRadiusPP / DistToBSphereDirection);
 
 				// Perspective Matrix의 Near를 마이너스로 두는 트릭을 사용함.

@@ -7,7 +7,6 @@ precision mediump float;
 layout(location = 0) in vec3 Pos;
 uniform mat4 PSM;
 uniform mat4 M;
-uniform mat4 MVP;
 
 void main()
 {
