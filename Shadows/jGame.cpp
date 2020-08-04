@@ -421,7 +421,7 @@ void jGame::Update(float deltaTime)
 
 	// 4. PostPerspective 공간에서 사용할 Projection, View Marix를 구한다.
 	auto MakePPInfo = [&](std::shared_ptr<jCamera>& OutPPCamera, Matrix& OutProjPP, Matrix& OutViewPP
-						, const Matrix& InView, const Matrix& InProj)
+						, const Matrix& InView, const Matrix& InProj, bool updatePPCamera)
 	{
 		Vector CubeCenterPP = Vector::ZeroVector;
 		float CubeRadiusPP = Vector::OneVector.Length();	// 6. PP 공간의 큐브의 반지름을 구함. (OpenGL은 NDC 공간이 X, Y, Z 모두 길이 2임)
@@ -464,8 +464,12 @@ void jGame::Update(float deltaTime)
 			OutProjPP = jCameraUtil::CreateOrthogonalMatrix(CubeRadiusPP * 2, CubeRadiusPP * 2, FarPP, NearPP);
 
 			// PP 공간 디버깅용 카메라 업데이트
-			OutPPCamera = std::shared_ptr<jCamera>(jCamera::CreateCamera(LightPosPP, CubeCenterPP, (LightPosPP + UpVector)
-				, FovPP, NearPP, FarPP, CubeRadiusPP * 2, CubeRadiusPP * 2, !IsOrthoMatrix));
+			if (updatePPCamera)
+			{
+				OutPPCamera = std::shared_ptr<jCamera>(jCamera::CreateCamera(LightPosPP, CubeCenterPP, (LightPosPP + UpVector)
+					, FovPP, NearPP, FarPP, CubeRadiusPP * 2, CubeRadiusPP * 2, !IsOrthoMatrix));
+				OutPPCamera->UpdateCamera();
+			}
 		}
 		else
 		{
@@ -518,10 +522,13 @@ void jGame::Update(float deltaTime)
 			OutViewPP = jCameraUtil::CreateViewMatrix(LightPosPP, CubeCenterPP, (LightPosPP + UpVector));
 
 			// PP 공간 디버깅용 카메라 업데이트
-			OutPPCamera = std::shared_ptr<jCamera>(jCamera::CreateCamera(LightPosPP, CubeCenterPP, (LightPosPP + UpVector)
-				, FovPP, NearPP, FarPP, WidthPP, HeightPP, !IsOrthoMatrix));
+			if (updatePPCamera)
+			{
+				OutPPCamera = std::shared_ptr<jCamera>(jCamera::CreateCamera(LightPosPP, CubeCenterPP, (LightPosPP + UpVector)
+					, FovPP, NearPP, FarPP, WidthPP, HeightPP, !IsOrthoMatrix));
+				OutPPCamera->UpdateCamera();
+			}
 		}
-		OutPPCamera->UpdateCamera();
 	};
 
 	Matrix ProjPP;
@@ -529,9 +536,21 @@ void jGame::Update(float deltaTime)
 	std::shared_ptr<jCamera> PPCamera = nullptr;
 
 	if (Settings.PossessMockCamera)
-		MakePPInfo(PPCamera, ProjPP, ViewPP, MockView, MockProj);
+	{
+		MakePPInfo(PPCamera, ProjPP, ViewPP, MockView, MockProj, true);
+	}
 	else
-		MakePPInfo(PPCamera, ProjPP, ViewPP, VCView, VCProj);
+	{
+		if (Settings.PossessOnlyMockCameraPP)
+		{
+			MakePPInfo(PPCamera, ProjPP, ViewPP, MockView, MockProj, true);
+			MakePPInfo(PPCamera, ProjPP, ViewPP, VCView, VCProj, false);
+		}
+		else
+		{
+			MakePPInfo(PPCamera, ProjPP, ViewPP, VCView, VCProj, true);
+		}
+	}
 
 	// 5. PSM 용 Matrix 생성
 	// ProjPP * ViewPP * VirtualCameraProj(별도로 만든 Proj) * VirtualCameraView(현재 카메라의 View)
@@ -663,7 +682,7 @@ void jGame::Update(float deltaTime)
 
 		jCamera* CurrentCamera = nullptr;
 		Matrix ProjView;
-		if (Settings.PossessMockCamera)
+		if (Settings.PossessMockCamera || Settings.PossessOnlyMockCameraPP)
 			ProjView = MockCamera->Projection * MockCamera->View * World;
 		else
 			ProjView = VCProj * VCView * World;

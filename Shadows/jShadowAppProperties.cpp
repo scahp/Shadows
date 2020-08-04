@@ -152,8 +152,10 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->AddVariable("MockCameraFar", MockCameraFar);
 	appSetting->SetGroup("MockCameraFar", "MockCamera");
 
-	appSetting->AddVariable("PossessCamera", PossessMockCamera);
-	appSetting->SetGroup("PossessMockCamera", "PossessCamera");
+	appSetting->AddVariable("Possess", PossessMockCamera);
+	appSetting->SetGroup("Possess", "MockCamera");
+	appSetting->AddVariable("PossessOnlyCameraPP", PossessOnlyMockCameraPP);
+	appSetting->SetGroup("PossessOnlyCameraPP", "MockCamera");	
 
 	appSetting->AddVariable("TargetX", MockCameraTarget.x);
 	appSetting->SetGroup("TargetX", "MockCamera");

@@ -25,6 +25,7 @@ public:
 	Vector NDCCameraTarget = Vector(0.0f, 0.0f, 0.0f);
 
 	bool PossessMockCamera = false;
+	bool PossessOnlyMockCameraPP = false;
 
 	//Vector OffsetPP;// = Vector(-500.0f, 150.0f, 50.0f);
 	Vector OffsetPP = Vector::ZeroVector;
