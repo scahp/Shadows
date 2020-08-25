@@ -529,5 +529,35 @@
     <None Include="Shaders\vs_graph.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\simple_tex_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\simple_tex_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\SkyFromSpace_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\SkyFromSpace_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\SkyFromAtmospheric_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\SkyFromAtmospheric_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\GroundFromSpace_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\GroundFromSpace_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\GroundFromAtmospheric_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\GroundFromAtmospheric_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

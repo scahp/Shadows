@@ -1265,7 +1265,8 @@ jObject* CreateCylinder(const Vector& pos, float height, float radius, int32 sli
 	return object;
 }
 
-jObject* CreateSphere(const Vector& pos, float radius, int32 slice, const Vector& scale, const Vector4& color, bool isWireframe /*= false*/, bool createBoundInfo/* = true*/, bool createShadowVolumeInfo/* = true*/)
+jObject* CreateSphere(const Vector& pos, float radius, int32 slice, const Vector& scale
+	, const Vector4& color, bool isWireframe /*= false*/, bool createBoundInfo/* = true*/, bool createShadowVolumeInfo/* = true*/)
 {
 	const auto offset = Vector::ZeroVector;
 
@@ -1277,6 +1278,57 @@ jObject* CreateSphere(const Vector& pos, float radius, int32 slice, const Vector
 	const float stepRadian = DegreeToRadian(360.0f / slice);
 
 	std::vector<float> vertices;
+	std::vector<float> normals;
+	std::vector<float> texCoords;
+	//////////////////////////////////////////////////////////////////////////
+	int32 sectorCount = slice;
+	int32 stackCount = slice / 2;
+
+	float x, y, z, xy;                              // vertex position
+	float nx, ny, nz, lengthInv = 1.0f / radius;    // vertex normal
+	float s, t;                                     // vertex texCoord
+
+	float sectorStep = 2 * PI / sectorCount;
+	float stackStep = PI / stackCount;
+	float sectorAngle, stackAngle;
+	for (int i = 0; i <= stackCount; ++i)
+	{
+		stackAngle = PI / 2 - i * stackStep;        // starting from pi/2 to -pi/2
+		xy = radius * cosf(stackAngle);             // r * cos(u)
+		z = radius * sinf(stackAngle);              // r * sin(u)
+
+		// add (sectorCount+1) vertices per stack
+		// the first and last vertices have same position and normal, but different tex coords
+		for (int j = 0; j <= sectorCount; ++j)
+		{
+			sectorAngle = j * sectorStep;           // starting from 0 to 2pi
+
+			// vertex position (x, y, z)
+			x = xy * cosf(sectorAngle);             // r * cos(u) * cos(v)
+			y = xy * sinf(sectorAngle);             // r * cos(u) * sin(v)
+			vertices.push_back(x);
+			vertices.push_back(y);
+			vertices.push_back(z);
+
+			// normalized vertex normal (nx, ny, nz)
+			nx = x * lengthInv;
+			ny = y * lengthInv;
+			nz = z * lengthInv;
+			normals.push_back(nx);
+			normals.push_back(ny);
+			normals.push_back(nz);
+
+			// vertex tex coord (s, t) range between [0, 1]
+			s = (float)j / sectorCount;
+			t = (float)i / stackCount;
+			texCoords.push_back(s);
+			texCoords.push_back(t);
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	
+
 	int j = 0;
 
 	for (int32 j = 0; j < slice / 2; ++j)
@@ -1330,14 +1382,6 @@ jObject* CreateSphere(const Vector& pos, float radius, int32 slice, const Vector
 		vertexStreamData->Params.push_back(streamParam);
 	}
 
-	std::vector<float> normals(vertices.size());
-	for (int i = 0; i < normals.size() / 3; ++i)
-	{
-		const int32 curIndex = i * 3;
-		const Vector normal = Vector(vertices[curIndex], vertices[curIndex + 1], vertices[curIndex + 2]).GetNormalize();
-		memcpy(&normals[curIndex], &normal, sizeof(normal));
-	}
-
 	{
 		auto streamParam = new jStreamParam<float>();
 		streamParam->BufferType = EBufferType::STATIC;
@@ -1350,36 +1394,50 @@ jObject* CreateSphere(const Vector& pos, float radius, int32 slice, const Vector
 		vertexStreamData->Params.push_back(streamParam);
 	}
 
+	{
+		auto streamParam = new jStreamParam<float>();
+		streamParam->BufferType = EBufferType::STATIC;
+		streamParam->ElementType = EBufferElementType::FLOAT;
+		streamParam->ElementTypeSize = sizeof(float);
+		streamParam->Stride = sizeof(float) * 2;
+		streamParam->Name = "TexCoord";
+		streamParam->Data.resize(texCoords.size());
+		memcpy(&streamParam->Data[0], &texCoords[0], texCoords.size() * sizeof(float));
+		vertexStreamData->Params.push_back(streamParam);
+	}
+
 	vertexStreamData->PrimitiveType = isWireframe ? EPrimitiveType::LINES : EPrimitiveType::TRIANGLES;
 	vertexStreamData->ElementCount = elementCount;
 
 	// IndexStream 추가
 	std::vector<uint32> faces;
-	int32 iCount = 0;
-	int32 toNextSlice = slice + 1;
-	int32 temp = 6;
-	for (int32 i = 0; i < (slice) / 2 - 2; ++i, iCount += 1)
+
+	// generate CCW index list of sphere triangles
+	int k1, k2;
+	for (int i = 0; i < stackCount; ++i)
 	{
-		for (int32 i = 0; i < slice; ++i, iCount += 1)
+		k1 = i * (sectorCount + 1);     // beginning of current stack
+		k2 = k1 + sectorCount + 1;      // beginning of next stack
+
+		for (int j = 0; j < sectorCount; ++j, ++k1, ++k2)
 		{
-			faces.push_back(iCount); faces.push_back(iCount + 1); faces.push_back(iCount + toNextSlice);
-			faces.push_back(iCount + toNextSlice); faces.push_back(iCount + 1); faces.push_back(iCount + toNextSlice + 1);
+			// 2 triangles per sector excluding first and last stacks
+			// k1 => k2 => k1+1
+			if (i != 0)
+			{
+				faces.push_back(k1);
+				faces.push_back(k2);
+				faces.push_back(k1 + 1);
+			}
+
+			// k1+1 => k2 => k2+1
+			if (i != (stackCount - 1))
+			{
+				faces.push_back(k1 + 1);
+				faces.push_back(k2);
+				faces.push_back(k2 + 1);
+			}
 		}
-	}
-
-	for (int32 i = 0; i < slice; ++i, iCount += 1)
-	{
-		faces.push_back(iCount);
-		faces.push_back(iCount + 1);
-		faces.push_back(elementCount - 1);
-	}
-
-	iCount = 0;
-	for (int32 i = 0; i < slice; ++i, iCount += 1)
-	{
-		faces.push_back(iCount);
-		faces.push_back(elementCount - 2);
-		faces.push_back(iCount + 1);
 	}
 
 	auto indexStreamData = std::shared_ptr<jIndexStreamData>(new jIndexStreamData());

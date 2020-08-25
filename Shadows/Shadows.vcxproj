@@ -298,6 +298,10 @@
     <None Include="Shaders\fullscreen\fs_scale.glsl" />
     <None Include="Shaders\fullscreen\fs_tonemap.glsl" />
     <None Include="Shaders\fullscreen\vs_fullscreen_common.glsl" />
+    <None Include="Shaders\GroundFromAtmospheric_fs.glsl" />
+    <None Include="Shaders\GroundFromAtmospheric_vs.glsl" />
+    <None Include="Shaders\GroundFromSpace_fs.glsl" />
+    <None Include="Shaders\GroundFromSpace_vs.glsl" />
     <None Include="Shaders\shadow.glsl" />
     <None Include="Shaders\shadowmap\fs.glsl" />
     <None Include="Shaders\shadowmap\fs_deepShadowMap.glsl" />
@@ -330,6 +334,12 @@
     <None Include="Shaders\shadowvolume\vs.glsl" />
     <None Include="Shaders\shadowvolume\vs_shadowvolume_cpu.glsl" />
     <None Include="Shaders\shadowvolume\vs_shadowvolume_gpu.glsl" />
+    <None Include="Shaders\simple_tex_fs.glsl" />
+    <None Include="Shaders\simple_tex_vs.glsl" />
+    <None Include="Shaders\SkyFromAtmospheric_fs.glsl" />
+    <None Include="Shaders\SkyFromAtmospheric_vs.glsl" />
+    <None Include="Shaders\SkyFromSpace_fs.glsl" />
+    <None Include="Shaders\SkyFromSpace_vs.glsl" />
     <None Include="Shaders\tex_fs.glsl" />
     <None Include="Shaders\tex_ui_fs.glsl" />
     <None Include="Shaders\tex_ui_vs.glsl" />

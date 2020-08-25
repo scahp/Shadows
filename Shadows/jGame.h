@@ -66,6 +66,9 @@ public:
 	jCamera* MainCamera = nullptr;
 
 	jObject* Sphere = nullptr;
+	
+	jObject* EarthSphere = nullptr;
+	jTexture* EarthTexture = nullptr;
 
 	jRenderer* Renderer = nullptr;
 

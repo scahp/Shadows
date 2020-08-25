@@ -31,7 +31,7 @@ public:
 	bool ShowSpotLightInfo = false;
 	bool ShowBoundBox = false;
 	bool ShowBoundSphere = false;
-	Vector DirecionalLightDirection = Vector(-0.56f, -0.83f, 0.01f).GetNormalize();
+	Vector DirecionalLightDirection = Vector(0.06f, -0.18f, 0.98f).GetNormalize();
 	Vector PointLightPosition = Vector(10.0f, 100.0f, 10.0f);
 	Vector SpotLightPosition = Vector(0.0f, 60.0f, 5.0f);
 	Vector SpotLightDirection = Vector(-1.0f, -1.0f, -0.4f).GetNormalize();

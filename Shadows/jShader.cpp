@@ -23,6 +23,7 @@ struct jShaderInfoCreation
 	{
 		// Declare shader
 		DECLARE_SHADER_VS_FS("Simple", "Shaders/color_only_vs.glsl", "Shaders/color_only_fs.glsl");
+		DECLARE_SHADER_VS_FS("SimpleTex", "Shaders/simple_tex_vs.glsl", "Shaders/simple_tex_fs.glsl");
 		DECLARE_SHADER_VS_FS("ShadowMap", "Shaders/vs_shadowMap.glsl", "Shaders/fs_shadowMap.glsl");
 		DECLARE_SHADER_VS_FS("Base", "Shaders/shadowmap/vs.glsl", "Shaders/shadowmap/fs.glsl");
 		DECLARE_SHADER_VS_GS_FS("ShadowMapOmni", "Shaders/shadowmap/vs_omniDirectionalShadowMap.glsl", "shaders/shadowmap/gs_omniDirectionalShadowMap.glsl", "Shaders/shadowmap/fs_omniDirectionalShadowMap.glsl");
@@ -89,6 +90,11 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("GaussianBlurV", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/fullscreen/fs_blur_gaussian_vertical.glsl");
 
 		DECLARE_SHADER_VS_FS("Graph2D", "shaders/vs_graph.glsl", "shaders/fs_graph.glsl");
+
+		DECLARE_SHADER_VS_FS("SkyFromSpace", "shaders/SkyFromSpace_vs.glsl", "shaders/SkyFromSpace_fs.glsl");
+		DECLARE_SHADER_VS_FS("SkyFromAtmospheric", "shaders/SkyFromAtmospheric_vs.glsl", "shaders/SkyFromAtmospheric_fs.glsl");
+		DECLARE_SHADER_VS_FS("GroundFromSpace", "shaders/GroundFromSpace_vs.glsl", "shaders/GroundFromSpace_fs.glsl");
+		DECLARE_SHADER_VS_FS("GroundFromAtmospheric", "shaders/GroundFromAtmospheric_vs.glsl", "shaders/GroundFromAtmospheric_fs.glsl");
 	}
 } s_shaderInfoCreation;
 
