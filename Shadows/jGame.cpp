@@ -25,6 +25,37 @@
 
 jRHI* g_rhi = nullptr;
 
+//////////////////////////////////////////////////////////////////////////
+float m_Kr = 0.0025f;		// Rayleigh scattering constant
+float m_Kr4PI = m_Kr * 4.0f * PI;
+float m_Km = 0.0010f;		// Mie scattering constant
+float m_Km4PI = m_Km * 4.0f * PI;
+float m_ESun = 20.0f;		// Sun brightness constant
+float m_g = -0.95f;		// The Mie phase asymmetry factor
+float m_fExposure = 2.0f;
+
+float m_fInnerRadius = 10.0f;
+float m_fOuterRadius = 10.25f;
+float m_fScale = 1 / (m_fOuterRadius - m_fInnerRadius);
+
+float Wavelength[3] = 
+{
+0.650f,		// 650 nm for red
+0.570f,		// 570 nm for green
+0.475f		// 475 nm for blue
+};
+
+float m_fWavelength4[3] = 
+{
+powf(Wavelength[0], 4.0f),
+powf(Wavelength[1], 4.0f),
+powf(Wavelength[2], 4.0f)
+};
+
+float m_fRayleighScaleDepth = 0.25f;
+float m_fMieScaleDepth = 0.1f;
+//////////////////////////////////////////////////////////////////////////
+
 jGame::jGame()
 {
 	g_rhi = new jRHI_OpenGL();
@@ -36,7 +67,7 @@ jGame::~jGame()
 
 void jGame::ProcessInput()
 {
-	static float speed = 0.02f;
+	static float speed = 0.03f;
 
 	// Process Key Event
 	if (g_KeyState['a'] || g_KeyState['A']) MainCamera->MoveShift(-speed);
@@ -49,8 +80,17 @@ void jGame::ProcessInput()
 	//if (g_KeyState['6']) MainCamera->RotateRightAxis(0.1f);
 	if (g_KeyState['w'] || g_KeyState['W']) MainCamera->MoveForward(speed);
 	if (g_KeyState['s'] || g_KeyState['S']) MainCamera->MoveForward(-speed);
-	if (g_KeyState['+']) speed = Max(speed + 0.1f, 0.0f);
-	if (g_KeyState['-']) speed = Max(speed - 0.1f, 0.0f);
+	if (g_KeyState['+']) speed = Max(speed + 0.03f, 0.0f);
+	if (g_KeyState['-']) speed = Max(speed - 0.03f, 0.0f);
+
+	float m_fInnerRadius = 10.0f;
+	if (MainCamera->Pos.Length() < m_fInnerRadius)
+	{
+		Vector Offset = MainCamera->Pos.GetNormalize() * m_fInnerRadius - MainCamera->Pos;
+		MainCamera->Pos += Offset;
+		MainCamera->Target += Offset;
+		MainCamera->Up += Offset;
+	}
 }
 
 void jGame::Setup()
@@ -244,33 +284,6 @@ void jGame::Update(float deltaTime)
 
 	//Renderer->Render(MainCamera);
 
-	//////////////////////////////////////////////////////////////////////////
-	float m_Kr = 0.0025f;		// Rayleigh scattering constant
-	float m_Kr4PI = m_Kr * 4.0f * PI;
-	float m_Km = 0.0010f;		// Mie scattering constant
-	float m_Km4PI = m_Km * 4.0f * PI;
-	float m_ESun = 20.0f;		// Sun brightness constant
-	float m_g = -0.990f;		// The Mie phase asymmetry factor
-	float m_fExposure = 2.0f;
-
-	float m_fInnerRadius = 10.0f;
-	float m_fOuterRadius = 10.25f;
-	float m_fScale = 1 / (m_fOuterRadius - m_fInnerRadius);
-
-	float Wavelength[3];
-	Wavelength[0] = 0.650f;		// 650 nm for red
-	Wavelength[1] = 0.570f;		// 570 nm for green
-	Wavelength[2] = 0.475f;		// 475 nm for blue
-
-	float m_fWavelength4[3];
-	m_fWavelength4[0] = powf(Wavelength[0], 4.0f);
-	m_fWavelength4[1] = powf(Wavelength[1], 4.0f);
-	m_fWavelength4[2] = powf(Wavelength[2], 4.0f);
-
-	float m_fRayleighScaleDepth = 0.25f;
-	float m_fMieScaleDepth = 0.1f;
-	//////////////////////////////////////////////////////////////////////////
-
 	// 1. Initialize resources
 	if (!EarthSphere)
 	{
@@ -308,20 +321,7 @@ void jGame::Update(float deltaTime)
 		//auto BlendSrc = EBlendSrc::SRC_ALPHA;
 		//auto BlendDest = EBlendDest::ONE_MINUS_SRC_ALPHA;
 		auto BlendSrc = EBlendSrc::ONE;
-		auto BlendDest = EBlendDest::ONE;
-		//auto Shader = jShader::GetShader("SkyFromSpace");
-		auto Shader = jShader::GetShader("GroundFromSpace");
-
-		if (MainCamera->Pos.Length() < m_fOuterRadius)
-			Shader = jShader::GetShader("GroundFromAtmospheric");
-
-		//g_rhi->SetRenderTarget(MainSceneRT.get());
-
-		if (EnableClear)
-		{
-			g_rhi->SetClearColor(ClearColor);
-			g_rhi->SetClear(ClearType);
-		}
+		auto BlendDest = EBlendDest::ZERO;
 
 		g_rhi->EnableDepthTest(EnableDepthTest);
 		g_rhi->SetDepthFunc(DepthStencilFunc);
@@ -332,9 +332,52 @@ void jGame::Update(float deltaTime)
 		g_rhi->EnableDepthBias(false);
 		//g_rhi->SetDepthBias(DepthConstantBias, DepthSlopeBias);
 
-		g_rhi->SetShader(Shader);
 		g_rhi->EnableCullFace(true);
+		g_rhi->EnableDepthClip(false);
+
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		const bool IsInsideOfAtmospheric = (MainCamera->Pos.Length() < m_fOuterRadius);
+		//if (!IsInsideOfAtmospheric)
+		{
+			static jFullscreenQuadPrimitive* s_fullscreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
+			auto Shader = jShader::GetShader("SpaceFromSpace");
+
+			g_rhi->SetShader(Shader);
+
+			//////////////////////////////////////////////////////////////////////////
+			SET_UNIFORM_BUFFER_STATIC(Vector, "CameraPos", MainCamera->Pos, Shader);
+			SET_UNIFORM_BUFFER_STATIC(Vector, "ToLight", DirectionalLight->Data.Direction, Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "g", m_g, Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "g2", m_g * m_g, Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "Depth", 0.5, Shader);
+			//////////////////////////////////////////////////////////////////////////
+
+			//glBlendFuncSeparate(GL_SRC_ALPHA,
+			//	GL_ONE_MINUS_SRC_ALPHA,
+			//	GL_ZERO,
+			//	GL_ONE);
+
+			MainCamera->BindCamera(Shader);
+			s_fullscreenQuad->SetUniformBuffer(Shader);
+			s_fullscreenQuad->Draw(MainCamera, Shader, {});
+
+			g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+		}
+
+		//auto Shader = jShader::GetShader("SkyFromSpace");
+		auto Shader = jShader::GetShader("GroundFromSpace");
+
+		if (IsInsideOfAtmospheric)
+			Shader = jShader::GetShader("GroundFromAtmospheric");
+
+		g_rhi->SetShader(Shader);
 		MainCamera->BindCamera(Shader);
+
 		SET_UNIFORM_BUFFER_STATIC(int, "UseTexture", 1, Shader);
 
 		//////////////////////////////////////////////////////////////////////////
@@ -352,7 +395,7 @@ void jGame::Update(float deltaTime)
 		SET_UNIFORM_BUFFER_STATIC(float, "AverageScaleDepth", m_fRayleighScaleDepth, Shader);
 		SET_UNIFORM_BUFFER_STATIC(float, "ScaleOverAverageScaleDepth", (1.0f / (m_fOuterRadius - m_fInnerRadius)) / m_fRayleighScaleDepth, Shader);
 		SET_UNIFORM_BUFFER_STATIC(float, "g", m_g, Shader);
-		SET_UNIFORM_BUFFER_STATIC(float, "g2", m_g* m_g, Shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "g2", m_g * m_g, Shader);
 		//////////////////////////////////////////////////////////////////////////
 
 		EarthSphere->RenderObject->Scale = Vector(m_fInnerRadius);
@@ -361,10 +404,10 @@ void jGame::Update(float deltaTime)
 		glFrontFace(GL_CCW);
 		MainCamera->IsEnableCullMode = true;
 		EarthSphere->Draw(MainCamera, Shader, {});
-		
+
 		{
 			auto Shader = jShader::GetShader("SkyFromSpace");
-			if (MainCamera->Pos.Length() < m_fOuterRadius)
+			if (IsInsideOfAtmospheric)
 				Shader = jShader::GetShader("SkyFromAtmospheric");
 
 			g_rhi->SetShader(Shader);
@@ -389,6 +432,10 @@ void jGame::Update(float deltaTime)
 			SET_UNIFORM_BUFFER_STATIC(float, "g2", m_g * m_g, Shader);
 			//////////////////////////////////////////////////////////////////////////
 
+			auto BlendSrc = EBlendSrc::ONE;
+			auto BlendDest = EBlendDest::ONE;
+			g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+
 			EarthSphere->RenderObject->Scale = Vector(m_fOuterRadius);
 			EarthSphere->RenderObject->tex_object = EarthTexture;
 
@@ -409,7 +456,7 @@ void jGame::Update(float deltaTime)
 	auto DepthStencilFunc = EComparisonFunc::LESS;
 	auto EnableBlend = true;
 	auto BlendSrc = EBlendSrc::ONE;
-	auto BlendDest = EBlendDest::ONE;
+	auto BlendDest = EBlendDest::ZERO;
 
 	if (EnableClear)
 	{

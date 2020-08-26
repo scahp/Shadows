@@ -340,6 +340,8 @@
     <None Include="Shaders\SkyFromAtmospheric_vs.glsl" />
     <None Include="Shaders\SkyFromSpace_fs.glsl" />
     <None Include="Shaders\SkyFromSpace_vs.glsl" />
+    <None Include="Shaders\SpaceFromSpace_fs.glsl" />
+    <None Include="Shaders\SpaceFromSpace_vs.glsl" />
     <None Include="Shaders\tex_fs.glsl" />
     <None Include="Shaders\tex_ui_fs.glsl" />
     <None Include="Shaders\tex_ui_vs.glsl" />

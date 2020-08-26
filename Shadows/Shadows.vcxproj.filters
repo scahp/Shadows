@@ -559,5 +559,11 @@
     <None Include="Shaders\GroundFromAtmospheric_vs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\SpaceFromSpace_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\SpaceFromSpace_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

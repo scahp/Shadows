@@ -95,6 +95,7 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("SkyFromAtmospheric", "shaders/SkyFromAtmospheric_vs.glsl", "shaders/SkyFromAtmospheric_fs.glsl");
 		DECLARE_SHADER_VS_FS("GroundFromSpace", "shaders/GroundFromSpace_vs.glsl", "shaders/GroundFromSpace_fs.glsl");
 		DECLARE_SHADER_VS_FS("GroundFromAtmospheric", "shaders/GroundFromAtmospheric_vs.glsl", "shaders/GroundFromAtmospheric_fs.glsl");
+		DECLARE_SHADER_VS_FS("SpaceFromSpace", "shaders/SpaceFromSpace_vs.glsl", "shaders/SpaceFromSpace_fs.glsl");
 	}
 } s_shaderInfoCreation;
 
