@@ -48,11 +48,22 @@ uint32 GetOpenGLTextureType(ETextureType textureType)
 		result = GL_TEXTURE_2D;
 		break;
 	case ETextureType::TEXTURE_2D_ARRAY:
+		result = GL_TEXTURE_2D_ARRAY;
+		break;
 	case ETextureType::TEXTURE_2D_ARRAY_OMNISHADOW:
 		result = GL_TEXTURE_2D;
 		break;
 	case ETextureType::TEXTURE_CUBE:
 		result = GL_TEXTURE_CUBE_MAP;
+		break;
+	case ETextureType::TEXTURE_2D_MULTISAMPLE:
+		result = GL_TEXTURE_2D_MULTISAMPLE;
+		break;
+	case ETextureType::TEXTURE_2D_ARRAY_MULTISAMPLE:
+		result = GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
+		break;
+	case ETextureType::TEXTURE_2D_ARRAY_OMNISHADOW_MULTISAMPLE:
+		result = GL_TEXTURE_2D_MULTISAMPLE;
 		break;
 	default:
 		break;
@@ -401,7 +412,7 @@ void jRHI_OpenGL::DrawElements(EPrimitiveType type, int32 elementSize, int32 sta
 		void* offset_pointer;
 	} u_offset;
 	u_offset.offset = startIndex * elementSize;
-	const auto elementType = (elementSize == 4) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;	
+	const auto elementType = (elementSize == 4) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
 	glDrawElements(GetPrimitiveType(type), count, elementType, u_offset.offset_pointer);
 }
 
@@ -542,7 +553,7 @@ jQueryTime* jRHI_OpenGL::CreateQueryTime() const
 	return queryTime;
 }
 
-void jRHI_OpenGL::ReleaseQueryTime(jQueryTime* queryTime) const 
+void jRHI_OpenGL::ReleaseQueryTime(jQueryTime* queryTime) const
 {
 	auto queryTime_gl = static_cast<jQueryTime_OpenGL*>(queryTime);
 	glDeleteQueries(1, &queryTime_gl->QueryId);
@@ -587,7 +598,7 @@ void jRHI_OpenGL::BeginQueryTimeElapsed(const jQueryTime* queryTimeElpased) cons
 	glBeginQuery(GL_TIME_ELAPSED, queryTimeElpased_gl->QueryId);
 }
 
-void jRHI_OpenGL::EndQueryTimeElapsed(const jQueryTime* queryTimeElpased) const 
+void jRHI_OpenGL::EndQueryTimeElapsed(const jQueryTime* queryTimeElpased) const
 {
 	glEndQuery(GL_TIME_ELAPSED);
 }
@@ -817,9 +828,11 @@ bool jRHI_OpenGL::CreateShader(jShader* OutShader, const jShaderInfo& shaderInfo
 
 			if (maxLength > 0)
 			{
-				std::vector<char> errorLog(maxLength + 1, 0);
+				std::string errorLog(maxLength, 0);
 				glGetProgramInfoLog(program, maxLength, &maxLength, &errorLog[0]);
-				JMESSAGE(&errorLog[0]);
+				if (maxLength > 0)
+					errorLog.resize(maxLength - 1);	// remove null character to concatenate
+				JMESSAGE(std::string("Shader name : " + shaderInfo.name + "\n-----\n" + errorLog).c_str());
 			}
 			glDeleteShader(vs);
 			glDeleteShader(fs);
@@ -839,9 +852,11 @@ bool jRHI_OpenGL::CreateShader(jShader* OutShader, const jShaderInfo& shaderInfo
 
 			if (maxLength > 0)
 			{
-				std::vector<char> errorLog(maxLength + 1, 0);
+				std::string errorLog(maxLength, 0);
 				glGetProgramInfoLog(program, maxLength, &maxLength, &errorLog[0]);
-				JMESSAGE(&errorLog[0]);
+				if (maxLength > 0)
+					errorLog.resize(maxLength - 1);	// remove null character to concatenate
+				JMESSAGE(std::string("Shader name : " + shaderInfo.name + "\n-----\n" + errorLog).c_str());
 			}
 			glDeleteShader(vs);
 			glDeleteShader(fs);
@@ -1025,7 +1040,7 @@ void jRHI_OpenGL::SetMatetrial(jMaterialData* materialData, const jShader* shade
 void jRHI_OpenGL::SetTexture(int32 index, const jTexture* texture) const
 {
 	glActiveTexture(GL_TEXTURE0 + index);
-	
+
 	auto texture_gl = static_cast<const jTexture_OpenGL*>(texture);
 	auto textureType = GetOpenGLTextureType(texture_gl->TextureType);
 	glBindTexture(textureType, texture_gl->TextureID);
@@ -1128,9 +1143,10 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 
 	auto rt_gl = new jRenderTarget_OpenGL();
 	rt_gl->Info = info;
-	
+
+	JASSERT(info.SampleCount >= 1);
 	JASSERT(info.TextureCount > 0);
-	if (info.TextureType == ETextureType::TEXTURE_2D)
+	if ((info.TextureType == ETextureType::TEXTURE_2D) || (info.TextureType == ETextureType::TEXTURE_2D_MULTISAMPLE))
 	{
 		uint32 fbo = 0;
 		glGenFramebuffers(1, &fbo);
@@ -1141,13 +1157,26 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 		{
 			uint32 tbo = 0;
 			glGenTextures(1, &tbo);
-			glBindTexture(GL_TEXTURE_2D, tbo);
-			glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, info.Width, info.Height, 0, format, formatType, nullptr);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minification);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magnification);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, tbo, 0);
+			if (info.SampleCount > 1)
+			{
+				glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tbo);
+				glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, info.SampleCount, internalFormat, info.Width, info.Height, true);
+				glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, minification);
+				glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, magnification);
+				glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D_MULTISAMPLE, tbo, 0);
+			}
+			else
+			{
+				glBindTexture(GL_TEXTURE_2D, tbo);
+				glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, info.Width, info.Height, 0, format, formatType, nullptr);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minification);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magnification);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, tbo, 0);
+			}
 			rt_gl->drawBuffers.push_back(GL_COLOR_ATTACHMENT0 + i);
 
 			auto tex_gl = new jTexture_OpenGL();
@@ -1162,9 +1191,22 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 		{
 			uint32 tbo = 0;
 			glGenTextures(1, &tbo);
-			glBindTexture(GL_TEXTURE_2D, tbo);
-			glTexStorage2D(GL_TEXTURE_2D, 1, depthBufferFormat, info.Width, info.Height);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, depthBufferType, GL_TEXTURE_2D, tbo, 0);
+			if (info.SampleCount > 1)
+			{
+				glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tbo);
+				glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, info.SampleCount, depthBufferFormat, info.Width, info.Height, true);
+				if (info.IsGenerateMipmapDepth)
+					glGenerateMipmap(GL_TEXTURE_2D_MULTISAMPLE);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, depthBufferType, GL_TEXTURE_2D_MULTISAMPLE, tbo, 0);
+			}
+			else
+			{
+				glBindTexture(GL_TEXTURE_2D, tbo);
+				glTexImage2D(GL_TEXTURE_2D, 0, depthBufferFormat, info.Width, info.Height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+				if (info.IsGenerateMipmapDepth)
+					glGenerateMipmap(GL_TEXTURE_2D);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, depthBufferType, GL_TEXTURE_2D, tbo, 0);
+			}
 
 			auto tex_gl = new jTexture_OpenGL();
 			tex_gl->TextureType = info.TextureType;
@@ -1180,10 +1222,10 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 			JMESSAGE(szTemp);
 			return nullptr;
 		}
-	
+
 		rt_gl->fbos.push_back(fbo);
 	}
-	else if (info.TextureType == ETextureType::TEXTURE_2D_ARRAY)
+	else if ((info.TextureType == ETextureType::TEXTURE_2D_ARRAY) || (info.TextureType == ETextureType::TEXTURE_2D_ARRAY_MULTISAMPLE))
 	{
 		auto tex_gl = new jTexture_OpenGL();
 		tex_gl->Magnification = info.Magnification;
@@ -1191,10 +1233,20 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 
 		uint32 tbo = 0;
 		glGenTextures(1, &tbo);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, tbo);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, minification);
-		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, magnification);
-		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, internalFormat, info.Width, info.Height, info.TextureCount, 0, format, formatType, nullptr);
+		if (info.SampleCount > 1)
+		{
+			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, tbo);
+			glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MIN_FILTER, minification);
+			glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, GL_TEXTURE_MAG_FILTER, magnification);
+			glTexImage3DMultisample(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, 4, internalFormat, info.Width, info.Height, info.TextureCount, true);
+		}
+		else
+		{
+			glBindTexture(GL_TEXTURE_2D_ARRAY, tbo);
+			glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, minification);
+			glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, magnification);
+			glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, internalFormat, info.Width, info.Height, info.TextureCount, 0, format, formatType, nullptr);
+		}
 
 		uint32 fbo = 0;
 		glGenFramebuffers(1, &fbo);
@@ -1209,9 +1261,23 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 		{
 			uint32 tbo = 0;
 			glGenTextures(1, &tbo);
-			glBindTexture(GL_TEXTURE_2D, tbo);
-			glTexStorage2D(GL_TEXTURE_2D, 1, depthBufferFormat, info.Width, info.Height);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, depthBufferType, GL_TEXTURE_2D, tbo, 0);
+			if (info.SampleCount > 1)
+			{
+				glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tbo);
+				glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, info.SampleCount, depthBufferFormat, info.Width, info.Height, true);
+				if (info.IsGenerateMipmapDepth)
+					glGenerateMipmap(GL_TEXTURE_2D_MULTISAMPLE);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, depthBufferType, GL_TEXTURE_2D_MULTISAMPLE, tbo, 0);
+			}
+			else
+			{
+				glBindTexture(GL_TEXTURE_2D, tbo);
+				glTexImage2D(GL_TEXTURE_2D, 0, depthBufferFormat, info.Width, info.Height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+				if (info.IsGenerateMipmapDepth)
+					glGenerateMipmap(GL_TEXTURE_2D);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, depthBufferType, GL_TEXTURE_2D, tbo, 0);
+			}
+
 
 			auto tex_gl = new jTexture_OpenGL();
 			tex_gl->TextureType = info.TextureType;
@@ -1236,7 +1302,7 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 
 		rt_gl->fbos.push_back(fbo);
 	}
-	else if (info.TextureType == ETextureType::TEXTURE_2D_ARRAY_OMNISHADOW)
+	else if ((info.TextureType == ETextureType::TEXTURE_2D_ARRAY_OMNISHADOW) || (info.TextureType == ETextureType::TEXTURE_2D_ARRAY_OMNISHADOW_MULTISAMPLE))
 	{
 		uint32 fbo = 0;
 		glGenFramebuffers(1, &fbo);
@@ -1249,13 +1315,26 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 		{
 			uint32 tbo = 0;
 			glGenTextures(1, &tbo);
-			glBindTexture(GL_TEXTURE_2D, tbo);
-			glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, info.Width, info.Height, 0, format, formatType, nullptr);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minification);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magnification);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, tbo, 0);
+			if (info.SampleCount > 1)
+			{
+				glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tbo);
+				glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, info.SampleCount, internalFormat, info.Width, info.Height, true);
+				glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, minification);
+				glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, magnification);
+				glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D_MULTISAMPLE, tbo, 0);
+			}
+			else
+			{
+				glBindTexture(GL_TEXTURE_2D, tbo);
+				glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, info.Width, info.Height, 0, format, formatType, nullptr);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minification);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magnification);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, tbo, 0);
+			}
 			rt_gl->drawBuffers.push_back(GL_COLOR_ATTACHMENT0 + i);
 
 			auto tex_gl = new jTexture_OpenGL();
@@ -1270,9 +1349,22 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 		{
 			uint32 tbo = 0;
 			glGenTextures(1, &tbo);
-			glBindTexture(GL_TEXTURE_2D, tbo);
-			glTexStorage2D(GL_TEXTURE_2D, 1, depthBufferFormat, info.Width, info.Height);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, depthBufferType, GL_TEXTURE_2D, tbo, 0);
+			if (info.SampleCount > 1)
+			{
+				glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tbo);
+				glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, info.SampleCount, depthBufferFormat, info.Width, info.Height, true);
+				if (info.IsGenerateMipmapDepth)
+					glGenerateMipmap(GL_TEXTURE_2D_MULTISAMPLE);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, depthBufferType, GL_TEXTURE_2D_MULTISAMPLE, tbo, 0);
+			}
+			else
+			{
+				glBindTexture(GL_TEXTURE_2D, tbo);
+				glTexImage2D(GL_TEXTURE_2D, 0, depthBufferFormat, info.Width, info.Height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+				if (info.IsGenerateMipmapDepth)
+					glGenerateMipmap(GL_TEXTURE_2D);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, depthBufferType, GL_TEXTURE_2D, tbo, 0);
+			}
 
 			auto tex_gl = new jTexture_OpenGL();
 			tex_gl->TextureType = info.TextureType;
@@ -1295,6 +1387,8 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 	}
 	else if (info.TextureType == ETextureType::TEXTURE_CUBE)
 	{
+		JASSERT(!info.SampleCount > 1);
+
 		uint32 tbo = 0;
 		glGenTextures(1, &tbo);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, tbo);
@@ -1378,7 +1472,7 @@ void jRHI_OpenGL::SetRenderTarget(const jRenderTarget* rt, int32 index /*= 0*/, 
 void jRHI_OpenGL::SetDrawBuffers(const std::initializer_list<EDrawBufferType>& list) const
 {
 	std::vector<uint32> buffers;
-	for(auto& iter : list)
+	for (auto& iter : list)
 	{
 		switch (iter)
 		{
@@ -1463,7 +1557,7 @@ void jRHI_OpenGL::UpdateVertexBuffer(jVertexBuffer* vb, IStreamParam* streamPara
 		return;
 
 	auto vb_gl = static_cast<jVertexBuffer_OpenGL*>(vb);
-	
+
 	auto stream = vb_gl->Streams[streamParamIndex];
 
 	unsigned int bufferType = GL_STATIC_DRAW;

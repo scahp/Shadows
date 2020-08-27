@@ -7,10 +7,6 @@ uniform vec3 ToLight;
 uniform float g;
 uniform float g2;
 
-//in vec3 Color_;				// The Rayleigh color
-//in vec3 Color2_;			// The Mie color
-//in vec3 Direction_;
-//in vec3 PosW_;
 in vec3 Normal_;
 out vec4 color;
 
@@ -28,6 +24,7 @@ uniform float Km4PI;
 uniform float Scale;							// 1 / (fOuterRadius - fInnerRadius)
 uniform float AverageScaleDepth;
 uniform float ScaleOverAverageScaleDepth;		// Scale / AverageScaleDepth
+uniform vec3 ScatterColor;
 
 // Calculates the Rayleigh phase function
 float getRayleighPhase(float cos2)
@@ -68,25 +65,18 @@ float scale(float cos)
 
 void main()
 {
-	//if (isnan(Color_.x))
-	//{
-	//	color = vec4(0.0, 1.0, 0.0, 1.0);
-	//	return;
-	//}
+	// todo : It something wired, because if I use normalized Normal vector, Gradient layers appeare in atmsphere
+	//        But In Ground shader, if I didn't use normalized Normal, Patch patterns appear in atmospher...
+	//		  It should be resolve.
+	//vec3 Normal = normalize(Normal_);
+	vec3 Normal = Normal_;
+	vec3 PosW = Normal * OuterRadius;
 
-	vec3 Color_;
-	vec3 Color2_;
-	vec3 Direction_;
-	//{
-	vec3 Normal = normalize(Normal_);
-	vec3 PosW_ = Normal * OuterRadius;
-
-	vec3 ToVertexFromCam = PosW_ - CameraPos;
+	vec3 ToVertexFromCam = PosW - CameraPos;
 	float Far = length(ToVertexFromCam);
 	ToVertexFromCam /= Far;
 
 	float Near = getNearIntersection(CameraPos, ToVertexFromCam, CameraHeight * CameraHeight, OuterRadius * OuterRadius);
-
 	vec3 RayStart = CameraPos;
 
 	// Calculate the ray's starting position, then calculate its scattering offset
@@ -109,22 +99,18 @@ void main()
 		float LightAngle = dot(ToLight, SamplePoint) / Height;
 		float CameraAngle = dot(ToVertexFromCam, SamplePoint) / Height;
 		float Scatter = StartOffset + Depth * (scale(LightAngle) - scale(CameraAngle));
-		vec3 Attenuate = exp(-Scatter * (InvWaveLength * Kr4PI + Km4PI));
+		vec3 Attenuate = exp(-Scatter * (InvWaveLength * Kr4PI + Km4PI)) * ScatterColor;
 
 		CalculartedColor += Attenuate * (Depth * ScaledLength);
 		SamplePoint += SampleRay;
 	}
 
-	Color_ = CalculartedColor * (InvWaveLength * KrESun);
-	Color2_ = CalculartedColor * KmESun;
-	Direction_ = CameraPos - PosW_;
-	//}
+	vec3 RayleighColor = CalculartedColor * (InvWaveLength * KrESun);
+	vec3 MieColor = CalculartedColor * KmESun;
+	vec3 ToCameraFromPosW = CameraPos - PosW;
 
-	float cos = dot(ToLight, Direction_) / length(Direction_);
+	float cos = dot(ToLight, ToCameraFromPosW) / length(ToCameraFromPosW);
 	float cos2 = cos * cos;
-	color = vec4(getRayleighPhase(cos2) * Color_ + getMiePhase(cos, cos2, g, g2) * Color2_, 1.0);
-	color.a = color.b;
-	//if (isinf(color.a) || isnan(color.a))
-	//	discard;
-	//color = vec4(vec3(getRayleighPhase(cos2)), 1.0);
+	color = vec4(getRayleighPhase(cos2) * RayleighColor + getMiePhase(cos, cos2, g, g2) * MieColor, 1.0);
+	color.a = 1.0;
 }

@@ -274,6 +274,7 @@
     <ClCompile Include="TGALoader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Shaders\AtmosphericHDR_fs.glsl" />
     <None Include="Shaders\color_only_fs.glsl" />
     <None Include="Shaders\color_only_vs.glsl" />
     <None Include="Shaders\common.glsl" />

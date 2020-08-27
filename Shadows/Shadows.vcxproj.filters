@@ -565,5 +565,8 @@
     <None Include="Shaders\SpaceFromSpace_fs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\AtmosphericHDR_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

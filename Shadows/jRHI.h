@@ -222,6 +222,15 @@ public:
 
 struct jRenderTargetInfo
 {
+	jRenderTargetInfo() = default;
+	jRenderTargetInfo(ETextureType textureType, ETextureFormat internalFormat, ETextureFormat format, EFormatType formatType, EDepthBufferType depthBufferType
+		, int32 width, int32 height, int32 textureCount = 1, ETextureFilter magnification = ETextureFilter::LINEAR
+		, ETextureFilter minification = ETextureFilter::LINEAR, bool isGenerateMipmapDepth = false, int32 sampleCount = 1)
+		: TextureType(textureType), InternalFormat(internalFormat), Format(format), FormatType(formatType), DepthBufferType(depthBufferType)
+		, Width(width), Height(height), TextureCount(textureCount), Magnification(magnification), Minification(minification), IsGenerateMipmapDepth(isGenerateMipmapDepth)
+		, SampleCount(sampleCount)
+	{}
+
 	size_t GetHash() const
 	{
 		size_t result = 0;
@@ -233,6 +242,8 @@ struct jRenderTargetInfo
 		hash_combine(result, Height);
 		hash_combine(result, Height);
 		hash_combine(result, TextureCount);
+		hash_combine(result, IsGenerateMipmapDepth);
+		hash_combine(result, SampleCount);
 		return result;
 	}
 
@@ -244,9 +255,12 @@ struct jRenderTargetInfo
 	int32 Width = 0;
 	int32 Height = 0;
 	int32 TextureCount = 1;
-	ETextureFilter Magnification;
-	ETextureFilter Minification;
+	ETextureFilter Magnification = ETextureFilter::LINEAR;
+	ETextureFilter Minification = ETextureFilter::LINEAR;
+	bool IsGenerateMipmapDepth = false;
+	int32 SampleCount = 1;
 };
+
 
 struct jRenderTarget : public std::enable_shared_from_this<jRenderTarget>
 {

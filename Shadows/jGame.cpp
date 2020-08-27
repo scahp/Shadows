@@ -25,37 +25,6 @@
 
 jRHI* g_rhi = nullptr;
 
-//////////////////////////////////////////////////////////////////////////
-float m_Kr = 0.0025f;		// Rayleigh scattering constant
-float m_Kr4PI = m_Kr * 4.0f * PI;
-float m_Km = 0.0010f;		// Mie scattering constant
-float m_Km4PI = m_Km * 4.0f * PI;
-float m_ESun = 20.0f;		// Sun brightness constant
-float m_g = -0.95f;		// The Mie phase asymmetry factor
-float m_fExposure = 2.0f;
-
-float m_fInnerRadius = 10.0f;
-float m_fOuterRadius = 10.25f;
-float m_fScale = 1 / (m_fOuterRadius - m_fInnerRadius);
-
-float Wavelength[3] = 
-{
-0.650f,		// 650 nm for red
-0.570f,		// 570 nm for green
-0.475f		// 475 nm for blue
-};
-
-float m_fWavelength4[3] = 
-{
-powf(Wavelength[0], 4.0f),
-powf(Wavelength[1], 4.0f),
-powf(Wavelength[2], 4.0f)
-};
-
-float m_fRayleighScaleDepth = 0.25f;
-float m_fMieScaleDepth = 0.1f;
-//////////////////////////////////////////////////////////////////////////
-
 jGame::jGame()
 {
 	g_rhi = new jRHI_OpenGL();
@@ -67,7 +36,7 @@ jGame::~jGame()
 
 void jGame::ProcessInput()
 {
-	static float speed = 0.03f;
+	static float speed = 0.05f;
 
 	// Process Key Event
 	if (g_KeyState['a'] || g_KeyState['A']) MainCamera->MoveShift(-speed);
@@ -80,13 +49,15 @@ void jGame::ProcessInput()
 	//if (g_KeyState['6']) MainCamera->RotateRightAxis(0.1f);
 	if (g_KeyState['w'] || g_KeyState['W']) MainCamera->MoveForward(speed);
 	if (g_KeyState['s'] || g_KeyState['S']) MainCamera->MoveForward(-speed);
-	if (g_KeyState['+']) speed = Max(speed + 0.03f, 0.0f);
-	if (g_KeyState['-']) speed = Max(speed - 0.03f, 0.0f);
+	if (g_KeyState['+']) speed = Max(speed + 0.05f, 0.05f);
+	if (g_KeyState['-']) speed = Max(speed - 0.05f, 0.05f);
 
-	float m_fInnerRadius = 10.0f;
-	if (MainCamera->Pos.Length() < m_fInnerRadius)
+	const auto& AppSettingInst = jShadowAppSettingProperties::GetInstance();
+
+	float Radius = AppSettingInst.InnerRadius + (AppSettingInst.OuterRadius - AppSettingInst.InnerRadius) * 0.01;
+	if (MainCamera->Pos.Length() < Radius)
 	{
-		Vector Offset = MainCamera->Pos.GetNormalize() * m_fInnerRadius - MainCamera->Pos;
+		Vector Offset = MainCamera->Pos.GetNormalize() * Radius - MainCamera->Pos;
 		MainCamera->Pos += Offset;
 		MainCamera->Target += Offset;
 		MainCamera->Up += Offset;
@@ -96,7 +67,7 @@ void jGame::ProcessInput()
 void jGame::Setup()
 {
 	//////////////////////////////////////////////////////////////////////////
-	const Vector mainCameraPos(17.0f, 16.0f, 18.0f);
+	const Vector mainCameraPos = Vector(0.0f, 0.3f, -1.0f) * 30.0f;
 	//const Vector mainCameraTarget(171.96f, 166.02f, -180.05f);
 	//const Vector mainCameraPos(165.0f, 125.0f, -136.0f);
 	//const Vector mainCameraPos(300.0f, 100.0f, 300.0f);
@@ -118,7 +89,7 @@ void jGame::Setup()
 	PointLight = jLight::CreatePointLight(jShadowAppSettingProperties::GetInstance().PointLightPosition, Vector4(2.0f, 0.7f, 0.7f, 1.0f), 500.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
 	SpotLight = jLight::CreateSpotLight(jShadowAppSettingProperties::GetInstance().SpotLightPosition, jShadowAppSettingProperties::GetInstance().SpotLightDirection, Vector4(0.0f, 1.0f, 0.0f, 1.0f), 500.0f, 0.7f, 1.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
 
-	DirectionalLightInfo = jPrimitiveUtil::CreateDirectionalLightDebug(Vector(250, 260, 0)*0.5f, Vector::OneVector * 10.0f, 10.0f, MainCamera, DirectionalLight, "Image/sun.png");
+	DirectionalLightInfo = jPrimitiveUtil::CreateDirectionalLightDebug(Vector(250, 260, 0) * 0.5f, Vector::OneVector * 10.0f, 10.0f, MainCamera, DirectionalLight, "Image/sun.png");
 	jObject::AddDebugObject(DirectionalLightInfo);
 
 	DirectionalLightShadowMapUIDebug = jPrimitiveUtil::CreateUIQuad({ 0.0f, 0.0f }, { 150, 150 }, DirectionalLight->GetShadowMap());
@@ -150,7 +121,7 @@ void jGame::Setup()
 	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::PCSS, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_SSM_PCSS_Poisson)));
 	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::VSM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_VSM)));
 	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::ESM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_ESM)));
-	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::EVSM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_EVSM)));	
+	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::EVSM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_EVSM)));
 	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::CSM_SSM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_CSM_SSM)));
 
 	CurrentShadowMapType = jShadowAppSettingProperties::GetInstance().ShadowMapType;
@@ -159,8 +130,8 @@ void jGame::Setup()
 	ShadowVolumePipelineSet = CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_ShadowVolume);
 
 	// todo 정리 필요
-	const auto currentShadowPipelineSet = (jShadowAppSettingProperties::GetInstance().ShadowType == EShadowType::ShadowMap) 
-		? ShadowPipelineSetMap[CurrentShadowMapType]  : ShadowVolumePipelineSet;
+	const auto currentShadowPipelineSet = (jShadowAppSettingProperties::GetInstance().ShadowType == EShadowType::ShadowMap)
+		? ShadowPipelineSetMap[CurrentShadowMapType] : ShadowVolumePipelineSet;
 	ForwardRenderer = new jForwardRenderer(currentShadowPipelineSet);
 	ForwardRenderer->Setup();
 
@@ -207,6 +178,8 @@ void jGame::RemoveSpawnedObjects()
 void jGame::Update(float deltaTime)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "Game::Update");
+
+	const auto& AppSettingInst = jShadowAppSettingProperties::GetInstance();
 
 	UpdateAppSetting();
 
@@ -259,7 +232,7 @@ void jGame::Update(float deltaTime)
 
 		// Get position of the shadow camera
 		Vector shadowCameraPos = frustumCenter + DirectionalLight->Data.Direction * -(farDist - nearDist) / 2.0f;
-	
+
 		auto shadowCamera = jOrthographicCamera::CreateCamera(shadowCameraPos, frustumCenter, shadowCameraPos + upDir
 			, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
 		shadowCamera->UpdateCamera();
@@ -287,7 +260,7 @@ void jGame::Update(float deltaTime)
 	// 1. Initialize resources
 	if (!EarthSphere)
 	{
-		EarthSphere = jPrimitiveUtil::CreateSphere(Vector::ZeroVector, 1.0, 70, Vector(m_fOuterRadius), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+		EarthSphere = jPrimitiveUtil::CreateSphere(Vector::ZeroVector, 1.0, 70, Vector(AppSettingInst.OuterRadius), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 		EarthSphere->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 		{
 			//thisObject->RenderObject->Rot.y += 0.005f;
@@ -303,13 +276,38 @@ void jGame::Update(float deltaTime)
 	}
 
 	static auto MainRenderTarget = jRenderTargetPool::GetRenderTarget(
+		{ ETextureType::TEXTURE_2D_MULTISAMPLE, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT
+		, EDepthBufferType::DEPTH32, SCR_WIDTH, SCR_HEIGHT, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR, false, 4 }
+	);
+	
+	static auto PostProcessTarget = jRenderTargetPool::GetRenderTarget(
 		{ ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT
-		, EDepthBufferType::DEPTH32, SCR_WIDTH, SCR_HEIGHT, 1 }
+		, EDepthBufferType::DEPTH32, SCR_WIDTH, SCR_HEIGHT, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR, false, 1 }
 	);
 
 	// 2. MainScene Render
 	if (MainRenderTarget->Begin())
 	{
+		auto BindAtmosphericUniforms = [&](const jShader* Shader)
+		{
+			SET_UNIFORM_BUFFER_STATIC(Vector, "CameraPos", MainCamera->Pos, Shader);
+			SET_UNIFORM_BUFFER_STATIC(Vector, "ToLight", DirectionalLight->Data.Direction, Shader);
+			SET_UNIFORM_BUFFER_STATIC(Vector, "InvWaveLength", Vector(1.0f / AppSettingInst.Wavelength4[0], 1.0f / AppSettingInst.Wavelength4[1], 1.0f / AppSettingInst.Wavelength4[2]), Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "CameraHeight", MainCamera->Pos.Length(), Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "InnerRadius", AppSettingInst.InnerRadius, Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "OuterRadius", AppSettingInst.OuterRadius, Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "KrESun", AppSettingInst.Kr * AppSettingInst.ESun, Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "KmESun", AppSettingInst.Km * AppSettingInst.ESun, Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "Kr4PI", AppSettingInst.m_Kr4PI, Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "Km4PI", AppSettingInst.m_Km4PI, Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "Scale", 1.0f / (AppSettingInst.OuterRadius - AppSettingInst.InnerRadius), Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "AverageScaleDepth", AppSettingInst.AverageScaleDepth, Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "ScaleOverAverageScaleDepth", (1.0f / (AppSettingInst.OuterRadius - AppSettingInst.InnerRadius)) / AppSettingInst.AverageScaleDepth, Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "g", AppSettingInst.g, Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "g2", AppSettingInst.g * AppSettingInst.g, Shader);
+			SET_UNIFORM_BUFFER_STATIC(Vector, "ScatterColor", AppSettingInst.ScatterColor, Shader);
+		};
+
 		g_rhi->BeginDebugEvent("[2]. MainScene Render");
 
 		auto EnableClear = true;
@@ -341,7 +339,7 @@ void jGame::Update(float deltaTime)
 			g_rhi->SetClear(ClearType);
 		}
 
-		const bool IsInsideOfAtmospheric = (MainCamera->Pos.Length() < m_fOuterRadius);
+		const bool IsInsideOfAtmospheric = (MainCamera->Pos.Length() < AppSettingInst.OuterRadius);
 		//if (!IsInsideOfAtmospheric)
 		{
 			static jFullscreenQuadPrimitive* s_fullscreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
@@ -352,91 +350,53 @@ void jGame::Update(float deltaTime)
 			//////////////////////////////////////////////////////////////////////////
 			SET_UNIFORM_BUFFER_STATIC(Vector, "CameraPos", MainCamera->Pos, Shader);
 			SET_UNIFORM_BUFFER_STATIC(Vector, "ToLight", DirectionalLight->Data.Direction, Shader);
-			SET_UNIFORM_BUFFER_STATIC(float, "g", m_g, Shader);
-			SET_UNIFORM_BUFFER_STATIC(float, "g2", m_g * m_g, Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "g", AppSettingInst.g, Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "g2", AppSettingInst.g * AppSettingInst.g, Shader);
 			SET_UNIFORM_BUFFER_STATIC(float, "Depth", 0.5, Shader);
 			//////////////////////////////////////////////////////////////////////////
 
-			//glBlendFuncSeparate(GL_SRC_ALPHA,
-			//	GL_ONE_MINUS_SRC_ALPHA,
-			//	GL_ZERO,
-			//	GL_ONE);
-
 			MainCamera->BindCamera(Shader);
 			s_fullscreenQuad->SetUniformBuffer(Shader);
-			s_fullscreenQuad->Draw(MainCamera, Shader, {});
+			//s_fullscreenQuad->Draw(MainCamera, Shader, {});
 
 			g_rhi->SetBlendFunc(BlendSrc, BlendDest);
 		}
 
-		//auto Shader = jShader::GetShader("SkyFromSpace");
-		auto Shader = jShader::GetShader("GroundFromSpace");
-
-		if (IsInsideOfAtmospheric)
-			Shader = jShader::GetShader("GroundFromAtmospheric");
+		auto Shader = jShader::GetShader(IsInsideOfAtmospheric ? "GroundFromAtmospheric" : "GroundFromSpace");
 
 		g_rhi->SetShader(Shader);
 		MainCamera->BindCamera(Shader);
 
 		SET_UNIFORM_BUFFER_STATIC(int, "UseTexture", 1, Shader);
 
-		//////////////////////////////////////////////////////////////////////////
-		SET_UNIFORM_BUFFER_STATIC(Vector, "CameraPos", MainCamera->Pos, Shader);
-		SET_UNIFORM_BUFFER_STATIC(Vector, "ToLight", DirectionalLight->Data.Direction, Shader);
-		SET_UNIFORM_BUFFER_STATIC(Vector, "InvWaveLength", Vector(1.0f / m_fWavelength4[0], 1.0f / m_fWavelength4[1], 1.0f / m_fWavelength4[2]), Shader);
-		SET_UNIFORM_BUFFER_STATIC(float, "CameraHeight", MainCamera->Pos.Length(), Shader);
-		SET_UNIFORM_BUFFER_STATIC(float, "InnerRadius", m_fInnerRadius, Shader);
-		SET_UNIFORM_BUFFER_STATIC(float, "OuterRadius", m_fOuterRadius, Shader);
-		SET_UNIFORM_BUFFER_STATIC(float, "KrESun", m_Kr * m_ESun, Shader);
-		SET_UNIFORM_BUFFER_STATIC(float, "KmESun", m_Km * m_ESun, Shader);
-		SET_UNIFORM_BUFFER_STATIC(float, "Kr4PI", m_Kr4PI, Shader);
-		SET_UNIFORM_BUFFER_STATIC(float, "Km4PI", m_Km4PI, Shader);
-		SET_UNIFORM_BUFFER_STATIC(float, "Scale", 1.0f / (m_fOuterRadius - m_fInnerRadius), Shader);
-		SET_UNIFORM_BUFFER_STATIC(float, "AverageScaleDepth", m_fRayleighScaleDepth, Shader);
-		SET_UNIFORM_BUFFER_STATIC(float, "ScaleOverAverageScaleDepth", (1.0f / (m_fOuterRadius - m_fInnerRadius)) / m_fRayleighScaleDepth, Shader);
-		SET_UNIFORM_BUFFER_STATIC(float, "g", m_g, Shader);
-		SET_UNIFORM_BUFFER_STATIC(float, "g2", m_g * m_g, Shader);
-		//////////////////////////////////////////////////////////////////////////
+		BindAtmosphericUniforms(Shader);
 
-		EarthSphere->RenderObject->Scale = Vector(m_fInnerRadius);
+		EarthSphere->RenderObject->Scale = Vector(AppSettingInst.InnerRadius);
 		EarthSphere->RenderObject->tex_object = EarthTexture;
 		EarthSphere->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearWrap").get();
 		glFrontFace(GL_CCW);
 		MainCamera->IsEnableCullMode = true;
+
+		BlendSrc = EBlendSrc::SRC_ALPHA;
+		BlendDest = EBlendDest::ONE_MINUS_SRC_ALPHA;
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+
 		EarthSphere->Draw(MainCamera, Shader, {});
 
 		{
-			auto Shader = jShader::GetShader("SkyFromSpace");
-			if (IsInsideOfAtmospheric)
-				Shader = jShader::GetShader("SkyFromAtmospheric");
+			auto Shader = jShader::GetShader(IsInsideOfAtmospheric ? "SkyFromAtmospheric" : "SkyFromSpace");
 
 			g_rhi->SetShader(Shader);
 			MainCamera->BindCamera(Shader);
 			SET_UNIFORM_BUFFER_STATIC(int, "UseTexture", 1, Shader);
 
-			//////////////////////////////////////////////////////////////////////////
-			SET_UNIFORM_BUFFER_STATIC(Vector, "CameraPos", MainCamera->Pos, Shader);
-			SET_UNIFORM_BUFFER_STATIC(Vector, "ToLight", DirectionalLight->Data.Direction, Shader);
-			SET_UNIFORM_BUFFER_STATIC(Vector, "InvWaveLength", Vector(1.0f / m_fWavelength4[0], 1.0f / m_fWavelength4[1], 1.0f / m_fWavelength4[2]), Shader);
-			SET_UNIFORM_BUFFER_STATIC(float, "CameraHeight", MainCamera->Pos.Length(), Shader);
-			SET_UNIFORM_BUFFER_STATIC(float, "InnerRadius", m_fInnerRadius, Shader);
-			SET_UNIFORM_BUFFER_STATIC(float, "OuterRadius", m_fOuterRadius, Shader);
-			SET_UNIFORM_BUFFER_STATIC(float, "KrESun", m_Kr * m_ESun, Shader);
-			SET_UNIFORM_BUFFER_STATIC(float, "KmESun", m_Km * m_ESun, Shader);
-			SET_UNIFORM_BUFFER_STATIC(float, "Kr4PI", m_Kr4PI, Shader);
-			SET_UNIFORM_BUFFER_STATIC(float, "Km4PI", m_Km4PI, Shader);
-			SET_UNIFORM_BUFFER_STATIC(float, "Scale", 1.0f / (m_fOuterRadius - m_fInnerRadius), Shader);
-			SET_UNIFORM_BUFFER_STATIC(float, "AverageScaleDepth", m_fRayleighScaleDepth, Shader);
-			SET_UNIFORM_BUFFER_STATIC(float, "ScaleOverAverageScaleDepth", (1.0f / (m_fOuterRadius - m_fInnerRadius)) / m_fRayleighScaleDepth, Shader);
-			SET_UNIFORM_BUFFER_STATIC(float, "g", m_g, Shader);
-			SET_UNIFORM_BUFFER_STATIC(float, "g2", m_g * m_g, Shader);
-			//////////////////////////////////////////////////////////////////////////
+			BindAtmosphericUniforms(Shader);
 
-			auto BlendSrc = EBlendSrc::ONE;
-			auto BlendDest = EBlendDest::ONE;
+			BlendSrc = EBlendSrc::ONE;
+			BlendDest = EBlendDest::ONE_MINUS_DST_ALPHA;
 			g_rhi->SetBlendFunc(BlendSrc, BlendDest);
 
-			EarthSphere->RenderObject->Scale = Vector(m_fOuterRadius);
+			EarthSphere->RenderObject->Scale = Vector(AppSettingInst.OuterRadius);
 			EarthSphere->RenderObject->tex_object = EarthTexture;
 
 			glFrontFace(GL_CW);
@@ -449,6 +409,15 @@ void jGame::Update(float deltaTime)
 	}
 
 	glFrontFace(GL_CCW);
+
+	// todo - make it easy to use Resolve MSAA rendertarget
+	// Resolve Multisample rendertarget
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, ((jRenderTarget_OpenGL*)MainRenderTarget.get())->fbos[0]);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, ((jRenderTarget_OpenGL*)PostProcessTarget.get())->fbos[0]);
+	glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
 	auto EnableClear = true;
 	auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
 	auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
@@ -474,20 +443,31 @@ void jGame::Update(float deltaTime)
 	//g_rhi->SetDepthBias(DepthConstantBias, DepthSlopeBias);
 
 	static jFullscreenQuadPrimitive* s_fullscreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
-	auto Shader = jShader::GetShader("Scale");
+	auto Shader = jShader::GetShader(AppSettingInst.UseHDR ? "AtmosphericHDR" : "Scale");
 	g_rhi->SetShader(Shader);
+
+	if (AppSettingInst.UseHDR)
+		SET_UNIFORM_BUFFER_STATIC(float, "Exposure", AppSettingInst.Exposure, Shader);
+
 	g_rhi->EnableCullFace(true);
 	MainCamera->BindCamera(Shader);
 	s_fullscreenQuad->SetUniformBuffer(Shader);
-	s_fullscreenQuad->SetTexture(MainRenderTarget->GetTexture(), nullptr);
+	s_fullscreenQuad->SetTexture(PostProcessTarget->GetTexture(), nullptr);
 	s_fullscreenQuad->Draw(MainCamera, Shader, {});
 }
 
 void jGame::UpdateAppSetting()
 {
-	auto& appSetting =  jShadowAppSettingProperties::GetInstance();
+	auto& appSetting = jShadowAppSettingProperties::GetInstance();
 
-	appSetting.SpotLightDirection = Matrix::MakeRotateY(0.01).Transform(appSetting.SpotLightDirection);
+	if (appSetting.OuterRadius < appSetting.InnerRadius + 0.001f)
+		appSetting.OuterRadius = appSetting.InnerRadius + 0.001f;
+
+	if (appSetting.AutoMoveSun)
+	{
+		const Matrix RotateMatrix = Matrix::MakeRotate(Vector(1.0f, 1.0f, 0.0f), 0.01f);
+		appSetting.DirecionalLightDirection = RotateMatrix.Transform(appSetting.DirecionalLightDirection).GetNormalize();
+	}
 
 	bool changedDirectionalLight = false;
 	if (appSetting.ShadowMapType == EShadowMapType::CSM_SSM)
@@ -600,43 +580,43 @@ void jGame::UpdateAppSetting()
 			jObject::AddDebugObject(DirectionalLightInfo);
 		else
 			jObject::RemoveDebugObject(DirectionalLightInfo);
-	});
+		});
 
 	compareFunc(s_showDirectionalLightOn, appSetting.DirectionalLightOn, [this](const auto& param) {
 		if (param)
 			MainCamera->AddLight(DirectionalLight);
 		else
 			MainCamera->RemoveLight(DirectionalLight);
-	});
+		});
 
 	compareFunc(s_showPointLightInfo, appSetting.ShowPointLightInfo, [this](const auto& param) {
 		if (param)
 			jObject::AddDebugObject(PointLightInfo);
 		else
 			jObject::RemoveDebugObject(PointLightInfo);
-	});
+		});
 
 	compareFunc(s_showPointLightOn, appSetting.PointLightOn, [this](const auto& param) {
 		if (param)
 			MainCamera->AddLight(PointLight);
 		else
 			MainCamera->RemoveLight(PointLight);
-	});
+		});
 
 	compareFunc(s_showSpotLightInfo, appSetting.ShowSpotLightInfo, [this](const auto& param) {
 		if (param)
 			jObject::AddDebugObject(SpotLightInfo);
 		else
 			jObject::RemoveDebugObject(SpotLightInfo);
-	});
+		});
 
 	compareFunc(s_showSpotLightOn, appSetting.SpotLightOn, [this](const auto& param) {
 		if (param)
 			MainCamera->AddLight(SpotLight);
 		else
 			MainCamera->RemoveLight(SpotLight);
-	});
-	
+		});
+
 	// todo debug test, should remove this
 	if (DirectionalLight)
 		DirectionalLight->Data.Direction = appSetting.DirecionalLightDirection;
@@ -654,12 +634,23 @@ void jGame::UpdateAppSetting()
 
 void jGame::OnMouseMove(int32 xOffset, int32 yOffset)
 {
+	static bool RightClicked = false;
+	static Vector ClickedUpVector = Vector::UpVector;
+	static Vector ClickedRightVector = Vector::RightVector;
+
+	if (RightClicked != g_MouseState[EMouseButtonType::LEFT])
+	{
+		ClickedUpVector = MainCamera->GetUpVector();
+		ClickedRightVector = MainCamera->GetRightVector();
+	}
+
 	if (g_MouseState[EMouseButtonType::LEFT])
 	{
 		if (abs(xOffset))
-			MainCamera->RotateYAxis(xOffset * -0.005f);
+			MainCamera->RotateCameraAxis(ClickedUpVector, xOffset * -0.005f);
+
 		if (abs(yOffset))
-			MainCamera->RotateRightAxis(yOffset * -0.005f);
+			MainCamera->RotateCameraAxis(ClickedRightVector, yOffset * -0.005f);
 	}
 }
 
@@ -822,11 +813,11 @@ void jGame::SpawnGraphTestFunc()
 
 	float scale = 100.0f;
 	for (int i = 0; i < _countof(PerspectiveVector); ++i)
-		graph1.push_back(Vector2(i*2, PerspectiveVector[i].z * scale));
+		graph1.push_back(Vector2(i * 2, PerspectiveVector[i].z * scale));
 	for (int i = 0; i < _countof(OrthographicVector); ++i)
-		graph2.push_back(Vector2(i*2, OrthographicVector[i].z* scale));
+		graph2.push_back(Vector2(i * 2, OrthographicVector[i].z * scale));
 
-	auto graphObj1 = jPrimitiveUtil::CreateGraph2D({ 360, 350 }, {360, 300}, graph1);
+	auto graphObj1 = jPrimitiveUtil::CreateGraph2D({ 360, 350 }, { 360, 300 }, graph1);
 	jObject::AddUIDebugObject(graphObj1);
 
 	auto graphObj2 = jPrimitiveUtil::CreateGraph2D({ 360, 700 }, { 360, 300 }, graph2);
