@@ -214,6 +214,23 @@ uint32 GetOpenGLTextureComparisonMode(ETextureComparisonMode mode)
 	return result;
 }
 
+uint32 GetFrontFaceType(EFrontFace type)
+{
+	uint32 result = 0;
+	switch (type)
+	{
+	case EFrontFace::CW:
+		result = GL_CW;
+		break;
+	case EFrontFace::CCW:
+		result = GL_CCW;
+		break;
+	default:
+		break;
+	}
+	return result;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // jRHI_OpenGL
 jRHI_OpenGL::jRHI_OpenGL()
@@ -1089,6 +1106,11 @@ void jRHI_OpenGL::EnableCullFace(bool enable) const
 		glEnable(GL_CULL_FACE);
 	else
 		glDisable(GL_CULL_FACE);
+}
+
+void jRHI_OpenGL::SetFrontFace(EFrontFace frontFace) const
+{
+	glFrontFace(GetFrontFaceType(frontFace));
 }
 
 jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) const

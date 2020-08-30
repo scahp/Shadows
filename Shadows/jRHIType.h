@@ -286,3 +286,11 @@ enum class ETextureComparisonMode
 	COMPARE_REF_TO_TEXTURE,
 	MAX,
 };
+
+enum class EFrontFace
+{
+	CW = 0,
+	CCW = 1,
+	MAX,
+};
+

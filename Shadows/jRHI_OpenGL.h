@@ -161,6 +161,7 @@ public:
 	virtual void SetTexture(int32 index, const jTexture* texture) const override;
 	virtual void SetTextureFilter(ETextureType type, ETextureFilterTarget target, ETextureFilter filter) const override;
 	virtual void EnableCullFace(bool enable) const override;
+	virtual void SetFrontFace(EFrontFace frontFace) const override;
 	virtual jRenderTarget* CreateRenderTarget(const jRenderTargetInfo& info) const override;
 	virtual void EnableDepthTest(bool enable) const override;
 	virtual void SetRenderTarget(const jRenderTarget* rt, int32 index = 0, bool mrt = false) const override;

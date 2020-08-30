@@ -41,6 +41,7 @@ public:
 	};
 	bool UseHDR = true;
 	bool AutoMoveSun = false;
+	bool DrawSunAtSpace = false;
 	Vector ScatterColor = Vector(1.0f, 1.0f, 1.0f);
 	//////////////////////////////////////////////////////////////////////////
 

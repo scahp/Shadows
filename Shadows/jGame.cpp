@@ -260,7 +260,7 @@ void jGame::Update(float deltaTime)
 	// 1. Initialize resources
 	if (!EarthSphere)
 	{
-		EarthSphere = jPrimitiveUtil::CreateSphere(Vector::ZeroVector, 1.0, 70, Vector(AppSettingInst.OuterRadius), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+		EarthSphere = jPrimitiveUtil::CreateSphere(Vector::ZeroVector, 1.0, 60, Vector(AppSettingInst.OuterRadius), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 		EarthSphere->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 		{
 			//thisObject->RenderObject->Rot.y += 0.005f;
@@ -288,6 +288,7 @@ void jGame::Update(float deltaTime)
 	// 2. MainScene Render
 	if (MainRenderTarget->Begin())
 	{
+		// 렌더링 할때마다 바인드해야할 유니폼 변수들
 		auto BindAtmosphericUniforms = [&](const jShader* Shader)
 		{
 			SET_UNIFORM_BUFFER_STATIC(Vector, "CameraPos", MainCamera->Pos, Shader);
@@ -310,14 +311,11 @@ void jGame::Update(float deltaTime)
 
 		g_rhi->BeginDebugEvent("[2]. MainScene Render");
 
-		auto EnableClear = true;
 		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
 		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
 		auto EnableDepthTest = true;
 		auto DepthStencilFunc = EComparisonFunc::LESS;
 		auto EnableBlend = true;
-		//auto BlendSrc = EBlendSrc::SRC_ALPHA;
-		//auto BlendDest = EBlendDest::ONE_MINUS_SRC_ALPHA;
 		auto BlendSrc = EBlendSrc::ONE;
 		auto BlendDest = EBlendDest::ZERO;
 
@@ -328,20 +326,17 @@ void jGame::Update(float deltaTime)
 		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
 
 		g_rhi->EnableDepthBias(false);
-		//g_rhi->SetDepthBias(DepthConstantBias, DepthSlopeBias);
-
 		g_rhi->EnableCullFace(true);
 		g_rhi->EnableDepthClip(false);
 
-		if (EnableClear)
-		{
-			g_rhi->SetClearColor(ClearColor);
-			g_rhi->SetClear(ClearType);
-		}
+		g_rhi->SetClearColor(ClearColor);
+		g_rhi->SetClear(ClearType);
 
 		const bool IsInsideOfAtmospheric = (MainCamera->Pos.Length() < AppSettingInst.OuterRadius);
-		//if (!IsInsideOfAtmospheric)
+		if (!IsInsideOfAtmospheric && AppSettingInst.DrawSunAtSpace)
 		{
+			g_rhi->BeginDebugEvent("[2.1]. Draw Sun at space");
+
 			static jFullscreenQuadPrimitive* s_fullscreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
 			auto Shader = jShader::GetShader("SpaceFromSpace");
 
@@ -357,33 +352,40 @@ void jGame::Update(float deltaTime)
 
 			MainCamera->BindCamera(Shader);
 			s_fullscreenQuad->SetUniformBuffer(Shader);
-			//s_fullscreenQuad->Draw(MainCamera, Shader, {});
+			s_fullscreenQuad->Draw(MainCamera, Shader, {});
 
 			g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+			g_rhi->EndDebugEvent();
 		}
 
-		auto Shader = jShader::GetShader(IsInsideOfAtmospheric ? "GroundFromAtmospheric" : "GroundFromSpace");
+		{
+			g_rhi->BeginDebugEvent("[2.2]. Draw Ground");
 
-		g_rhi->SetShader(Shader);
-		MainCamera->BindCamera(Shader);
+			auto Shader = jShader::GetShader(IsInsideOfAtmospheric ? "GroundFromAtmospheric" : "GroundFromSpace");
 
-		SET_UNIFORM_BUFFER_STATIC(int, "UseTexture", 1, Shader);
+			g_rhi->SetShader(Shader);
+			MainCamera->BindCamera(Shader);
 
-		BindAtmosphericUniforms(Shader);
+			BindAtmosphericUniforms(Shader);
 
-		EarthSphere->RenderObject->Scale = Vector(AppSettingInst.InnerRadius);
-		EarthSphere->RenderObject->tex_object = EarthTexture;
-		EarthSphere->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearWrap").get();
-		glFrontFace(GL_CCW);
-		MainCamera->IsEnableCullMode = true;
+			// Earth의 크기를 InnerRadius 크기로 맞춤
+			EarthSphere->RenderObject->Scale = Vector(AppSettingInst.InnerRadius);
+			EarthSphere->RenderObject->tex_object = EarthTexture;
+			EarthSphere->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearWrap").get();
+			g_rhi->SetFrontFace(EFrontFace::CCW);
+			MainCamera->IsEnableCullMode = true;
 
-		BlendSrc = EBlendSrc::SRC_ALPHA;
-		BlendDest = EBlendDest::ONE_MINUS_SRC_ALPHA;
-		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+			BlendSrc = EBlendSrc::SRC_ALPHA;
+			BlendDest = EBlendDest::ONE_MINUS_SRC_ALPHA;
+			g_rhi->SetBlendFunc(BlendSrc, BlendDest);
 
-		EarthSphere->Draw(MainCamera, Shader, {});
+			EarthSphere->Draw(MainCamera, Shader, {});
+			g_rhi->EndDebugEvent();
+		}
 
 		{
+			g_rhi->BeginDebugEvent("[2.2]. Draw Atmosphere");
+
 			auto Shader = jShader::GetShader(IsInsideOfAtmospheric ? "SkyFromAtmospheric" : "SkyFromSpace");
 
 			g_rhi->SetShader(Shader);
@@ -399,61 +401,68 @@ void jGame::Update(float deltaTime)
 			EarthSphere->RenderObject->Scale = Vector(AppSettingInst.OuterRadius);
 			EarthSphere->RenderObject->tex_object = EarthTexture;
 
-			glFrontFace(GL_CW);
+			g_rhi->SetFrontFace(EFrontFace::CW);
 			MainCamera->IsEnableCullMode = true;
 			EarthSphere->Draw(MainCamera, Shader, {});
+			g_rhi->SetFrontFace(EFrontFace::CCW);
+
+			g_rhi->EndDebugEvent();
 		}
 
 		g_rhi->EndDebugEvent();
 		MainRenderTarget->End();
 	}
 
-	glFrontFace(GL_CCW);
-
-	// todo - make it easy to use Resolve MSAA rendertarget
-	// Resolve Multisample rendertarget
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, ((jRenderTarget_OpenGL*)MainRenderTarget.get())->fbos[0]);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, ((jRenderTarget_OpenGL*)PostProcessTarget.get())->fbos[0]);
-	glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-
-	auto EnableClear = true;
-	auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
-	auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
-	auto EnableDepthTest = true;
-	auto DepthStencilFunc = EComparisonFunc::LESS;
-	auto EnableBlend = true;
-	auto BlendSrc = EBlendSrc::ONE;
-	auto BlendDest = EBlendDest::ZERO;
-
-	if (EnableClear)
 	{
-		g_rhi->SetClearColor(ClearColor);
-		g_rhi->SetClear(ClearType);
+		g_rhi->BeginDebugEvent("[3]. Resolve MSAA renertarget");
+		
+		// todo - make it easy to use Resolve MSAA rendertarget
+		// Resolve Multisample rendertarget
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, ((jRenderTarget_OpenGL*)MainRenderTarget.get())->fbos[0]);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, ((jRenderTarget_OpenGL*)PostProcessTarget.get())->fbos[0]);
+		glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+		g_rhi->EndDebugEvent();
 	}
 
-	g_rhi->EnableDepthTest(EnableDepthTest);
-	g_rhi->SetDepthFunc(DepthStencilFunc);
+	{
+		g_rhi->BeginDebugEvent("[4]. HDR");
 
-	g_rhi->EnableBlend(EnableBlend);
-	g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+		auto ClearColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
 
-	g_rhi->EnableDepthBias(false);
-	//g_rhi->SetDepthBias(DepthConstantBias, DepthSlopeBias);
+		g_rhi->SetClearColor(ClearColor);
+		g_rhi->SetClear(ClearType);
 
-	static jFullscreenQuadPrimitive* s_fullscreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
-	auto Shader = jShader::GetShader(AppSettingInst.UseHDR ? "AtmosphericHDR" : "Scale");
-	g_rhi->SetShader(Shader);
+		g_rhi->EnableDepthTest(EnableDepthTest);
+		g_rhi->SetDepthFunc(DepthStencilFunc);
 
-	if (AppSettingInst.UseHDR)
-		SET_UNIFORM_BUFFER_STATIC(float, "Exposure", AppSettingInst.Exposure, Shader);
+		g_rhi->EnableBlend(EnableBlend);
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
 
-	g_rhi->EnableCullFace(true);
-	MainCamera->BindCamera(Shader);
-	s_fullscreenQuad->SetUniformBuffer(Shader);
-	s_fullscreenQuad->SetTexture(PostProcessTarget->GetTexture(), nullptr);
-	s_fullscreenQuad->Draw(MainCamera, Shader, {});
+		g_rhi->EnableDepthBias(false);
+
+		static jFullscreenQuadPrimitive* s_fullscreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
+		auto Shader = jShader::GetShader(AppSettingInst.UseHDR ? "AtmosphericHDR" : "Scale");
+		g_rhi->SetShader(Shader);
+
+		if (AppSettingInst.UseHDR)
+			SET_UNIFORM_BUFFER_STATIC(float, "Exposure", AppSettingInst.Exposure, Shader);
+
+		g_rhi->EnableCullFace(true);
+		MainCamera->BindCamera(Shader);
+		s_fullscreenQuad->SetUniformBuffer(Shader);
+		s_fullscreenQuad->SetTexture(PostProcessTarget->GetTexture(), nullptr);
+		s_fullscreenQuad->Draw(MainCamera, Shader, {});
+
+		g_rhi->EndDebugEvent();
+	}
 }
 
 void jGame::UpdateAppSetting()
@@ -647,10 +656,10 @@ void jGame::OnMouseMove(int32 xOffset, int32 yOffset)
 	if (g_MouseState[EMouseButtonType::LEFT])
 	{
 		if (abs(xOffset))
-			MainCamera->RotateCameraAxis(ClickedUpVector, xOffset * -0.005f);
+			MainCamera->RotateCameraAxis(ClickedUpVector, xOffset * -0.003f);
 
 		if (abs(yOffset))
-			MainCamera->RotateCameraAxis(ClickedRightVector, yOffset * -0.005f);
+			MainCamera->RotateCameraAxis(ClickedRightVector, yOffset * -0.003f);
 	}
 }
 

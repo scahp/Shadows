@@ -49,6 +49,7 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 
 	appSetting->AddVariable("Use HDR", UseHDR);
 	appSetting->AddVariable("AutoMoveSun", AutoMoveSun);
+	appSetting->AddVariable("DrawSunAtSpace", DrawSunAtSpace);
 
 	appSetting->AddColorVariable("ScatterColor", ScatterColor);
 }
@@ -67,6 +68,7 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 	appSetting->RemoveVariable("Exposure");
 	appSetting->RemoveVariable("Use HDR");
 	appSetting->RemoveVariable("AutoMoveSun");
+	appSetting->RemoveVariable("DrawSunAtSpace");
 	appSetting->RemoveVariable("ScatterColor");
 }
 

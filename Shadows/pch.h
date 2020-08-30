@@ -41,20 +41,20 @@ using uint64 = unsigned __int64;
 using tchar = wchar_t;
 
 // settings
-const unsigned int SCR_WIDTH = 1280;
-const unsigned int SCR_HEIGHT = 720;
+const int32 SCR_WIDTH = 1280;
+const int32 SCR_HEIGHT = 720;
 
-const unsigned int SM_WIDTH = 1024;
-const unsigned int SM_HEIGHT = 1024;
+const int32 SM_WIDTH = 1024;
+const int32 SM_HEIGHT = 1024;
 
-const unsigned int SM_ARRAY_WIDTH = 512;
-const unsigned int SM_ARRAY_HEIGHT = 512;
+const int32 SM_ARRAY_WIDTH = 512;
+const int32 SM_ARRAY_HEIGHT = 512;
 
-const unsigned int SM_LINKED_LIST_WIDTH = SM_WIDTH;
-const unsigned int SM_LINKED_LIST_HEIGHT = SM_HEIGHT;
+const int32 SM_LINKED_LIST_WIDTH = SM_WIDTH;
+const int32 SM_LINKED_LIST_HEIGHT = SM_HEIGHT;
 
-const unsigned int LUMINANCE_WIDTH = 512;
-const unsigned int LUMINANCE_HEIGHT = 512;
+const int32 LUMINANCE_WIDTH = 512;
+const int32 LUMINANCE_HEIGHT = 512;
 
 constexpr int NUM_CASCADES = 3;
 constexpr int NUM_FRUSTUM_CORNERS = 8;
