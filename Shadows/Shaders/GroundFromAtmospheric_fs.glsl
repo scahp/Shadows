@@ -78,11 +78,8 @@ void main()
 	ToVertexFromCam /= Far;
 
 	vec3 PosWNorm = normalize(PosW);
-	float Near = getNearIntersection(CameraPos, ToVertexFromCam, CameraHeight * CameraHeight, OuterRadius * OuterRadius);
-
 	vec3 RayStart = CameraPos;
 
-	// Calculate the ray's starting position, then calculate its scattering offset
 	float Depth = exp((InnerRadius - OuterRadius) / AverageScaleDepth);
 	float CameraAngle = dot(-ToVertexFromCam, PosWNorm);
 	float LightAngle = dot(ToLight, PosWNorm);
