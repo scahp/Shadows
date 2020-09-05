@@ -34,7 +34,8 @@ public:
 	uint64 StartTick = 0;
 };
 
-#define SCOPE_PROFILE(Name) jScopedProfile_CPU Name##ScopedProfileCPU(#Name);
+//#define SCOPE_PROFILE(Name) jScopedProfile_CPU Name##ScopedProfileCPU(#Name);
+#define SCOPE_PROFILE(Name)
 
 //////////////////////////////////////////////////////////////////////////
 // jQueryTimePool

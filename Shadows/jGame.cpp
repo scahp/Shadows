@@ -131,8 +131,8 @@ void jGame::Setup()
 	ForwardRenderer = new jForwardRenderer(currentShadowPipelineSet);
 	ForwardRenderer->Setup();
 
-	DeferredRenderer = new jDeferredRenderer({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::DEPTH16, SCR_WIDTH, SCR_HEIGHT, 4 });
-	DeferredRenderer->Setup();
+	//DeferredRenderer = new jDeferredRenderer({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::DEPTH16, SCR_WIDTH, SCR_HEIGHT, 4 });
+	//DeferredRenderer->Setup();
 
 	//for (int32 i = 0; i < NUM_CASCADES; ++i)
 	//{
@@ -158,6 +158,8 @@ void jGame::SpawnObjects(ESpawnedType spawnType)
 	//		break;
 	//	}
 	//}
+
+	return;	// Test
 
 	if (!headModel)
 	{
@@ -201,6 +203,42 @@ void jGame::Update(float deltaTime)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "Game::Update");
 
+	//////////////////////////////////////////////////////////////////////////
+	// Cosmetic equation test
+	//auto GetRT = [](Vector& R, Vector& T, Vector K, Vector S, float X)
+	//{
+	//	Vector a;
+	//	a.x = (1.0f) + (K.x / S.x);
+	//	a.y = (1.0f) + (K.y / S.y);
+	//	a.z = (1.0f) + (K.z / S.z);
+
+	//	Vector b;
+	//	b.x = sqrtf((a.x * a.x) - 1.0f);
+	//	b.y = sqrtf((a.y * a.y) - 1.0f);
+	//	b.z = sqrtf((a.z * a.z) - 1.0f);
+
+	//	Vector Temp;
+	//	Temp.x = a.x * sinh(b.x * S.x * X) + b.x * cosh(b.x * S.x * X);
+	//	Temp.y = a.y * sinh(b.y * S.y * X) + b.y * cosh(b.y * S.y * X);
+	//	Temp.z = a.z * sinh(b.z * S.z * X) + b.z * cosh(b.z * S.z * X);
+
+	//	R.x = sinh(b.x * S.x * X) / Temp.x;
+	//	R.y = sinh(b.y * S.y * X) / Temp.y;
+	//	R.z = sinh(b.z * S.z * X) / Temp.z;
+
+	//	T.x = b.x / Temp.x;
+	//	T.y = b.y / Temp.y;
+	//	T.z = b.z / Temp.z;
+	//};
+	//Vector R, T;
+	//Vector K1 = Vector(0.22, 1.47, 0.57);
+	//Vector S1 = Vector(0.05, 0.003, 0.03);
+	//float X1 = 0.0;
+	//GetRT(R, T, K1, S1, X1);
+	//int k = 0;
+	//++k;
+	//////////////////////////////////////////////////////////////////////////
+
 	static bool AutoLightRotating = false;
 	if (g_KeyState['1'])
 		AutoLightRotating = true;
@@ -228,8 +266,8 @@ void jGame::Update(float deltaTime)
 	const float FastBloomAndTonemap = appSetting.FastBloomAndTonemap;
 
 	static float temp = 300.0f;
-	headModel->RenderObject->Scale = Vector(temp);
-	float ModelSize = headModel->RenderObject->Scale.x;
+	if (headModel)
+		headModel->RenderObject->Scale = Vector(temp);
 
 	UpdateAppSetting();
 
@@ -256,6 +294,53 @@ void jGame::Update(float deltaTime)
 		iter->Update(deltaTime);
 
 	jObject::FlushDirtyState();
+
+	auto ClearColor = Vector4(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);	// light sky blue
+	auto ClearType = ERenderBufferType::COLOR;
+	auto EnableClear = true;
+	auto EnableDepthTest = false;
+	auto DepthStencilFunc = EComparisonFunc::LESS;
+	auto EnableBlend = false;
+	auto BlendSrc = EBlendSrc::ONE;
+	auto BlendDest = EBlendDest::ZERO;
+	if (EnableClear)
+	{
+		g_rhi->SetClearColor(ClearColor);
+		g_rhi->SetClear(ClearType);
+	}
+
+	g_rhi->EnableDepthTest(false);
+	g_rhi->EnableBlend(EnableBlend);
+	g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+
+	//////////////////////////////////////////////////////////////////////////
+	static jObject* triangle = nullptr;
+	if (!triangle)
+	{
+		triangle = jPrimitiveUtil::CreateTriangle(Vector(0.0, 0.0, 0.0), Vector::OneVector, Vector(40.0, 40.0, 40.0), Vector4(0.9f, 0.77f, 0.71f, 1.0f));
+		triangle->RenderObject->Rot.x += RadianToDegree(90.0f);
+		jObject::AddObject(triangle);
+		SpawnedObjects.push_back(triangle);
+	}
+	auto Shader = jShader::GetShader("Cosmetic");
+	MainCamera->BindCamera(Shader);
+
+	std::list<const jLight*> lights;
+	lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
+	jLight::BindLights(lights, Shader);
+
+	SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer1_S", appSetting.CosmeticLayerData[0].S(), Shader);
+	SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer1_K", appSetting.CosmeticLayerData[0].K(), Shader);
+	SET_UNIFORM_BUFFER_STATIC(float, "CosmeticLayer1_X", appSetting.CosmeticLayerData[0].X, Shader);
+
+	SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer2_S", appSetting.CosmeticLayerData[1].S(), Shader);
+	SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer2_K", appSetting.CosmeticLayerData[1].K(), Shader);
+	SET_UNIFORM_BUFFER_STATIC(float, "CosmeticLayer2_X", appSetting.CosmeticLayerData[1].X, Shader);
+
+	triangle->Draw(MainCamera, Shader, lights);
+	//////////////////////////////////////////////////////////////////////////
+	
+	return; // Test
 
 	//Renderer->Render(MainCamera);
 	Renderer->ShadowPrePass(MainCamera);
@@ -1190,7 +1275,8 @@ void jGame::OnMouseMove(int32 xOffset, int32 yOffset)
 
 void jGame::Teardown()
 {
-	Renderer->Teardown();
+	if (Renderer)
+		Renderer->Teardown();
 }
 
 void jGame::SpawnHairObjects()
@@ -1347,9 +1433,9 @@ void jGame::SpawnGraphTestFunc()
 
 	float scale = 100.0f;
 	for (int i = 0; i < _countof(PerspectiveVector); ++i)
-		graph1.push_back(Vector2(i*2, PerspectiveVector[i].z * scale));
+		graph1.push_back(Vector2(static_cast<float>(i * 2), PerspectiveVector[i].z * scale));
 	for (int i = 0; i < _countof(OrthographicVector); ++i)
-		graph2.push_back(Vector2(i*2, OrthographicVector[i].z* scale));
+		graph2.push_back(Vector2(static_cast<float>(i * 2), OrthographicVector[i].z* scale));
 
 	auto graphObj1 = jPrimitiveUtil::CreateGraph2D({ 360, 350 }, {360, 300}, graph1);
 	jObject::AddUIDebugObject(graphObj1);

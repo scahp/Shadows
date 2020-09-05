@@ -59,6 +59,30 @@ public:
 	float GaussianStepScale = 1.0f;
 	bool FastBloomAndTonemap = true;
 
+	struct CosmeticLayer
+	{
+		FORCEINLINE Vector K() const { return Vector(KR, KG, KB); }
+		FORCEINLINE Vector S() const { return Vector(SR, SG, SB); }
+
+		float KR, KG, KB;
+		float SR, SG, SB;
+		float X;
+	};
+
+	CosmeticLayer CosmeticLayerData[2] = 
+	{ 
+		{ 
+			0.22f, 1.47f, 0.57f,	// K
+			0.05f, 0.003f, 0.03f,	// S
+			0.0f					// X
+		},		// Quinacridone Rose (http://davis.wpi.edu/~matt/courses/watercolor/rendering.html)
+		{ 
+			0.86f, 0.86f, 0.06f,	// K
+			0.005f, 0.005f, 0.09f,	// S
+			1.0f					// X
+		},	// French Ultramarine
+	};
+
 	virtual void Setup(jAppSettingBase* appSetting) override;
 	virtual void Teardown(jAppSettingBase* appSetting) override;
 
