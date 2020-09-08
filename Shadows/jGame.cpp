@@ -27,6 +27,7 @@ jRHI* g_rhi = nullptr;
 static jMeshObject* headModel = nullptr;
 static jTexture* headModelWorldNormalTexture = nullptr;
 static jTexture* headModelSpecularAOTexture = nullptr;
+static jTexture* cosmeticMaskTexture = nullptr;
 
 static constexpr int32 TEXTURE_SIZE = 1024;
 
@@ -159,7 +160,7 @@ void jGame::SpawnObjects(ESpawnedType spawnType)
 	//	}
 	//}
 
-	return;	// Test
+	//return;	// Test
 
 	if (!headModel)
 	{
@@ -181,7 +182,14 @@ void jGame::SpawnObjects(ESpawnedType spawnType)
 				jImageFileLoader::GetInstance().LoadTextureFromFile(data, temp.c_str(), false);
 				headModelSpecularAOTexture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
 				headModel->RenderObject->tex_object[3] = headModelSpecularAOTexture;
-			}			
+			}
+
+			{
+				jImageData data;
+				std::string temp = "Image/cosmetic_mask.jpg";
+				jImageFileLoader::GetInstance().LoadTextureFromFile(data, temp.c_str(), false);
+				cosmeticMaskTexture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
+			}
 		}
 		jObject::AddObject(headModel);
 		SpawnedObjects.push_back(headModel);
@@ -230,20 +238,49 @@ void jGame::Update(float deltaTime)
 	//	T.y = b.y / Temp.y;
 	//	T.z = b.z / Temp.z;
 	//};
+
+	//auto CosmeticSumOfTwoLayer = [](Vector& OutR, Vector& OutT, Vector InR0, Vector InT0, Vector InR1, Vector InT1)
+	//{
+	//	OutR = InR0 + (InT0 * InR1 * InT0);
+	//	auto Temp = (Vector(1.0f) - InR0 * InR1);
+	//	OutR.x /= Temp.x;
+	//	OutR.y /= Temp.y;
+	//	OutR.z /= Temp.z;
+	//	
+	//	OutT = (InT0 * InT1);
+	//	auto Temp2 = (Vector(1.0f) - InR0 * InR1);
+	//	OutT.x /= Temp2.x;
+	//	OutT.y /= Temp2.y;
+	//	OutT.z /= Temp2.z;
+	//};
+
 	//Vector R, T;
 	//Vector K1 = Vector(0.22, 1.47, 0.57);
 	//Vector S1 = Vector(0.05, 0.003, 0.03);
 	//float X1 = 0.0;
 	//GetRT(R, T, K1, S1, X1);
+
+	//Vector R2, T2;
+	//Vector K2 = Vector(0.1, 0.47, 0.7);
+	//Vector S2 = Vector(0.5, 0.03, 0.3);
+	//float X2 = 1.0;
+	//GetRT(R2, T2, K2, S2, X2);
+
+	//Vector RSum, TSum;
+	//CosmeticSumOfTwoLayer(RSum, TSum, R, T, R2, T2);
+
+	//Vector RSum2, TSum2;
+	//CosmeticSumOfTwoLayer(RSum2, TSum2, R2, T2, R, T);
+
 	//int k = 0;
 	//++k;
 	//////////////////////////////////////////////////////////////////////////
 
 	static bool AutoLightRotating = false;
-	if (g_KeyState['1'])
-		AutoLightRotating = true;
-	if (g_KeyState['2'])
-		AutoLightRotating = false;
+	//if (g_KeyState['1'])
+	//	AutoLightRotating = true;
+	//if (g_KeyState['2'])
+	//	AutoLightRotating = false;
 
 	auto& appSetting = jShadowAppSettingProperties::GetInstance();
 	static auto RotYMat = Matrix::MakeRotateY(0.01f);
@@ -295,52 +332,88 @@ void jGame::Update(float deltaTime)
 
 	jObject::FlushDirtyState();
 
-	auto ClearColor = Vector4(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);	// light sky blue
-	auto ClearType = ERenderBufferType::COLOR;
-	auto EnableClear = true;
-	auto EnableDepthTest = false;
-	auto DepthStencilFunc = EComparisonFunc::LESS;
-	auto EnableBlend = false;
-	auto BlendSrc = EBlendSrc::ONE;
-	auto BlendDest = EBlendDest::ZERO;
-	if (EnableClear)
+	CosmeticLayer CustomCosmeticLayer0;
+	CosmeticLayer CustomCosmeticLayer1;
+	CosmeticLayer CustomCosmeticLayer2;
+
+	float CustomCosmeticThicknessLayer0 = 0.0f;
+	float CustomCosmeticThicknessLayer1 = 0.0f;
+	float CustomCosmeticThicknessLayer2 = 0.0f;
+
+	if (appSetting.IsCustomCosmeticLayer)
 	{
-		g_rhi->SetClearColor(ClearColor);
-		g_rhi->SetClear(ClearType);
+		CustomCosmeticLayer0 = appSetting.CustomCosmeticLayer0;
+		CustomCosmeticLayer1 = appSetting.CustomCosmeticLayer1;
+		CustomCosmeticLayer2 = appSetting.CustomCosmeticLayer2;
+		
+		CustomCosmeticThicknessLayer0 = CustomCosmeticLayer0.X;
+		CustomCosmeticThicknessLayer1 = CustomCosmeticLayer1.X;
+		CustomCosmeticThicknessLayer2 = CustomCosmeticLayer2.X;
 	}
-
-	g_rhi->EnableDepthTest(false);
-	g_rhi->EnableBlend(EnableBlend);
-	g_rhi->SetBlendFunc(BlendSrc, BlendDest);
-
-	//////////////////////////////////////////////////////////////////////////
-	static jObject* triangle = nullptr;
-	if (!triangle)
+	else
 	{
-		triangle = jPrimitiveUtil::CreateTriangle(Vector(0.0, 0.0, 0.0), Vector::OneVector, Vector(40.0, 40.0, 40.0), Vector4(0.9f, 0.77f, 0.71f, 1.0f));
-		triangle->RenderObject->Rot.x += RadianToDegree(90.0f);
-		jObject::AddObject(triangle);
-		SpawnedObjects.push_back(triangle);
+		CustomCosmeticLayer0 = CosmeticLayerArray[static_cast<int32>(appSetting.CosmeticLayer0)];
+		CustomCosmeticLayer1 = CosmeticLayerArray[static_cast<int32>(appSetting.CosmeticLayer1)];
+		CustomCosmeticLayer2 = CosmeticLayerArray[static_cast<int32>(appSetting.CosmeticLayer2)];
+
+		CustomCosmeticThicknessLayer0 = appSetting.CosmeticLayer0_Thickness;
+		CustomCosmeticThicknessLayer1 = appSetting.CosmeticLayer1_Thickness;
+		CustomCosmeticThicknessLayer2 = appSetting.CosmeticLayer2_Thickness;
+	}	
+
+	if (0)
+	{
+		auto ClearColor = Vector4(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);	// light sky blue
+		auto ClearType = ERenderBufferType::COLOR;
+		auto EnableClear = true;
+		auto EnableDepthTest = false;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = false;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		if (EnableClear)
+		{
+			g_rhi->SetClearColor(ClearColor);
+			g_rhi->SetClear(ClearType);
+		}
+
+		g_rhi->EnableDepthTest(false);
+		g_rhi->EnableBlend(EnableBlend);
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+
+		//////////////////////////////////////////////////////////////////////////
+		static jObject* triangle = nullptr;
+		if (!triangle)
+		{
+			triangle = jPrimitiveUtil::CreateTriangle(Vector(0.0, 0.0, 0.0), Vector::OneVector, Vector(40.0, 40.0, 40.0), Vector4(0.9f, 0.77f, 0.71f, 1.0f));
+			triangle->RenderObject->Rot.x += RadianToDegree(90.0f);
+			jObject::AddObject(triangle);
+			SpawnedObjects.push_back(triangle);
+		}
+		auto Shader = jShader::GetShader("Cosmetic");
+		MainCamera->BindCamera(Shader);
+
+		std::list<const jLight*> lights;
+		lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
+		jLight::BindLights(lights, Shader);
+
+		SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer0_S", CustomCosmeticLayer0.S(), Shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer0_K", CustomCosmeticLayer0.K(), Shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "CosmeticLayer0_X", CustomCosmeticThicknessLayer0, Shader);
+
+		SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer1_S", CustomCosmeticLayer1.S(), Shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer1_K", CustomCosmeticLayer1.K(), Shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "CosmeticLayer1_X", CustomCosmeticThicknessLayer1, Shader);
+
+		SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer2_S", CustomCosmeticLayer2.S(), Shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer2_K", CustomCosmeticLayer2.K(), Shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "CosmeticLayer2_X", CustomCosmeticThicknessLayer2, Shader);
+
+		triangle->Draw(MainCamera, Shader, lights);
 	}
-	auto Shader = jShader::GetShader("Cosmetic");
-	MainCamera->BindCamera(Shader);
-
-	std::list<const jLight*> lights;
-	lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
-	jLight::BindLights(lights, Shader);
-
-	SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer1_S", appSetting.CosmeticLayerData[0].S(), Shader);
-	SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer1_K", appSetting.CosmeticLayerData[0].K(), Shader);
-	SET_UNIFORM_BUFFER_STATIC(float, "CosmeticLayer1_X", appSetting.CosmeticLayerData[0].X, Shader);
-
-	SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer2_S", appSetting.CosmeticLayerData[1].S(), Shader);
-	SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer2_K", appSetting.CosmeticLayerData[1].K(), Shader);
-	SET_UNIFORM_BUFFER_STATIC(float, "CosmeticLayer2_X", appSetting.CosmeticLayerData[1].X, Shader);
-
-	triangle->Draw(MainCamera, Shader, lights);
 	//////////////////////////////////////////////////////////////////////////
 	
-	return; // Test
+	//return; // Test
 
 	//Renderer->Render(MainCamera);
 	Renderer->ShadowPrePass(MainCamera);
@@ -562,6 +635,18 @@ void jGame::Update(float deltaTime)
 		SET_UNIFORM_BUFFER_STATIC(bool, "EnableTSM", EnableTSM, Shader);
 		SET_UNIFORM_BUFFER_STATIC(bool, "EnergyConversion", EnergyConversion, Shader);
 
+		SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer0_S", CustomCosmeticLayer0.S(), Shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer0_K", CustomCosmeticLayer0.K(), Shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "CosmeticLayer0_X", CustomCosmeticThicknessLayer0, Shader);
+
+		SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer1_S", CustomCosmeticLayer1.S(), Shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer1_K", CustomCosmeticLayer1.K(), Shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "CosmeticLayer1_X", CustomCosmeticThicknessLayer1, Shader);
+
+		SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer2_S", CustomCosmeticLayer2.S(), Shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer2_K", CustomCosmeticLayer2.K(), Shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "CosmeticLayer2_X", CustomCosmeticThicknessLayer2, Shader);
+
 		std::list<const jLight*> lights;
 		lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
 
@@ -572,6 +657,7 @@ void jGame::Update(float deltaTime)
 		headModel->RenderObject->tex_object[4] = StrechTarget->GetTexture();
 		headModel->RenderObject->tex_object[5] = PdtBRDFBackerTarget->GetTexture();
 		headModel->RenderObject->tex_object[6] = headModelSpecularAOTexture;
+		headModel->RenderObject->tex_object[7] = cosmeticMaskTexture;
 
 		auto LinearWrap = jSamplerStatePool::GetSamplerState("LinearWrap").get();
 		headModel->RenderObject->samplerState[1] = LinearWrap;
@@ -845,6 +931,18 @@ void jGame::Update(float deltaTime)
 			SET_UNIFORM_BUFFER_STATIC(bool, "EnergyConversion", EnergyConversion, Shader);
 			SET_UNIFORM_BUFFER_STATIC(int, "SkinShading", (int32)SkinShading, Shader);
 
+			SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer0_S", CustomCosmeticLayer0.S(), Shader);
+			SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer0_K", CustomCosmeticLayer0.K(), Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "CosmeticLayer0_X", CustomCosmeticThicknessLayer0, Shader);
+
+			SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer1_S", CustomCosmeticLayer1.S(), Shader);
+			SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer1_K", CustomCosmeticLayer1.K(), Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "CosmeticLayer1_X", CustomCosmeticThicknessLayer1, Shader);
+
+			SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer2_S", CustomCosmeticLayer2.S(), Shader);
+			SET_UNIFORM_BUFFER_STATIC(Vector, "CosmeticLayer2_K", CustomCosmeticLayer2.K(), Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "CosmeticLayer2_X", CustomCosmeticThicknessLayer2, Shader);
+
 			std::list<const jLight*> lights;
 			lights.insert(lights.end(), MainCamera->LightList.begin(), MainCamera->LightList.end());
 
@@ -869,6 +967,7 @@ void jGame::Update(float deltaTime)
 				headModel->RenderObject->tex_object[9] = StrechTarget->GetTexture();
 				headModel->RenderObject->tex_object[10] = BlurAlphaDistributionTarget->GetTexture();
 				headModel->RenderObject->tex_object[11] = headModelSpecularAOTexture;
+				headModel->RenderObject->tex_object[12] = cosmeticMaskTexture;
 
 				auto LinearWrap = jSamplerStatePool::GetSamplerState("LinearWrap").get();
 				headModel->RenderObject->samplerState[0] = LinearWrap;
@@ -1091,11 +1190,22 @@ void jGame::Update(float deltaTime)
 		PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y);
 		PREVIEW_TEXTURE(PdtBRDFBackerTarget->GetTexture());
 	}
+
+	if (appSetting.ShowCosmeticMap)
+	{
+		PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y);
+		PREVIEW_TEXTURE(cosmeticMaskTexture);
+
+		PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y * 2.0f);
+		PREVIEW_TEXTURE(headModel->MeshData->Materials[1]->Texture);
+	}
 }
 
 void jGame::UpdateAppSetting()
 {
 	auto& appSetting =  jShadowAppSettingProperties::GetInstance();
+
+	appSetting.SwitchCosmeticLayer(jAppSettings::GetInstance().Get("MainPannel"));
 
 	appSetting.SpotLightDirection = Matrix::MakeRotateY(0.01f).Transform(appSetting.SpotLightDirection);
 

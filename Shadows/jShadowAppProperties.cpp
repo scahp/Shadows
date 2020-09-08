@@ -3,6 +3,111 @@
 
 jShadowAppSettingProperties* jShadowAppSettingProperties::_instance = nullptr;
 
+//////////////////////////////////////////////////////////////////////////
+// CosmeticLayer
+void CosmeticLayer::AddVariable(jAppSettingBase* appSetting, const std::string& name, const std::string& group)
+{
+	const std::string& Kr = (name + "_KR");
+	const std::string& Kg = (name + "_KG");
+	const std::string& Kb = (name + "_KB");
+
+	appSetting->AddVariable(Kr.c_str(), KR);
+	appSetting->SetLabel(Kr.c_str(), "Absorption per unit(KR)");
+	appSetting->SetGroup(Kr.c_str(), group.c_str());
+	appSetting->SetStep(Kr.c_str(), 0.01f);
+	appSetting->SetMinMax(Kr.c_str(), 0.0f, 50.0f);
+
+	appSetting->AddVariable(Kg.c_str(), KG);
+	appSetting->SetLabel(Kg.c_str(), "Absorption per unit(KG)");
+	appSetting->SetGroup(Kg.c_str(), group.c_str());
+	appSetting->SetStep(Kg.c_str(), 0.01f);
+	appSetting->SetMinMax(Kg.c_str(), 0.0f, 50.0f);
+
+	appSetting->AddVariable(Kb.c_str(), KB);
+	appSetting->SetLabel(Kb.c_str(), "Absorption per unit(KB)");
+	appSetting->SetGroup(Kb.c_str(), group.c_str());
+	appSetting->SetStep(Kb.c_str(), 0.01f);
+	appSetting->SetMinMax(Kb.c_str(), 0.0f, 50.0f);
+
+	const std::string& Sr = (name + "_SR");
+	const std::string& Sg = (name + "_SG");
+	const std::string& Sb = (name + "_SB");
+
+	appSetting->AddVariable(Sr.c_str(), SR);
+	appSetting->SetLabel(Sr.c_str(), "Scaterring per unit(SR)");
+	appSetting->SetGroup(Sr.c_str(), group.c_str());
+	appSetting->SetStep(Sr.c_str(), 0.01f);
+	appSetting->SetMinMax(Sr.c_str(), 0.0f, 50.0f);
+
+	appSetting->AddVariable(Sg.c_str(), SG);
+	appSetting->SetLabel(Sg.c_str(), "Scaterring per unit(SG)");
+	appSetting->SetGroup(Sg.c_str(), group.c_str());
+	appSetting->SetStep(Sg.c_str(), 0.01f);
+	appSetting->SetMinMax(Sg.c_str(), 0.0f, 50.0f);
+
+	appSetting->AddVariable(Sb.c_str(), SB);
+	appSetting->SetLabel(Sb.c_str(), "Scaterring per unit(SB)");
+	appSetting->SetGroup(Sb.c_str(), group.c_str());
+	appSetting->SetStep(Sb.c_str(), 0.01f);
+	appSetting->SetMinMax(Sb.c_str(), 0.0f, 50.0f);
+
+	const std::string& Thickness = (name + "_X");
+
+	appSetting->AddVariable(Thickness.c_str(), X);
+	appSetting->SetLabel(Thickness.c_str(), "Thickness of a layer");
+	appSetting->SetGroup(Thickness.c_str(), group.c_str());
+	appSetting->SetStep(Thickness.c_str(), 0.001f);
+	appSetting->SetMinMax(Thickness.c_str(), 0.0f, 1.0f);
+}
+
+void CosmeticLayer::RemoveVariable(jAppSettingBase* appSetting, const std::string& name) const
+{
+	const std::string& Kr = (name + "_KR");
+	const std::string& Kg = (name + "_KG");
+	const std::string& Kb = (name + "_KB");
+
+	appSetting->RemoveVariable(Kr.c_str());
+	appSetting->RemoveVariable(Kg.c_str());
+	appSetting->RemoveVariable(Kb.c_str());
+
+	const std::string& Sr = (name + "_SR");
+	const std::string& Sg = (name + "_SG");
+	const std::string& Sb = (name + "_SB");
+
+	appSetting->RemoveVariable(Sr.c_str());
+	appSetting->RemoveVariable(Sg.c_str());
+	appSetting->RemoveVariable(Sb.c_str());
+
+	const std::string& Thickness = (name + "_X");
+
+	appSetting->RemoveVariable(Thickness.c_str());
+}
+
+void CosmeticLayer::SetVisibleVariable(jAppSettingBase* appSetting, const std::string& name, bool visible) const
+{
+	const std::string& Kr = (name + "_KR");
+	const std::string& Kg = (name + "_KG");
+	const std::string& Kb = (name + "_KB");
+
+	appSetting->SetVisible(Kr.c_str(), visible);
+	appSetting->SetVisible(Kg.c_str(), visible);
+	appSetting->SetVisible(Kb.c_str(), visible);
+
+	const std::string& Sr = (name + "_SR");
+	const std::string& Sg = (name + "_SG");
+	const std::string& Sb = (name + "_SB");
+
+	appSetting->SetVisible(Sr.c_str(), visible);
+	appSetting->SetVisible(Sg.c_str(), visible);
+	appSetting->SetVisible(Sb.c_str(), visible);
+
+	const std::string& Thickness = (name + "_X");
+
+	appSetting->SetVisible(Thickness.c_str(), visible);
+}
+//////////////////////////////////////////////////////////////////////////
+
+// jShadowAppSettingProperties
 void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 {
 	appSetting->AddVariable("ShadowOn", ShadowOn);
@@ -168,84 +273,29 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->AddVariable("BloomMagnitude", BloomMagnitude);
 	appSetting->SetStep("BloomMagnitude", 0.01f);
 	appSetting->SetMinMax("BloomMagnitude", 0.0f, 2.0f);
-	appSetting->SetGroup("BloomMagnitude", "Bloom");	
+	appSetting->SetGroup("BloomMagnitude", "Bloom");
 
-	appSetting->AddVariable("CosmeticLayer1_KR", CosmeticLayerData[0].KR);
-	appSetting->SetLabel("CosmeticLayer1_KR", "Absorption per unit(K)");
-	appSetting->SetGroup("CosmeticLayer1_KR", "CosmeticLayer1");
-	appSetting->SetStep("CosmeticLayer1_KR", 0.01f);
-	appSetting->SetMinMax("CosmeticLayer1_KR", 0.0f, 1.0f);
-	appSetting->AddVariable("CosmeticLayer1_KG", CosmeticLayerData[0].KG);
-	appSetting->SetLabel("CosmeticLayer1_KG", "Absorption per unit(K)");
-	appSetting->SetGroup("CosmeticLayer1_KG", "CosmeticLayer1");
-	appSetting->SetStep("CosmeticLayer1_KG", 0.01f);
-	appSetting->SetMinMax("CosmeticLayer1_KG", 0.0f, 1.0f);
-	appSetting->AddVariable("CosmeticLayer1_KB", CosmeticLayerData[0].KB);
-	appSetting->SetLabel("CosmeticLayer1_KB", "Absorption per unit(K)");
-	appSetting->SetGroup("CosmeticLayer1_KB", "CosmeticLayer1");
-	appSetting->SetStep("CosmeticLayer1_KB", 0.01f);
-	appSetting->SetMinMax("CosmeticLayer1_KB", 0.0f, 1.0f);
+	appSetting->AddVariable("ShowCosmeticMap", ShowCosmeticMap);
+	appSetting->AddVariable("IsCustomCosmetic?", IsCustomCosmeticLayer);
 
-	appSetting->AddVariable("CosmeticLayer1_SR", CosmeticLayerData[0].SR);
-	appSetting->SetLabel("CosmeticLayer1_SR", "Scaterring per unit(S)");
-	appSetting->SetGroup("CosmeticLayer1_SR", "CosmeticLayer1");
-	appSetting->SetStep("CosmeticLayer1_SR", 0.01f);
-	appSetting->SetMinMax("CosmeticLayer1_SR", 0.0f, 1.0f);
-	appSetting->AddVariable("CosmeticLayer1_SG", CosmeticLayerData[0].SG);
-	appSetting->SetLabel("CosmeticLayer1_SG", "Scaterring per unit(S)");
-	appSetting->SetGroup("CosmeticLayer1_SG", "CosmeticLayer1");
-	appSetting->SetStep("CosmeticLayer1_SG", 0.01f);
-	appSetting->SetMinMax("CosmeticLayer1_SG", 0.0f, 1.0f);
-	appSetting->AddVariable("CosmeticLayer1_SB", CosmeticLayerData[0].SB);
-	appSetting->SetLabel("CosmeticLayer1_SB", "Scaterring per unit(S)");
-	appSetting->SetGroup("CosmeticLayer1_SB", "CosmeticLayer1");
-	appSetting->SetStep("CosmeticLayer1_SB", 0.01f);
-	appSetting->SetMinMax("CosmeticLayer1_SB", 0.0f, 1.0f);
+	appSetting->AddEnumVariable("ECosmeticLayer0", CosmeticLayer0, "ECosmeticLayer", ECosmeticLayerString);
+	appSetting->AddVariable("CosmeticLayer0_Thickness", CosmeticLayer0_Thickness);
+	appSetting->SetStep("CosmeticLayer0_Thickness", 0.001f);
+	appSetting->SetMinMax("CosmeticLayer0_Thickness", 0.0f, 1.0f);
 
-	appSetting->AddVariable("CosmeticLayer1_X", CosmeticLayerData[0].X);
-	appSetting->SetLabel("CosmeticLayer1_X", "Thickness of a layer");
-	appSetting->SetGroup("CosmeticLayer1_X", "CosmeticLayer1");
-	appSetting->SetStep("CosmeticLayer1_X", 0.001f);
-	appSetting->SetMinMax("CosmeticLayer1_X", 0.0f, 1.0f);
+	appSetting->AddEnumVariable("ECosmeticLayer1", CosmeticLayer1, "ECosmeticLayer", ECosmeticLayerString);
+	appSetting->AddVariable("CosmeticLayer1_Thickness", CosmeticLayer1_Thickness);
+	appSetting->SetStep("CosmeticLayer1_Thickness", 0.001f);
+	appSetting->SetMinMax("CosmeticLayer1_Thickness", 0.0f, 1.0f);
 
-	appSetting->AddVariable("CosmeticLayer2_KR", CosmeticLayerData[1].KR);
-	appSetting->SetLabel("CosmeticLayer2_KR", "Absorption per unit(K)");
-	appSetting->SetGroup("CosmeticLayer2_KR", "CosmeticLayer2");
-	appSetting->SetStep("CosmeticLayer2_KR", 0.001f);
-	appSetting->SetMinMax("CosmeticLayer2_KR", 0.0f, 1.0f);
-	appSetting->AddVariable("CosmeticLayer2_KG", CosmeticLayerData[1].KG);
-	appSetting->SetLabel("CosmeticLayer2_KG", "Absorption per unit(K)");
-	appSetting->SetGroup("CosmeticLayer2_KG", "CosmeticLayer2");
-	appSetting->SetStep("CosmeticLayer2_KG", 0.001f);
-	appSetting->SetMinMax("CosmeticLayer2_KG", 0.0f, 1.0f);
-	appSetting->AddVariable("CosmeticLayer2_KB", CosmeticLayerData[1].KB);
-	appSetting->SetLabel("CosmeticLayer2_KB", "Absorption per unit(K)");
-	appSetting->SetGroup("CosmeticLayer2_KB", "CosmeticLayer2");
-	appSetting->SetStep("CosmeticLayer2_KB", 0.001f);
-	appSetting->SetMinMax("CosmeticLayer2_KB", 0.0f, 1.0f);
+	appSetting->AddEnumVariable("ECosmeticLayer2", CosmeticLayer2, "ECosmeticLayer", ECosmeticLayerString);
+	appSetting->AddVariable("CosmeticLayer2_Thickness", CosmeticLayer2_Thickness);
+	appSetting->SetStep("CosmeticLayer2_Thickness", 0.001f);
+	appSetting->SetMinMax("CosmeticLayer2_Thickness", 0.0f, 1.0f);
 
-	appSetting->AddVariable("CosmeticLayer2_SR", CosmeticLayerData[1].SR);
-	appSetting->SetLabel("CosmeticLayer2_SR", "Scaterring per unit(S)");
-	appSetting->SetGroup("CosmeticLayer2_SR", "CosmeticLayer2");
-	appSetting->SetStep("CosmeticLayer2_SR", 0.001f);
-	appSetting->SetMinMax("CosmeticLayer2_SR", 0.0f, 1.0f);
-	appSetting->AddVariable("CosmeticLayer2_SG", CosmeticLayerData[1].SG);
-	appSetting->SetLabel("CosmeticLayer2_SG", "Scaterring per unit(S)");
-	appSetting->SetGroup("CosmeticLayer2_SG", "CosmeticLayer2");
-	appSetting->SetStep("CosmeticLayer2_SG", 0.001f);
-	appSetting->SetMinMax("CosmeticLayer2_SG", 0.0f, 1.0f);
-	appSetting->AddVariable("CosmeticLayer2_SB", CosmeticLayerData[1].SB);
-	appSetting->SetLabel("CosmeticLayer2_SB", "Scaterring per unit(S)");
-	appSetting->SetGroup("CosmeticLayer2_SB", "CosmeticLayer2");
-	appSetting->SetStep("CosmeticLayer2_SB", 0.001f);
-	appSetting->SetMinMax("CosmeticLayer2_SB", 0.0f, 1.0f);
-
-	appSetting->AddVariable("CosmeticLayer2_X", CosmeticLayerData[1].X);
-	appSetting->SetLabel("CosmeticLayer2_X", "Thickness of a layer");
-	appSetting->SetGroup("CosmeticLayer2_X", "CosmeticLayer2");
-	appSetting->SetStep("CosmeticLayer2_X", 0.001f);
-	appSetting->SetMinMax("CosmeticLayer2_X", 0.0f, 1.0f);
-
+	CustomCosmeticLayer0.AddVariable(appSetting, "Layer0", "CustomCosmetic0");
+	CustomCosmeticLayer1.AddVariable(appSetting, "Layer1", "CustomCosmetic1");
+	CustomCosmeticLayer2.AddVariable(appSetting, "Layer2", "CustomCosmetic2");
 }
 
 void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
@@ -295,23 +345,22 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 	appSetting->RemoveVariable("SkinShading");
 	appSetting->RemoveVariable("GaussianStepScale");
 
-	appSetting->RemoveVariable("CosmeticLayer1_SR");
-	appSetting->RemoveVariable("CosmeticLayer1_SG");
-	appSetting->RemoveVariable("CosmeticLayer1_SB");
-	appSetting->RemoveVariable("CosmeticLayer1_KR");
-	appSetting->RemoveVariable("CosmeticLayer1_KG");
-	appSetting->RemoveVariable("CosmeticLayer1_KB");
-	appSetting->RemoveVariable("CosmeticLayer1_X");
-	appSetting->RemoveVariable("CosmeticLayer2_SR");
-	appSetting->RemoveVariable("CosmeticLayer2_SG");
-	appSetting->RemoveVariable("CosmeticLayer2_SB");
-	appSetting->RemoveVariable("CosmeticLayer2_KR");
-	appSetting->RemoveVariable("CosmeticLayer2_KG");
-	appSetting->RemoveVariable("CosmeticLayer2_KB");
-	appSetting->RemoveVariable("CosmeticLayer2_X");
+	appSetting->RemoveVariable("IsCustomCosmetic?");
+
+	appSetting->RemoveVariable("ECosmeticLayer0");
+	appSetting->RemoveVariable("CosmeticLayer0_Thickness");
+	appSetting->RemoveVariable("ECosmeticLayer1");
+	appSetting->RemoveVariable("CosmeticLayer1_Thickness");
+	appSetting->RemoveVariable("ECosmeticLayer2");
+	appSetting->RemoveVariable("CosmeticLayer2_Thickness");
+
+	CustomCosmeticLayer0.RemoveVariable(appSetting, "Layer0");
+	CustomCosmeticLayer1.RemoveVariable(appSetting, "Layer1");
+	CustomCosmeticLayer2.RemoveVariable(appSetting, "Layer2");
+
 }
 
-void jShadowAppSettingProperties::SwitchShadowType(jAppSettingBase* appSetting)
+void jShadowAppSettingProperties::SwitchShadowType(jAppSettingBase* appSetting) const
 {
 	switch (ShadowType)
 	{
@@ -334,7 +383,7 @@ void jShadowAppSettingProperties::SwitchShadowType(jAppSettingBase* appSetting)
 	}
 }
 
-void jShadowAppSettingProperties::SwitchShadowMapType(jAppSettingBase* appSetting)
+void jShadowAppSettingProperties::SwitchShadowMapType(jAppSettingBase* appSetting) const
 {
 	appSetting->SetVisible("CSMDebugOn", (ShadowMapType == EShadowMapType::CSM_SSM));
 
@@ -349,3 +398,18 @@ void jShadowAppSettingProperties::SwitchShadowMapType(jAppSettingBase* appSettin
 		break;
 	}
 }
+
+void jShadowAppSettingProperties::SwitchCosmeticLayer(jAppSettingBase* appSetting) const
+{
+	CustomCosmeticLayer0.SetVisibleVariable(appSetting, "Layer0", IsCustomCosmeticLayer);
+	CustomCosmeticLayer1.SetVisibleVariable(appSetting, "Layer1", IsCustomCosmeticLayer);
+	CustomCosmeticLayer2.SetVisibleVariable(appSetting, "Layer2", IsCustomCosmeticLayer);
+
+	appSetting->SetVisible("ECosmeticLayer0", !IsCustomCosmeticLayer);
+	appSetting->SetVisible("CosmeticLayer0_Thickness", !IsCustomCosmeticLayer);
+	appSetting->SetVisible("ECosmeticLayer1", !IsCustomCosmeticLayer);
+	appSetting->SetVisible("CosmeticLayer1_Thickness", !IsCustomCosmeticLayer);
+	appSetting->SetVisible("ECosmeticLayer2", !IsCustomCosmeticLayer);
+	appSetting->SetVisible("CosmeticLayer2_Thickness", !IsCustomCosmeticLayer);
+}
+

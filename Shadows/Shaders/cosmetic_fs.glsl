@@ -5,6 +5,10 @@ precision mediump float;
 in vec4 Color_;
 out vec4 color;
 
+uniform vec3 CosmeticLayer0_S;
+uniform vec3 CosmeticLayer0_K;
+uniform float CosmeticLayer0_X;
+
 uniform vec3 CosmeticLayer1_S;
 uniform vec3 CosmeticLayer1_K;
 uniform float CosmeticLayer1_X;
@@ -41,8 +45,12 @@ void GetRT(out vec3 R, out vec3 T, vec3 K, vec3 S, float X)
 
 void main()
 {
-    vec3 K1 = vec3(0.22, 1.47, 0.57);
-    vec3 S1 = vec3(0.05, 0.003, 0.03);
+    //vec3 K1 = vec3(0.22, 1.47, 0.57);
+    //vec3 S1 = vec3(0.05, 0.003, 0.03);
+
+    vec3 R0;
+    vec3 T0;
+    GetRT(R0, T0, CosmeticLayer0_K, CosmeticLayer0_S, CosmeticLayer0_X);
 
     vec3 R1;
     vec3 T1;
@@ -52,8 +60,11 @@ void main()
     vec3 T2;
     GetRT(R2, T2, CosmeticLayer2_K, CosmeticLayer2_S, CosmeticLayer2_X);
 
-    vec3 RSum = R1 + (T1 * R1 * T1) / (vec3(1.0) - R1 * R2);
-    vec3 TSum = (T1 * T2) / (vec3(1.0) - R1 * R2);
+    vec3 RTemp = R0 + (T0 * R1 * T0) / (vec3(1.0) - R0 * R1);
+    vec3 TTemp = (T0 * T0) / (vec3(1.0) - R0 * R1);
+
+    vec3 RSum = RTemp + (TTemp * R2 * TTemp) / (vec3(1.0) - RTemp * R2);
+    vec3 TSum = (TTemp * T2) / (vec3(1.0) - RTemp * R2);
 
     color = vec4(Color_);
     color.xyz = RSum + TSum * TSum * color.xyz;

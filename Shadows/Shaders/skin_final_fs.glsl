@@ -14,6 +14,7 @@ uniform sampler2D tex_object9;      // TSM
 uniform sampler2D tex_object10;		// StrechMap
 uniform sampler2D tex_object11;		// BlurAlphaDistribution
 uniform sampler2D tex_object12;		// SpecularAO
+uniform sampler2D tex_object13;		// cosmeticMaskTexture
 uniform sampler2DShadow shadow_object;
 
 uniform float TextureSize;
@@ -130,6 +131,35 @@ vec2 unPackVec2(float Data)
     return vec2(First, Second);
 }
 
+uniform vec3 CosmeticLayer0_S;
+uniform vec3 CosmeticLayer0_K;
+uniform float CosmeticLayer0_X;
+
+uniform vec3 CosmeticLayer1_S;
+uniform vec3 CosmeticLayer1_K;
+uniform float CosmeticLayer1_X;
+
+uniform vec3 CosmeticLayer2_S;
+uniform vec3 CosmeticLayer2_K;
+uniform float CosmeticLayer2_X;
+
+void CosmeticReflectionTransmit(out vec3 R, out vec3 T, vec3 K, vec3 S, float X)
+{
+    vec3 a = vec3(1.0) + (K / S);
+    vec3 b = sqrt(a * a - vec3(1.0));
+
+    vec3 Temp = a * sinh(b * S * X) + b * cosh(b * S * X);
+
+    R = sinh(b * S * X) / Temp;
+    T = b / Temp;
+}
+
+void CosmeticSumOfTwoLayer(out vec3 OutR, out vec3 OutT, vec3 InR0, vec3 InT0, vec3 InR1, vec3 InT1)
+{
+    OutR = InR0 + (InT0 * InR1 * InT0) / (vec3(1.0) - InR0 * InR1);
+    OutT = (InT0 * InT1) / (vec3(1.0) - InR0 * InR1);
+}
+
 void main()
 {
     vec2 uv = TexCoord_;
@@ -174,6 +204,25 @@ void main()
         dEnergy = 1.0;
 
     vec3 albedo = pow(texture2D(tex_object7, TexCoord_).xyz, vec3(2.2));
+
+    // Cosmetic
+    {
+        vec3 cosmeticMask = texture2D(tex_object13, TexCoord_).xyz;
+
+        vec3 R0, T0, R1, T1, R2, T2;
+        CosmeticReflectionTransmit(R0, T0, CosmeticLayer0_K, CosmeticLayer0_S, CosmeticLayer0_X * cosmeticMask.x);
+        CosmeticReflectionTransmit(R1, T1, CosmeticLayer1_K, CosmeticLayer1_S, CosmeticLayer1_X * cosmeticMask.y);
+        CosmeticReflectionTransmit(R2, T2, CosmeticLayer2_K, CosmeticLayer2_S, CosmeticLayer2_X * cosmeticMask.z);
+
+        vec3 RTemp, TTemp;
+        CosmeticSumOfTwoLayer(RTemp, TTemp, R2, T2, R1, T1);
+
+        vec3 RSum, TSum;
+        CosmeticSumOfTwoLayer(RSum, TSum, RTemp, TTemp, R0, T0);
+
+        albedo = RSum + TSum * TSum * albedo;
+    }
+
     {
         vec3 LightColor = light.Color * Lit * LightAtten;
         vec3 E = ndotL * LightColor;
