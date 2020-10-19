@@ -243,7 +243,543 @@ void jGame::Update(float deltaTime)
 
 	jObject::FlushDirtyState();
 
-	Renderer->Render(MainCamera);
+	//////////////////////////////////////////////////////////////////////////
+	constexpr static int32 kNumGeoWaves = 4;
+	class GeoWaveDesc
+	{
+	public:
+		float		Phase;
+		float		Amp;
+		float		Len;
+		float		Freq;
+		Vector2		Dir;
+		float		Fade;
+	};
+	static GeoWaveDesc		GeoWaves[kNumGeoWaves];
+
+	class GeoState
+	{
+	public:
+		float		Chop;
+		float		AngleDeviation;
+		Vector2		WindDir;
+		float		MinLength;
+		float		MaxLength;
+		float		AmpOverLen;
+
+		float		SpecAtten;
+		float		SpecEnd;
+		float		SpecTrans;
+
+		float		EnvHeight;
+		float		EnvRadius;
+		float		WaterLevel;
+
+		int32		TransIdx;
+		float		TransDel;
+	};
+	static GeoState	GeoState;
+
+	static bool IsGeoStateInit = false;
+	if (!IsGeoStateInit)
+	{
+		IsGeoStateInit = true;
+
+		GeoState.Chop = 2.5f;
+		GeoState.AngleDeviation = 15.f;
+		GeoState.WindDir.x = 0;
+		GeoState.WindDir.y = 1.f;
+
+		GeoState.MinLength = 15.f;
+		GeoState.MaxLength = 25.f;
+		GeoState.AmpOverLen = 0.1f;
+
+		GeoState.EnvHeight = -50.f;
+		GeoState.EnvRadius = 100.f;
+		GeoState.WaterLevel = -2.f;
+
+		GeoState.TransIdx = 0;
+		GeoState.TransDel = -1.f / 6.f;
+
+		GeoState.SpecAtten = 1.f;
+		GeoState.SpecEnd = 200.f;
+		GeoState.SpecTrans = 100.f;
+	}
+
+	static auto RandZeroToOne = []()
+	{
+		return float(double(rand()) / double(RAND_MAX));
+	};
+
+	static auto RandMinusOneToOne = []()
+	{
+		return float(double(rand()) / double(RAND_MAX) * 2.0 - 1.0);
+	};
+
+	auto InitGeoWave = [this](int32 InIndex)
+	{
+		GeoWaves[InIndex].Phase = RandZeroToOne() * PI * 2.f;
+		GeoWaves[InIndex].Len = GeoState.MinLength + RandZeroToOne() * (GeoState.MaxLength - GeoState.MinLength);
+		GeoWaves[InIndex].Amp = GeoWaves[InIndex].Len * GeoState.AmpOverLen / float(kNumGeoWaves);
+		GeoWaves[InIndex].Freq = 2.f * PI / GeoWaves[InIndex].Len;
+		GeoWaves[InIndex].Fade = 1.f;
+
+		float rotBase = GeoState.AngleDeviation * PI / 180.f;
+
+		float rads = rotBase * RandMinusOneToOne();
+		float rx = float(cosf(rads));
+		float ry = float(sinf(rads));
+
+		float x = GeoState.WindDir.x;
+		float y = GeoState.WindDir.y;
+		GeoWaves[InIndex].Dir.x = x * rx + y * ry;
+		GeoWaves[InIndex].Dir.y = x * -ry + y * rx;
+	};
+
+	static bool IsGeoWaveInit = false;
+	if (!IsGeoWaveInit)
+	{
+		IsGeoWaveInit = true;
+
+		for (int32 i = 0; i < kNumGeoWaves; ++i)
+		{
+			InitGeoWave(i);
+		}
+	}
+
+	static const float kGravConst = 30.f;
+
+	// UpdateGeoWave
+	{
+		for (int32 i = 0; i < kNumGeoWaves; ++i)
+		{
+			if (i == GeoState.TransIdx)
+			{
+				GeoWaves[i].Fade += GeoState.TransDel * deltaTime;
+				if (GeoWaves[i].Fade < 0)
+				{
+					// This wave is faded out. Re-init and fade it back up.
+					InitGeoWave(i);
+					GeoWaves[i].Fade = 0;
+					GeoState.TransDel = -GeoState.TransDel;
+				}
+				else if (GeoWaves[i].Fade > 1.f)
+				{
+					// This wave is faded back up. Start fading another down.
+					GeoWaves[i].Fade = 1.f;
+					GeoState.TransDel = -GeoState.TransDel;
+					if (++GeoState.TransIdx >= kNumGeoWaves)
+						GeoState.TransIdx = 0;
+				}
+			}
+
+			const float speed = float(1.0 / sqrt(GeoWaves[i].Len / (2.f * PI * kGravConst)));
+
+			GeoWaves[i].Phase += speed * deltaTime;
+			GeoWaves[i].Phase = float(fmod(GeoWaves[i].Phase, 2.f * PI));
+
+			GeoWaves[i].Amp = GeoWaves[i].Len * GeoState.AmpOverLen / float(kNumGeoWaves) * GeoWaves[i].Fade;
+		}
+	}
+
+	class TexState
+	{
+	public:
+		float		Noise;
+		float		Chop;
+		float		AngleDeviation;
+		Vector2	WindDir;
+		float		MaxLength;
+		float		MinLength;
+		float		AmpOverLen;
+		float		RippleScale;
+		float		SpeedDeviation;
+
+		int32			TransIdx;
+		float		TransDel;
+	};
+	static TexState		TexState;
+
+	constexpr static int32 kNumBumpPerPass = 4;
+	constexpr static int32 kNumTexWaves = 16;
+	constexpr static int32 kNumBumpPasses = kNumTexWaves / kNumBumpPerPass;
+	constexpr static int32 kBumpTexSize = 256;
+
+	class TexWaveDesc
+	{
+	public:
+		float		Phase;		// Speed * 2pi/L
+		float		Amp;
+		float		Len;
+		float		Speed;
+		float		Freq;
+		Vector2		Dir;
+		Vector2		RotScale;
+		float		Fade;
+	};
+	static TexWaveDesc		TexWaves[kNumTexWaves];
+
+	static bool IsInitTexState = false;
+	if (!IsInitTexState)
+	{
+		IsInitTexState = true;
+
+		TexState.Noise = 0.2f;
+		TexState.Chop = 1.f;
+		TexState.AngleDeviation = 15.f;
+		TexState.WindDir.x = 0;
+		TexState.WindDir.y = 1.f;
+		TexState.MaxLength = 10.f;
+		TexState.MinLength = 1.f;
+		TexState.AmpOverLen = 0.1f;
+		TexState.RippleScale = 25.f;
+		TexState.SpeedDeviation = 0.1f;
+
+		TexState.TransIdx = 0;
+		TexState.TransDel = -1.f / 5.f;
+	}
+
+	auto InitTexWave = [this](int32 InIndex)
+	{
+		float rads = RandMinusOneToOne() * TexState.AngleDeviation * PI / 180.f;
+		float dx = float(sin(rads));
+		float dy = float(cos(rads));
+
+		float tx = dx;
+		dx = TexState.WindDir.y * dx - TexState.WindDir.x * dy;
+		dy = TexState.WindDir.x * tx + TexState.WindDir.y * dy;
+
+		float maxLen = TexState.MaxLength * kBumpTexSize / TexState.RippleScale;
+		float minLen = TexState.MinLength * kBumpTexSize / TexState.RippleScale;
+		float len = float(InIndex) / float(kNumTexWaves - 1) * (maxLen - minLen) + minLen;
+
+		float reps = float(kBumpTexSize) / len;
+
+		dx *= reps;
+		dy *= reps;
+		dx = float(int(dx >= 0 ? dx + 0.5f : dx - 0.5f));
+		dy = float(int(dy >= 0 ? dy + 0.5f : dy - 0.5f));
+
+		TexWaves[InIndex].RotScale.x = dx;
+		TexWaves[InIndex].RotScale.y = dy;
+
+		float effK = float(1.0 / sqrt(dx * dx + dy * dy));
+		TexWaves[InIndex].Len = float(kBumpTexSize) * effK;
+		TexWaves[InIndex].Freq = PI * 2.f / TexWaves[InIndex].Len;
+		TexWaves[InIndex].Amp = TexWaves[InIndex].Len * TexState.AmpOverLen;
+		TexWaves[InIndex].Phase = RandZeroToOne();
+
+		TexWaves[InIndex].Dir.x = dx * effK;
+		TexWaves[InIndex].Dir.y = dy * effK;
+
+		TexWaves[InIndex].Fade = 1.f;
+
+		float speed = float(1.0 / sqrt(TexWaves[InIndex].Len / (2.f * PI * kGravConst))) / 3.f;
+		speed *= 1.f + RandMinusOneToOne() * TexState.SpeedDeviation;
+		TexWaves[InIndex].Speed = speed;
+	};
+
+	// UpdateTexWave
+	for (int32 i = 0; i < kNumTexWaves; ++i)
+	{
+		if (i == TexState.TransIdx)
+		{
+			TexWaves[i].Fade += TexState.TransDel * deltaTime;
+			if (TexWaves[i].Fade < 0)
+			{
+				// This wave is faded out. Re-init and fade it back up.
+				InitTexWave(i);
+				TexWaves[i].Fade = 0;
+				TexState.TransDel = -TexState.TransDel;
+			}
+			else if (TexWaves[i].Fade > 1.f)
+			{
+				// This wave is faded back up. Start fading another down.
+				TexWaves[i].Fade = 1.f;
+				TexState.TransDel = -TexState.TransDel;
+				if (++TexState.TransIdx >= kNumTexWaves)
+					TexState.TransIdx = 0;
+			}
+		}
+		TexWaves[i].Phase -= deltaTime * TexWaves[i].Speed;
+		TexWaves[i].Phase -= int(TexWaves[i].Phase);
+	}
+
+	static bool IsInitTexWave = false;
+	if (!IsInitTexWave)
+	{
+		IsInitTexWave = true;
+
+		for (int32 i = 0; i < kNumTexWaves; ++i)
+			InitTexWave(i);
+	}
+
+	static auto MainRenderTarget = jRenderTargetPool::GetRenderTarget(
+		{ ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT
+		, EDepthBufferType::DEPTH32, SCR_WIDTH, SCR_HEIGHT, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR }
+	);
+
+	static auto RenderBumpTarget = jRenderTargetPool::GetRenderTarget(
+		{ ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT
+		, EDepthBufferType::DEPTH32, SCR_WIDTH, SCR_HEIGHT, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR }
+	);
+
+	if (0)
+	if (RenderBumpTarget->Begin())
+	{
+		static Vector4 m_UTrans[16];
+		static Vector4 m_Coef[16];
+		static Vector4 ReScale;
+		static Vector4 NoiseXform[4];
+
+		auto TexWaveShader = jShader::GetShader("DrawTexWave");
+
+		char szTemp[1024];
+		int i;
+		for (i = 0; i < 16; i++)
+		{
+			Vector4 UTrans(TexWaves[i].RotScale.x, TexWaves[i].RotScale.y, 0.f, TexWaves[i].Phase);
+			sprintf_s(szTemp, sizeof(szTemp), "UTrans[%d]", i);
+			SET_UNIFORM_BUFFER_STATIC(Vector4, szTemp, UTrans, TexWaveShader);
+
+			float normScale = TexWaves[i].Fade / float(kNumBumpPasses);
+			Vector4 Coef(TexWaves[i].Dir.x * normScale, TexWaves[i].Dir.y * normScale, 1.f, 1.f);
+			sprintf_s(szTemp, sizeof(szTemp), "Coef[%d]", i);
+			SET_UNIFORM_BUFFER_STATIC(Vector4, szTemp, Coef, TexWaveShader);
+
+		}
+
+		Vector4 xform;
+
+		const float kRate = 0.1f;
+		xform.w += deltaTime * kRate;
+		SET_UNIFORM_BUFFER_STATIC(Vector4, "NoiseXform[0]", NoiseXform[0], TexWaveShader);
+
+		xform.w += deltaTime * kRate;
+		SET_UNIFORM_BUFFER_STATIC(Vector4, "NoiseXform[3]", NoiseXform[3], TexWaveShader);
+
+		float s = 0.5f / (float(kNumBumpPerPass) + TexState.Noise);
+		Vector4 reScale(s, s, 1.f, 1.f);
+		SET_UNIFORM_BUFFER_STATIC(Vector4, "ReScale", ReScale, TexWaveShader);
+
+		float scaleBias = 0.5f * TexState.Noise / (float(kNumBumpPasses) + TexState.Noise);
+		Vector4 scaleBiasVec(scaleBias, scaleBias, 0.f, 1.f);
+		SET_UNIFORM_BUFFER_STATIC(Vector4, "ScaleBias", scaleBiasVec, TexWaveShader);
+
+		//m_CompCosinesEff->SetTexture(m_CompCosineParams.m_CosineLUT, m_CosineLUT);
+		//m_CompCosinesEff->SetTexture(m_CompCosineParams.m_BiasNoise, m_BiasNoiseMap);
+
+		static auto pFullscreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
+		if (pFullscreenQuad)
+		{
+			// pFullscreenQuad->RenderObject->tex_object = CosLUT;
+			// pFullscreenQuad->RenderObject->tex_object2 = BiasNoise;
+
+			pFullscreenQuad->Update(deltaTime);
+			pFullscreenQuad->Draw(MainCamera, TexWaveShader, {});
+		}
+
+		RenderBumpTarget->End();
+	}
+
+	//if (MainRenderTarget->Begin())
+	{
+		//SET_UNIFORM_BUFFER_STATIC(Vector, "ScatterColor", AppSettingInst.ScatterColor, Shader);
+
+		g_rhi->BeginDebugEvent("[1]. MainScene Render");
+
+		auto ClearColor = Vector4(0.1f, 0.1f, 0.1f, 1.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+
+		g_rhi->EnableDepthTest(EnableDepthTest);
+		g_rhi->SetDepthFunc(DepthStencilFunc);
+
+		g_rhi->EnableBlend(EnableBlend);
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+
+		g_rhi->EnableDepthBias(false);
+		g_rhi->EnableCullFace(true);
+		g_rhi->EnableDepthClip(false);
+
+		g_rhi->SetClearColor(ClearColor);
+		g_rhi->SetClear(ClearType);
+
+		/// 
+		static bool IsCreatedWaterMesh = false;
+		static jMeshObject* pWaterMesh = nullptr;
+		static jMeshObject* pLandMesh = nullptr;
+		if (!IsCreatedWaterMesh)
+		{
+			IsCreatedWaterMesh = true;
+			pWaterMesh = jModelLoader::GetInstance().LoadFromFile("model/WaterMesh.x");
+
+			jStreamParam<float>& VertexParams 
+				= *static_cast<jStreamParam<float>*>(pWaterMesh->RenderObject->VertexStream->Params[0]);
+			for (uint32 i = 2; i < VertexParams.Data.size(); i += 3)
+				VertexParams.Data[i] = 0.0f;
+			pWaterMesh->RenderObject->UpdateVertexStream();
+
+			//pWaterMesh->RenderObject->VertexBuffer
+
+			//pLandMesh = jModelLoader::GetInstance().LoadFromFile("model/LandMesh.x");
+			//pWaterMesh->RenderObject->Rot.x = DegreeToRadian(90.0f);
+
+			//jImageData data;
+			//jImageFileLoader::GetInstance().LoadTextureFromFile(data, "Image/Sandy.png", true);
+			//if (data.ImageData.size() > 0)
+			//	pLandMesh->RenderObject->tex_object2 = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
+
+		}
+
+		{
+			//auto shader = jShader::GetShader("DebugObjectShader");
+			//DirectionalLight->BindLight(shader);
+			//pLandMesh->Update(deltaTime);
+			//pLandMesh->Draw(MainCamera, shader, { DirectionalLight });
+		}
+
+		if (1)
+		{
+			auto shader = jShader::GetShader("GeoWave");
+
+			{
+				SET_UNIFORM_BUFFER_STATIC(Matrix, "World2NDC", (MainCamera->Projection * MainCamera->View), shader);
+
+				Vector4 waterTint(0.05f, 0.1f, 0.1f, 0.5f);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "WaterTint", waterTint, shader);
+
+				Vector4 freq(GeoWaves[0].Freq, GeoWaves[1].Freq, GeoWaves[2].Freq, GeoWaves[3].Freq);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "Frequency", freq, shader);
+
+				Vector4 phase(GeoWaves[0].Phase, GeoWaves[1].Phase, GeoWaves[2].Phase, GeoWaves[3].Phase);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "Phase", phase, shader);
+
+				Vector4 amp(GeoWaves[0].Amp, GeoWaves[1].Amp, GeoWaves[2].Amp, GeoWaves[3].Amp);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "Amplitude", amp, shader);
+
+				Vector4 dirX(GeoWaves[0].Dir.x, GeoWaves[1].Dir.x, GeoWaves[2].Dir.x, GeoWaves[3].Dir.x);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirX", dirX, shader);
+
+				Vector4 dirY(GeoWaves[0].Dir.y, GeoWaves[1].Dir.y, GeoWaves[2].Dir.y, GeoWaves[3].Dir.y);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirY", dirY, shader);
+
+				float normScale = GeoState.SpecAtten * TexState.AmpOverLen * 2.f * PI;
+				normScale *= (float(kNumBumpPasses) + TexState.Noise);
+				normScale *= (TexState.Chop + 1.f);
+
+				Vector4 specAtten(GeoState.SpecEnd, 1.f / GeoState.SpecTrans, normScale, 1.f / TexState.RippleScale);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "SpecAtten", specAtten, shader);
+
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "CameraPos", Vector4(MainCamera->Pos, 1.f), shader);
+
+				Vector envCenter(0.f, 0.f, GeoState.EnvHeight); // Just happens to be centered at origin.
+				Vector camToCen = envCenter - MainCamera->Pos;
+
+				float G = camToCen.LengthSQ() - GeoState.EnvRadius * GeoState.EnvRadius;
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "EnvAdjust", Vector4(camToCen.x, camToCen.y, camToCen.z, G), shader);
+
+				Vector4 envTint(1.f, 1.f, 1.f, 1.f);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "EnvTint", envTint, shader);
+
+				SET_UNIFORM_BUFFER_STATIC(Matrix, "Local2World", pWaterMesh->RenderObject->World, shader);
+
+				Vector4 lengths(GeoWaves[0].Len, GeoWaves[1].Len, GeoWaves[2].Len, GeoWaves[3].Len);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "Lengths", lengths, shader);
+
+				Vector4 depthOffset(GeoState.WaterLevel + 1.f,
+					GeoState.WaterLevel + 1.f,
+					GeoState.WaterLevel + 0.f,
+					GeoState.WaterLevel);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DepthOffset", depthOffset, shader);
+
+				Vector4 depthScale(1.f / 2.f, 1.f / 2.f, 1.f / 2.f, 1.f);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DepthScale", depthScale, shader);
+
+				Vector4 fogParams(-200.f, 1.f / (100.f - 200.f), 0.f, 1.f);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "FogParams", fogParams, shader);
+
+				float K = 5.f;
+				if (GeoState.AmpOverLen > GeoState.Chop / (2.f * PI * kNumGeoWaves * K))
+					K = GeoState.Chop / (2.f * PI * GeoState.AmpOverLen * kNumGeoWaves);
+				Vector4 dirXK(GeoWaves[0].Dir.x * K,
+					GeoWaves[1].Dir.x * K,
+					GeoWaves[2].Dir.x * K,
+					GeoWaves[3].Dir.x * K);
+				Vector4 dirYK(GeoWaves[0].Dir.y * K,
+					GeoWaves[1].Dir.y * K,
+					GeoWaves[2].Dir.y * K,
+					GeoWaves[3].Dir.y * K);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirXK", dirXK, shader);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirYK", dirYK, shader);
+
+				Vector4 dirXW(GeoWaves[0].Dir.x * GeoWaves[0].Freq,
+					GeoWaves[1].Dir.x * GeoWaves[1].Freq,
+					GeoWaves[2].Dir.x * GeoWaves[2].Freq,
+					GeoWaves[3].Dir.x * GeoWaves[3].Freq);
+				Vector4 dirYW(GeoWaves[0].Dir.y * GeoWaves[0].Freq,
+					GeoWaves[1].Dir.y * GeoWaves[1].Freq,
+					GeoWaves[2].Dir.y * GeoWaves[2].Freq,
+					GeoWaves[3].Dir.y * GeoWaves[3].Freq);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirXW", dirXW, shader);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirYW", dirYW, shader);
+
+				Vector4 KW(K * GeoWaves[0].Freq,
+					K * GeoWaves[1].Freq,
+					K * GeoWaves[2].Freq,
+					K * GeoWaves[3].Freq);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "KW", KW, shader);
+
+				Vector4 dirXSqKW(GeoWaves[0].Dir.x * GeoWaves[0].Dir.x * K * GeoWaves[0].Freq,
+					GeoWaves[1].Dir.x * GeoWaves[1].Dir.x * K * GeoWaves[1].Freq,
+					GeoWaves[2].Dir.x * GeoWaves[2].Dir.x * K * GeoWaves[2].Freq,
+					GeoWaves[3].Dir.x * GeoWaves[3].Dir.x * K * GeoWaves[3].Freq);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirXSqKW", dirXSqKW, shader);
+
+				Vector4 dirYSqKW(GeoWaves[0].Dir.y * GeoWaves[0].Dir.y * K * GeoWaves[0].Freq,
+					GeoWaves[1].Dir.y * GeoWaves[1].Dir.y * K * GeoWaves[1].Freq,
+					GeoWaves[2].Dir.y * GeoWaves[2].Dir.y * K * GeoWaves[2].Freq,
+					GeoWaves[3].Dir.y * GeoWaves[3].Dir.y * K * GeoWaves[3].Freq);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirYSqKW", dirYSqKW, shader);
+
+				Vector4 dirXdirYKW(GeoWaves[0].Dir.y * GeoWaves[0].Dir.x * K * GeoWaves[0].Freq,
+					GeoWaves[1].Dir.x * GeoWaves[1].Dir.y * K * GeoWaves[1].Freq,
+					GeoWaves[2].Dir.x * GeoWaves[2].Dir.y * K * GeoWaves[2].Freq,
+					GeoWaves[3].Dir.x * GeoWaves[3].Dir.y * K * GeoWaves[3].Freq);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirXdirYKW", dirXdirYKW, shader);
+
+				//pWaterMesh->RenderObject->tex_object = m_EnvMap;
+				//pWaterMesh->RenderObject->tex_object2 = m_BumpTex;
+			}
+
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+			static float OffsetX = 0.0f;
+			static float OffsetZ = -10.0f;
+			pWaterMesh->RenderObject->Pos.x = OffsetX;
+			pWaterMesh->RenderObject->Pos.z = OffsetZ;
+
+			pWaterMesh->Update(deltaTime);
+			pWaterMesh->Draw(MainCamera, shader, { DirectionalLight });
+		}
+
+		if (1)
+		{
+
+		}
+
+		/// 
+
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+		g_rhi->EndDebugEvent();
+		MainRenderTarget->End();
+	}
+	//////////////////////////////////////////////////////////////////////////
 }
 
 void jGame::UpdateAppSetting()

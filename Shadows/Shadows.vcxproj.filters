@@ -529,5 +529,17 @@
     <None Include="Shaders\vs_graph.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\geowave_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\drawtexwave_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\drawtexwave_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\geowave_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
