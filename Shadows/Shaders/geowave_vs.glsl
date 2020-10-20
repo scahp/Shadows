@@ -35,24 +35,24 @@ uniform vec4 DirXdirYKW;
 out vec4 Color_;
 
 
-out vec4 modColor;
-out vec4 addColor;
+out vec4 ModColor_;
+out vec4 AddColor_;
 out float Fog;
 out vec4 TexCoord0;
-out vec4 BTN_X; // Binormal.x, Tangent.x, Normal.x
-out vec4 BTN_Y; // Bin.y, Tan.y, Norm.y
-out vec4 BTN_Z; // Bin.z, Tan.z, Norm.z
-
 
 // Depth filter channels control:
 // dFilter.x => overall opacity
 // dFilter.y => reflection strength
 // dFilter.z => wave height
-vec3 CalcDepthFilter(vec4 depthOffset, vec4 depthScale, vec4 wPos, float waterLevel)
+vec3 CalcDepthFilter(vec4 depthOffset, vec4 depthScale, vec4 wPos)
 {
+	// 물의 깊이와 버택스의 위치 차이를 구함.
 	vec3 dFilter = vec3(depthOffset.xyz) - wPos.zzz;
 
+	// 물 깊이와의 차이점에 Scale 값을 적용함. (기본값은 [0.5, 0.5, 0.5]임)
 	dFilter = dFilter * vec3(depthScale.xyz);
+
+	// Clamp(dFilter, 0.0, 1.0)
 	dFilter = max(dFilter, 0.f);
 	dFilter = min(dFilter, 1.f);
 
@@ -144,7 +144,7 @@ vec3 FinitizeEyeRay(vec3 cam2Vtx, vec4 envAdjust)
 	// Note that F and G are both constants (one 3-point, one scalar).
 	float dDotF = dot(cam2Vtx, vec3(envAdjust.xyz));
 	float t = dDotF + sqrt(dDotF * dDotF - envAdjust.w);
-	return cam2Vtx * t - vec3(envAdjust.xyz);
+	return cam2Vtx * t - vec3(envAdjust.xyz);				// A - C
 
 }
 
@@ -177,20 +177,23 @@ void CalcFinalColors(vec3 norm,
 	// Vertex based Fresnel-esque effect.
 	// Input vertex color.b limits how much we attenuate based on angle.
 	// So we map 
+	// 버택스 기반 프레넬 효과
+	// 입력 버택스 color.b 는 각도를 기반으로 감쇄량을 제한합니다.
 	// (dot(norm,cam2Vtx)==0) => 1 for grazing angle
 	// and (dot(norm,cam2Vtx)==1 => 1-In.Color.b for perpendicular view.
 	float atten = 1.0 + dot(norm, cam2Vtx) * opacMin;
 
 	// Filter the color based on depth
+	// 깊이 기반으로 컬러를 필터링 하라.
 	modColor.rgb = vec3(colorFilter * atten);
 
 	// Boost the alpha so the reflections fade out faster than the tint
 	// and apply the input attenuation factors.
+	// 알파를 부스터하라 그래서 리플렉션이 틴트 보다 더 빠르게 페이드 아웃하고 입력 감쇄 요소를 적용한다.
 	modColor.a = (atten + 1.0) * 0.5 * opacFilter * opacScale * tint.a;
 
 	// Color 1 is just a constant.
 	addColor = tint;
-
 }
 
 void CalcEyeRayAndBumpAttenuation(vec4 wPos,
@@ -207,7 +210,7 @@ void CalcEyeRayAndBumpAttenuation(vec4 wPos,
 
 	// 우리의 노멀의 작은 변화의 감쇄 계산하라. 이 감쇄는 주로 앨리어싱과 싸우기 위해서, 
 	// 계산된 전물결 범프 맵에서 읽은 노멀의 수평 구성 요소에 적용됩니다.
-	// 이것은 노멀맵에서계산된 컬러를 감쇄시키지 않습니다. 이것은 "bumps"를 감쇄시킵니다
+	// 이것은 노멀맵에서 계산된 컬러를 감쇄시키지 않습니다. 이것은 "bumps"를 감쇄시킵니다
 	// Calculate our normal perturbation attenuation. This attenuation will be
 	// applied to the horizontal components of the normal read from the computed
 	// ripple bump map, mostly to fight aliasing. This doesn't attenuate the 
@@ -232,22 +235,20 @@ vec4 CalcFinalPosition(vec4 wPos,
 	vec4 dirYK)
 {
 	// Equation 9 같음.
+	// P(x, y, z)를 구해보자.
 
 	// Height
 
 	// Sum to a scalar
+	// 4개의 파도가 더해졌을 때 나올 수 있는 최대 height 값을 h로 둠.
 	float h = dot(sines, vec4(1.f)) + depthOffset;
 
 	// Clamp to never go beneath input height
 	wPos.z = max(wPos.z, h);
 
 	// dirXK 가 무엇일까?
-	// dirX * Qi * Ai cos 인데. cosines가 A * cos 이기 때문에
-	// Qi == K 일 듯, 식 9에서는 Qi = 1/(wi * Ai) 라고 나옴
-	// w = 2π/L
-	// 코드에서는 K = m_GeoState.m_Chop / (2.f*D3DX_PI* m_GeoState.m_AmpOverLen * kNumGeoWaves);
-	//  -> 2.f*D3DX_PI* m_GeoState.m_AmpOverLen 가 w 임. => 2.f*D3DX_PI * A/L => A * 2 * pi / L => A * W
-	//  -> K = m_GeoState.m_Chop / (A * W)
+	// DirX * K 는 이 식을 나타냄. Qi = Q/(wi * Ai x numWaves) (Equation 9에 아래 나옴)
+	// dot(cosines, dirXK)는 dirX * Qi * Ai cos 가 됨.
 	wPos.x = wPos.x + dot(cosines, dirXK);
 	wPos.y = wPos.y + dot(cosines, dirYK);
 
@@ -273,6 +274,7 @@ void CalcTangentBasis(vec4 sines,
 	out vec4 BTN_Z,
 	out vec3 norm)
 {
+	// Equation 10, 11, 12 의 TBN 벡터 구하는 항목
 	// Note that we're swapping Y and Z and negating Z (rotation about X)
 	// to match the D3D convention of Y being up in cubemaps.
 
@@ -310,6 +312,7 @@ void main()
 	vec4 wPos = Local2World * vec4(Pos, 1.0);
 
 	// Calculate ripple UV from position
+	// ??? SpecAtten.w 는 RippleScale 임.
 	TexCoord0.xy = wPos.xy * SpecAtten.ww;
 	TexCoord0.z = 0.f;
 	TexCoord0.w = 1.f;
@@ -318,18 +321,21 @@ void main()
 	// cDepthOffset,
 	// cDepthScale,
 	// vec4 depthOffset, vec4 depthScale, vec4 wPos, float waterLevel
-	vec3 dFilter = CalcDepthFilter(DepthOffset, DepthScale, wPos, DepthOffset.w);
+	// 깊이 기반으로 필터를 구해낸다. 0~1 사이 값으로 얻어냄
+	// [overall opacity, reflection strength, wave height]
+	vec3 dFilter = CalcDepthFilter(DepthOffset, DepthScale, wPos);
 
 	// Build our 4 waves
 
 	vec4 sines;
 	vec4 cosines;
 
-	// Cos, Sin 구하는 것.
+	// Amp * Cos, Amp * Sin 구하는 것.
 	CalcSinCos(wPos,
 		DirX, DirY,
 		Amplitude, Frequency, Phase,
-		Lengths, Color.a, dFilter.z,
+		Lengths, Color.a, 
+		dFilter.z,		// dFilter.z => wave height
 		sines, cosines);
 
 	// Equation 9 구하기
@@ -345,6 +351,10 @@ void main()
 	// Compute our finitized eyeray.
 	// 환경맵을 현재 위치에 맞게 보정하는 코드. Eye Vector 파트 보면 됨.
 	vec3 eyeRay = FinitizeEyeRay(cam2Vtx, EnvAdjust);
+
+	vec4 BTN_X; // Binormal.x, Tangent.x, Normal.x
+	vec4 BTN_Y; // Bin.y, Tan.y, Norm.y
+	vec4 BTN_Z; // Bin.z, Tan.z, Norm.z
 
 	// Equation 10 구하기
 	vec3 norm;
@@ -365,17 +375,18 @@ void main()
 	vec4 Position;
 
 	// Calc screen position and fog
+	// Screen 위치와 Fog (NDC의 Z 기준, W로 나누기 전이기 때문이므로 Z가 들어있을 것임)
 	CalcScreenPosAndFog(World2NDC, FogParams, wPos, Position, Fog);
 
 	CalcFinalColors(norm,
 		cam2Vtx,
 		Color.b,
 		Color.r,
-		dFilter.y,
-		dFilter.x,
+		dFilter.y,		// dFilter.y => reflection strength
+		dFilter.x,		// dFilter.x => overall opacity
 		WaterTint,
-		modColor,
-		addColor);
+		ModColor_,
+		AddColor_);
 
     ////////////////////////////
     Color_ = Color;

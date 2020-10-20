@@ -79,7 +79,7 @@ void jGame::Setup()
 	PointLight = jLight::CreatePointLight(jShadowAppSettingProperties::GetInstance().PointLightPosition, Vector4(2.0f, 0.7f, 0.7f, 1.0f), 500.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
 	SpotLight = jLight::CreateSpotLight(jShadowAppSettingProperties::GetInstance().SpotLightPosition, jShadowAppSettingProperties::GetInstance().SpotLightDirection, Vector4(0.0f, 1.0f, 0.0f, 1.0f), 500.0f, 0.7f, 1.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
 
-	DirectionalLightInfo = jPrimitiveUtil::CreateDirectionalLightDebug(Vector(250, 260, 0)*0.5f, Vector::OneVector * 10.0f, 10.0f, MainCamera, DirectionalLight, "Image/sun.png");
+	DirectionalLightInfo = jPrimitiveUtil::CreateDirectionalLightDebug(Vector(250, 260, 0) * 0.5f, Vector::OneVector * 10.0f, 10.0f, MainCamera, DirectionalLight, "Image/sun.png");
 	jObject::AddDebugObject(DirectionalLightInfo);
 
 	DirectionalLightShadowMapUIDebug = jPrimitiveUtil::CreateUIQuad({ 0.0f, 0.0f }, { 150, 150 }, DirectionalLight->GetShadowMap());
@@ -111,7 +111,7 @@ void jGame::Setup()
 	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::PCSS, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_SSM_PCSS_Poisson)));
 	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::VSM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_VSM)));
 	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::ESM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_ESM)));
-	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::EVSM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_EVSM)));	
+	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::EVSM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_EVSM)));
 	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::CSM_SSM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_CSM_SSM)));
 
 	CurrentShadowMapType = jShadowAppSettingProperties::GetInstance().ShadowMapType;
@@ -120,8 +120,8 @@ void jGame::Setup()
 	ShadowVolumePipelineSet = CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_ShadowVolume);
 
 	// todo 정리 필요
-	const auto currentShadowPipelineSet = (jShadowAppSettingProperties::GetInstance().ShadowType == EShadowType::ShadowMap) 
-		? ShadowPipelineSetMap[CurrentShadowMapType]  : ShadowVolumePipelineSet;
+	const auto currentShadowPipelineSet = (jShadowAppSettingProperties::GetInstance().ShadowType == EShadowType::ShadowMap)
+		? ShadowPipelineSetMap[CurrentShadowMapType] : ShadowVolumePipelineSet;
 	ForwardRenderer = new jForwardRenderer(currentShadowPipelineSet);
 	ForwardRenderer->Setup();
 
@@ -220,7 +220,7 @@ void jGame::Update(float deltaTime)
 
 		// Get position of the shadow camera
 		Vector shadowCameraPos = frustumCenter + DirectionalLight->Data.Direction * -(farDist - nearDist) / 2.0f;
-	
+
 		auto shadowCamera = jOrthographicCamera::CreateCamera(shadowCameraPos, frustumCenter, shadowCameraPos + upDir
 			, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
 		shadowCamera->UpdateCamera();
@@ -248,19 +248,19 @@ void jGame::Update(float deltaTime)
 	class GeoWaveDesc
 	{
 	public:
-		float		Phase;
-		float		Amp;
-		float		Len;
-		float		Freq;
-		Vector2		Dir;
-		float		Fade;
+		float		Phase;		// Speed * 2PI / Length = Speed * Frequency
+		float		Amp;		// Amplitude
+		float		Len;		// Length
+		float		Freq;		// Frequency = w = 2PI / Length
+		Vector2		Dir;		// Direction
+		float		Fade;		// 
 	};
 	static GeoWaveDesc		GeoWaves[kNumGeoWaves];
 
 	class GeoState
 	{
 	public:
-		float		Chop;
+		float		Chop;				// 가파름 파라메터
 		float		AngleDeviation;
 		Vector2		WindDir;
 		float		MinLength;
@@ -318,12 +318,23 @@ void jGame::Update(float deltaTime)
 
 	auto InitGeoWave = [this](int32 InIndex)
 	{
+		// Speed * 2PI / Length
 		GeoWaves[InIndex].Phase = RandZeroToOne() * PI * 2.f;
+
+		// WaveLength : MinLength ~ MaxLength 사이의 값을 선택
 		GeoWaves[InIndex].Len = GeoState.MinLength + RandZeroToOne() * (GeoState.MaxLength - GeoState.MinLength);
+
+		// Amplitude / WaveCount : 진폭을 4개의 파도가 나눠가지도록 함. 아마 4개가 동시에 겹쳤을때를 고려하는게 아닐까?
 		GeoWaves[InIndex].Amp = GeoWaves[InIndex].Len * GeoState.AmpOverLen / float(kNumGeoWaves);
+
+		// 빈도 : 2PI / Length
 		GeoWaves[InIndex].Freq = 2.f * PI / GeoWaves[InIndex].Len;
+
+		// Fade : 없어지는 시간
 		GeoWaves[InIndex].Fade = 1.f;
 
+		// 바람의 방향을 랜덤으로 변경시켜주는 부분
+		// Radian 각도로 변경을 좌우, 위아래로 변화시킬 정도를 정의 -rotBase ~ rotBase
 		float rotBase = GeoState.AngleDeviation * PI / 180.f;
 
 		float rads = rotBase * RandMinusOneToOne();
@@ -353,8 +364,13 @@ void jGame::Update(float deltaTime)
 	{
 		for (int32 i = 0; i < kNumGeoWaves; ++i)
 		{
+			// 프레임당 파도 하나 업데이트 함
+			// TransInx : 이번 프레임에 업데이트 될 Geo Wave 번호
 			if (i == GeoState.TransIdx)
 			{
+				// Fade는 TransDel 만큼 매초당 Fade에 더해짐.
+				// TransDel : 초당 Fade될 크기
+				// TransDel이 양 <-> 음 수가 되면서 파도의 Fade in / out 구현
 				GeoWaves[i].Fade += GeoState.TransDel * deltaTime;
 				if (GeoWaves[i].Fade < 0)
 				{
@@ -373,12 +389,22 @@ void jGame::Update(float deltaTime)
 				}
 			}
 
+			// ??? Phase function 계산이 생각과 다르다.
 			const float speed = float(1.0 / sqrt(GeoWaves[i].Len / (2.f * PI * kGravConst)));
 
+			// Speed는 초당 속도, deltatime 만큼 이동
 			GeoWaves[i].Phase += speed * deltaTime;
+
+			// Phase function 을 2PI의 배수로 설정
 			GeoWaves[i].Phase = float(fmod(GeoWaves[i].Phase, 2.f * PI));
 
+			// Amp의 크기를 4개의 파도가 서로 나눠 가지게 됨.
 			GeoWaves[i].Amp = GeoWaves[i].Len * GeoState.AmpOverLen / float(kNumGeoWaves) * GeoWaves[i].Fade;
+
+			//// 테스트 코드
+			//static int TestIndex = 0;
+			//if (i != TestIndex)
+			//	GeoWaves[i].Amp = 0;
 		}
 	}
 
@@ -525,62 +551,62 @@ void jGame::Update(float deltaTime)
 	);
 
 	if (0)
-	if (RenderBumpTarget->Begin())
-	{
-		static Vector4 m_UTrans[16];
-		static Vector4 m_Coef[16];
-		static Vector4 ReScale;
-		static Vector4 NoiseXform[4];
-
-		auto TexWaveShader = jShader::GetShader("DrawTexWave");
-
-		char szTemp[1024];
-		int i;
-		for (i = 0; i < 16; i++)
+		if (RenderBumpTarget->Begin())
 		{
-			Vector4 UTrans(TexWaves[i].RotScale.x, TexWaves[i].RotScale.y, 0.f, TexWaves[i].Phase);
-			sprintf_s(szTemp, sizeof(szTemp), "UTrans[%d]", i);
-			SET_UNIFORM_BUFFER_STATIC(Vector4, szTemp, UTrans, TexWaveShader);
+			static Vector4 m_UTrans[16];
+			static Vector4 m_Coef[16];
+			static Vector4 ReScale;
+			static Vector4 NoiseXform[4];
 
-			float normScale = TexWaves[i].Fade / float(kNumBumpPasses);
-			Vector4 Coef(TexWaves[i].Dir.x * normScale, TexWaves[i].Dir.y * normScale, 1.f, 1.f);
-			sprintf_s(szTemp, sizeof(szTemp), "Coef[%d]", i);
-			SET_UNIFORM_BUFFER_STATIC(Vector4, szTemp, Coef, TexWaveShader);
+			auto TexWaveShader = jShader::GetShader("DrawTexWave");
 
+			char szTemp[1024];
+			int i;
+			for (i = 0; i < 16; i++)
+			{
+				Vector4 UTrans(TexWaves[i].RotScale.x, TexWaves[i].RotScale.y, 0.f, TexWaves[i].Phase);
+				sprintf_s(szTemp, sizeof(szTemp), "UTrans[%d]", i);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, szTemp, UTrans, TexWaveShader);
+
+				float normScale = TexWaves[i].Fade / float(kNumBumpPasses);
+				Vector4 Coef(TexWaves[i].Dir.x * normScale, TexWaves[i].Dir.y * normScale, 1.f, 1.f);
+				sprintf_s(szTemp, sizeof(szTemp), "Coef[%d]", i);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, szTemp, Coef, TexWaveShader);
+
+			}
+
+			Vector4 xform;
+
+			const float kRate = 0.1f;
+			xform.w += deltaTime * kRate;
+			SET_UNIFORM_BUFFER_STATIC(Vector4, "NoiseXform[0]", NoiseXform[0], TexWaveShader);
+
+			xform.w += deltaTime * kRate;
+			SET_UNIFORM_BUFFER_STATIC(Vector4, "NoiseXform[3]", NoiseXform[3], TexWaveShader);
+
+			float s = 0.5f / (float(kNumBumpPerPass) + TexState.Noise);
+			Vector4 reScale(s, s, 1.f, 1.f);
+			SET_UNIFORM_BUFFER_STATIC(Vector4, "ReScale", ReScale, TexWaveShader);
+
+			float scaleBias = 0.5f * TexState.Noise / (float(kNumBumpPasses) + TexState.Noise);
+			Vector4 scaleBiasVec(scaleBias, scaleBias, 0.f, 1.f);
+			SET_UNIFORM_BUFFER_STATIC(Vector4, "ScaleBias", scaleBiasVec, TexWaveShader);
+
+			//m_CompCosinesEff->SetTexture(m_CompCosineParams.m_CosineLUT, m_CosineLUT);
+			//m_CompCosinesEff->SetTexture(m_CompCosineParams.m_BiasNoise, m_BiasNoiseMap);
+
+			static auto pFullscreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
+			if (pFullscreenQuad)
+			{
+				// pFullscreenQuad->RenderObject->tex_object = CosLUT;
+				// pFullscreenQuad->RenderObject->tex_object2 = BiasNoise;
+
+				pFullscreenQuad->Update(deltaTime);
+				pFullscreenQuad->Draw(MainCamera, TexWaveShader, {});
+			}
+
+			RenderBumpTarget->End();
 		}
-
-		Vector4 xform;
-
-		const float kRate = 0.1f;
-		xform.w += deltaTime * kRate;
-		SET_UNIFORM_BUFFER_STATIC(Vector4, "NoiseXform[0]", NoiseXform[0], TexWaveShader);
-
-		xform.w += deltaTime * kRate;
-		SET_UNIFORM_BUFFER_STATIC(Vector4, "NoiseXform[3]", NoiseXform[3], TexWaveShader);
-
-		float s = 0.5f / (float(kNumBumpPerPass) + TexState.Noise);
-		Vector4 reScale(s, s, 1.f, 1.f);
-		SET_UNIFORM_BUFFER_STATIC(Vector4, "ReScale", ReScale, TexWaveShader);
-
-		float scaleBias = 0.5f * TexState.Noise / (float(kNumBumpPasses) + TexState.Noise);
-		Vector4 scaleBiasVec(scaleBias, scaleBias, 0.f, 1.f);
-		SET_UNIFORM_BUFFER_STATIC(Vector4, "ScaleBias", scaleBiasVec, TexWaveShader);
-
-		//m_CompCosinesEff->SetTexture(m_CompCosineParams.m_CosineLUT, m_CosineLUT);
-		//m_CompCosinesEff->SetTexture(m_CompCosineParams.m_BiasNoise, m_BiasNoiseMap);
-
-		static auto pFullscreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
-		if (pFullscreenQuad)
-		{
-			// pFullscreenQuad->RenderObject->tex_object = CosLUT;
-			// pFullscreenQuad->RenderObject->tex_object2 = BiasNoise;
-
-			pFullscreenQuad->Update(deltaTime);
-			pFullscreenQuad->Draw(MainCamera, TexWaveShader, {});
-		}
-
-		RenderBumpTarget->End();
-	}
 
 	//if (MainRenderTarget->Begin())
 	{
@@ -618,7 +644,7 @@ void jGame::Update(float deltaTime)
 			IsCreatedWaterMesh = true;
 			pWaterMesh = jModelLoader::GetInstance().LoadFromFile("model/WaterMesh.x");
 
-			jStreamParam<float>& VertexParams 
+			jStreamParam<float>& VertexParams
 				= *static_cast<jStreamParam<float>*>(pWaterMesh->RenderObject->VertexStream->Params[0]);
 			for (uint32 i = 2; i < VertexParams.Data.size(); i += 3)
 				VertexParams.Data[i] = 0.0f;
@@ -648,23 +674,30 @@ void jGame::Update(float deltaTime)
 			auto shader = jShader::GetShader("GeoWave");
 
 			{
+				// 1. ViewProjection Matrix
 				SET_UNIFORM_BUFFER_STATIC(Matrix, "World2NDC", (MainCamera->Projection * MainCamera->View), shader);
 
+				// 2. 물 색깔
 				Vector4 waterTint(0.05f, 0.1f, 0.1f, 0.5f);
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "WaterTint", waterTint, shader);
 
+				// 3. 4개 파도의 Frequency
 				Vector4 freq(GeoWaves[0].Freq, GeoWaves[1].Freq, GeoWaves[2].Freq, GeoWaves[3].Freq);
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "Frequency", freq, shader);
 
+				// 4. 4개 파도의 Phase (2PI / Lengh)
 				Vector4 phase(GeoWaves[0].Phase, GeoWaves[1].Phase, GeoWaves[2].Phase, GeoWaves[3].Phase);
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "Phase", phase, shader);
 
+				// 5. 4개 파도의 Amplitude
 				Vector4 amp(GeoWaves[0].Amp, GeoWaves[1].Amp, GeoWaves[2].Amp, GeoWaves[3].Amp);
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "Amplitude", amp, shader);
 
+				// 6. 4개 파도의 DirX
 				Vector4 dirX(GeoWaves[0].Dir.x, GeoWaves[1].Dir.x, GeoWaves[2].Dir.x, GeoWaves[3].Dir.x);
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirX", dirX, shader);
 
+				// 7. 4개 파도의 DirY
 				Vector4 dirY(GeoWaves[0].Dir.y, GeoWaves[1].Dir.y, GeoWaves[2].Dir.y, GeoWaves[3].Dir.y);
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirY", dirY, shader);
 
@@ -672,38 +705,49 @@ void jGame::Update(float deltaTime)
 				normScale *= (float(kNumBumpPasses) + TexState.Noise);
 				normScale *= (TexState.Chop + 1.f);
 
+				// 8. ??? SpecAtten 
 				Vector4 specAtten(GeoState.SpecEnd, 1.f / GeoState.SpecTrans, normScale, 1.f / TexState.RippleScale);
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "SpecAtten", specAtten, shader);
 
+				// 9. 카메라 위치
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "CameraPos", Vector4(MainCamera->Pos, 1.f), shader);
 
 				Vector envCenter(0.f, 0.f, GeoState.EnvHeight); // Just happens to be centered at origin.
 				Vector camToCen = envCenter - MainCamera->Pos;
 
-				float G = camToCen.LengthSQ() - GeoState.EnvRadius * GeoState.EnvRadius;
+				float G = camToCen.LengthSQ() - GeoState.EnvRadius * GeoState.EnvRadius;		// 0 < 이면? 환경맵 바깥, 0 > 이면? 화경맵 안.
+				// 10. 카메라에서 환경맵의 중심방향의 벡터 (정규화 안함) + 환경맵 안인지 밖인지 정보 추가.
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "EnvAdjust", Vector4(camToCen.x, camToCen.y, camToCen.z, G), shader);
 
+				// 11. 환경맵 색상
 				Vector4 envTint(1.f, 1.f, 1.f, 1.f);
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "EnvTint", envTint, shader);
 
+				// 12. 월드 매트릭스
 				SET_UNIFORM_BUFFER_STATIC(Matrix, "Local2World", pWaterMesh->RenderObject->World, shader);
 
+				// 13. 4개 파도의 Wave Length
 				Vector4 lengths(GeoWaves[0].Len, GeoWaves[1].Len, GeoWaves[2].Len, GeoWaves[3].Len);
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "Lengths", lengths, shader);
 
+				// 14. 4개 파도의 물 높이
 				Vector4 depthOffset(GeoState.WaterLevel + 1.f,
 					GeoState.WaterLevel + 1.f,
 					GeoState.WaterLevel + 0.f,
 					GeoState.WaterLevel);
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "DepthOffset", depthOffset, shader);
 
+				// 15. 4개 파도의 Depth Scale 값
 				Vector4 depthScale(1.f / 2.f, 1.f / 2.f, 1.f / 2.f, 1.f);
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "DepthScale", depthScale, shader);
 
+				// 16. Fog 파라메터들
 				Vector4 fogParams(-200.f, 1.f / (100.f - 200.f), 0.f, 1.f);
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "FogParams", fogParams, shader);
 
-				float K = 5.f;
+				// Equation 9 아래 항목 아래에 나오는 식과 일치 Qi = Q/(wi * Ai x numWaves)
+				// Q를 0~1 사이 값으로 변경하므로써 아디스트에게 부드러운 <-> 날카로운 파도를 만들 수 있게 해준다.
+				static float K = 5.f;
 				if (GeoState.AmpOverLen > GeoState.Chop / (2.f * PI * kNumGeoWaves * K))
 					K = GeoState.Chop / (2.f * PI * GeoState.AmpOverLen * kNumGeoWaves);
 				Vector4 dirXK(GeoWaves[0].Dir.x * K,
@@ -714,9 +758,14 @@ void jGame::Update(float deltaTime)
 					GeoWaves[1].Dir.y * K,
 					GeoWaves[2].Dir.y * K,
 					GeoWaves[3].Dir.y * K);
+
+				// 17. 4개 파도의 X 방향 * 가파름 파라메터
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirXK", dirXK, shader);
+
+				// 18. 4개 파도의 Y 방향 * 가파름 파라메터
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirYK", dirYK, shader);
 
+				// 4개의 파도의 TBN 벡터들을 구하는데 사용함
 				Vector4 dirXW(GeoWaves[0].Dir.x * GeoWaves[0].Freq,
 					GeoWaves[1].Dir.x * GeoWaves[1].Freq,
 					GeoWaves[2].Dir.x * GeoWaves[2].Freq,
@@ -725,27 +774,35 @@ void jGame::Update(float deltaTime)
 					GeoWaves[1].Dir.y * GeoWaves[1].Freq,
 					GeoWaves[2].Dir.y * GeoWaves[2].Freq,
 					GeoWaves[3].Dir.y * GeoWaves[3].Freq);
+
+				// 19. 4개의 파도의 X방향과 Frequency를 곱한 파라메터
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirXW", dirXW, shader);
+
+				// 20. 4개의 파도의 Y방향과 Frequency를 곱한 파라메터
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirYW", dirYW, shader);
 
 				Vector4 KW(K * GeoWaves[0].Freq,
 					K * GeoWaves[1].Freq,
 					K * GeoWaves[2].Freq,
 					K * GeoWaves[3].Freq);
+				// 21. 4개의 파도의 Qi (부드러움 <-> 가파름 조정) * Frequency, TBN 벡터 만드는데 사용
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "KW", KW, shader);
 
+				// 22. 4개의 파도의 TBN 벡터 만드는데 사용하는 파라메터
 				Vector4 dirXSqKW(GeoWaves[0].Dir.x * GeoWaves[0].Dir.x * K * GeoWaves[0].Freq,
 					GeoWaves[1].Dir.x * GeoWaves[1].Dir.x * K * GeoWaves[1].Freq,
 					GeoWaves[2].Dir.x * GeoWaves[2].Dir.x * K * GeoWaves[2].Freq,
 					GeoWaves[3].Dir.x * GeoWaves[3].Dir.x * K * GeoWaves[3].Freq);
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirXSqKW", dirXSqKW, shader);
 
+				// 23. 4개의 파도의 TBN 벡터 만드는데 사용하는 파라메터
 				Vector4 dirYSqKW(GeoWaves[0].Dir.y * GeoWaves[0].Dir.y * K * GeoWaves[0].Freq,
 					GeoWaves[1].Dir.y * GeoWaves[1].Dir.y * K * GeoWaves[1].Freq,
 					GeoWaves[2].Dir.y * GeoWaves[2].Dir.y * K * GeoWaves[2].Freq,
 					GeoWaves[3].Dir.y * GeoWaves[3].Dir.y * K * GeoWaves[3].Freq);
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirYSqKW", dirYSqKW, shader);
 
+				// 24. 4개의 파도의 TBN 벡터 만드는데 사용하는 파라메터
 				Vector4 dirXdirYKW(GeoWaves[0].Dir.y * GeoWaves[0].Dir.x * K * GeoWaves[0].Freq,
 					GeoWaves[1].Dir.x * GeoWaves[1].Dir.y * K * GeoWaves[1].Freq,
 					GeoWaves[2].Dir.x * GeoWaves[2].Dir.y * K * GeoWaves[2].Freq,
@@ -784,7 +841,7 @@ void jGame::Update(float deltaTime)
 
 void jGame::UpdateAppSetting()
 {
-	auto& appSetting =  jShadowAppSettingProperties::GetInstance();
+	auto& appSetting = jShadowAppSettingProperties::GetInstance();
 
 	appSetting.SpotLightDirection = Matrix::MakeRotateY(0.01).Transform(appSetting.SpotLightDirection);
 
@@ -899,43 +956,43 @@ void jGame::UpdateAppSetting()
 			jObject::AddDebugObject(DirectionalLightInfo);
 		else
 			jObject::RemoveDebugObject(DirectionalLightInfo);
-	});
+		});
 
 	compareFunc(s_showDirectionalLightOn, appSetting.DirectionalLightOn, [this](const auto& param) {
 		if (param)
 			MainCamera->AddLight(DirectionalLight);
 		else
 			MainCamera->RemoveLight(DirectionalLight);
-	});
+		});
 
 	compareFunc(s_showPointLightInfo, appSetting.ShowPointLightInfo, [this](const auto& param) {
 		if (param)
 			jObject::AddDebugObject(PointLightInfo);
 		else
 			jObject::RemoveDebugObject(PointLightInfo);
-	});
+		});
 
 	compareFunc(s_showPointLightOn, appSetting.PointLightOn, [this](const auto& param) {
 		if (param)
 			MainCamera->AddLight(PointLight);
 		else
 			MainCamera->RemoveLight(PointLight);
-	});
+		});
 
 	compareFunc(s_showSpotLightInfo, appSetting.ShowSpotLightInfo, [this](const auto& param) {
 		if (param)
 			jObject::AddDebugObject(SpotLightInfo);
 		else
 			jObject::RemoveDebugObject(SpotLightInfo);
-	});
+		});
 
 	compareFunc(s_showSpotLightOn, appSetting.SpotLightOn, [this](const auto& param) {
 		if (param)
 			MainCamera->AddLight(SpotLight);
 		else
 			MainCamera->RemoveLight(SpotLight);
-	});
-	
+		});
+
 	// todo debug test, should remove this
 	if (DirectionalLight)
 		DirectionalLight->Data.Direction = appSetting.DirecionalLightDirection;
@@ -1121,11 +1178,11 @@ void jGame::SpawnGraphTestFunc()
 
 	float scale = 100.0f;
 	for (int i = 0; i < _countof(PerspectiveVector); ++i)
-		graph1.push_back(Vector2(i*2, PerspectiveVector[i].z * scale));
+		graph1.push_back(Vector2(i * 2, PerspectiveVector[i].z * scale));
 	for (int i = 0; i < _countof(OrthographicVector); ++i)
-		graph2.push_back(Vector2(i*2, OrthographicVector[i].z* scale));
+		graph2.push_back(Vector2(i * 2, OrthographicVector[i].z * scale));
 
-	auto graphObj1 = jPrimitiveUtil::CreateGraph2D({ 360, 350 }, {360, 300}, graph1);
+	auto graphObj1 = jPrimitiveUtil::CreateGraph2D({ 360, 350 }, { 360, 300 }, graph1);
 	jObject::AddUIDebugObject(graphObj1);
 
 	auto graphObj2 = jPrimitiveUtil::CreateGraph2D({ 360, 700 }, { 360, 300 }, graph2);
