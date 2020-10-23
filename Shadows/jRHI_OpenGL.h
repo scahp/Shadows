@@ -156,6 +156,7 @@ public:
 	virtual void ReleaseShader(jShader* shader) const override;
 	virtual jTexture* CreateNullTexture() const override;
 	virtual jTexture* CreateTextureFromData(unsigned char* data, int32 width, int32 height, bool sRGB) const override;
+	virtual jTexture* CreateCubeTextureFromData(unsigned char** data, int32 width, int32 height, bool sRGB) const override;
 	virtual bool SetUniformbuffer(const IUniformBuffer* buffer, const jShader* shader) const override;
 	virtual void SetMatetrial(jMaterialData* materialData, const jShader* shader, int32 baseBindingIndex = 0) const override;
 	virtual void SetTexture(int32 index, const jTexture* texture) const override;

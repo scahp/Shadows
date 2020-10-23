@@ -898,6 +898,26 @@ jTexture* jRHI_OpenGL::CreateTextureFromData(unsigned char* data, int32 width, i
 	return texure;
 }
 
+jTexture* jRHI_OpenGL::CreateCubeTextureFromData(unsigned char** data, int32 width, int32 height, bool sRGB) const
+{
+	auto texure = new jTexture_OpenGL();
+	texure->sRGB = sRGB;
+
+	glGenTextures(1, &texure->TextureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, texure->TextureID);
+
+	for (unsigned int i = 0; i < 6; i++)
+	{
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data[i]);
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	return texure;
+}
+
 bool jRHI_OpenGL::SetUniformbuffer(const IUniformBuffer* buffer, const jShader* shader) const
 {
 	switch (buffer->GetType())

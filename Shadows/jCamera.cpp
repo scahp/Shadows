@@ -203,11 +203,12 @@ Matrix jCameraUtil::CreatePerspectiveMatrix(float width, float height, float fov
 Matrix jCameraUtil::CreatePerspectiveMatrixFarAtInfinity(float width, float height, float fov, float nearDist)
 {
 	const float F = 1.0f / tanf(fov / 2.0f);
+	constexpr float epsilone = FLT_EPSILON * 2.0f;
 
 	Matrix projMat;
 	projMat.m[0][0] = F * (height / width); projMat.m[0][1] = 0.0f;      projMat.m[0][2] = 0.0f;                      projMat.m[0][3] = 0.0f;
 	projMat.m[1][0] = 0.0f;					projMat.m[1][1] = F;         projMat.m[1][2] = 0.0f;                      projMat.m[1][3] = 0.0f;
-	projMat.m[2][0] = 0.0f;					projMat.m[2][1] = 0.0f;      projMat.m[2][2] = -1.0f;                     projMat.m[2][3] = -(2.0f*nearDist);
+	projMat.m[2][0] = 0.0f;					projMat.m[2][1] = 0.0f;      projMat.m[2][2] = epsilone-1.0f;             projMat.m[2][3] = ((epsilone-2.0f)*nearDist);
 	projMat.m[3][0] = 0.0f;					projMat.m[3][1] = 0.0f;      projMat.m[3][2] = -1.0f;                     projMat.m[3][3] = 0.0f;
 	return projMat;
 }

@@ -280,6 +280,8 @@
     <None Include="Shaders\compute\compute_example.glsl" />
     <None Include="Shaders\compute\compute_link_linkedlist.glsl" />
     <None Include="Shaders\compute\compute_sort_linkedlist.glsl" />
+    <None Include="Shaders\cubeenv_fs.glsl" />
+    <None Include="Shaders\cubeenv_vs.glsl" />
     <None Include="Shaders\drawtexwave_fs.glsl" />
     <None Include="Shaders\drawtexwave_vs.glsl" />
     <None Include="Shaders\fs_boundvolume.glsl" />

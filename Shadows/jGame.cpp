@@ -244,6 +244,29 @@ void jGame::Update(float deltaTime)
 	jObject::FlushDirtyState();
 
 	//////////////////////////////////////////////////////////////////////////
+	static bool LoadCudbeMap = false;
+	static jTexture* CubeMapTexture = nullptr;
+	if (!LoadCudbeMap)
+	{
+		LoadCudbeMap = true;
+
+		jImageData data[6];
+		jImageFileLoader::GetInstance().LoadTextureFromFile(data[0], "Image/EnvCube/xp.png", true);
+		jImageFileLoader::GetInstance().LoadTextureFromFile(data[1], "Image/EnvCube/xn.png", true);
+		jImageFileLoader::GetInstance().LoadTextureFromFile(data[2], "Image/EnvCube/yp.png", true);
+		jImageFileLoader::GetInstance().LoadTextureFromFile(data[3], "Image/EnvCube/yn.png", true);
+		jImageFileLoader::GetInstance().LoadTextureFromFile(data[4], "Image/EnvCube/zp.png", true);
+		jImageFileLoader::GetInstance().LoadTextureFromFile(data[5], "Image/EnvCube/zn.png", true);
+
+		uint8* Datas[6];
+		for (int32 i = 0; i < 6; ++i)
+			Datas[i] = data[i].ImageData.data();
+
+		CubeMapTexture = g_rhi->CreateCubeTextureFromData(Datas, data[0].Width, data[0].Height, data[0].sRGB);
+	}
+
+	static auto EnvCube = jPrimitiveUtil::CreateCube(Vector::ZeroVector, Vector(0.5f), Vector(1.0f), Vector4::ColorWhite);
+
 	constexpr static int32 kNumGeoWaves = 4;
 	class GeoWaveDesc
 	{
@@ -822,16 +845,24 @@ void jGame::Update(float deltaTime)
 
 			pWaterMesh->Update(deltaTime);
 			pWaterMesh->Draw(MainCamera, shader, { DirectionalLight });
+
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
 
 		if (1)
 		{
+			auto shader = jShader::GetShader("CubeEnv");
+			EnvCube->RenderObject->tex_object = CubeMapTexture;
 
+			MainCamera->IsInfinityFar = true;
+			MainCamera->UpdateCamera();
+			EnvCube->Update(deltaTime);
+			EnvCube->Draw(MainCamera, shader, { DirectionalLight });
+			MainCamera->IsInfinityFar = false;
+			MainCamera->UpdateCamera();
 		}
 
 		/// 
-
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		g_rhi->EndDebugEvent();
 		MainRenderTarget->End();
