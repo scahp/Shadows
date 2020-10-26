@@ -3,7 +3,7 @@
 precision mediump float;
 
 layout(location = 0) in vec3 Pos;
-layout(location = 1) in vec4 Color;
+//layout(location = 1) in vec4 Color;
 
 uniform mat4 MVP;
 
@@ -32,13 +32,15 @@ uniform vec4 DirXSqKW;
 uniform vec4 DirYSqKW;
 uniform vec4 DirXdirYKW;
 
-out vec4 Color_;
-
-
 out vec4 ModColor_;
 out vec4 AddColor_;
 out float Fog;
 out vec4 TexCoord0;
+
+out vec4 BTN_X_; // Binormal.x, Tangent.x, Normal.x
+out vec4 BTN_Y_; // Bin.y, Tan.y, Norm.y
+out vec4 BTN_Z_; // Bin.z, Tan.z, Norm.z
+
 
 // Depth filter channels control:
 // dFilter.x => overall opacity
@@ -298,8 +300,8 @@ void CalcTangentBasis(vec4 sines,
 
 
 	BTN_X.w = eyeRay.x;
-	BTN_Y.w = -eyeRay.z;
-	BTN_Z.w = eyeRay.y;
+	BTN_Y.w = -eyeRay.y;
+	BTN_Z.w = eyeRay.z;
 }
 
 
@@ -330,6 +332,8 @@ void main()
 	vec4 sines;
 	vec4 cosines;
 
+	vec4 Color = vec4(1.0);
+
 	// Amp * Cos, Amp * Sin 구하는 것.
 	CalcSinCos(wPos,
 		DirX, DirY,
@@ -352,10 +356,6 @@ void main()
 	// 환경맵을 현재 위치에 맞게 보정하는 코드. Eye Vector 파트 보면 됨.
 	vec3 eyeRay = FinitizeEyeRay(cam2Vtx, EnvAdjust);
 
-	vec4 BTN_X; // Binormal.x, Tangent.x, Normal.x
-	vec4 BTN_Y; // Bin.y, Tan.y, Norm.y
-	vec4 BTN_Z; // Bin.z, Tan.z, Norm.z
-
 	// Equation 10 구하기
 	vec3 norm;
 	CalcTangentBasis(sines, cosines,
@@ -367,9 +367,9 @@ void main()
 		KW,
 		pertAtten,
 		eyeRay,
-		BTN_X,
-		BTN_Y,
-		BTN_Z,
+		BTN_X_,
+		BTN_Y_,
+		BTN_Z_,
 		norm);
 
 	vec4 Position;
@@ -388,9 +388,6 @@ void main()
 		ModColor_,
 		AddColor_);
 
-    ////////////////////////////
-    Color_ = Color;
-	Color_ = vec4(1.0, 1.0, 1.0, 1.0);
     gl_Position = MVP * vec4(Pos, 1.0);
 	gl_Position = Position;
 }

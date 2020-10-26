@@ -21,6 +21,7 @@
 #include "jForwardRenderer.h"
 #include "jPipeline.h"
 #include "jVertexAdjacency.h"
+#include "jSamplerStatePool.h"
 
 jRHI* g_rhi = nullptr;
 
@@ -318,7 +319,7 @@ void jGame::Update(float deltaTime)
 		GeoState.AmpOverLen = 0.1f;
 
 		GeoState.EnvHeight = -50.f;
-		GeoState.EnvRadius = 100.f;
+		GeoState.EnvRadius = 200.f;
 		GeoState.WaterLevel = -2.f;
 
 		GeoState.TransIdx = 0;
@@ -384,6 +385,7 @@ void jGame::Update(float deltaTime)
 	static const float kGravConst = 30.f;
 
 	// UpdateGeoWave
+	if (1)
 	{
 		for (int32 i = 0; i < kNumGeoWaves; ++i)
 		{
@@ -697,6 +699,7 @@ void jGame::Update(float deltaTime)
 			auto shader = jShader::GetShader("GeoWave");
 
 			{
+				g_rhi->SetShader(shader);
 				// 1. ViewProjection Matrix
 				SET_UNIFORM_BUFFER_STATIC(Matrix, "World2NDC", (MainCamera->Projection * MainCamera->View), shader);
 
@@ -754,7 +757,7 @@ void jGame::Update(float deltaTime)
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "Lengths", lengths, shader);
 
 				// 14. 4개 파도의 물 높이
-				Vector4 depthOffset(GeoState.WaterLevel + 1.f,
+				static Vector4 depthOffset(GeoState.WaterLevel + 1.f,
 					GeoState.WaterLevel + 1.f,
 					GeoState.WaterLevel + 0.f,
 					GeoState.WaterLevel);
@@ -836,12 +839,14 @@ void jGame::Update(float deltaTime)
 				//pWaterMesh->RenderObject->tex_object2 = m_BumpTex;
 			}
 
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 			static float OffsetX = 0.0f;
 			static float OffsetZ = -10.0f;
 			pWaterMesh->RenderObject->Pos.x = OffsetX;
 			pWaterMesh->RenderObject->Pos.z = OffsetZ;
+			pWaterMesh->RenderObject->tex_object = CubeMapTexture;
+			pWaterMesh->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearWrap").get();
 
 			pWaterMesh->Update(deltaTime);
 			pWaterMesh->Draw(MainCamera, shader, { DirectionalLight });
@@ -849,7 +854,8 @@ void jGame::Update(float deltaTime)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
 
-		if (1)
+		static bool test = false;
+		if (test)
 		{
 			auto shader = jShader::GetShader("CubeEnv");
 			EnvCube->RenderObject->tex_object = CubeMapTexture;
