@@ -67,6 +67,15 @@ enum class EUniformType
 	MAX,
 };
 
+template <typename T> struct ConvertUniformType { };
+template <> struct ConvertUniformType<Matrix> { operator EUniformType () { return EUniformType::MATRIX; } };
+template <> struct ConvertUniformType<bool> { operator EUniformType () { return EUniformType::BOOL; } };
+template <> struct ConvertUniformType<int> { operator EUniformType () { return EUniformType::INT; } };
+template <> struct ConvertUniformType<float> { operator EUniformType () { return EUniformType::FLOAT; } };
+template <> struct ConvertUniformType<Vector2> { operator EUniformType () { return EUniformType::VECTOR2; } };
+template <> struct ConvertUniformType<Vector> { operator EUniformType () { return EUniformType::VECTOR3; } };
+template <> struct ConvertUniformType<Vector4> { operator EUniformType () { return EUniformType::VECTOR4; } };
+
 struct IUniformBuffer : public IBuffer
 {
 	IUniformBuffer() = default;
@@ -75,6 +84,8 @@ struct IUniformBuffer : public IBuffer
 	{}
 	virtual ~IUniformBuffer() {}
 	std::string Name;
+
+	virtual const char* GetName() const { return Name.c_str(); }
 	virtual EUniformType GetType() const { return EUniformType::NONE; }
 
 	virtual void Bind(const jShader* shader) const override;
@@ -358,6 +369,8 @@ public:
 	virtual void SetViewportIndexed(int32 index, const jViewport& viewport) const {}
 	virtual void SetViewportIndexedArray(int32 startIndex, int32 count, const jViewport* viewports) const {}
 	virtual bool SetUniformbuffer(const IUniformBuffer* buffer, const jShader* shader) const { return false; }
+	virtual bool GetUniformbuffer(void* outResult, const IUniformBuffer* buffer, const jShader* shader) const { return false; }
+	virtual bool GetUniformbuffer(void* outResult, EUniformType type, const char* name, const jShader* shader) const { return false; }
 	virtual jTexture* CreateNullTexture() const { return nullptr; }
 	virtual jTexture* CreateTextureFromData(unsigned char* data, int32 width, int32 height, bool sRGB) const { return nullptr; }
 	virtual jTexture* CreateCubeTextureFromData(unsigned char** data, int32 width, int32 height, bool sRGB) const { return nullptr; }
@@ -396,6 +409,14 @@ public:
 	static jUniformBuffer<Type> temp(Name, CurrentData);\
 	temp.Data = CurrentData;\
 	g_rhi->SetUniformbuffer(&temp, Shader);\
+}
+
+// Not thread safe
+#define GET_UNIFORM_BUFFER_STATIC(ResultData, Type, Name, Shader) \
+{\
+	EUniformType UniformType = ConvertUniformType<Type>();\
+	JASSERT(UniformType != EUniformType::NONE);\
+	g_rhi->GetUniformbuffer(ResultData, UniformType, Name, Shader);\
 }
 
 struct jScopeDebugEvent final
