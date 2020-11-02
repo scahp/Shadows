@@ -91,7 +91,8 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("Graph2D", "shaders/vs_graph.glsl", "shaders/fs_graph.glsl");
 
 		DECLARE_SHADER_VS_FS("GeoWave", "Shaders/geowave_vs.glsl", "Shaders/geowave_fs.glsl");
-		DECLARE_SHADER_VS_FS("DrawTexWave", "Shaders/fullscreen/vs_fullscreen_common.glsl", "Shaders/drawtexwave_fs.glsl");
+		DECLARE_SHADER_VS_FS("DrawTexWave", "Shaders/drawtexwave_vs.glsl", "Shaders/drawtexwave_fs.glsl");
+		DECLARE_SHADER_VS_FS("DrawTexWaveLast", "Shaders/drawtexwave_last_vs.glsl", "Shaders/drawtexwave_last_fs.glsl");
 		DECLARE_SHADER_VS_FS("CubeEnv", "Shaders/cubeenv_vs.glsl", "Shaders/cubeenv_fs.glsl");
 	}
 } s_shaderInfoCreation;

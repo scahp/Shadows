@@ -902,6 +902,7 @@ jTexture* jRHI_OpenGL::CreateCubeTextureFromData(unsigned char** data, int32 wid
 {
 	auto texure = new jTexture_OpenGL();
 	texure->sRGB = sRGB;
+	texure->TextureType = ETextureType::TEXTURE_CUBE;
 
 	glGenTextures(1, &texure->TextureID);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, texure->TextureID);
@@ -1037,7 +1038,7 @@ bool jRHI_OpenGL::GetUniformbuffer(void* outResult, EUniformType type, const cha
 		if (loc == -1)
 			return false;
 		int temp = 0;
-		glGetUniformiv(shader_gl->program, loc, (int*)temp);
+		glGetUniformiv(shader_gl->program, loc, (int*)&temp);
 		*static_cast<bool*>(outResult) = (temp != 0);
 		break;
 	}

@@ -1,6 +1,6 @@
 #version 330 core
 
-precision mediump float;
+precision highp float;
 
 layout(location = 0) in vec3 Pos;
 //layout(location = 1) in vec4 Color;
@@ -34,12 +34,12 @@ uniform vec4 DirXdirYKW;
 
 out vec4 ModColor_;
 out vec4 AddColor_;
-out float Fog;
-out vec4 TexCoord0;
+out float Fog_;
+out vec4 TexCoord0_;
 
 out vec4 BTN_X_; // Binormal.x, Tangent.x, Normal.x
-out vec4 BTN_Y_; // Bin.y, Tan.y, Norm.y
-out vec4 BTN_Z_; // Bin.z, Tan.z, Norm.z
+out vec4 BTN_Y_; // Binormal.y, Tangent.y, Normal.y
+out vec4 BTN_Z_; // Binormal.z, Tangent.z, Normal.z
 
 
 // Depth filter channels control:
@@ -49,7 +49,7 @@ out vec4 BTN_Z_; // Bin.z, Tan.z, Norm.z
 vec3 CalcDepthFilter(vec4 depthOffset, vec4 depthScale, vec4 wPos)
 {
 	// 물의 깊이와 버택스의 위치 차이를 구함.
-	vec3 dFilter = vec3(depthOffset.xyz) - wPos.zzz;
+	vec3 dFilter = wPos.zzz - vec3(depthOffset);
 
 	// 물 깊이와의 차이점에 Scale 값을 적용함. (기본값은 [0.5, 0.5, 0.5]임)
 	dFilter = dFilter * vec3(depthScale.xyz);
@@ -246,7 +246,7 @@ vec4 CalcFinalPosition(vec4 wPos,
 	float h = dot(sines, vec4(1.f)) + depthOffset;
 
 	// Clamp to never go beneath input height
-	wPos.z = max(wPos.z, h);
+	wPos.z = min(wPos.z, h);
 
 	// dirXK 가 무엇일까?
 	// DirX * K 는 이 식을 나타냄. Qi = Q/(wi * Ai x numWaves) (Equation 9에 아래 나옴)
@@ -279,7 +279,6 @@ void CalcTangentBasis(vec4 sines,
 	// Equation 10, 11, 12 의 TBN 벡터 구하는 항목
 	// Note that we're swapping Y and Z and negating Z (rotation about X)
 	// to match the D3D convention of Y being up in cubemaps.
-
 	BTN_X.x = 1.f + dot(sines, -dirXSqKW);
 	BTN_X.y = dot(sines, -dirXDirYKW);
 	BTN_X.z = dot(cosines, -dirXW);
@@ -298,10 +297,9 @@ void CalcTangentBasis(vec4 sines,
 	BTN_Y.xy = BTN_Y.xy * pertAtten;
 	norm.z = -BTN_Y.z;
 
-
 	BTN_X.w = eyeRay.x;
-	BTN_Y.w = -eyeRay.y;
-	BTN_Z.w = eyeRay.z;
+	BTN_Y.w = -eyeRay.z;
+	BTN_Z.w = eyeRay.y;
 }
 
 
@@ -315,9 +313,9 @@ void main()
 
 	// Calculate ripple UV from position
 	// ??? SpecAtten.w 는 RippleScale 임.
-	TexCoord0.xy = wPos.xy * SpecAtten.ww;
-	TexCoord0.z = 0.f;
-	TexCoord0.w = 1.f;
+	TexCoord0_.xy = wPos.xy * SpecAtten.ww;
+	TexCoord0_.z = 0.f;
+	TexCoord0_.w = 1.f;
 
 	// Get our depth based filters. 
 	// cDepthOffset,
@@ -376,7 +374,7 @@ void main()
 
 	// Calc screen position and fog
 	// Screen 위치와 Fog (NDC의 Z 기준, W로 나누기 전이기 때문이므로 Z가 들어있을 것임)
-	CalcScreenPosAndFog(World2NDC, FogParams, wPos, Position, Fog);
+	CalcScreenPosAndFog(World2NDC, FogParams, wPos, Position, Fog_);
 
 	CalcFinalColors(norm,
 		cam2Vtx,

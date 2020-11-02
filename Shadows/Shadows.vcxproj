@@ -283,6 +283,8 @@
     <None Include="Shaders\cubeenv_fs.glsl" />
     <None Include="Shaders\cubeenv_vs.glsl" />
     <None Include="Shaders\drawtexwave_fs.glsl" />
+    <None Include="Shaders\drawtexwave_last_fs.glsl" />
+    <None Include="Shaders\drawtexwave_last_vs.glsl" />
     <None Include="Shaders\drawtexwave_vs.glsl" />
     <None Include="Shaders\fs_boundvolume.glsl" />
     <None Include="Shaders\fs_graph.glsl" />

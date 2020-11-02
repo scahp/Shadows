@@ -547,5 +547,11 @@
     <None Include="Shaders\cubeenv_vs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\drawtexwave_last_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\drawtexwave_last_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

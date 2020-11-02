@@ -318,16 +318,16 @@ void jGame::Update(float deltaTime)
 		GeoState.MaxLength = 25.f;
 		GeoState.AmpOverLen = 0.1f;
 
-		GeoState.EnvHeight = -50.f;
-		GeoState.EnvRadius = 200.f;
-		GeoState.WaterLevel = -2.f;
+		GeoState.EnvHeight = -50.0f;
+		GeoState.EnvRadius = 200.0f;
+		GeoState.WaterLevel = 2.f;
 
 		GeoState.TransIdx = 0;
 		GeoState.TransDel = -1.f / 6.f;
 
 		GeoState.SpecAtten = 1.f;
-		GeoState.SpecEnd = 200.f;
-		GeoState.SpecTrans = 100.f;
+		GeoState.SpecEnd = 200.0f;
+		GeoState.SpecTrans = 100.0f;
 	}
 
 	static auto RandZeroToOne = []()
@@ -359,7 +359,7 @@ void jGame::Update(float deltaTime)
 
 		// 바람의 방향을 랜덤으로 변경시켜주는 부분
 		// Radian 각도로 변경을 좌우, 위아래로 변화시킬 정도를 정의 -rotBase ~ rotBase
-		float rotBase = GeoState.AngleDeviation * PI / 180.f;
+		float rotBase = GeoState.AngleDeviation * PI / 180.0f;
 
 		float rads = rotBase * RandMinusOneToOne();
 		float rx = float(cosf(rads));
@@ -382,7 +382,7 @@ void jGame::Update(float deltaTime)
 		}
 	}
 
-	static const float kGravConst = 30.f;
+	static const float kGravConst = 30.0f;
 
 	// UpdateGeoWave
 	if (1)
@@ -480,7 +480,7 @@ void jGame::Update(float deltaTime)
 		TexState.AngleDeviation = 15.f;
 		TexState.WindDir.x = 0;
 		TexState.WindDir.y = 1.f;
-		TexState.MaxLength = 10.f;
+		TexState.MaxLength = 10.0f;
 		TexState.MinLength = 1.f;
 		TexState.AmpOverLen = 0.1f;
 		TexState.RippleScale = 25.f;
@@ -492,7 +492,7 @@ void jGame::Update(float deltaTime)
 
 	auto InitTexWave = [this](int32 InIndex)
 	{
-		float rads = RandMinusOneToOne() * TexState.AngleDeviation * PI / 180.f;
+		float rads = RandMinusOneToOne() * TexState.AngleDeviation * PI / 180.0f;
 		float dx = float(sin(rads));
 		float dy = float(cos(rads));
 
@@ -511,8 +511,9 @@ void jGame::Update(float deltaTime)
 		dx = float(int(dx >= 0 ? dx + 0.5f : dx - 0.5f));
 		dy = float(int(dy >= 0 ? dy + 0.5f : dy - 0.5f));
 
-		TexWaves[InIndex].RotScale.x = dx;
-		TexWaves[InIndex].RotScale.y = dy;
+		// ? 원본과 다르게 dx, dy 부호를 바꿔줘야 함
+		TexWaves[InIndex].RotScale.x = -dx;
+		TexWaves[InIndex].RotScale.y = -dy;
 
 		float effK = float(1.0 / sqrt(dx * dx + dy * dy));
 		TexWaves[InIndex].Len = float(kBumpTexSize) * effK;
@@ -529,6 +530,15 @@ void jGame::Update(float deltaTime)
 		speed *= 1.f + RandMinusOneToOne() * TexState.SpeedDeviation;
 		TexWaves[InIndex].Speed = speed;
 	};
+
+	static bool IsInitTexWave = false;
+	if (!IsInitTexWave)
+	{
+		IsInitTexWave = true;
+
+		for (int32 i = 0; i < kNumTexWaves; ++i)
+			InitTexWave(i);
+	}
 
 	// UpdateTexWave
 	for (int32 i = 0; i < kNumTexWaves; ++i)
@@ -556,15 +566,6 @@ void jGame::Update(float deltaTime)
 		TexWaves[i].Phase -= int(TexWaves[i].Phase);
 	}
 
-	static bool IsInitTexWave = false;
-	if (!IsInitTexWave)
-	{
-		IsInitTexWave = true;
-
-		for (int32 i = 0; i < kNumTexWaves; ++i)
-			InitTexWave(i);
-	}
-
 	static auto MainRenderTarget = jRenderTargetPool::GetRenderTarget(
 		{ ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT
 		, EDepthBufferType::DEPTH32, SCR_WIDTH, SCR_HEIGHT, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR }
@@ -572,65 +573,242 @@ void jGame::Update(float deltaTime)
 
 	static auto RenderBumpTarget = jRenderTargetPool::GetRenderTarget(
 		{ ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT
-		, EDepthBufferType::DEPTH32, SCR_WIDTH, SCR_HEIGHT, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR }
+		, EDepthBufferType::NONE, kBumpTexSize, kBumpTexSize, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR }
 	);
+
+	static jTexture* CosineLUT = nullptr;
+	static bool IsCreatedCosineLUT = false;
+	if (!IsCreatedCosineLUT)
+	{
+		jImageData cosineLUTData;
+		cosineLUTData.Width = kBumpTexSize;
+		cosineLUTData.Height = 1;
+		cosineLUTData.ImageData.resize(kBumpTexSize * 4);		// RGBA 이기 때문에 4를 곱함
+		uint32* pDat = (uint32*)&cosineLUTData.ImageData[0];
+		for (int32 i = 0; i < kBumpTexSize; i++)
+		{
+			float dist = float(i) / float(kBumpTexSize - 1) * 2.f * PI;
+			float c = float(cos(dist));
+			float s = float(sin(dist));
+			s *= 0.5f;
+			s += 0.5f;
+			s = float(pow(s, TexState.Chop));
+			c *= s;
+			unsigned char cosDist = (unsigned char)((c * 0.5 + 0.5) * 255.999f);
+
+			// ARGB -> ABGR
+			//pDat[i] = (0xff << 24)
+			//	| (cosDist << 16)
+			//	| (cosDist << 8)
+			//	| 0xff;
+
+			// ABGR 순으로 되어있기 때문에 그에 맞게 수정
+			pDat[i] = (0xff << 24)
+				| (0xff << 16)
+				| (cosDist << 8)
+				| cosDist;
+
+		}
+		CosineLUT = g_rhi->CreateTextureFromData(&cosineLUTData.ImageData[0]
+			, cosineLUTData.Width, cosineLUTData.Height, false);
+		IsCreatedCosineLUT = true;
+	}
+
+	static jTexture* BiasNoise = nullptr;
+	static bool IsCreatedBiasNoise = false;
+	if (!IsCreatedBiasNoise)
+	{
+		jImageData BiasNoiseData;
+		BiasNoiseData.Width = kBumpTexSize;
+		BiasNoiseData.Height = kBumpTexSize;
+		BiasNoiseData.ImageData.resize(kBumpTexSize * 4 * kBumpTexSize);		// RGBA 이기 때문에 4를 곱함
+		uint32* pDat = (uint32*)&BiasNoiseData.ImageData[0];
+		for (int32 i = 0; i < kBumpTexSize; i++)
+		{
+			for (int32 j = 0; j < kBumpTexSize; j++)
+			{
+				float x = RandZeroToOne();
+				float y = RandZeroToOne();
+
+				unsigned char r = (unsigned char)(x * 255.999f);
+				unsigned char g = (unsigned char)(y * 255.999f);
+
+				// ARGB -> ABGR
+				//pDat[j + i * kBumpTexSize] = (0xff << 24)
+				//	| (r << 16)
+				//	| (g << 8)
+				//	| 0xff;
+
+				// ABGR 순으로 되어있기 때문에 그에 맞게 수정
+				pDat[j + i * kBumpTexSize] = (0xff << 24)
+					| (0xff << 16)
+					| (g << 8)
+					| r;
+			}
+		}
+
+		BiasNoise = g_rhi->CreateTextureFromData(&BiasNoiseData.ImageData[0]
+			, BiasNoiseData.Width, BiasNoiseData.Height, false);
+
+		IsCreatedBiasNoise = true;
+	}
+
+	if (g_KeyState['j'] || g_KeyState['J'])
+	{
+		GeoState.AmpOverLen += deltaTime * 0.1f;
+		GeoState.AmpOverLen = Clamp(GeoState.AmpOverLen, 0.0f, 1.0f);
+	}
+	else if (g_KeyState['k'] || g_KeyState['K'])
+	{
+		GeoState.AmpOverLen -= deltaTime * 0.1f;
+		GeoState.AmpOverLen = Clamp(GeoState.AmpOverLen, 0.0f, 1.0f);
+	}
+
+	if (g_KeyState['u'] || g_KeyState['U'])
+	{
+		TexState.AmpOverLen += deltaTime * 0.05f;
+		TexState.AmpOverLen = Clamp(TexState.AmpOverLen, 0.0f, 1.0f);
+	}
+	else if (g_KeyState['i'] || g_KeyState['I'])
+	{
+		TexState.AmpOverLen -= deltaTime * 0.05f;
+		TexState.AmpOverLen = Clamp(TexState.AmpOverLen, 0.0f, 1.0f);
+	}
 
 	if (1)
 		if (RenderBumpTarget->Begin())
 		{
-			static Vector4 m_UTrans[16];
-			static Vector4 m_Coef[16];
-			static Vector4 ReScale;
-			static Vector4 NoiseXform[4];
-
+			g_rhi->BeginDebugEvent("[0]. Bump RenderTexture Start");
 			auto TexWaveShader = jShader::GetShader("DrawTexWave");
+			
+			g_rhi->SetShader(TexWaveShader);
 
-			char szTemp[1024];
-			int i;
-			for (i = 0; i < 16; i++)
-			{
-				Vector4 UTrans(TexWaves[i].RotScale.x, TexWaves[i].RotScale.y, 0.f, TexWaves[i].Phase);
-				sprintf_s(szTemp, sizeof(szTemp), "UTrans[%d]", i);
-				SET_UNIFORM_BUFFER_STATIC(Vector4, szTemp, UTrans, TexWaveShader);
+			//char szTemp[1024];
+			//int i;
+			//for (i = 0; i < 16; i++)
+			//{
+			//	Vector4 UTrans(TexWaves[i].RotScale.x, TexWaves[i].RotScale.y, 0.0f, TexWaves[i].Phase);
+			//	sprintf_s(szTemp, sizeof(szTemp), "UTrans[%d]", i);
+			//	g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, UTrans), TexWaveShader);
 
-				float normScale = TexWaves[i].Fade / float(kNumBumpPasses);
-				Vector4 Coef(TexWaves[i].Dir.x * normScale, TexWaves[i].Dir.y * normScale, 1.f, 1.f);
-				sprintf_s(szTemp, sizeof(szTemp), "Coef[%d]", i);
-				SET_UNIFORM_BUFFER_STATIC(Vector4, szTemp, Coef, TexWaveShader);
-
-			}
-
-			Vector4 xform;
-
-			const float kRate = 0.1f;
-			xform.w += deltaTime * kRate;
-			SET_UNIFORM_BUFFER_STATIC(Vector4, "NoiseXform[0]", NoiseXform[0], TexWaveShader);
-
-			xform.w += deltaTime * kRate;
-			SET_UNIFORM_BUFFER_STATIC(Vector4, "NoiseXform[3]", NoiseXform[3], TexWaveShader);
+			//	float normScale = TexWaves[i].Fade / float(kNumBumpPasses);
+			//	Vector4 Coef(TexWaves[i].Dir.x * normScale, TexWaves[i].Dir.y * normScale, 1.f, 1.f);
+			//	sprintf_s(szTemp, sizeof(szTemp), "Coef[%d]", i);
+			//	g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, Coef), TexWaveShader);
+			//}
 
 			float s = 0.5f / (float(kNumBumpPerPass) + TexState.Noise);
 			Vector4 reScale(s, s, 1.f, 1.f);
-			SET_UNIFORM_BUFFER_STATIC(Vector4, "ReScale", ReScale, TexWaveShader);
+			SET_UNIFORM_BUFFER_STATIC(Vector4, "ReScale", reScale, TexWaveShader);
 
-			float scaleBias = 0.5f * TexState.Noise / (float(kNumBumpPasses) + TexState.Noise);
-			Vector4 scaleBiasVec(scaleBias, scaleBias, 0.f, 1.f);
-			SET_UNIFORM_BUFFER_STATIC(Vector4, "ScaleBias", scaleBiasVec, TexWaveShader);
-
-			//m_CompCosinesEff->SetTexture(m_CompCosineParams.m_CosineLUT, m_CosineLUT);
-			//m_CompCosinesEff->SetTexture(m_CompCosineParams.m_BiasNoise, m_BiasNoiseMap);
+			g_rhi->EnableDepthTest(false);
+			g_rhi->EnableBlend(true);
+			g_rhi->EnableCullFace(true);
 
 			static auto pFullscreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
 			if (pFullscreenQuad)
 			{
-				// pFullscreenQuad->RenderObject->tex_object = CosLUT;
-				// pFullscreenQuad->RenderObject->tex_object2 = BiasNoise;
+				pFullscreenQuad->RenderObject->tex_object = CosineLUT;
+				pFullscreenQuad->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearWrap").get();
+				pFullscreenQuad->RenderObject->tex_object2 = BiasNoise;
 
 				pFullscreenQuad->Update(deltaTime);
+
+				int32 i = 0;
+				char szTemp[1024] = { 0, };
+				for (int32 k = 0; k < 4; ++k, ++i)
+				{
+					Vector4 UTrans(TexWaves[i].RotScale.x, TexWaves[i].RotScale.y, 0.0f, TexWaves[i].Phase);
+					sprintf_s(szTemp, sizeof(szTemp), "UTrans[%d]", k);
+					g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, UTrans), TexWaveShader);
+
+					float normScale = TexWaves[i].Fade / float(kNumBumpPasses);
+					Vector4 Coef(TexWaves[i].Dir.x * normScale, TexWaves[i].Dir.y * normScale, 1.f, 1.f);
+					sprintf_s(szTemp, sizeof(szTemp), "Coef[%d]", k);
+					g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, Coef), TexWaveShader);
+				}
+
+				// Pass 0
+				g_rhi->SetBlendFunc(EBlendSrc::ONE, EBlendDest::ZERO);		// 처음 쓸때는 원래 있던 내용 무시 함.
 				pFullscreenQuad->Draw(MainCamera, TexWaveShader, {});
+
+				//for (int32 k = 0; k < 4; ++k, ++i)
+				//{
+				//	Vector4 UTrans(TexWaves[i].RotScale.x, TexWaves[i].RotScale.y, 0.0f, TexWaves[i].Phase);
+				//	sprintf_s(szTemp, sizeof(szTemp), "UTrans[%d]", k);
+				//	g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, UTrans), TexWaveShader);
+
+				//	float normScale = TexWaves[i].Fade / float(kNumBumpPasses);
+				//	Vector4 Coef(TexWaves[i].Dir.x * normScale, TexWaves[i].Dir.y * normScale, 1.f, 1.f);
+				//	sprintf_s(szTemp, sizeof(szTemp), "Coef[%d]", k);
+				//	g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, Coef), TexWaveShader);
+				//}
+
+				//// Pass 1
+				//g_rhi->SetBlendFunc(EBlendSrc::ONE, EBlendDest::ONE);		// 두번째 패스 부터는 기존 내용이랑 합침.
+				//pFullscreenQuad->Draw(MainCamera, TexWaveShader, {});
+
+				//for (int32 k = 0; k < 4; ++k, ++i)
+				//{
+				//	Vector4 UTrans(TexWaves[i].RotScale.x, TexWaves[i].RotScale.y, 0.0f, TexWaves[i].Phase);
+				//	sprintf_s(szTemp, sizeof(szTemp), "UTrans[%d]", k);
+				//	g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, UTrans), TexWaveShader);
+
+				//	float normScale = TexWaves[i].Fade / float(kNumBumpPasses);
+				//	Vector4 Coef(TexWaves[i].Dir.x * normScale, TexWaves[i].Dir.y * normScale, 1.f, 1.f);
+				//	sprintf_s(szTemp, sizeof(szTemp), "Coef[%d]", k);
+				//	g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, Coef), TexWaveShader);
+				//}
+
+				//// Pass 2
+				//g_rhi->SetBlendFunc(EBlendSrc::ONE, EBlendDest::ONE);
+				//pFullscreenQuad->Draw(MainCamera, TexWaveShader, {});
+
+				////////////////////////////////////////////////////////////////////////////
+				//// Pass 3
+				//static bool Pass4OnOff = true;
+				//if (Pass4OnOff)
+				//{
+				//	auto TexWaveShaderLast = jShader::GetShader("DrawTexWaveLast");
+				//	g_rhi->SetShader(TexWaveShaderLast);
+
+				//	const Vector4 InitX(20.0f, 0.0f, 0.0f, 0.0f);
+				//	const Vector4 InitY(0.0f, 20.0f, 0.0f, 0.0f);
+				//	static Vector4 NoiseXform[4] =
+				//	{
+				//		{ InitX },
+				//		{ InitY },
+				//		{ InitX },
+				//		{ InitY }
+				//	};
+				//	Vector4 xform = NoiseXform[0];
+
+				//	const float kRate = 0.1f;
+				//	xform.w += deltaTime * kRate;
+				//	NoiseXform[0].w = xform.w;
+				//	SET_UNIFORM_BUFFER_STATIC(Vector4, "NoiseXform[0]", NoiseXform[0], TexWaveShaderLast);
+				//	SET_UNIFORM_BUFFER_STATIC(Vector4, "NoiseXform[1]", NoiseXform[1], TexWaveShaderLast);
+
+				//	xform.w += deltaTime * kRate;
+				//	NoiseXform[3].w = xform.w;
+				//	SET_UNIFORM_BUFFER_STATIC(Vector4, "NoiseXform[2]", NoiseXform[2], TexWaveShaderLast);
+				//	SET_UNIFORM_BUFFER_STATIC(Vector4, "NoiseXform[3]", NoiseXform[3], TexWaveShaderLast);
+
+				//	float scaleBias = 0.5f * TexState.Noise / (float(kNumBumpPasses) + TexState.Noise);
+				//	Vector4 scaleBiasVec(scaleBias, scaleBias, 0.0f, 1.f);
+				//	SET_UNIFORM_BUFFER_STATIC(Vector4, "ScaleBias", scaleBiasVec, TexWaveShaderLast);
+
+				//	g_rhi->EnableDepthTest(false);
+				//	g_rhi->EnableBlend(true);
+				//	g_rhi->EnableCullFace(true);
+				//	g_rhi->SetBlendFunc(EBlendSrc::ONE, EBlendDest::ONE);
+				//	pFullscreenQuad->Draw(MainCamera, TexWaveShaderLast, {});
+				//}
+				//////////////////////////////////////////////////////////////////////////
 			}
 
 			RenderBumpTarget->End();
+			g_rhi->EndDebugEvent();
 		}
 
 	//if (MainRenderTarget->Begin())
@@ -639,13 +817,13 @@ void jGame::Update(float deltaTime)
 
 		g_rhi->BeginDebugEvent("[1]. MainScene Render");
 
-		auto ClearColor = Vector4(0.1f, 0.1f, 0.1f, 1.0f);
+		auto ClearColor = Vector4(0.5f, 0.5f, 0.5f, 1.0f);
 		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
 		auto EnableDepthTest = true;
 		auto DepthStencilFunc = EComparisonFunc::LESS;
 		auto EnableBlend = true;
-		auto BlendSrc = EBlendSrc::ONE;
-		auto BlendDest = EBlendDest::ZERO;
+		auto BlendSrc = EBlendSrc::SRC_ALPHA;
+		auto BlendDest = EBlendDest::ONE_MINUS_SRC_ALPHA;
 
 		g_rhi->EnableDepthTest(EnableDepthTest);
 		g_rhi->SetDepthFunc(DepthStencilFunc);
@@ -669,11 +847,26 @@ void jGame::Update(float deltaTime)
 			IsCreatedWaterMesh = true;
 			pWaterMesh = jModelLoader::GetInstance().LoadFromFile("model/WaterMesh.x");
 
-			jStreamParam<float>& VertexParams
-				= *static_cast<jStreamParam<float>*>(pWaterMesh->RenderObject->VertexStream->Params[0]);
-			for (uint32 i = 2; i < VertexParams.Data.size(); i += 3)
-				VertexParams.Data[i] = 0.0f;
-			pWaterMesh->RenderObject->UpdateVertexStream();
+			//jStreamParam<float>& VertexParams
+			//	= *static_cast<jStreamParam<float>*>(pWaterMesh->RenderObject->VertexStream->Params[0]);
+
+			//jStreamParam<float>& ColorParams
+			//	= *static_cast<jStreamParam<float>*>(pWaterMesh->RenderObject->VertexStream->Params[1]);
+
+			//Vector4* color = (Vector4*)ColorParams.Data.data();
+
+			//Vector* pos = (Vector*)(VertexParams.Data.data());
+			//Vector Temp = pos[0] - pos[1];
+			//float dist =  Temp.Length();
+			//if (dist < 1.f)
+			//	dist = 1.f;
+			//float alpha = dist;
+			//for (int i = 0; i < VertexParams.Data.size() / 3; i++)
+			//	color[i].w = alpha;
+
+			//for (uint32 i = 2; i < VertexParams.Data.size(); i += 3)
+			//	VertexParams.Data[i] = 0.0f;
+			//pWaterMesh->RenderObject->UpdateVertexStream();
 
 			//pWaterMesh->RenderObject->VertexBuffer
 
@@ -739,7 +932,7 @@ void jGame::Update(float deltaTime)
 				// 9. 카메라 위치
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "CameraPos", Vector4(MainCamera->Pos, 1.f), shader);
 
-				Vector envCenter(0.f, 0.f, GeoState.EnvHeight); // Just happens to be centered at origin.
+				Vector envCenter(0.0f, 0.0f, GeoState.EnvHeight); // Just happens to be centered at origin.
 				Vector camToCen = envCenter - MainCamera->Pos;
 
 				float G = camToCen.LengthSQ() - GeoState.EnvRadius * GeoState.EnvRadius;		// 0 < 이면? 환경맵 바깥, 0 > 이면? 화경맵 안.
@@ -760,7 +953,7 @@ void jGame::Update(float deltaTime)
 				// 14. 4개 파도의 물 높이
 				static Vector4 depthOffset(GeoState.WaterLevel + 1.f,
 					GeoState.WaterLevel + 1.f,
-					GeoState.WaterLevel + 0.f,
+					GeoState.WaterLevel + 0.0f,
 					GeoState.WaterLevel);
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "DepthOffset", depthOffset, shader);
 
@@ -769,7 +962,7 @@ void jGame::Update(float deltaTime)
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "DepthScale", depthScale, shader);
 
 				// 16. Fog 파라메터들
-				Vector4 fogParams(-200.f, 1.f / (100.f - 200.f), 0.f, 1.f);
+				Vector4 fogParams(-200.0f, 1.f / (100.0f - 200.0f), 0.0f, 1.f);
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "FogParams", fogParams, shader);
 
 				// Equation 9 아래 항목 아래에 나오는 식과 일치 Qi = Q/(wi * Ai x numWaves)
@@ -835,19 +1028,21 @@ void jGame::Update(float deltaTime)
 					GeoWaves[2].Dir.x * GeoWaves[2].Dir.y * K * GeoWaves[2].Freq,
 					GeoWaves[3].Dir.x * GeoWaves[3].Dir.y * K * GeoWaves[3].Freq);
 				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirXdirYKW", dirXdirYKW, shader);
-
-				//pWaterMesh->RenderObject->tex_object = m_EnvMap;
-				//pWaterMesh->RenderObject->tex_object2 = m_BumpTex;
 			}
 
 			//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 			static float OffsetX = 0.0f;
-			static float OffsetZ = -10.0f;
+			static float OffsetZ = 0.0f;
 			pWaterMesh->RenderObject->Pos.x = OffsetX;
 			pWaterMesh->RenderObject->Pos.z = OffsetZ;
 			pWaterMesh->RenderObject->tex_object = CubeMapTexture;
 			pWaterMesh->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearWrap").get();
+
+			// tex_object2는 WaterMesh.x 의 Material로 예약되어서 tex_object3으로 함.
+			// todo : 다른 브랜치에 있는 sampler 이름을 별도로 지정 가능한 기능을 가져와야 함.
+			pWaterMesh->RenderObject->tex_object3 = RenderBumpTarget->GetTexture();
+			pWaterMesh->RenderObject->samplerState3 = jSamplerStatePool::GetSamplerState("LinearWrap").get();
 
 			pWaterMesh->Update(deltaTime);
 			pWaterMesh->Draw(MainCamera, shader, { DirectionalLight });
@@ -869,10 +1064,14 @@ void jGame::Update(float deltaTime)
 			MainCamera->UpdateCamera();
 		}
 
-		/// 
+		g_rhi->EnableDepthTest(false);
+		const float TexSize = 300.0f;
+		static auto BumpMapQuad = jPrimitiveUtil::CreateUIQuad(Vector2(SCR_WIDTH - TexSize, 0.0f), Vector2(TexSize)
+			, RenderBumpTarget->GetTexture());
+		BumpMapQuad->Draw(MainCamera, jShader::GetShader("UIShader"), {});
 
 		g_rhi->EndDebugEvent();
-		MainRenderTarget->End();
+		//MainRenderTarget->End();
 	}
 	//////////////////////////////////////////////////////////////////////////
 }
