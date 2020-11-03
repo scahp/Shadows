@@ -87,7 +87,9 @@ void CalcSinCos(vec4 wPos,
 	const float kPi = 3.14159265f;
 	const float kTwoPi = 2.f * kPi;
 	const float kOOTwoPi = 1.f / kTwoPi;
-	// Mod into range [-Pi..Pi]
+	// phase φ = S x 2π/L = w
+	// dists = dot(Di, xy) * frequency + phase 이 값은 Equation 9의 cosine sine 값에 들어감.
+	// 이 값을 Mod into range [-Pi..Pi]
 	// 각도를 -pi ~ pi 로 제한 하여 줌.
 	dists = dists + kPi;
 	dists = dists * kOOTwoPi;
@@ -111,6 +113,10 @@ void CalcSinCos(vec4 wPos,
 	// ]
 
 	// 4. FilteredAmp 적용
+	// ooEdgeLength가 Water에 사용하는 Mesh의 edge 한개의 길이의 역수를 저장함.
+	// -> 이 길이는 0번과 1번 버택스의 길이로 구함.
+	// -> Clamp(현재 파장 * 1.0/WaveLength, 0.0, 1.0)
+	// => 현재 파장이 Edge의 길이에 비해서 크면 Amp를 높여준다. Edge의 길이보다 더 작을 수록 Amp가 0에 가까워짐
 	// sin * clamp(lengths * ooEdgeLength) * scale * amp
 	// cos * clamp(lengths * ooEdgeLength) * scale * amp
 	vec4 filteredAmp = lengths * ooEdgeLength;
@@ -183,7 +189,7 @@ void CalcFinalColors(vec3 norm,
 	// 입력 버택스 color.b 는 각도를 기반으로 감쇄량을 제한합니다.
 	// (dot(norm,cam2Vtx)==0) => 1 for grazing angle
 	// and (dot(norm,cam2Vtx)==1 => 1-In.Color.b for perpendicular view.
-	float atten = 1.0 + dot(norm, cam2Vtx) * opacMin;
+	float atten = 1.0 + dot(norm, cam2Vtx.xzy) * opacMin;
 
 	// Filter the color based on depth
 	// 깊이 기반으로 컬러를 필터링 하라.
@@ -243,11 +249,13 @@ vec4 CalcFinalPosition(vec4 wPos,
 
 	// Sum to a scalar
 	// 4개의 파도가 더해졌을 때 나올 수 있는 최대 height 값을 h로 둠.
+	// Equation 9 번식에 P(x, y, z)식의 z를 계산하는 식
 	float h = dot(sines, vec4(1.f)) + depthOffset;
 
 	// Clamp to never go beneath input height
 	wPos.z = min(wPos.z, h);
 
+	// Equation 9 번식에 P(x, y, z)식의 x, y를 계산하는 식
 	// dirXK 가 무엇일까?
 	// DirX * K 는 이 식을 나타냄. Qi = Q/(wi * Ai x numWaves) (Equation 9에 아래 나옴)
 	// dot(cosines, dirXK)는 dirX * Qi * Ai cos 가 됨.
@@ -277,35 +285,41 @@ void CalcTangentBasis(vec4 sines,
 	out vec3 norm)
 {
 	// Equation 10, 11, 12 의 TBN 벡터 구하는 항목
-	// Note that we're swapping Y and Z and negating Z (rotation about X)
-	// to match the D3D convention of Y being up in cubemaps.
+	// * cosine 과 sine 은 각각 이미 Amp가 곱해져 있음
+
+	// Equation 10
+	// K = Qi = Q/(wi * Ai x numWaves) 임
+	// W 는 phase φ = S x 2π/L
+	// dirXSq : Dir.x * Dir.x
 	BTN_X.x = 1.f + dot(sines, -dirXSqKW);
 	BTN_X.y = dot(sines, -dirXDirYKW);
 	BTN_X.z = dot(cosines, -dirXW);
 	BTN_X.xy = BTN_X.xy * pertAtten;
 	norm.x = BTN_X.z;
 
-	BTN_Z.x = dot(sines, -dirXDirYKW);
-	BTN_Z.y = 1.f + dot(sines, -dirYSqKW);
-	BTN_Z.z = dot(cosines, -dirYW);
-	BTN_Z.xy = BTN_Z.xy * pertAtten;
-	norm.y = BTN_Z.z;
-
-	BTN_Y.x = -dot(cosines, dirXW);
-	BTN_Y.y = -dot(cosines, dirYW);
-	BTN_Y.z = -(1.f + dot(sines, -KW));
+	// Equation 11
+	BTN_Y.x = dot(sines, -dirXDirYKW);
+	BTN_Y.y = 1.f + dot(sines, -dirYSqKW);
+	BTN_Y.z = dot(cosines, -dirYW);
 	BTN_Y.xy = BTN_Y.xy * pertAtten;
-	norm.z = -BTN_Y.z;
+	norm.y = BTN_Y.z;
+
+	// Equation 12
+	BTN_Z.x = -dot(cosines, dirXW);
+	BTN_Z.y = -dot(cosines, dirYW);
+	BTN_Z.z = -(1.f + dot(sines, -KW));
+	BTN_Z.xy = BTN_Z.xy * pertAtten;
+	norm.z = -BTN_Z.z;
 
 	BTN_X.w = eyeRay.x;
-	BTN_Y.w = -eyeRay.z;
-	BTN_Z.w = eyeRay.y;
+	BTN_Y.w = eyeRay.y;
+	BTN_Z.w = eyeRay.z;
 }
 
 
 void main()
 {
-    ////////////////////////////
+	////////////////////////////
 
 	// Evaluate world space base position. All subsequent calculations in world space.
 	// 1. 월드 공간으로 변형시키고 이후 계산은 모두 월드공간에서 계산 됨.
@@ -336,7 +350,7 @@ void main()
 	CalcSinCos(wPos,
 		DirX, DirY,
 		Amplitude, Frequency, Phase,
-		Lengths, Color.a, 
+		Lengths, Color.a,
 		dFilter.z,		// dFilter.z => wave height
 		sines, cosines);
 
@@ -386,6 +400,6 @@ void main()
 		ModColor_,
 		AddColor_);
 
-    gl_Position = MVP * vec4(Pos, 1.0);
+	gl_Position = MVP * vec4(Pos, 1.0);
 	gl_Position = Position;
 }
