@@ -2,7 +2,6 @@
 precision mediump float;
 
 uniform sampler2D tex_object;		// CosineLUT
-uniform sampler2D tex_object2;		// Noise
 
 uniform vec4 Coef[4];
 
@@ -23,6 +22,7 @@ void main()
 	vec4 cos2 = texture(tex_object, vec2(Uv2_.xy));
 	vec4 cos3 = texture(tex_object, vec2(Uv3_.xy));
 
+	// 텍스쳐가 RGBA8 이라서 [0, 1] 의 값으로 가지고 있을 것임, 그래서 [-1.0, 1.0] 으로 변경함.
 	cos0.xy = (cos0.xy - vec2(0.5)) * 2.0;
 	cos1.xy = (cos1.xy - vec2(0.5)) * 2.0;
 	cos2.xy = (cos2.xy - vec2(0.5)) * 2.0;
@@ -35,6 +35,5 @@ void main()
 	// 여기서 Dir.xy 에 w와 A가 곱해져야 하는데 빠져있는 상태
 	vec4 result = cos0 * Coef[0] + cos1 * Coef[1] + cos2 * Coef[2] + cos3 * Coef[3];
 
-	//FragColor = result * ReScale + ReScale;
 	FragColor = result;
 }

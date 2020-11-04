@@ -503,7 +503,7 @@ void jGame::Update(float deltaTime)
 
 		float maxLen = TexState.MaxLength * kBumpTexSize / TexState.RippleScale;
 		float minLen = TexState.MinLength * kBumpTexSize / TexState.RippleScale;
-		float len = float(InIndex) / float(kNumTexWaves - 1) * (maxLen - minLen) + minLen;
+		float len = float(InIndex) / float(kNumTexWaves - 1) * (maxLen - minLen) + minLen;	// 0~16 파도로 갈수록 length가 길어짐
 
 		float reps = float(kBumpTexSize) / len;
 
@@ -512,9 +512,9 @@ void jGame::Update(float deltaTime)
 		dx = float(int(dx >= 0 ? dx + 0.5f : dx - 0.5f));
 		dy = float(int(dy >= 0 ? dy + 0.5f : dy - 0.5f));
 
-		// ? 원본과 다르게 dx, dy 부호를 바꿔줘야 함
-		TexWaves[InIndex].RotScale.x = -dx;
-		TexWaves[InIndex].RotScale.y = -dy;
+		// cosine 내에 있는 d.xy 와 사용될 내용
+		TexWaves[InIndex].RotScale.x = dx;
+		TexWaves[InIndex].RotScale.y = dy;
 
 		// 3. WaveLength, Freq, Amp, Phase 설정
 		float effK = float(1.0 / sqrt(dx * dx + dy * dy));
@@ -577,11 +577,13 @@ void jGame::Update(float deltaTime)
 	);
 
 	static auto RenderBumpTarget = jRenderTargetPool::GetRenderTarget(
-		{ ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT
+		{ ETextureType::TEXTURE_2D, ETextureFormat::RGBA16F, ETextureFormat::RGBA, EFormatType::FLOAT
 		, EDepthBufferType::NONE, kBumpTexSize, kBumpTexSize, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR }
 	);
 
 	// Equation 14에 있는 공식임. 이름이 CosineLUT 이지만 실제로는 pow(sine, n) * cosine 임
+	// (cos * sin^n, cos * sin^n, 1.0, 1.0)
+	// => (cos(2PI * u) * ((sin(2PI * u) + 1) / 2)^k, cos(2PI * u) * ((sin(2PI * u) + 1) / 2)^k, 1.0, 1.0)
 	static jTexture* CosineLUT = nullptr;
 	static bool IsCreatedCosineLUT = false;
 	if (!IsCreatedCosineLUT)
@@ -593,13 +595,16 @@ void jGame::Update(float deltaTime)
 		uint32* pDat = (uint32*)&cosineLUTData.ImageData[0];
 		for (int32 i = 0; i < kBumpTexSize; i++)
 		{
-			float dist = float(i) / float(kBumpTexSize - 1) * 2.f * PI;
+			float dist = float(i) / float(kBumpTexSize - 1) * 2.f * PI;	// [0 ~ kBumpTexSize] -> [0 ~ 2PI]
 			float c = float(cos(dist));
 			float s = float(sin(dist));
-			s *= 0.5f;
-			s += 0.5f;
+			s *= 0.5f;			// sine(2 * PI * u) => sine(2 * PI * u) / 2
+			s += 0.5f;			// sine(2 * PI * u) / 2 => sine(2 * PI * u) / 2 + 1 / 2 = (sine(2 * PI * u) + 1) / 2
 			s = float(pow(s, TexState.Chop));
 			c *= s;
+
+			// BYTE 형태의 텍스쳐에 쓰기 위해서, [-1.0, 1.0] -> [0.0, 1.0] -> [0, 255]로 범위 변경
+			// 이 값이 쉐이더로 들어가면 [0.0, 1.0]의 값으로 변경될 것임
 			unsigned char cosDist = (unsigned char)((c * 0.5 + 0.5) * 255.999f);
 
 			// ARGB -> ABGR
@@ -688,20 +693,6 @@ void jGame::Update(float deltaTime)
 			auto TexWaveShader = jShader::GetShader("DrawTexWave");
 
 			g_rhi->SetShader(TexWaveShader);
-
-			//char szTemp[1024];
-			//int i;
-			//for (i = 0; i < 16; i++)
-			//{
-			//	Vector4 UTrans(TexWaves[i].RotScale.x, TexWaves[i].RotScale.y, 0.0f, TexWaves[i].Phase);
-			//	sprintf_s(szTemp, sizeof(szTemp), "UTrans[%d]", i);
-			//	g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, UTrans), TexWaveShader);
-
-			//	float normScale = TexWaves[i].Fade / float(kNumBumpPasses);
-			//	Vector4 Coef(TexWaves[i].Dir.x * normScale, TexWaves[i].Dir.y * normScale, 1.f, 1.f);
-			//	sprintf_s(szTemp, sizeof(szTemp), "Coef[%d]", i);
-			//	g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, Coef), TexWaveShader);
-			//}
 
 			// ??? 이 값을 사용하면 Texture Wave Amp 를 높이게 되면, 환경맵이 이동한다.
 			float s = 0.5f / (float(kNumBumpPerPass) + TexState.Noise);
@@ -812,7 +803,7 @@ void jGame::Update(float deltaTime)
 					g_rhi->SetBlendFunc(EBlendSrc::ONE, EBlendDest::ONE);
 					pFullscreenQuad->Draw(MainCamera, TexWaveShaderLast, {});
 				}
-				////////////////////////////////////////////////////////////////////////
+				//////////////////////////////////////////////////////////////////////
 			}
 
 			RenderBumpTarget->End();
