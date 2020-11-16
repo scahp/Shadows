@@ -43,6 +43,31 @@ public:
 	float BloomBlurSigma = 0.8f;
 	float BloomMagnitude = 0.75f;
 
+	//////////////////////////////////////////////////////////////////////////
+	bool ShowWaveTexture = false;
+	bool ShowCubeEnvMap = false;
+	bool ShowWaterGround = true;
+	bool ShowWireFrame = false;
+	bool PauseGeoWave = false;
+	bool PauseTexWave = false;
+	int GeoWaveIndex = -1;
+	//int TexWaveIndex = -1;
+
+	float WaterLevel = 2.0f;				// GeoState.WaterLevel
+	float GeoWaveHeight = 0.1f;				// GeoState.AmpOverLen
+	float GeoWaveChoppiness = 2.5f;			// GeoState.Chop
+	float GeoWaveAngleDeviation = 15.0f;	// GeoState.AngleDeviation
+	float EnvMapRadius = 200.0f;			// GeoState.EnvRadius
+	float EnvMapHeight = -50.0f;			// GeoState.EnvHeight
+	bool GeoWaveReInit = false;
+
+	float TexWaveHeight = 0.1f;				// TexState.AmpOverLen
+	float TexWaveScaling = 25.0f;			// TexState.RippleScale
+	float TexNoise = 0.2f;					// TexState.Noise
+	float TexWaveAngleDeviation = 15.0f;	// TexState.AngleDeviation
+	bool TexWaveReInit = false;
+	//////////////////////////////////////////////////////////////////////////
+
 	virtual void Setup(jAppSettingBase* appSetting) override;
 	virtual void Teardown(jAppSettingBase* appSetting) override;
 
@@ -54,4 +79,3 @@ private:
 
 	static jShadowAppSettingProperties* _instance;
 };
-

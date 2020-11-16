@@ -347,6 +347,8 @@
     <None Include="Shaders\vs_red.glsl" />
     <None Include="Shaders\vs_shadowMap.glsl" />
     <None Include="Shaders\vs_test.glsl" />
+    <None Include="Shaders\waterground_fs.glsl" />
+    <None Include="Shaders\waterground_vs.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

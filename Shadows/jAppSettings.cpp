@@ -11,8 +11,8 @@ void jAppSettings::Init(int32 width, int32 height)
 	TwWindowSize(width, height);
 
 	auto mainPannel = jAppSettings::GetInstance().AddTwBar("MainPannel");		// Default Pannel
-	mainPannel->SetSizeBar(250, 600);
-	mainPannel->SetValueSizeFit();
+	mainPannel->SetSizeBar(260, 600);
+	mainPannel->SetValueSize(60);
 }
 
 jAppSettingBase* jAppSettings::AddTwBar(const char* barName)
@@ -56,5 +56,12 @@ void jAppSettingBase::SetValueSizeFit()
 {
 	char szTemp[256] = { 0, };
 	sprintf_s(szTemp, sizeof(szTemp) - 1, "%s valueswidth=fit", TwGetBarName(Bar));
+	TwDefine(szTemp);
+}
+
+void jAppSettingBase::SetValueSize(int sizeX)
+{
+	char szTemp[256] = { 0, };
+	sprintf_s(szTemp, sizeof(szTemp) - 1, "%s valueswidth=%d", TwGetBarName(Bar), sizeX);
 	TwDefine(szTemp);
 }

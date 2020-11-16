@@ -553,5 +553,11 @@
     <None Include="Shaders\drawtexwave_last_vs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\waterground_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\waterground_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

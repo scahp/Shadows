@@ -250,7 +250,7 @@ vec4 CalcFinalPosition(vec4 wPos,
 	// Sum to a scalar
 	// 4개의 파도가 더해졌을 때 나올 수 있는 최대 height 값을 h로 둠.
 	// Equation 9 번식에 P(x, y, z)식의 z를 계산하는 식
-	float h = dot(sines, vec4(1.f)) + depthOffset;
+	float h = dot(sines, vec4(-1.f)) + depthOffset;
 
 	// Clamp to never go beneath input height
 	wPos.z = min(wPos.z, h);

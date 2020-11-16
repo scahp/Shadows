@@ -35,5 +35,7 @@ void main()
     vec3 vReflect;// = reflect(-view, Normal);
     vReflect = 2.0 * dot(Normal, view) / dot(Normal, Normal) * Normal - view;
     color = (ModColor_ * texture(tex_object, vReflect) + AddColor_);
+    if (ModColor_.a <= 0.0)
+        discard;
     color.a = ModColor_.a;
 }

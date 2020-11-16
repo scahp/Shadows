@@ -56,7 +56,7 @@ void jGame::ProcessInput()
 void jGame::Setup()
 {
 	//////////////////////////////////////////////////////////////////////////
-	const Vector mainCameraPos(172.66f, 160.0f, -180.63f);
+	const Vector mainCameraPos(122.66f, 110.0f, -130.63f);
 	//const Vector mainCameraTarget(171.96f, 166.02f, -180.05f);
 	//const Vector mainCameraPos(165.0f, 125.0f, -136.0f);
 	//const Vector mainCameraPos(300.0f, 100.0f, 300.0f);
@@ -245,6 +245,8 @@ void jGame::Update(float deltaTime)
 	jObject::FlushDirtyState();
 
 	//////////////////////////////////////////////////////////////////////////
+	auto& appSetting = jShadowAppSettingProperties::GetInstance();
+
 	static bool LoadCudbeMap = false;
 	static jTexture* CubeMapTexture = nullptr;
 	if (!LoadCudbeMap)
@@ -309,18 +311,18 @@ void jGame::Update(float deltaTime)
 	{
 		IsGeoStateInit = true;
 
-		GeoState.Chop = 2.5f;
-		GeoState.AngleDeviation = 15.f;
+		GeoState.Chop = appSetting.GeoWaveChoppiness;
+		GeoState.AngleDeviation = appSetting.GeoWaveAngleDeviation;
 		GeoState.WindDir.x = 0;
 		GeoState.WindDir.y = 1.f;
 
 		GeoState.MinLength = 15.f;
 		GeoState.MaxLength = 25.f;
-		GeoState.AmpOverLen = 0.1f;
+		GeoState.AmpOverLen = appSetting.GeoWaveHeight;
 
-		GeoState.EnvHeight = -50.0f;
-		GeoState.EnvRadius = 200.0f;
-		GeoState.WaterLevel = 2.f;
+		GeoState.EnvHeight = appSetting.EnvMapHeight;
+		GeoState.EnvRadius = appSetting.EnvMapRadius;
+		GeoState.WaterLevel = appSetting.WaterLevel;
 
 		GeoState.TransIdx = 0;
 		GeoState.TransDel = -1.f / 6.f;
@@ -385,10 +387,18 @@ void jGame::Update(float deltaTime)
 	static const float kGravConst = 30.0f;
 
 	// UpdateGeoWave
-	if (1)
 	{
+		const float geoDeltaTime = appSetting.PauseGeoWave ? 0.0f : deltaTime;
+
 		for (int32 i = 0; i < kNumGeoWaves; ++i)
 		{
+			if (appSetting.GeoWaveReInit)
+			{
+				InitGeoWave(i);
+				GeoWaves[i].Fade = 0;
+				continue;
+			}
+
 			// 프레임당 파도 하나 업데이트 함
 			// TransInx : 이번 프레임에 업데이트 될 Geo Wave 번호
 			if (i == GeoState.TransIdx)
@@ -396,7 +406,7 @@ void jGame::Update(float deltaTime)
 				// Fade는 TransDel 만큼 매초당 Fade에 더해짐.
 				// TransDel : 초당 Fade될 크기
 				// TransDel이 양 <-> 음 수가 되면서 파도의 Fade in / out 구현
-				GeoWaves[i].Fade += GeoState.TransDel * deltaTime;
+				GeoWaves[i].Fade += GeoState.TransDel * geoDeltaTime;
 				if (GeoWaves[i].Fade < 0)
 				{
 					// This wave is faded out. Re-init and fade it back up.
@@ -418,7 +428,7 @@ void jGame::Update(float deltaTime)
 			const float speed = float(1.0 / sqrt(GeoWaves[i].Len / (2.f * PI * kGravConst)));
 
 			// Speed는 초당 속도, deltatime 만큼 이동
-			GeoWaves[i].Phase += speed * deltaTime;
+			GeoWaves[i].Phase += speed * geoDeltaTime;
 
 			// Phase function 을 2PI의 배수로 설정
 			GeoWaves[i].Phase = float(fmod(GeoWaves[i].Phase, 2.f * PI));
@@ -426,11 +436,15 @@ void jGame::Update(float deltaTime)
 			// Amp의 크기를 4개의 파도가 서로 나눠 가지게 됨.
 			GeoWaves[i].Amp = GeoWaves[i].Len * GeoState.AmpOverLen / float(kNumGeoWaves) * GeoWaves[i].Fade;
 
-			//// 테스트 코드
-			//static int TestIndex = 0;
-			//if (i != TestIndex)
-			//	GeoWaves[i].Amp = 0;
+			// GeoWave를 몇개까지 활성시킬지 여부
+			if (-1 != appSetting.GeoWaveIndex)
+			{
+				if (i != appSetting.GeoWaveIndex)
+					GeoWaves[i].Amp = 0;
+			}
 		}
+
+		appSetting.GeoWaveReInit = false;
 	}
 
 	class TexState
@@ -475,15 +489,15 @@ void jGame::Update(float deltaTime)
 	{
 		IsInitTexState = true;
 
-		TexState.Noise = 0.2f;
+		TexState.Noise = appSetting.TexNoise;
 		TexState.Chop = 1.f;
-		TexState.AngleDeviation = 15.f;
+		TexState.AngleDeviation = appSetting.TexWaveAngleDeviation;
 		TexState.WindDir.x = 0;
 		TexState.WindDir.y = 1.f;
 		TexState.MaxLength = 10.0f;
 		TexState.MinLength = 1.f;
-		TexState.AmpOverLen = 0.1f;
-		TexState.RippleScale = 25.f;
+		TexState.AmpOverLen = appSetting.TexWaveHeight;
+		TexState.RippleScale = appSetting.TexWaveScaling;
 		TexState.SpeedDeviation = 0.1f;
 
 		TexState.TransIdx = 0;
@@ -546,29 +560,55 @@ void jGame::Update(float deltaTime)
 	}
 
 	// UpdateTexWave
-	for (int32 i = 0; i < kNumTexWaves; ++i)
 	{
-		if (i == TexState.TransIdx)
+		const float texDeltaTime = appSetting.PauseTexWave ? 0.0f : deltaTime;
+
+		for (int32 i = 0; i < kNumTexWaves; ++i)
 		{
-			TexWaves[i].Fade += TexState.TransDel * deltaTime;
-			if (TexWaves[i].Fade < 0)
+			if (appSetting.TexWaveReInit)
 			{
-				// This wave is faded out. Re-init and fade it back up.
 				InitTexWave(i);
 				TexWaves[i].Fade = 0;
-				TexState.TransDel = -TexState.TransDel;
+				continue;
 			}
-			else if (TexWaves[i].Fade > 1.f)
+
+			if (i == TexState.TransIdx)
 			{
-				// This wave is faded back up. Start fading another down.
-				TexWaves[i].Fade = 1.f;
-				TexState.TransDel = -TexState.TransDel;
-				if (++TexState.TransIdx >= kNumTexWaves)
-					TexState.TransIdx = 0;
+				TexWaves[i].Fade += TexState.TransDel * texDeltaTime;
+				if (TexWaves[i].Fade < 0)
+				{
+					// This wave is faded out. Re-init and fade it back up.
+					InitTexWave(i);
+					TexWaves[i].Fade = 0;
+					TexState.TransDel = -TexState.TransDel;
+				}
+				else if (TexWaves[i].Fade > 1.f)
+				{
+					// This wave is faded back up. Start fading another down.
+					TexWaves[i].Fade = 1.f;
+					TexState.TransDel = -TexState.TransDel;
+					if (++TexState.TransIdx >= kNumTexWaves)
+						TexState.TransIdx = 0;
+				}
 			}
+			TexWaves[i].Phase -= texDeltaTime * TexWaves[i].Speed;
+			TexWaves[i].Phase -= int(TexWaves[i].Phase);
 		}
-		TexWaves[i].Phase -= deltaTime * TexWaves[i].Speed;
-		TexWaves[i].Phase -= int(TexWaves[i].Phase);
+
+		appSetting.TexWaveReInit = false;
+	}
+
+	{
+		GeoState.WaterLevel = appSetting.WaterLevel;
+		GeoState.AmpOverLen = appSetting.GeoWaveHeight;
+		GeoState.Chop = appSetting.GeoWaveChoppiness;
+		TexState.AmpOverLen = appSetting.TexWaveHeight;
+		TexState.RippleScale = appSetting.TexWaveScaling;
+		TexState.Noise = appSetting.TexNoise;
+		GeoState.AngleDeviation = appSetting.GeoWaveAngleDeviation;
+		TexState.AngleDeviation = appSetting.TexWaveAngleDeviation;
+		GeoState.EnvRadius = appSetting.EnvMapRadius;
+		GeoState.EnvHeight = appSetting.EnvMapHeight;
 	}
 
 	static auto MainRenderTarget = jRenderTargetPool::GetRenderTarget(
@@ -686,397 +726,382 @@ void jGame::Update(float deltaTime)
 		TexState.AmpOverLen = Clamp(TexState.AmpOverLen, 0.0f, 1.0f);
 	}
 
-	if (1)
-		if (RenderBumpTarget->Begin())
+	if (RenderBumpTarget->Begin())
+	{
+		g_rhi->BeginDebugEvent("[0]. Bump RenderTexture Start");
+		auto TexWaveShader = jShader::GetShader("DrawTexWave");
+
+		g_rhi->SetShader(TexWaveShader);
+
+		// ??? 이 값을 사용하면 Texture Wave Amp 를 높이게 되면, 환경맵이 이동한다.
+		float s = 0.5f / (float(kNumBumpPerPass) + TexState.Noise);
+		Vector4 reScale(s, s, 1.f, 1.f);
+		SET_UNIFORM_BUFFER_STATIC(Vector4, "ReScale", reScale, TexWaveShader);
+
+		g_rhi->EnableDepthTest(false);
+		g_rhi->EnableBlend(true);
+		g_rhi->EnableCullFace(true);
+
+		static auto pFullscreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
+		if (pFullscreenQuad)
 		{
-			g_rhi->BeginDebugEvent("[0]. Bump RenderTexture Start");
-			auto TexWaveShader = jShader::GetShader("DrawTexWave");
+			pFullscreenQuad->RenderObject->tex_object = CosineLUT;
+			pFullscreenQuad->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearWrap").get();
+			pFullscreenQuad->RenderObject->tex_object2 = BiasNoise;
 
-			g_rhi->SetShader(TexWaveShader);
+			pFullscreenQuad->Update(deltaTime);
 
-			// ??? 이 값을 사용하면 Texture Wave Amp 를 높이게 되면, 환경맵이 이동한다.
-			float s = 0.5f / (float(kNumBumpPerPass) + TexState.Noise);
-			Vector4 reScale(s, s, 1.f, 1.f);
-			SET_UNIFORM_BUFFER_STATIC(Vector4, "ReScale", reScale, TexWaveShader);
-
-			g_rhi->EnableDepthTest(false);
-			g_rhi->EnableBlend(true);
-			g_rhi->EnableCullFace(true);
-
-			static auto pFullscreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
-			if (pFullscreenQuad)
+			int32 i = 0;
+			char szTemp[1024] = { 0, };
+			for (int32 k = 0; k < 4; ++k, ++i)
 			{
-				pFullscreenQuad->RenderObject->tex_object = CosineLUT;
-				pFullscreenQuad->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearWrap").get();
-				pFullscreenQuad->RenderObject->tex_object2 = BiasNoise;
+				Vector4 UTrans(TexWaves[i].RotScale.x, TexWaves[i].RotScale.y, 0.0f, TexWaves[i].Phase);
+				sprintf_s(szTemp, sizeof(szTemp), "UTrans[%d]", k);
+				g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, UTrans), TexWaveShader);
 
-				pFullscreenQuad->Update(deltaTime);
-
-				int32 i = 0;
-				char szTemp[1024] = { 0, };
-				for (int32 k = 0; k < 4; ++k, ++i)
-				{
-					Vector4 UTrans(TexWaves[i].RotScale.x, TexWaves[i].RotScale.y, 0.0f, TexWaves[i].Phase);
-					sprintf_s(szTemp, sizeof(szTemp), "UTrans[%d]", k);
-					g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, UTrans), TexWaveShader);
-
-					// 1 / kNumBumpPasses 만큼의 normalScale을 해줌. 이것으로 Wave의 높이를 낮춰 줌 
-					float normScale = TexWaves[i].Fade / float(kNumBumpPasses);
-					Vector4 Coef(TexWaves[i].Dir.x * normScale, TexWaves[i].Dir.y * normScale, 1.f, 1.f);
-					sprintf_s(szTemp, sizeof(szTemp), "Coef[%d]", k);
-					g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, Coef), TexWaveShader);
-				}
-
-				// Pass 0
-				g_rhi->SetBlendFunc(EBlendSrc::ONE, EBlendDest::ZERO);		// 처음 쓸때는 원래 있던 내용 무시 함.
-				pFullscreenQuad->Draw(MainCamera, TexWaveShader, {});
-
-				for (int32 k = 0; k < 4; ++k, ++i)
-				{
-					Vector4 UTrans(TexWaves[i].RotScale.x, TexWaves[i].RotScale.y, 0.0f, TexWaves[i].Phase);
-					sprintf_s(szTemp, sizeof(szTemp), "UTrans[%d]", k);
-					g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, UTrans), TexWaveShader);
-
-					float normScale = TexWaves[i].Fade / float(kNumBumpPasses);
-					Vector4 Coef(TexWaves[i].Dir.x * normScale, TexWaves[i].Dir.y * normScale, 1.f, 1.f);
-					sprintf_s(szTemp, sizeof(szTemp), "Coef[%d]", k);
-					g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, Coef), TexWaveShader);
-				}
-
-				// Pass 1
-				g_rhi->SetBlendFunc(EBlendSrc::ONE, EBlendDest::ONE);		// 두번째 패스 부터는 기존 내용이랑 합침.
-				pFullscreenQuad->Draw(MainCamera, TexWaveShader, {});
-
-				for (int32 k = 0; k < 4; ++k, ++i)
-				{
-					Vector4 UTrans(TexWaves[i].RotScale.x, TexWaves[i].RotScale.y, 0.0f, TexWaves[i].Phase);
-					sprintf_s(szTemp, sizeof(szTemp), "UTrans[%d]", k);
-					g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, UTrans), TexWaveShader);
-
-					float normScale = TexWaves[i].Fade / float(kNumBumpPasses);
-					Vector4 Coef(TexWaves[i].Dir.x * normScale, TexWaves[i].Dir.y * normScale, 1.f, 1.f);
-					sprintf_s(szTemp, sizeof(szTemp), "Coef[%d]", k);
-					g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, Coef), TexWaveShader);
-				}
-
-				// Pass 2
-				g_rhi->SetBlendFunc(EBlendSrc::ONE, EBlendDest::ONE);
-				pFullscreenQuad->Draw(MainCamera, TexWaveShader, {});
-
-				//////////////////////////////////////////////////////////////////////////
-				// Pass 3
-				static bool Pass4OnOff = true;
-				if (Pass4OnOff)
-				{
-					auto TexWaveShaderLast = jShader::GetShader("DrawTexWaveLast");
-					g_rhi->SetShader(TexWaveShaderLast);
-
-					const Vector4 InitX(20.0f, 0.0f, 0.0f, 0.0f);
-					const Vector4 InitY(0.0f, 20.0f, 0.0f, 0.0f);
-					static Vector4 NoiseXform[4] =
-					{
-						{ InitX },
-						{ InitY },
-						{ InitX },
-						{ InitY }
-					};
-					Vector4 xform = NoiseXform[0];
-
-					const float kRate = 0.1f;
-					xform.w += deltaTime * kRate;
-					NoiseXform[0].w = xform.w;
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "NoiseXform[0]", NoiseXform[0], TexWaveShaderLast);
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "NoiseXform[1]", NoiseXform[1], TexWaveShaderLast);
-
-					xform.w += deltaTime * kRate;
-					NoiseXform[3].w = xform.w;
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "NoiseXform[2]", NoiseXform[2], TexWaveShaderLast);
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "NoiseXform[3]", NoiseXform[3], TexWaveShaderLast);
-
-					float scaleBias = 0.5f * TexState.Noise / (float(kNumBumpPasses) + TexState.Noise);
-					Vector4 scaleBiasVec(scaleBias, scaleBias, 0.0f, 1.f);
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "ScaleBias", scaleBiasVec, TexWaveShaderLast);
-
-					g_rhi->EnableDepthTest(false);
-					g_rhi->EnableBlend(true);
-					g_rhi->EnableCullFace(true);
-					g_rhi->SetBlendFunc(EBlendSrc::ONE, EBlendDest::ONE);
-					pFullscreenQuad->Draw(MainCamera, TexWaveShaderLast, {});
-				}
-				//////////////////////////////////////////////////////////////////////
+				// 1 / kNumBumpPasses 만큼의 normalScale을 해줌. 이것으로 Wave의 높이를 낮춰 줌 
+				float normScale = TexWaves[i].Fade / float(kNumBumpPasses);
+				Vector4 Coef(TexWaves[i].Dir.x * normScale, TexWaves[i].Dir.y * normScale, 1.f, 1.f);
+				sprintf_s(szTemp, sizeof(szTemp), "Coef[%d]", k);
+				g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, Coef), TexWaveShader);
 			}
 
-			RenderBumpTarget->End();
-			g_rhi->EndDebugEvent();
+			// Pass 0
+			g_rhi->SetBlendFunc(EBlendSrc::ONE, EBlendDest::ZERO);		// 처음 쓸때는 원래 있던 내용 무시 함.
+			pFullscreenQuad->Draw(MainCamera, TexWaveShader, {});
+
+			for (int32 k = 0; k < 4; ++k, ++i)
+			{
+				Vector4 UTrans(TexWaves[i].RotScale.x, TexWaves[i].RotScale.y, 0.0f, TexWaves[i].Phase);
+				sprintf_s(szTemp, sizeof(szTemp), "UTrans[%d]", k);
+				g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, UTrans), TexWaveShader);
+
+				float normScale = TexWaves[i].Fade / float(kNumBumpPasses);
+				Vector4 Coef(TexWaves[i].Dir.x * normScale, TexWaves[i].Dir.y * normScale, 1.f, 1.f);
+				sprintf_s(szTemp, sizeof(szTemp), "Coef[%d]", k);
+				g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, Coef), TexWaveShader);
+			}
+
+			// Pass 1
+			g_rhi->SetBlendFunc(EBlendSrc::ONE, EBlendDest::ONE);		// 두번째 패스 부터는 기존 내용이랑 합침.
+			pFullscreenQuad->Draw(MainCamera, TexWaveShader, {});
+
+			for (int32 k = 0; k < 4; ++k, ++i)
+			{
+				Vector4 UTrans(TexWaves[i].RotScale.x, TexWaves[i].RotScale.y, 0.0f, TexWaves[i].Phase);
+				sprintf_s(szTemp, sizeof(szTemp), "UTrans[%d]", k);
+				g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, UTrans), TexWaveShader);
+
+				float normScale = TexWaves[i].Fade / float(kNumBumpPasses);
+				Vector4 Coef(TexWaves[i].Dir.x * normScale, TexWaves[i].Dir.y * normScale, 1.f, 1.f);
+				sprintf_s(szTemp, sizeof(szTemp), "Coef[%d]", k);
+				g_rhi->SetUniformbuffer(&jUniformBuffer<Vector4>(szTemp, Coef), TexWaveShader);
+			}
+
+			// Pass 2
+			g_rhi->SetBlendFunc(EBlendSrc::ONE, EBlendDest::ONE);
+			pFullscreenQuad->Draw(MainCamera, TexWaveShader, {});
+
+			//////////////////////////////////////////////////////////////////////////
+			// Pass 3
+			static bool Pass4OnOff = true;
+			if (Pass4OnOff)
+			{
+				auto TexWaveShaderLast = jShader::GetShader("DrawTexWaveLast");
+				g_rhi->SetShader(TexWaveShaderLast);
+
+				const Vector4 InitX(20.0f, 0.0f, 0.0f, 0.0f);
+				const Vector4 InitY(0.0f, 20.0f, 0.0f, 0.0f);
+				static Vector4 NoiseXform[4] =
+				{
+					{ InitX },
+					{ InitY },
+					{ InitX },
+					{ InitY }
+				};
+				Vector4 xform = NoiseXform[0];
+
+				const float kRate = 0.1f;
+				xform.w += deltaTime * kRate;
+				NoiseXform[0].w = xform.w;
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "NoiseXform[0]", NoiseXform[0], TexWaveShaderLast);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "NoiseXform[1]", NoiseXform[1], TexWaveShaderLast);
+
+				xform.w += deltaTime * kRate;
+				NoiseXform[3].w = xform.w;
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "NoiseXform[2]", NoiseXform[2], TexWaveShaderLast);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "NoiseXform[3]", NoiseXform[3], TexWaveShaderLast);
+
+				float scaleBias = 0.5f * TexState.Noise / (float(kNumBumpPasses) + TexState.Noise);
+				Vector4 scaleBiasVec(scaleBias, scaleBias, 0.0f, 1.f);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "ScaleBias", scaleBiasVec, TexWaveShaderLast);
+
+				g_rhi->EnableDepthTest(false);
+				g_rhi->EnableBlend(true);
+				g_rhi->EnableCullFace(true);
+				g_rhi->SetBlendFunc(EBlendSrc::ONE, EBlendDest::ONE);
+				pFullscreenQuad->Draw(MainCamera, TexWaveShaderLast, {});
+			}
+			//////////////////////////////////////////////////////////////////////
 		}
 
-	//if (MainRenderTarget->Begin())
+		RenderBumpTarget->End();
+		g_rhi->EndDebugEvent();
+	}
+
+	{
+		g_rhi->BeginDebugEvent("[1]. MainScene Render");
+
+		auto ClearColor = Vector4(0.5f, 0.5f, 0.5f, 1.0f);
+		auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
+		auto EnableDepthTest = true;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = true;
+		auto BlendSrc = EBlendSrc::SRC_ALPHA;
+		auto BlendDest = EBlendDest::ONE_MINUS_SRC_ALPHA;
+
+		g_rhi->EnableDepthTest(EnableDepthTest);
+		g_rhi->SetDepthFunc(DepthStencilFunc);
+
+		g_rhi->EnableBlend(EnableBlend);
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+
+		g_rhi->EnableDepthBias(false);
+		g_rhi->EnableCullFace(true);
+		g_rhi->EnableDepthClip(false);
+
+		g_rhi->SetClearColor(ClearColor);
+		g_rhi->SetClear(ClearType);
+
+		static bool IsCreatedWaterMesh = false;
+		static jMeshObject* pWaterMesh = nullptr;
+		static jMeshObject* pLandMesh = nullptr;
+		if (!IsCreatedWaterMesh)
 		{
-			//SET_UNIFORM_BUFFER_STATIC(Vector, "ScatterColor", AppSettingInst.ScatterColor, Shader);
+			IsCreatedWaterMesh = true;
+			pWaterMesh = jModelLoader::GetInstance().LoadFromFile("model/WaterMesh.x");
+		}
 
-			g_rhi->BeginDebugEvent("[1]. MainScene Render");
+		if (appSetting.ShowCubeEnvMap)
+		{
+			auto shader = jShader::GetShader("CubeEnv");
+			EnvCube->RenderObject->tex_object = CubeMapTexture;
 
-			auto ClearColor = Vector4(0.5f, 0.5f, 0.5f, 1.0f);
-			auto ClearType = ERenderBufferType::COLOR | ERenderBufferType::DEPTH;
-			auto EnableDepthTest = true;
-			auto DepthStencilFunc = EComparisonFunc::LESS;
-			auto EnableBlend = true;
-			auto BlendSrc = EBlendSrc::SRC_ALPHA;
-			auto BlendDest = EBlendDest::ONE_MINUS_SRC_ALPHA;
+			MainCamera->IsInfinityFar = true;
+			MainCamera->UpdateCamera();
+			EnvCube->Update(deltaTime);
+			EnvCube->Draw(MainCamera, shader, { DirectionalLight });
+			MainCamera->IsInfinityFar = false;
+			MainCamera->UpdateCamera();
+		}
 
-			g_rhi->EnableDepthTest(EnableDepthTest);
-			g_rhi->SetDepthFunc(DepthStencilFunc);
-
-			g_rhi->EnableBlend(EnableBlend);
-			g_rhi->SetBlendFunc(BlendSrc, BlendDest);
-
-			g_rhi->EnableDepthBias(false);
-			g_rhi->EnableCullFace(true);
-			g_rhi->EnableDepthClip(false);
-
-			g_rhi->SetClearColor(ClearColor);
-			g_rhi->SetClear(ClearType);
-
-			/// 
-			static bool IsCreatedWaterMesh = false;
-			static jMeshObject* pWaterMesh = nullptr;
-			static jMeshObject* pLandMesh = nullptr;
-			if (!IsCreatedWaterMesh)
+		if (appSetting.ShowWaterGround)
+		{
+			static bool SandyTex = false;
+			static jTexture* SandyTexture = nullptr;
+			if (!SandyTex)
 			{
-				IsCreatedWaterMesh = true;
-				pWaterMesh = jModelLoader::GetInstance().LoadFromFile("model/WaterMesh.x");
+				jImageData data;
+				jImageFileLoader::GetInstance().LoadTextureFromFile(data, "Image/Sandy.png", true);
+				SandyTex = true;
 
-				//jStreamParam<float>& VertexParams
-				//	= *static_cast<jStreamParam<float>*>(pWaterMesh->RenderObject->VertexStream->Params[0]);
-
-				//jStreamParam<float>& ColorParams
-				//	= *static_cast<jStreamParam<float>*>(pWaterMesh->RenderObject->VertexStream->Params[1]);
-
-				//Vector4* color = (Vector4*)ColorParams.Data.data();
-
-				//Vector* pos = (Vector*)(VertexParams.Data.data());
-				//Vector Temp = pos[0] - pos[1];
-				//float dist =  Temp.Length();
-				//if (dist < 1.f)
-				//	dist = 1.f;
-				//float alpha = dist;
-				//for (int i = 0; i < VertexParams.Data.size() / 3; i++)
-				//	color[i].w = alpha;
-
-				//for (uint32 i = 2; i < VertexParams.Data.size(); i += 3)
-				//	VertexParams.Data[i] = 0.0f;
-				//pWaterMesh->RenderObject->UpdateVertexStream();
-
-				//pWaterMesh->RenderObject->VertexBuffer
-
-				//pLandMesh = jModelLoader::GetInstance().LoadFromFile("model/LandMesh.x");
-				//pWaterMesh->RenderObject->Rot.x = DegreeToRadian(90.0f);
-
-				//jImageData data;
-				//jImageFileLoader::GetInstance().LoadTextureFromFile(data, "Image/Sandy.png", true);
-				//if (data.ImageData.size() > 0)
-				//	pLandMesh->RenderObject->tex_object2 = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
-
+				SandyTexture = g_rhi->CreateTextureFromData(data.ImageData.data(), data.Width, data.Height, data.sRGB);
 			}
 
+			auto shader = jShader::GetShader("WaterGround");
+
+			pWaterMesh->RenderObject->tex_object = SandyTexture;
+			pWaterMesh->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearWrap").get();
+
+			pWaterMesh->RenderObject->Rot.x = DegreeToRadian(90.0f);
+
+			pWaterMesh->Update(deltaTime);
+			pWaterMesh->Draw(MainCamera, shader, { DirectionalLight });
+
+			pWaterMesh->RenderObject->Rot.x = 0.0f;
+		}
+
+
+		if (1)
+		{
+			auto shader = jShader::GetShader("GeoWave");
+
 			{
-				//auto shader = jShader::GetShader("DebugObjectShader");
-				//DirectionalLight->BindLight(shader);
-				//pLandMesh->Update(deltaTime);
-				//pLandMesh->Draw(MainCamera, shader, { DirectionalLight });
+				g_rhi->SetShader(shader);
+				g_rhi->EnableDepthTest(true);
+				// 1. ViewProjection Matrix
+				const Matrix ViewProjMatrix = (MainCamera->Projection * MainCamera->View);
+				SET_UNIFORM_BUFFER_STATIC(Matrix, "World2NDC", ViewProjMatrix, shader);
+
+				// 2. 물 색깔
+				Vector4 waterTint(0.05f, 0.1f, 0.1f, 0.5f);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "WaterTint", waterTint, shader);
+
+				// 3. 4개 파도의 Frequency
+				Vector4 freq(GeoWaves[0].Freq, GeoWaves[1].Freq, GeoWaves[2].Freq, GeoWaves[3].Freq);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "Frequency", freq, shader);
+
+				// 4. 4개 파도의 Phase (2PI / Lengh)
+				Vector4 phase(GeoWaves[0].Phase, GeoWaves[1].Phase, GeoWaves[2].Phase, GeoWaves[3].Phase);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "Phase", phase, shader);
+
+				// 5. 4개 파도의 Amplitude
+				Vector4 amp(GeoWaves[0].Amp, GeoWaves[1].Amp, GeoWaves[2].Amp, GeoWaves[3].Amp);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "Amplitude", amp, shader);
+
+				// 6. 4개 파도의 DirX
+				Vector4 dirX(GeoWaves[0].Dir.x, GeoWaves[1].Dir.x, GeoWaves[2].Dir.x, GeoWaves[3].Dir.x);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirX", dirX, shader);
+
+				// 7. 4개 파도의 DirY
+				Vector4 dirY(GeoWaves[0].Dir.y, GeoWaves[1].Dir.y, GeoWaves[2].Dir.y, GeoWaves[3].Dir.y);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirY", dirY, shader);
+
+				// TexState.AmpOverLen * 2.f * PI = w (Freq)
+				// SpecAtten 이 A 인듯.
+				float normScale = GeoState.SpecAtten * TexState.AmpOverLen * 2.f * PI;
+				normScale *= (float(kNumBumpPasses) + TexState.Noise);
+				normScale *= (TexState.Chop + 1.f);
+
+				// 8. ??? SpecAtten 
+				Vector4 specAtten(GeoState.SpecEnd, 1.f / GeoState.SpecTrans, normScale, 1.f / TexState.RippleScale);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "SpecAtten", specAtten, shader);
+
+				// 9. 카메라 위치
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "CameraPos", Vector4(MainCamera->Pos, 1.f), shader);
+
+				Vector envCenter(0.0f, 0.0f, GeoState.EnvHeight); // Just happens to be centered at origin.
+				Vector camToCen = envCenter - MainCamera->Pos;
+
+				float G = camToCen.LengthSQ() - GeoState.EnvRadius * GeoState.EnvRadius;		// 0 < 이면? 환경맵 바깥, 0 > 이면? 화경맵 안.
+				// 10. 카메라에서 환경맵의 중심방향의 벡터 (정규화 안함) + 환경맵 안인지 밖인지 정보 추가.
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "EnvAdjust", Vector4(camToCen.x, camToCen.y, camToCen.z, G), shader);
+
+				// 11. 환경맵 색상
+				Vector4 envTint(1.f, 1.f, 1.f, 1.f);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "EnvTint", envTint, shader);
+
+				// 12. 월드 매트릭스
+				pWaterMesh->RenderObject->SetCameraProperty(shader, MainCamera);
+				SET_UNIFORM_BUFFER_STATIC(Matrix, "Local2World", pWaterMesh->RenderObject->World, shader);
+
+				// 13. 4개 파도의 Wave Length
+				Vector4 lengths(GeoWaves[0].Len, GeoWaves[1].Len, GeoWaves[2].Len, GeoWaves[3].Len);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "Lengths", lengths, shader);
+
+				// 14. 4개 파도의 물 높이
+				Vector4 depthOffset(GeoState.WaterLevel + 1.f,
+					GeoState.WaterLevel + 1.f,
+					GeoState.WaterLevel + 0.0f,
+					GeoState.WaterLevel);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DepthOffset", depthOffset, shader);
+
+				// 15. 4개 파도의 Depth Scale 값
+				Vector4 depthScale(1.f / 2.f, 1.f / 2.f, 1.f / 2.f, 1.f);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DepthScale", depthScale, shader);
+
+				// 16. Fog 파라메터들
+				Vector4 fogParams(-200.0f, 1.f / (100.0f - 200.0f), 0.0f, 1.f);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "FogParams", fogParams, shader);
+
+				// Equation 9 아래 항목 아래에 나오는 식과 일치 Qi = Q/(wi * Ai x numWaves)
+				// -> Qi = (Q / (Feq * Amplitude * numWaves)
+				// -> Qi = (Q / (2PI / Len * Amplitude * numWaves)
+				// Q를 0~1 사이 값으로 변경하므로써 아티스트에게 부드러운 <-> 날카로운 파도를 만들 수 있게 해준다.
+				float K = 5.f;
+				if (GeoState.AmpOverLen > GeoState.Chop / (2.f * PI * kNumGeoWaves * K))
+					K = GeoState.Chop / (2.f * PI * GeoState.AmpOverLen * kNumGeoWaves);
+				Vector4 dirXK(GeoWaves[0].Dir.x * K,
+					GeoWaves[1].Dir.x * K,
+					GeoWaves[2].Dir.x * K,
+					GeoWaves[3].Dir.x * K);
+				Vector4 dirYK(GeoWaves[0].Dir.y * K,
+					GeoWaves[1].Dir.y * K,
+					GeoWaves[2].Dir.y * K,
+					GeoWaves[3].Dir.y * K);
+
+				// 17. 4개 파도의 X 방향 * 가파름 파라메터
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirXK", dirXK, shader);
+
+				// 18. 4개 파도의 Y 방향 * 가파름 파라메터
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirYK", dirYK, shader);
+
+				// 4개의 파도의 TBN 벡터들을 구하는데 사용함
+				Vector4 dirXW(GeoWaves[0].Dir.x * GeoWaves[0].Freq,
+					GeoWaves[1].Dir.x * GeoWaves[1].Freq,
+					GeoWaves[2].Dir.x * GeoWaves[2].Freq,
+					GeoWaves[3].Dir.x * GeoWaves[3].Freq);
+				Vector4 dirYW(GeoWaves[0].Dir.y * GeoWaves[0].Freq,
+					GeoWaves[1].Dir.y * GeoWaves[1].Freq,
+					GeoWaves[2].Dir.y * GeoWaves[2].Freq,
+					GeoWaves[3].Dir.y * GeoWaves[3].Freq);
+
+				// 19. 4개의 파도의 X방향과 Frequency를 곱한 파라메터
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirXW", dirXW, shader);
+
+				// 20. 4개의 파도의 Y방향과 Frequency를 곱한 파라메터
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirYW", dirYW, shader);
+
+				Vector4 KW(K * GeoWaves[0].Freq,
+					K * GeoWaves[1].Freq,
+					K * GeoWaves[2].Freq,
+					K * GeoWaves[3].Freq);
+				// 21. 4개의 파도의 Qi (부드러움 <-> 가파름 조정) * Frequency, TBN 벡터 만드는데 사용
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "KW", KW, shader);
+
+				// 22. 4개의 파도의 TBN 벡터 만드는데 사용하는 파라메터
+				Vector4 dirXSqKW(GeoWaves[0].Dir.x * GeoWaves[0].Dir.x * K * GeoWaves[0].Freq,
+					GeoWaves[1].Dir.x * GeoWaves[1].Dir.x * K * GeoWaves[1].Freq,
+					GeoWaves[2].Dir.x * GeoWaves[2].Dir.x * K * GeoWaves[2].Freq,
+					GeoWaves[3].Dir.x * GeoWaves[3].Dir.x * K * GeoWaves[3].Freq);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirXSqKW", dirXSqKW, shader);
+
+				// 23. 4개의 파도의 TBN 벡터 만드는데 사용하는 파라메터
+				Vector4 dirYSqKW(GeoWaves[0].Dir.y * GeoWaves[0].Dir.y * K * GeoWaves[0].Freq,
+					GeoWaves[1].Dir.y * GeoWaves[1].Dir.y * K * GeoWaves[1].Freq,
+					GeoWaves[2].Dir.y * GeoWaves[2].Dir.y * K * GeoWaves[2].Freq,
+					GeoWaves[3].Dir.y * GeoWaves[3].Dir.y * K * GeoWaves[3].Freq);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirYSqKW", dirYSqKW, shader);
+
+				// 24. 4개의 파도의 TBN 벡터 만드는데 사용하는 파라메터
+				Vector4 dirXdirYKW(GeoWaves[0].Dir.y * GeoWaves[0].Dir.x * K * GeoWaves[0].Freq,
+					GeoWaves[1].Dir.x * GeoWaves[1].Dir.y * K * GeoWaves[1].Freq,
+					GeoWaves[2].Dir.x * GeoWaves[2].Dir.y * K * GeoWaves[2].Freq,
+					GeoWaves[3].Dir.x * GeoWaves[3].Dir.y * K * GeoWaves[3].Freq);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "DirXdirYKW", dirXdirYKW, shader);
 			}
 
-			if (1)
-			{
-				auto shader = jShader::GetShader("GeoWave");
-
-				{
-					g_rhi->SetShader(shader);
-					// 1. ViewProjection Matrix
-					const Matrix ViewProjMatrix = (MainCamera->Projection * MainCamera->View);
-					SET_UNIFORM_BUFFER_STATIC(Matrix, "World2NDC", ViewProjMatrix, shader);
-
-					// 2. 물 색깔
-					Vector4 waterTint(0.05f, 0.1f, 0.1f, 0.5f);
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "WaterTint", waterTint, shader);
-
-					// 3. 4개 파도의 Frequency
-					Vector4 freq(GeoWaves[0].Freq, GeoWaves[1].Freq, GeoWaves[2].Freq, GeoWaves[3].Freq);
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "Frequency", freq, shader);
-
-					// 4. 4개 파도의 Phase (2PI / Lengh)
-					Vector4 phase(GeoWaves[0].Phase, GeoWaves[1].Phase, GeoWaves[2].Phase, GeoWaves[3].Phase);
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "Phase", phase, shader);
-
-					// 5. 4개 파도의 Amplitude
-					Vector4 amp(GeoWaves[0].Amp, GeoWaves[1].Amp, GeoWaves[2].Amp, GeoWaves[3].Amp);
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "Amplitude", amp, shader);
-
-					// 6. 4개 파도의 DirX
-					Vector4 dirX(GeoWaves[0].Dir.x, GeoWaves[1].Dir.x, GeoWaves[2].Dir.x, GeoWaves[3].Dir.x);
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "DirX", dirX, shader);
-
-					// 7. 4개 파도의 DirY
-					Vector4 dirY(GeoWaves[0].Dir.y, GeoWaves[1].Dir.y, GeoWaves[2].Dir.y, GeoWaves[3].Dir.y);
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "DirY", dirY, shader);
-
-					// TexState.AmpOverLen * 2.f * PI = w (Freq)
-					// SpecAtten 이 A 인듯.
-					float normScale = GeoState.SpecAtten * TexState.AmpOverLen * 2.f * PI;
-					normScale *= (float(kNumBumpPasses) + TexState.Noise);
-					normScale *= (TexState.Chop + 1.f);
-
-					// 8. ??? SpecAtten 
-					Vector4 specAtten(GeoState.SpecEnd, 1.f / GeoState.SpecTrans, normScale, 1.f / TexState.RippleScale);
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "SpecAtten", specAtten, shader);
-
-					// 9. 카메라 위치
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "CameraPos", Vector4(MainCamera->Pos, 1.f), shader);
-
-					Vector envCenter(0.0f, 0.0f, GeoState.EnvHeight); // Just happens to be centered at origin.
-					Vector camToCen = envCenter - MainCamera->Pos;
-
-					float G = camToCen.LengthSQ() - GeoState.EnvRadius * GeoState.EnvRadius;		// 0 < 이면? 환경맵 바깥, 0 > 이면? 화경맵 안.
-					// 10. 카메라에서 환경맵의 중심방향의 벡터 (정규화 안함) + 환경맵 안인지 밖인지 정보 추가.
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "EnvAdjust", Vector4(camToCen.x, camToCen.y, camToCen.z, G), shader);
-
-					// 11. 환경맵 색상
-					Vector4 envTint(1.f, 1.f, 1.f, 1.f);
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "EnvTint", envTint, shader);
-
-					// 12. 월드 매트릭스
-					SET_UNIFORM_BUFFER_STATIC(Matrix, "Local2World", pWaterMesh->RenderObject->World, shader);
-
-					// 13. 4개 파도의 Wave Length
-					Vector4 lengths(GeoWaves[0].Len, GeoWaves[1].Len, GeoWaves[2].Len, GeoWaves[3].Len);
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "Lengths", lengths, shader);
-
-					// 14. 4개 파도의 물 높이
-					static Vector4 depthOffset(GeoState.WaterLevel + 1.f,
-						GeoState.WaterLevel + 1.f,
-						GeoState.WaterLevel + 0.0f,
-						GeoState.WaterLevel);
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "DepthOffset", depthOffset, shader);
-
-					// 15. 4개 파도의 Depth Scale 값
-					Vector4 depthScale(1.f / 2.f, 1.f / 2.f, 1.f / 2.f, 1.f);
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "DepthScale", depthScale, shader);
-
-					// 16. Fog 파라메터들
-					Vector4 fogParams(-200.0f, 1.f / (100.0f - 200.0f), 0.0f, 1.f);
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "FogParams", fogParams, shader);
-
-					// Equation 9 아래 항목 아래에 나오는 식과 일치 Qi = Q/(wi * Ai x numWaves)
-					// -> Qi = (Q / (Feq * Amplitude * numWaves)
-					// -> Qi = (Q / (2PI / Len * Amplitude * numWaves)
-					// Q를 0~1 사이 값으로 변경하므로써 아디스트에게 부드러운 <-> 날카로운 파도를 만들 수 있게 해준다.
-					static float K = 5.f;
-					if (GeoState.AmpOverLen > GeoState.Chop / (2.f * PI * kNumGeoWaves * K))
-						K = GeoState.Chop / (2.f * PI * GeoState.AmpOverLen * kNumGeoWaves);
-					Vector4 dirXK(GeoWaves[0].Dir.x * K,
-						GeoWaves[1].Dir.x * K,
-						GeoWaves[2].Dir.x * K,
-						GeoWaves[3].Dir.x * K);
-					Vector4 dirYK(GeoWaves[0].Dir.y * K,
-						GeoWaves[1].Dir.y * K,
-						GeoWaves[2].Dir.y * K,
-						GeoWaves[3].Dir.y * K);
-
-					// 17. 4개 파도의 X 방향 * 가파름 파라메터
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "DirXK", dirXK, shader);
-
-					// 18. 4개 파도의 Y 방향 * 가파름 파라메터
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "DirYK", dirYK, shader);
-
-					// 4개의 파도의 TBN 벡터들을 구하는데 사용함
-					Vector4 dirXW(GeoWaves[0].Dir.x * GeoWaves[0].Freq,
-						GeoWaves[1].Dir.x * GeoWaves[1].Freq,
-						GeoWaves[2].Dir.x * GeoWaves[2].Freq,
-						GeoWaves[3].Dir.x * GeoWaves[3].Freq);
-					Vector4 dirYW(GeoWaves[0].Dir.y * GeoWaves[0].Freq,
-						GeoWaves[1].Dir.y * GeoWaves[1].Freq,
-						GeoWaves[2].Dir.y * GeoWaves[2].Freq,
-						GeoWaves[3].Dir.y * GeoWaves[3].Freq);
-
-					// 19. 4개의 파도의 X방향과 Frequency를 곱한 파라메터
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "DirXW", dirXW, shader);
-
-					// 20. 4개의 파도의 Y방향과 Frequency를 곱한 파라메터
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "DirYW", dirYW, shader);
-
-					Vector4 KW(K * GeoWaves[0].Freq,
-						K * GeoWaves[1].Freq,
-						K * GeoWaves[2].Freq,
-						K * GeoWaves[3].Freq);
-					// 21. 4개의 파도의 Qi (부드러움 <-> 가파름 조정) * Frequency, TBN 벡터 만드는데 사용
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "KW", KW, shader);
-
-					// 22. 4개의 파도의 TBN 벡터 만드는데 사용하는 파라메터
-					Vector4 dirXSqKW(GeoWaves[0].Dir.x * GeoWaves[0].Dir.x * K * GeoWaves[0].Freq,
-						GeoWaves[1].Dir.x * GeoWaves[1].Dir.x * K * GeoWaves[1].Freq,
-						GeoWaves[2].Dir.x * GeoWaves[2].Dir.x * K * GeoWaves[2].Freq,
-						GeoWaves[3].Dir.x * GeoWaves[3].Dir.x * K * GeoWaves[3].Freq);
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "DirXSqKW", dirXSqKW, shader);
-
-					// 23. 4개의 파도의 TBN 벡터 만드는데 사용하는 파라메터
-					Vector4 dirYSqKW(GeoWaves[0].Dir.y * GeoWaves[0].Dir.y * K * GeoWaves[0].Freq,
-						GeoWaves[1].Dir.y * GeoWaves[1].Dir.y * K * GeoWaves[1].Freq,
-						GeoWaves[2].Dir.y * GeoWaves[2].Dir.y * K * GeoWaves[2].Freq,
-						GeoWaves[3].Dir.y * GeoWaves[3].Dir.y * K * GeoWaves[3].Freq);
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "DirYSqKW", dirYSqKW, shader);
-
-					// 24. 4개의 파도의 TBN 벡터 만드는데 사용하는 파라메터
-					Vector4 dirXdirYKW(GeoWaves[0].Dir.y * GeoWaves[0].Dir.x * K * GeoWaves[0].Freq,
-						GeoWaves[1].Dir.x * GeoWaves[1].Dir.y * K * GeoWaves[1].Freq,
-						GeoWaves[2].Dir.x * GeoWaves[2].Dir.y * K * GeoWaves[2].Freq,
-						GeoWaves[3].Dir.x * GeoWaves[3].Dir.y * K * GeoWaves[3].Freq);
-					SET_UNIFORM_BUFFER_STATIC(Vector4, "DirXdirYKW", dirXdirYKW, shader);
-				}
-
-				//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-				static float OffsetX = 0.0f;
-				static float OffsetZ = 0.0f;
-				pWaterMesh->RenderObject->Pos.x = OffsetX;
-				pWaterMesh->RenderObject->Pos.z = OffsetZ;
-				pWaterMesh->RenderObject->tex_object = CubeMapTexture;
-				pWaterMesh->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearWrap").get();
-
-				// tex_object2는 WaterMesh.x 의 Material로 예약되어서 tex_object3으로 함.
-				// todo : 다른 브랜치에 있는 sampler 이름을 별도로 지정 가능한 기능을 가져와야 함.
-				pWaterMesh->RenderObject->tex_object3 = RenderBumpTarget->GetTexture();
-				pWaterMesh->RenderObject->samplerState3 = jSamplerStatePool::GetSamplerState("LinearWrap").get();
-
-				pWaterMesh->Update(deltaTime);
-				pWaterMesh->Draw(MainCamera, shader, { DirectionalLight });
-
+			if (appSetting.ShowWireFrame)
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			else
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-			}
 
-			static bool test = false;
-			if (test)
-			{
-				auto shader = jShader::GetShader("CubeEnv");
-				EnvCube->RenderObject->tex_object = CubeMapTexture;
+			pWaterMesh->RenderObject->tex_object = CubeMapTexture;
+			pWaterMesh->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearWrap").get();
 
-				MainCamera->IsInfinityFar = true;
-				MainCamera->UpdateCamera();
-				EnvCube->Update(deltaTime);
-				EnvCube->Draw(MainCamera, shader, { DirectionalLight });
-				MainCamera->IsInfinityFar = false;
-				MainCamera->UpdateCamera();
-			}
+			// tex_object2는 WaterMesh.x 의 Material로 예약되어서 tex_object3으로 함.
+			// todo : 다른 브랜치에 있는 sampler 이름을 별도로 지정 가능한 기능을 가져와야 함.
+			pWaterMesh->RenderObject->tex_object3 = RenderBumpTarget->GetTexture();
+			pWaterMesh->RenderObject->samplerState3 = jSamplerStatePool::GetSamplerState("LinearWrap").get();
 
+			pWaterMesh->Draw(MainCamera, shader, { DirectionalLight });
+
+			if (appSetting.ShowWireFrame)
+				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		}
+
+		if (appSetting.ShowWaveTexture)
+		{
 			g_rhi->EnableDepthTest(false);
 			const float TexSize = 300.0f;
 			static auto BumpMapQuad = jPrimitiveUtil::CreateUIQuad(Vector2(SCR_WIDTH - TexSize, 0.0f), Vector2(TexSize)
 				, RenderBumpTarget->GetTexture());
 			BumpMapQuad->Draw(MainCamera, jShader::GetShader("UIShader"), {});
-
-			g_rhi->EndDebugEvent();
-			//MainRenderTarget->End();
 		}
-		//////////////////////////////////////////////////////////////////////////
+
+		g_rhi->EndDebugEvent();
+	}
+	//////////////////////////////////////////////////////////////////////////
 }
 
 void jGame::UpdateAppSetting()
