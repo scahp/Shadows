@@ -136,22 +136,22 @@ void jGame::Setup()
 
 void jGame::SpawnObjects(ESpawnedType spawnType)
 {
-	if (spawnType != SpawnedType)
-	{
-		SpawnedType = spawnType;
-		switch (SpawnedType)
-		{
-		case ESpawnedType::Hair:
-			SpawnHairObjects();
-			break;
-		case ESpawnedType::TestPrimitive:
-			SpawnTestPrimitives();
-			break;
-		case ESpawnedType::CubePrimitive:
-			SapwnCubePrimitives();
-			break;
-		}
-	}
+	//if (spawnType != SpawnedType)
+	//{
+	//	SpawnedType = spawnType;
+	//	switch (SpawnedType)
+	//	{
+	//	case ESpawnedType::Hair:
+	//		SpawnHairObjects();
+	//		break;
+	//	case ESpawnedType::TestPrimitive:
+	//		SpawnTestPrimitives();
+	//		break;
+	//	case ESpawnedType::CubePrimitive:
+	//		SapwnCubePrimitives();
+	//		break;
+	//	}
+	//}
 }
 
 void jGame::RemoveSpawnedObjects()
@@ -243,7 +243,26 @@ void jGame::Update(float deltaTime)
 
 	jObject::FlushDirtyState();
 
-	Renderer->Render(MainCamera);
+	//Renderer->Render(MainCamera);
+
+	static jTexture* Texture = nullptr;
+	static bool test = false;
+	if (!test)
+	{
+		test = true;
+		jImageData data;
+		jImageFileLoader::GetInstance().LoadTextureFromFile(data, "Image/campus_probe.hdr", true);
+		Texture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
+	}
+
+	static auto sphere = jPrimitiveUtil::CreateSphere(Vector(0.0f, 0.0f, 0.0f), 0.5, 16, Vector(100.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+
+	g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	g_rhi->SetClear({ERenderBufferType::COLOR | ERenderBufferType::DEPTH});
+	g_rhi->EnableDepthTest(true);
+	auto Shader = jShader::GetShader("SphericalMap");
+	sphere->RenderObject->tex_object = Texture;
+	sphere->Draw(MainCamera, Shader, {});
 }
 
 void jGame::UpdateAppSetting()

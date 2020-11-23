@@ -81,6 +81,8 @@ struct jShaderInfoCreation
 
 		DECLARE_SHADER_VS_GS_FS("CSM_SSM_TEX2D_ARRAY", "shaders/shadowmap/vs_omniDirectionalShadowMap.glsl", "shaders/shadowmap/gs_cascadeShadowMap.glsl", "shaders/shadowmap/fs_shadowMap.glsl");
 
+		DECLARE_SHADER_VS_FS("SphericalMap", "Shaders/sphericalmap_vs.glsl", "Shaders/sphericalmap_fs.glsl");
+
 		DECLARE_SHADER_VS_FS("LuminanceMapGeneration", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/fullscreen/fs_luminanceMap.glsl");
 		DECLARE_SHADER_VS_FS("AdaptiveLuminance", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/fullscreen/fs_adaptiveLuminance.glsl");
 		DECLARE_SHADER_VS_FS("BloomThreshold", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/fullscreen/fs_bloom_threshold.glsl");
