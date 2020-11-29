@@ -20,8 +20,5 @@ void main()
     float u = R.x / m + 0.5;
     float v = R.y / m + 0.5;
 
-    //color = vec4(1.0, 0.0, 0.0, 1.0);
-    //return;
-
     color = texture(tex_object, vec2(u, v));
 }

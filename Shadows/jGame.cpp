@@ -55,7 +55,7 @@ void jGame::ProcessInput()
 void jGame::Setup()
 {
 	//////////////////////////////////////////////////////////////////////////
-	const Vector mainCameraPos(172.66f, 160.0f, -180.63f);
+	const Vector mainCameraPos(0.0f, 0.0f, 180.63f);
 	//const Vector mainCameraTarget(171.96f, 166.02f, -180.05f);
 	//const Vector mainCameraPos(165.0f, 125.0f, -136.0f);
 	//const Vector mainCameraPos(300.0f, 100.0f, 300.0f);
