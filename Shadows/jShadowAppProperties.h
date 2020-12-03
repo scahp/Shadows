@@ -43,6 +43,9 @@ public:
 	float BloomBlurSigma = 0.8f;
 	float BloomMagnitude = 0.75f;
 
+	float Theta = 0.025f;
+	float Phi = 0.0f;
+
 	virtual void Setup(jAppSettingBase* appSetting) override;
 	virtual void Teardown(jAppSettingBase* appSetting) override;
 

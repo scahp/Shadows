@@ -538,5 +538,11 @@
     <None Include="Shaders\sphericalmap_vs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\genirrspheremap_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\genirrspheremap_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

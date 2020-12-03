@@ -21,6 +21,49 @@
 #include "jForwardRenderer.h"
 #include "jPipeline.h"
 #include "jVertexAdjacency.h"
+#include "jSamplerStatePool.h"
+#include <thread>
+
+static
+void parallel_for(unsigned nb_elements,
+	std::function<void(int start, int end)> functor,
+	bool use_threads = true)
+{
+	// -------
+	unsigned nb_threads_hint = std::thread::hardware_concurrency();
+	unsigned nb_threads = nb_threads_hint == 0 ? 8 : (nb_threads_hint);
+
+	unsigned batch_size = nb_elements / nb_threads;
+	unsigned batch_remainder = nb_elements % nb_threads;
+
+	std::vector< std::thread > my_threads(nb_threads);
+
+	if (use_threads)
+	{
+		// Multithread execution
+		for (unsigned i = 0; i < nb_threads; ++i)
+		{
+			int start = i * batch_size;
+			my_threads[i] = std::thread(functor, start, start + batch_size);
+		}
+	}
+	else
+	{
+		// Single thread execution (for easy debugging)
+		for (unsigned i = 0; i < nb_threads; ++i) {
+			int start = i * batch_size;
+			functor(start, start + batch_size);
+		}
+	}
+
+	// Deform the elements left
+	int start = nb_threads * batch_size;
+	functor(start, start + batch_remainder);
+
+	// Wait for the other thread to finish their task
+	if (use_threads)
+		std::for_each(my_threads.begin(), my_threads.end(), std::mem_fn(&std::thread::join));
+}
 
 jRHI* g_rhi = nullptr;
 
@@ -250,19 +293,153 @@ void jGame::Update(float deltaTime)
 	if (!test)
 	{
 		test = true;
-		jImageData data;
-		jImageFileLoader::GetInstance().LoadTextureFromFile(data, "Image/campus_probe.hdr", true);
-		Texture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
+		jImageData dataPrev;
+		jImageFileLoader::GetInstance().LoadTextureFromFile(dataPrev, "Image/grace_probe.hdr", true);
+		Texture = g_rhi->CreateTextureFromData(&dataPrev.ImageData[0], dataPrev.Width, dataPrev.Height, dataPrev.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
+
+		if (0)
+		{
+			jImageData dataNew = dataPrev;
+
+			auto GetSphericalMap = [](const Vector& InDir)
+			{
+				float m = 2.0 * sqrt(InDir.x * InDir.x + InDir.y * InDir.y + (InDir.z + 1.0) * (InDir.z + 1.0));
+				if (m > 0.0f)
+				{
+					float u = InDir.x / m + 0.5;
+					float v = InDir.y / m + 0.5;
+					return Vector2(u, v);
+				}
+				return Vector2(0.5f);
+			};
+
+			auto GetNormalFromTexCoord = [](Vector2 InTexCoord)
+			{
+				Vector result;
+
+				// 바꿈
+				float s = InTexCoord.x;
+				float t = InTexCoord.y;
+
+				result.x = 2.0 * sqrt(-4.0 * s * s + 4.0 * s - 1.0 - 4.0 * t * t + 4.0 * t) * (2.0 * t - 1);
+				result.y = 2.0 * sqrt(-4.0 * s * s + 4.0 * s - 1.0 - 4.0 * t * t + 4.0 * t) * (2.0 * s - 1);
+				result.z = (-8.0 * s * s + 8.0 * s - 8.0 * t * t + 8.0 * t - 3.0);
+				return (result);
+			};
+
+			int32 Count = 0;
+			char szTemp[1024];
+			Vector* dataPtr = (Vector*)&dataPrev.ImageData[0];
+			parallel_for(dataPrev.Height * dataPrev.Width, [&](int start, int end)
+				{
+					//for (int32 i = 0; i < dataPrev.Height * dataPrev.Width; ++i)
+					for (int i = start; i < end; ++i)
+					{
+						float v = (float)(i / dataPrev.Width) / (float)dataPrev.Height;
+						float u = (float)(i % dataPrev.Width) / (float)dataPrev.Width;
+
+						//float v = (float)i / (float)dataPrev.Height;
+						//for (int32 k = 0; k < dataPrev.Width; ++k)
+						{
+							//float u = (float)k / (float)dataPrev.Width;
+
+							if (Vector2(u - 0.5f, v - 0.5f).Length() > 0.5)
+								continue;
+
+							Vector normal = GetNormalFromTexCoord({ u, v });
+
+							//(dataPtr + (i * dataPrev.Width + k));
+
+							Vector irradiance = Vector(0.0, 0.0, 0.0);
+							Vector up = Vector(0.0, 1.0, 0.0);
+							Vector right = up.CrossProduct(normal);
+							up = normal.CrossProduct(right);
+							float sampleDelta = 0.025;
+							float nrSamples = 0.0;
+
+							for (float p = 0.0; p < 2.0 * PI; p += sampleDelta)
+							{
+								for (float t = 0.0; t < 0.5 * PI; t += sampleDelta)
+								{
+									// spherical to cartesian (in tangent space)
+									Vector tangentSample = Vector(sin(t) * cos(p), sin(t) * sin(p), cos(t)); // tangent space to world
+									Vector sampleVec =
+										tangentSample.x * right +
+										tangentSample.y * up +
+										tangentSample.z * normal;
+
+									sampleVec = sampleVec.GetNormalize();
+									Vector2 TargetUV = GetSphericalMap(sampleVec);
+									int32 DataX = (int32)(TargetUV.x * dataPrev.Width);
+									int32 DataY = (int32)(TargetUV.y * dataPrev.Height);
+									Vector curRGB = *(dataPtr + (DataY * dataPrev.Width + DataX));
+									//Vector curRGB = texture(tex_object, GetSphericalMap(sampleVec)).rgb;
+									irradiance += curRGB * cos(t) * sin(t);
+									nrSamples++;
+
+									//color.xyz = curRGB;
+									//color.w = 1.0;
+									//return;
+								}
+							}
+							irradiance = PI * irradiance * (1.0 / float(nrSamples));
+							//color = vec4(irradiance, 1.0);
+							*(((Vector*)&dataNew.ImageData[0]) + i) = irradiance;
+
+							sprintf_s(szTemp, sizeof(szTemp), "%f %%\n", (++Count / (float)(dataPrev.Height * dataPrev.Width)) * 100.0f);
+							OutputDebugStringA(szTemp);
+						}
+					}
+				});
+
+			Texture = g_rhi->CreateTextureFromData(&dataNew.ImageData[0], dataNew.Width, dataNew.Height, dataNew.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
+		}
 	}
 
-	static auto sphere = jPrimitiveUtil::CreateSphere(Vector(0.0f, 0.0f, 0.0f), 0.5, 16, Vector(100.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-
 	g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-	g_rhi->SetClear({ERenderBufferType::COLOR | ERenderBufferType::DEPTH});
+	g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
 	g_rhi->EnableDepthTest(true);
-	auto Shader = jShader::GetShader("SphericalMap");
-	sphere->RenderObject->tex_object = Texture;
-	sphere->Draw(MainCamera, Shader, {});
+	auto Shader = jShader::GetShader("GenIrrSphereMap");
+
+	//static auto sphere = jPrimitiveUtil::CreateSphere(Vector(0.0f, 0.0f, 0.0f), 0.5, 16, Vector(100.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	//sphere->RenderObject->tex_object = Texture;
+	//sphere->Draw(MainCamera, Shader, {});
+
+	jRenderTargetInfo info;
+	info.TextureType = ETextureType::TEXTURE_2D;
+	info.InternalFormat = ETextureFormat::RGBA32F;
+	info.Format = ETextureFormat::RGBA;
+	info.FormatType = EFormatType::FLOAT;
+	info.DepthBufferType = EDepthBufferType::NONE;
+	info.Width = SCR_WIDTH;
+	info.Height = SCR_HEIGHT;
+	info.TextureCount = 1;
+	info.Magnification = ETextureFilter::NEAREST;
+	info.Minification = ETextureFilter::NEAREST;
+
+	info.DepthBufferType = EDepthBufferType::DEPTH32;
+	static auto RT = jRenderTargetPool::GetRenderTarget(info);
+	//if (RT->Begin())
+	{
+		g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
+		g_rhi->EnableDepthTest(true);
+		auto Shader = jShader::GetShader("GenIrrSphereMap");
+
+		static auto UIQuad = jPrimitiveUtil::CreateUIQuad({ 300.0, 100.0 }, { 300, 300 }, Texture);
+		if (UIQuad)
+		{
+			auto appSettings = jShadowAppSettingProperties::GetInstance();
+			SET_UNIFORM_BUFFER_STATIC(float, "theta", appSettings.Theta, Shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "phi", appSettings.Phi, Shader);
+
+			UIQuad->SetTexture(Texture);
+			UIQuad->Update(deltaTime);
+			UIQuad->Draw(MainCamera, Shader, {});
+			UIQuad->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearClamp").get();
+		}
+		//RT->End();
+	}
 }
 
 void jGame::UpdateAppSetting()

@@ -34,7 +34,7 @@ public:
 	uint64 StartTick = 0;
 };
 
-#define SCOPE_PROFILE(Name) jScopedProfile_CPU Name##ScopedProfileCPU(#Name);
+#define SCOPE_PROFILE(Name) //jScopedProfile_CPU Name##ScopedProfileCPU(#Name);
 
 //////////////////////////////////////////////////////////////////////////
 // jQueryTimePool
@@ -132,7 +132,7 @@ public:
 	jProfile_GPU Profile;
 };
 
-#define SCOPE_GPU_PROFILE(Name) jScopedProfile_GPU Name##ScopedProfileGPU(#Name);
+#define SCOPE_GPU_PROFILE(Name) //jScopedProfile_GPU Name##ScopedProfileGPU(#Name);
 
 //////////////////////////////////////////////////////////////////////////
 // jPerformanceProfile

@@ -299,6 +299,8 @@
     <None Include="Shaders\fullscreen\fs_scale.glsl" />
     <None Include="Shaders\fullscreen\fs_tonemap.glsl" />
     <None Include="Shaders\fullscreen\vs_fullscreen_common.glsl" />
+    <None Include="Shaders\genirrspheremap_fs.glsl" />
+    <None Include="Shaders\genirrspheremap_vs.glsl" />
     <None Include="Shaders\shadow.glsl" />
     <None Include="Shaders\shadowmap\fs.glsl" />
     <None Include="Shaders\shadowmap\fs_deepShadowMap.glsl" />
