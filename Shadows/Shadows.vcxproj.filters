@@ -544,5 +544,11 @@
     <None Include="Shaders\genirrspheremap_vs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\cubeenv_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\cubeenv_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

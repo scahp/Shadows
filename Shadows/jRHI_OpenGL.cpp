@@ -166,6 +166,29 @@ uint32 GetOpenGLTextureFilterType(ETextureFilter filter)
 	return texFilter;
 }
 
+uint32 GetOpenGLPixelFormat(EFormatType type)
+{
+	uint32 formatType = 0;
+	switch (type)
+	{
+	case EFormatType::BYTE:
+		formatType = GL_BYTE;
+		break;
+	case EFormatType::UNSIGNED_BYTE:
+		formatType = GL_UNSIGNED_BYTE;
+		break;
+	case EFormatType::INT:
+		formatType = GL_INT;
+		break;
+	case EFormatType::FLOAT:
+		formatType = GL_FLOAT;
+		break;
+	default:
+		break;
+	}
+	return formatType;
+}
+
 uint32 GetOpenGLTextureAddressMode(ETextureAddressMode textureAddressMode)
 {
 	uint32 result = 0;
@@ -927,25 +950,7 @@ jTexture* jRHI_OpenGL::CreateTextureFromData(void* data, int32 width, int32 heig
 {
 	const uint32 internalFormat = GetOpenGLTextureFormat(textureFormat);
 	const uint32 simpleFormat = GetOpenGLTextureFormatSimple(textureFormat);
-
-	uint32 formatType = 0;
-	switch (dataType)
-	{
-	case EFormatType::BYTE:
-		formatType = GL_BYTE;
-		break;
-	case EFormatType::UNSIGNED_BYTE:
-		formatType = GL_UNSIGNED_BYTE;
-		break;
-	case EFormatType::INT:
-		formatType = GL_INT;
-		break;
-	case EFormatType::FLOAT:
-		formatType = GL_FLOAT;
-		break;
-	default:
-		break;
-	}
+	const uint32 formatType = GetOpenGLPixelFormat(dataType);
 
 	auto texture = new jTexture_OpenGL();
 	texture->sRGB = sRGB;
@@ -955,6 +960,29 @@ jTexture* jRHI_OpenGL::CreateTextureFromData(void* data, int32 width, int32 heig
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	return texture;
+}
+
+jTexture* jRHI_OpenGL::CreateCubeTextureFromData(unsigned char** data, int32 width, int32 height, bool sRGB
+	, EFormatType dataType /*= EFormatType::UNSIGNED_BYTE*/, ETextureFormat textureFormat /*= ETextureFormat::RGBA*/) const
+{
+	const uint32 internalFormat = GetOpenGLTextureFormat(textureFormat);
+	const uint32 simpleFormat = GetOpenGLTextureFormatSimple(textureFormat);
+	const uint32 formatType = GetOpenGLPixelFormat(dataType);
+
+	auto texure = new jTexture_OpenGL();
+	texure->sRGB = sRGB;
+
+	glGenTextures(1, &texure->TextureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, texure->TextureID);
+
+	for (unsigned int i = 0; i < 6; i++)
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, width, height, 0, simpleFormat, formatType, data[i]);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	return texure;
 }
 
 bool jRHI_OpenGL::SetUniformbuffer(const IUniformBuffer* buffer, const jShader* shader) const

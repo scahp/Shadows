@@ -8,6 +8,7 @@
 
 #include <AntTweakBar.h>
 #include "jAppSettings.h"
+#include <time.h>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -25,6 +26,8 @@ jEngine g_Engine;
 
 int main()
 {
+	srand((uint8)time(NULL));
+
 	// glfw: initialize and configure
 	// ------------------------------
 	glfwInit();

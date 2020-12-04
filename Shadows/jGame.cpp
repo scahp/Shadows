@@ -23,6 +23,9 @@
 #include "jVertexAdjacency.h"
 #include "jSamplerStatePool.h"
 #include <thread>
+#include <mutex>
+#include <set>
+#include <stdio.h>
 
 static
 void parallel_for(unsigned nb_elements,
@@ -208,6 +211,44 @@ void jGame::RemoveSpawnedObjects()
 	SpawnedObjects.clear();
 }
 
+std::vector<uint8> input(const char* filename, const int width) { 
+
+	/* Read in light
+							probe */
+	int i, j, k;
+	FILE* fp = nullptr;
+	fp = fopen(filename, "rb");
+	assert(fp);
+
+	std::vector<uint8> data;
+	data.resize(width * width * 3 * sizeof(float));
+	float* ResultData = (float*)&data[0];
+	for (i = 0; i < width; i++)
+		for (j = 0; j < width; j++)
+			for (k = 0; k < 3; k++) {
+
+				/* This is a little ugly since the input is in binary format
+				   and we need to do some tests on endian-ness */
+
+				float val;
+				unsigned char* c = (unsigned char*)&val;
+				//if (swapflag) { /* Endianness of computer different from input
+				//		   Read in the bytes in reversed order.
+				//		 */
+				//	assert(fscanf(fp, "%c%c%c%c", &(c[3]), &(c[2]), &(c[1]), &(c[0])) == 4);
+				//}
+				//else { /* Endianness same as input */
+				int temp = fscanf(fp, "%c%c%c%c", &(c[0]), &(c[1]), &(c[2]), &(c[3]));
+					assert(temp == 4);
+				//}
+					const int32 stride = 3;
+				*(ResultData + (i * width * stride + j * stride + k)) = val; /* Remember that c pointed to val */
+
+			}
+	fclose(fp);
+	return data;
+}
+
 void jGame::Update(float deltaTime)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "Game::Update");
@@ -288,18 +329,28 @@ void jGame::Update(float deltaTime)
 
 	//Renderer->Render(MainCamera);
 
+	static jTexture* CubeMapTexture = nullptr;
+
 	static jTexture* Texture = nullptr;
 	static bool test = false;
 	if (!test)
 	{
 		test = true;
 		jImageData dataPrev;
-		jImageFileLoader::GetInstance().LoadTextureFromFile(dataPrev, "Image/grace_probe.hdr", true);
-		Texture = g_rhi->CreateTextureFromData(&dataPrev.ImageData[0], dataPrev.Width, dataPrev.Height, dataPrev.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
+		jImageFileLoader::GetInstance().LoadTextureFromFile(dataPrev, "Image/grace_cross.hdr", true);
+		//dataPrev.Width = 1000;
+		//dataPrev.Height = 1000;
+		//dataPrev.ImageData = input("C:/Github/Shadows/Shadows/Image/grace_probe.float", 1000);
+		//jImageFileLoader::GetInstance().LoadTextureFromFile(dataPrev, "Image/grace_probe.png", true);
+		
+		//jImageFileLoader::GetInstance().LoadTextureFromFile(dataPrev, "Image/grace_probe.png", true);
+		//Texture = g_rhi->CreateTextureFromData(&dataPrev.ImageData[0], dataPrev.Width, dataPrev.Height, dataPrev.sRGB, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGBA);
 
 		if (0)
 		{
 			jImageData dataNew = dataPrev;
+			dataNew.ImageData.clear();
+			dataNew.ImageData.resize(dataPrev.ImageData.size());
 
 			auto GetSphericalMap = [](const Vector& InDir)
 			{
@@ -318,88 +369,222 @@ void jGame::Update(float deltaTime)
 				Vector result;
 
 				// 바꿈
-				float s = InTexCoord.x;
-				float t = InTexCoord.y;
+				float t = InTexCoord.x;
+				float s = InTexCoord.y;
 
 				result.x = 2.0 * sqrt(-4.0 * s * s + 4.0 * s - 1.0 - 4.0 * t * t + 4.0 * t) * (2.0 * t - 1);
 				result.y = 2.0 * sqrt(-4.0 * s * s + 4.0 * s - 1.0 - 4.0 * t * t + 4.0 * t) * (2.0 * s - 1);
 				result.z = (-8.0 * s * s + 8.0 * s - 8.0 * t * t + 8.0 * t - 3.0);
-				return (result);
+				return result.GetNormalize();
 			};
 
 			int32 Count = 0;
 			char szTemp[1024];
 			Vector* dataPtr = (Vector*)&dataPrev.ImageData[0];
-			parallel_for(dataPrev.Height * dataPrev.Width, [&](int start, int end)
+			std::mutex mu;
+			std::set<int32> completed;
+			parallel_for(dataPrev.Height* dataPrev.Width, [&](int start, int end)
+			{
+				for (int i = start; i < end; ++i)
 				{
-					//for (int32 i = 0; i < dataPrev.Height * dataPrev.Width; ++i)
-					for (int i = start; i < end; ++i)
+					float v = (float)(i / dataPrev.Width) / (float)dataPrev.Height;
+					float u = (float)(i % dataPrev.Width) / (float)dataPrev.Width;
+
+					if (Vector2(u - 0.5f, v - 0.5f).Length() > 0.5)
+						continue;
+
+					Vector normal = GetNormalFromTexCoord({ u, v });
+					//Vector normal = Vector(0.0, 0.0, 1.0);
+
+					Vector irradiance = Vector(0.0, 0.0, 0.0);
+					Vector up = Vector(0.0, 1.0, 0.0);
+					if (fabs(normal.DotProduct(up)) > (1.0f - 0.01f))
+						up = Vector(0.0, 0.0, 1.0);
+					Vector right = up.CrossProduct(normal).GetNormalize();
+					up = normal.CrossProduct(right).GetNormalize();
+					float sampleDelta = 0.025;
+					int32 nrSamples = 0;
+
+					for (float p = 0.0; p < 2.0 * PI; p += sampleDelta)
 					{
-						float v = (float)(i / dataPrev.Width) / (float)dataPrev.Height;
-						float u = (float)(i % dataPrev.Width) / (float)dataPrev.Width;
-
-						//float v = (float)i / (float)dataPrev.Height;
-						//for (int32 k = 0; k < dataPrev.Width; ++k)
+						for (float t = 0.0; t < 0.5 * PI; t += sampleDelta)
 						{
-							//float u = (float)k / (float)dataPrev.Width;
+							// spherical to cartesian (in tangent space)
+							Vector tangentSample = Vector(sin(t) * cos(p), sin(t) * sin(p), cos(t)); // tangent space to world
+							Vector sampleVec =
+								tangentSample.x * right +
+								tangentSample.y * up +
+								tangentSample.z * normal;
 
-							if (Vector2(u - 0.5f, v - 0.5f).Length() > 0.5)
-								continue;
-
-							Vector normal = GetNormalFromTexCoord({ u, v });
-
-							//(dataPtr + (i * dataPrev.Width + k));
-
-							Vector irradiance = Vector(0.0, 0.0, 0.0);
-							Vector up = Vector(0.0, 1.0, 0.0);
-							Vector right = up.CrossProduct(normal);
-							up = normal.CrossProduct(right);
-							float sampleDelta = 0.025;
-							float nrSamples = 0.0;
-
-							for (float p = 0.0; p < 2.0 * PI; p += sampleDelta)
-							{
-								for (float t = 0.0; t < 0.5 * PI; t += sampleDelta)
-								{
-									// spherical to cartesian (in tangent space)
-									Vector tangentSample = Vector(sin(t) * cos(p), sin(t) * sin(p), cos(t)); // tangent space to world
-									Vector sampleVec =
-										tangentSample.x * right +
-										tangentSample.y * up +
-										tangentSample.z * normal;
-
-									sampleVec = sampleVec.GetNormalize();
-									Vector2 TargetUV = GetSphericalMap(sampleVec);
-									int32 DataX = (int32)(TargetUV.x * dataPrev.Width);
-									int32 DataY = (int32)(TargetUV.y * dataPrev.Height);
-									Vector curRGB = *(dataPtr + (DataY * dataPrev.Width + DataX));
-									//Vector curRGB = texture(tex_object, GetSphericalMap(sampleVec)).rgb;
-									irradiance += curRGB * cos(t) * sin(t);
-									nrSamples++;
-
-									//color.xyz = curRGB;
-									//color.w = 1.0;
-									//return;
-								}
-							}
-							irradiance = PI * irradiance * (1.0 / float(nrSamples));
-							//color = vec4(irradiance, 1.0);
-							*(((Vector*)&dataNew.ImageData[0]) + i) = irradiance;
-
-							sprintf_s(szTemp, sizeof(szTemp), "%f %%\n", (++Count / (float)(dataPrev.Height * dataPrev.Width)) * 100.0f);
-							OutputDebugStringA(szTemp);
+							sampleVec = sampleVec.GetNormalize();
+							Vector2 TargetUV = GetSphericalMap(sampleVec);
+							int32 DataX = (int32)(TargetUV.x * dataPrev.Width);
+							int32 DataY = (int32)(TargetUV.y * dataPrev.Height);
+							Vector curRGB = *(dataPtr + (DataY * dataPrev.Width + DataX));
+							Vector InnerIntegrate = curRGB * cos(t) * sin(t);
+							irradiance += InnerIntegrate;
+							nrSamples++;
 						}
 					}
-				});
+					irradiance = PI * irradiance * (1.0 / float(nrSamples));
+					*(((Vector*)&dataNew.ImageData[0]) + i) = irradiance;
+				}
+			});
 
 			Texture = g_rhi->CreateTextureFromData(&dataNew.ImageData[0], dataNew.Width, dataNew.Height, dataNew.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
 		}
+		else
+		{
+			Vector* SourceData = ((Vector*)&dataPrev.ImageData[0]);
+
+			jImageData data[6];
+			jImageData& Top = data[2];
+			jImageData& Front = data[4];
+			jImageData& Left = data[1];
+			jImageData& Right = data[0];
+			jImageData& Bottom = data[3];
+			jImageData& Back = data[5];
+
+			{
+				Top.Width = 256;
+				Top.Height = 256;
+				Top.ImageData.resize(Top.Width * Top.Height * sizeof(Vector));
+				Vector* DestData = ((Vector*)&Top.ImageData[0]);
+
+				int32 XOffset = Top.Width;
+				int32 YOffset = 0;
+				for (int32 i = 0; i < Top.Height; ++i)
+				{
+					Vector* CurSourceData = SourceData + YOffset + XOffset + dataPrev.Width * i;
+					Vector* CurDestData = DestData + Top.Width * i;
+					memcpy(CurDestData, CurSourceData, Top.Width * sizeof(Vector));
+				}
+				//Texture = g_rhi->CreateTextureFromData(&Top.ImageData[0], Top.Width, Top.Height, Top.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
+			}
+
+			{
+				Front.Width = 256;
+				Front.Height = 256;
+				Front.ImageData.resize(Front.Width * Front.Height * sizeof(Vector));
+				Vector* DestData = ((Vector*)&Front.ImageData[0]);
+
+				int32 XOffset = Front.Width;
+				int32 YOffset = dataPrev.Width * Front.Height;
+				for (int32 i = 0; i < Front.Height; ++i)
+				{
+					Vector* CurSourceData = SourceData + YOffset + XOffset + dataPrev.Width * i;
+					Vector* CurDestData = DestData + Front.Width * i;
+					memcpy(CurDestData, CurSourceData, Front.Width * sizeof(Vector));
+				}
+				//Texture = g_rhi->CreateTextureFromData(&Front.ImageData[0], Front.Width, Front.Height, Front.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
+			}
+
+			{
+				Left.Width = 256;
+				Left.Height = 256;
+				Left.ImageData.resize(Left.Width * Left.Height * sizeof(Vector));
+				Vector* DestData = ((Vector*)&Left.ImageData[0]);
+
+				int32 XOffset = 0;
+				int32 YOffset = dataPrev.Width * Left.Height;
+				for (int32 i = 0; i < Left.Height; ++i)
+				{
+					Vector* CurSourceData = SourceData + YOffset + XOffset + dataPrev.Width * i;
+					Vector* CurDestData = DestData + Left.Width * i;
+					memcpy(CurDestData, CurSourceData, Left.Width * sizeof(Vector));
+				}
+				//Texture = g_rhi->CreateTextureFromData(&Left.ImageData[0], Left.Width, Left.Height, Left.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
+			}
+
+			{
+				Right.Width = 256;
+				Right.Height = 256;
+				Right.ImageData.resize(Right.Width * Right.Height * sizeof(Vector));
+				Vector* DestData = ((Vector*)&Right.ImageData[0]);
+
+				int32 XOffset = Right.Width * 2;
+				int32 YOffset = dataPrev.Width * Right.Height;
+				for (int32 i = 0; i < Right.Height; ++i)
+				{
+					Vector* CurSourceData = SourceData + YOffset + XOffset + dataPrev.Width * i;
+					Vector* CurDestData = DestData + Right.Width * i;
+					memcpy(CurDestData, CurSourceData, Right.Width * sizeof(Vector));
+				}
+				//Texture = g_rhi->CreateTextureFromData(&Right.ImageData[0], Right.Width, Right.Height, Right.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
+			}
+
+			{
+				Bottom.Width = 256;
+				Bottom.Height = 256;
+				Bottom.ImageData.resize(Bottom.Width * Bottom.Height * sizeof(Vector));
+				Vector* DestData = ((Vector*)&Bottom.ImageData[0]);
+
+				int32 XOffset = Bottom.Width;
+				int32 YOffset = dataPrev.Width * Bottom.Height * 2;
+				for (int32 i = 0; i < Bottom.Height; ++i)
+				{
+					Vector* CurSourceData = SourceData + YOffset + XOffset + dataPrev.Width * i;
+					Vector* CurDestData = DestData + Bottom.Width * i;
+					memcpy(CurDestData, CurSourceData, Bottom.Width * sizeof(Vector));
+				}
+				//Texture = g_rhi->CreateTextureFromData(&Bottom.ImageData[0], Bottom.Width, Bottom.Height, Bottom.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
+			}
+
+			{
+				Back.Width = 256;
+				Back.Height = 256;
+				Back.ImageData.resize(Back.Width * Back.Height * sizeof(Vector));
+				Vector* DestData = ((Vector*)&Back.ImageData[0]);
+
+				int32 XOffset = Back.Width;
+				int32 YOffset = dataPrev.Width * Back.Height * 3;
+				for (int32 i = 0; i < Back.Height; ++i)
+				{
+					for (int32 k = 0; k < Back.Width; ++k)
+					{
+						Vector* CurSourceData = SourceData + YOffset + XOffset + dataPrev.Width * i + k;
+						Vector* CurDestData = DestData + Back.Width * (Back.Height - i - 1) + (Back.Width - k - 1);		// y=x 대칭
+						*CurDestData = *CurSourceData;
+					}
+				}
+				//Texture = g_rhi->CreateTextureFromData(&Back.ImageData[0], Back.Width, Back.Height, Back.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
+			}
+
+			uint8* Datas[6];
+			for (int32 i = 0; i < 6; ++i)
+				Datas[i] = data[i].ImageData.data();
+
+			CubeMapTexture = g_rhi->CreateCubeTextureFromData(Datas, data[0].Width, data[0].Height, data[0].sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
+
+			//Texture = g_rhi->CreateTextureFromData(&dataPrev.ImageData[0], dataPrev.Width, dataPrev.Height, dataPrev.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
+			//Texture = g_rhi->CreateTextureFromData(&dataPrev.ImageData[0], dataPrev.Width, dataPrev.Height, dataPrev.sRGB, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGB);
+		}
 	}
 
-	g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-	g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
-	g_rhi->EnableDepthTest(true);
-	auto Shader = jShader::GetShader("GenIrrSphereMap");
+	// Draw cubemap
+	if (0)
+	{
+		static auto EnvCube = jPrimitiveUtil::CreateCube(Vector::ZeroVector, Vector(0.5f), Vector(1.0f), Vector4::ColorWhite);
+
+		g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
+
+		auto shader = jShader::GetShader("CubeEnv");
+		EnvCube->RenderObject->tex_object = CubeMapTexture;
+
+		MainCamera->IsInfinityFar = true;
+		MainCamera->UpdateCamera();
+		EnvCube->Update(deltaTime);
+		EnvCube->Draw(MainCamera, shader, { DirectionalLight });
+		MainCamera->IsInfinityFar = false;
+		MainCamera->UpdateCamera();
+		return;
+	}
+
+	//g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	//g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
+	//g_rhi->EnableDepthTest(true);
+	//auto Shader = jShader::GetShader("SphericalMap");
 
 	//static auto sphere = jPrimitiveUtil::CreateSphere(Vector(0.0f, 0.0f, 0.0f), 0.5, 16, Vector(100.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 	//sphere->RenderObject->tex_object = Texture;
@@ -426,7 +611,7 @@ void jGame::Update(float deltaTime)
 		g_rhi->EnableDepthTest(true);
 		auto Shader = jShader::GetShader("GenIrrSphereMap");
 
-		static auto UIQuad = jPrimitiveUtil::CreateUIQuad({ 300.0, 100.0 }, { 300, 300 }, Texture);
+		static auto UIQuad = jPrimitiveUtil::CreateUIQuad({ 300.0, 100.0 }, { 600, 600 }, Texture);
 		if (UIQuad)
 		{
 			auto appSettings = jShadowAppSettingProperties::GetInstance();
@@ -434,9 +619,12 @@ void jGame::Update(float deltaTime)
 			SET_UNIFORM_BUFFER_STATIC(float, "phi", appSettings.Phi, Shader);
 
 			UIQuad->SetTexture(Texture);
+			UIQuad->RenderObject->tex_object2 = CubeMapTexture;
+			UIQuad->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearClamp").get();
+			UIQuad->RenderObject->samplerState2 = jSamplerStatePool::GetSamplerState("LinearClamp").get();
+
 			UIQuad->Update(deltaTime);
 			UIQuad->Draw(MainCamera, Shader, {});
-			UIQuad->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearClamp").get();
 		}
 		//RT->End();
 	}

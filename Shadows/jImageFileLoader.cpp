@@ -45,4 +45,18 @@ void jImageFileLoader::LoadTextureFromFile(jImageData& data, std::string const& 
 
 		stbi_image_free(imageData);
 	}
+	else
+	{
+		int w, h, nrComponents;
+		uint8* imageData = stbi_load(filename.c_str(), &w, &h, &nrComponents, 0);
+
+		int32 NumOfBytes = w * h * sizeof(uint8) * nrComponents;
+		data.ImageData.resize(NumOfBytes);
+		memcpy(&data.ImageData[0], imageData, NumOfBytes);
+		data.Width = w;
+		data.Height = h;
+		data.sRGB = sRGB;
+
+		stbi_image_free(imageData);
+	}
 }

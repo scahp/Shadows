@@ -93,6 +93,7 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("Graph2D", "shaders/vs_graph.glsl", "shaders/fs_graph.glsl");
 
 		DECLARE_SHADER_VS_FS("GenIrrSphereMap", "Shaders/tex_ui_vs.glsl", "Shaders/genirrspheremap_fs.glsl");
+		DECLARE_SHADER_VS_FS("CubeEnv", "Shaders/cubeenv_vs.glsl", "Shaders/cubeenv_fs.glsl");
 	}
 } s_shaderInfoCreation;
 

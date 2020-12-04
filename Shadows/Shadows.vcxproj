@@ -105,7 +105,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_ITERATOR_DEBUG_LEVEL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;_ITERATOR_DEBUG_LEVEL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>./;./glad/include;./External/AntTweakBar/include;./External/assimp/include</AdditionalIncludeDirectories>
@@ -147,7 +147,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>./;./glad/include;./External/AntTweakBar/include;./External/assimp/include</AdditionalIncludeDirectories>
@@ -281,6 +281,8 @@
     <None Include="Shaders\compute\compute_example.glsl" />
     <None Include="Shaders\compute\compute_link_linkedlist.glsl" />
     <None Include="Shaders\compute\compute_sort_linkedlist.glsl" />
+    <None Include="Shaders\cubeenv_fs.glsl" />
+    <None Include="Shaders\cubeenv_vs.glsl" />
     <None Include="Shaders\fs_boundvolume.glsl" />
     <None Include="Shaders\fs_graph.glsl" />
     <None Include="Shaders\fs_red.glsl" />
