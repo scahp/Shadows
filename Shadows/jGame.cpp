@@ -251,7 +251,7 @@ void jGame::Update(float deltaTime)
 	{
 		test = true;
 		jImageData data;
-		jImageFileLoader::GetInstance().LoadTextureFromFile(data, "Image/campus_probe.hdr", true);
+		jImageFileLoader::GetInstance().LoadTextureFromFile(data, "Image/stpeters_probe.hdr", true);
 		Texture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
 	}
 
