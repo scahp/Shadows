@@ -260,7 +260,10 @@ void jGame::Update(float deltaTime)
 	g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	g_rhi->SetClear({ERenderBufferType::COLOR | ERenderBufferType::DEPTH});
 	g_rhi->EnableDepthTest(true);
+	
 	auto Shader = jShader::GetShader("SphericalMap");
+	g_rhi->SetShader(Shader);
+	SET_UNIFORM_BUFFER_STATIC(int, "IsUsingTwoMirrorBall", jShadowAppSettingProperties::GetInstance().IsUsingTwoMirrorBall, Shader);
 	sphere->RenderObject->tex_object = Texture;
 	sphere->Draw(MainCamera, Shader, {});
 }
