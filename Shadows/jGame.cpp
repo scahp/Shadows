@@ -336,6 +336,13 @@ void jGame::Update(float deltaTime)
 	if (!test)
 	{
 		test = true;
+
+		{
+			jImageData data;
+			jImageFileLoader::GetInstance().LoadTextureFromFile(data, "Image/grace_probe.hdr", true);
+			Texture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
+		}
+
 		jImageData dataPrev;
 		jImageFileLoader::GetInstance().LoadTextureFromFile(dataPrev, "Image/grace_cross.hdr", true);
 		//dataPrev.Width = 1000;
