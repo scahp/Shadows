@@ -143,6 +143,7 @@ enum class ETextureFormat
 	RGB16F,
 	RGB32F,
 	DEPTH,
+	MAX,
 };
 
 enum class EFormatType
@@ -284,5 +285,14 @@ enum class ETextureComparisonMode
 {
 	NONE = 0,
 	COMPARE_REF_TO_TEXTURE,
+	MAX,
+};
+
+enum class EImageTextureAccessType
+{
+	NONE = 0,
+	READ_ONLY,
+	WRITE_ONLY,
+	READ_WRITE,
 	MAX,
 };

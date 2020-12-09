@@ -33,7 +33,10 @@ struct jIndexBuffer : public IBuffer
 struct jTexture
 {
 	bool sRGB = false;
-	ETextureType TextureType;
+	ETextureType Type = ETextureType::MAX;
+	ETextureFormat Format = ETextureFormat::MAX;
+	int32 Width = 0;
+	int32 Height = 0;
 
 	ETextureFilter Minification = ETextureFilter::NEAREST;
 	ETextureFilter Magnification = ETextureFilter::NEAREST;
@@ -390,6 +393,7 @@ public:
 	virtual void GetQueryTimeStampResult(jQueryTime* queryTimeStamp) const {}
 	virtual void BeginQueryTimeElapsed(const jQueryTime* queryTimeElpased) const {}
 	virtual void EndQueryTimeElapsed(const jQueryTime* queryTimeElpased) const {}
+	virtual void SetImageTexture(int32 index, const jTexture* texture, EImageTextureAccessType type) const {}
 };
 
 // Not thred safe

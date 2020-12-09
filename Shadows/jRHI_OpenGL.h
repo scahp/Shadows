@@ -198,5 +198,6 @@ public:
 	virtual void GetQueryTimeStampResult(jQueryTime* queryTimeStamp) const override;
 	virtual void BeginQueryTimeElapsed(const jQueryTime* queryTimeElpased) const override;
 	virtual void EndQueryTimeElapsed(const jQueryTime* queryTimeElpased) const override;
+	virtual void SetImageTexture(int32 index, const jTexture* texture, EImageTextureAccessType type) const override;
 };
 

@@ -2,20 +2,27 @@
 
 precision highp float;
 
-#define SAMPLE_SIZE_X 32
-#define SAMPLE_SIZE_Y 32
+#define SAMPLE_INTERVAL_X 16
+#define SAMPLE_INTERVAL_Y 16
 
-layout (local_size_x = 1, local_size_y = 1) in;
+layout (local_size_x = SAMPLE_INTERVAL_X, local_size_y = SAMPLE_INTERVAL_Y) in;
 
-uniform sampler2D tex_object;		// EnvironmentMap
-//layout(binding = 0, rgb10_a2) uniform readonly image2D tex_object;
+layout(binding = 0, rgba16f) uniform readonly image2D tex_object;
 
 const float PI = 3.1415926535897932384626433832795028841971693993751058209749;
+const float SHBasisR = 1.0;
+const float sampleDelta = 0.015f;
+
+uniform int TexWidth;
+uniform int TexHeight;
 
 layout(std430, binding = 0) buffer LlmBuffer
 {
-	vec3 Llm[];
+	vec4 Llm[9];        // w component is padding
 };
+
+shared vec3 GlobalLlm[SAMPLE_INTERVAL_X * SAMPLE_INTERVAL_Y][9];
+shared int GlobalNumOfSamples;
 
 // https://www.pauldebevec.com/Probes/
 vec2 GetSphericalMap_TwoMirrorBall(vec3 InDir)
@@ -67,63 +74,105 @@ vec3 GetNormalFromTexCoord_TwoMirrorBall(vec2 InTexCoord)
     return vec3(x, y, z);
 }
 
-vec3 FetchEnvMap(vec2 InTexCoord)
+void GenerateYlm(out float Ylm[9], vec3 InDir)
 {
-    return texture(tex_object, vec2(InTexCoord.x, 1.0 - InTexCoord.y)).xyz;
-    //return imageLoad(tex_object, ivec2(InTexCoord.x * 1000, InTexCoord.y * 1000)).xyz;
+    Ylm[0] = 0.5 * sqrt(1.0 / PI);
+    Ylm[1] = 0.5 * sqrt(3.0 / PI) * InDir.y / SHBasisR;
+    Ylm[2] = 0.5 * sqrt(3.0 / PI) * InDir.z / SHBasisR;
+    Ylm[3] = 0.5 * sqrt(3.0 / PI) * InDir.x / SHBasisR;
+    Ylm[4] = 0.5 * sqrt(15.0 / PI) * InDir.x * InDir.y / (SHBasisR * SHBasisR);
+    Ylm[5] = 0.5 * sqrt(15.0 / PI) * InDir.y * InDir.z / (SHBasisR * SHBasisR);
+    Ylm[6] = 0.25 * sqrt(5.0 / PI) * (-InDir.x * InDir.x - InDir.y * InDir.y + 2.0 * InDir.z * InDir.z) / (SHBasisR * SHBasisR);
+    Ylm[7] = 0.5 * sqrt(15.0 / PI) * InDir.z * InDir.x / (SHBasisR * SHBasisR);
+    Ylm[8] = 0.25 * sqrt(15.0 / PI) * (InDir.x * InDir.x - InDir.y * InDir.y) / (SHBasisR * SHBasisR);
 }
 
 void main(void)
 {
-    float SHBasisR = 1.0;
+    if (gl_LocalInvocationIndex == 0)
+        GlobalNumOfSamples = 0;
 
-    Llm[0] = vec3(0.0);
-    Llm[1] = vec3(0.0);
-    Llm[2] = vec3(0.0);
-    Llm[3] = vec3(0.0);
-    Llm[4] = vec3(0.0);
-    Llm[5] = vec3(0.0);
-    Llm[6] = vec3(0.0);
-    Llm[7] = vec3(0.0);
-    Llm[8] = vec3(0.0);
+    barrier();
 
-    float sampleDelta = 0.025;
-    float nrSamples = 0.0;
-    vec3 MaxR = vec3(0.0);
-    for (float phi = sampleDelta; phi <= 2.0 * PI; phi += sampleDelta)
+    vec3 LocalLlm[9];
+    LocalLlm[0] = vec3(0.0);
+    LocalLlm[1] = vec3(0.0);
+    LocalLlm[2] = vec3(0.0);
+    LocalLlm[3] = vec3(0.0);
+    LocalLlm[4] = vec3(0.0);
+    LocalLlm[5] = vec3(0.0);
+    LocalLlm[6] = vec3(0.0);
+    LocalLlm[7] = vec3(0.0);
+    LocalLlm[8] = vec3(0.0);
+
+    ivec2 LocalGroupSize = ivec2(SAMPLE_INTERVAL_X, SAMPLE_INTERVAL_Y);
+    ivec2 StartInterval = ivec2(gl_LocalInvocationID.xy) + ivec2(1, 1);
+
+    int nrSamples = 0;
+    for (float phi = sampleDelta * StartInterval.y; phi <= 2.0 * PI; phi += sampleDelta * LocalGroupSize.y)
     {
-        for (float theta = sampleDelta; theta <= PI; theta += sampleDelta)
+        for (float theta = sampleDelta * StartInterval.x; theta <= PI; theta += sampleDelta * LocalGroupSize.x)
         {
             // spherical to cartesian (in tangent space)
             vec3 sampleVec = vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta)); // tangent space to world
             sampleVec = normalize(sampleVec);
-            vec3 curRGB = FetchEnvMap(GetSphericalMap_TwoMirrorBall(sampleVec));
 
-            float LocalYlm[9];
-            LocalYlm[0] = 0.5 * sqrt(1.0 / PI);       // 0
-            LocalYlm[1] = 0.5 * sqrt(3.0 / PI) * sampleVec.y / SHBasisR;      // 1
-            LocalYlm[2] = 0.5 * sqrt(3.0 / PI) * sampleVec.z / SHBasisR;      // 2
-            LocalYlm[3] = 0.5 * sqrt(3.0 / PI) * sampleVec.x / SHBasisR;      // 3
-            LocalYlm[4] = 0.5 * sqrt(15.0 / PI) * sampleVec.x * sampleVec.y / (SHBasisR * SHBasisR);      // 4
-            LocalYlm[5] = 0.5 * sqrt(15.0 / PI) * sampleVec.y * sampleVec.z / (SHBasisR * SHBasisR);      // 5
-            LocalYlm[6] = 0.25 * sqrt(5.0 / PI) * (-sampleVec.x * sampleVec.x - sampleVec.y * sampleVec.y + 2.0 * sampleVec.z * sampleVec.z) / (SHBasisR * SHBasisR);     // 6
-            LocalYlm[7] = 0.5 * sqrt(15.0 / PI) * sampleVec.z * sampleVec.x / (SHBasisR * SHBasisR);  // 7
-            LocalYlm[8] = 0.25 * sqrt(15.0 / PI) * (sampleVec.x * sampleVec.x - sampleVec.y * sampleVec.y) / (SHBasisR * SHBasisR); // 8
+            float Ylm[9];
+            GenerateYlm(Ylm, sampleVec);
 
-            Llm[0] += LocalYlm[0] * curRGB * cos(theta) + sin(theta);
-            Llm[1] += LocalYlm[1] * curRGB * cos(theta) + sin(theta);
-            Llm[2] += LocalYlm[2] * curRGB * cos(theta) + sin(theta);
-            Llm[3] += LocalYlm[3] * curRGB * cos(theta) + sin(theta);
-            Llm[4] += LocalYlm[4] * curRGB * cos(theta) + sin(theta);
-            Llm[5] += LocalYlm[5] * curRGB * cos(theta) + sin(theta);
-            Llm[6] += LocalYlm[6] * curRGB * cos(theta) + sin(theta);
-            Llm[7] += LocalYlm[7] * curRGB * cos(theta) + sin(theta);
-            Llm[8] += LocalYlm[8] * curRGB * cos(theta) + sin(theta);
+            vec2 TargetUV = GetSphericalMap_TwoMirrorBall(sampleVec);
+            int DataX = int(TargetUV.x * TexWidth);
+            int DataY = int((1.0 - TargetUV.y) * TexHeight);
+            vec3 curRGB = imageLoad(tex_object, ivec2(DataX, DataY)).xyz;
 
-            ++nrSamples;
+            LocalLlm[0] += Ylm[0] * curRGB * sin(theta);
+            LocalLlm[1] += Ylm[1] * curRGB * sin(theta);
+            LocalLlm[2] += Ylm[2] * curRGB * sin(theta);
+            LocalLlm[3] += Ylm[3] * curRGB * sin(theta);
+            LocalLlm[4] += Ylm[4] * curRGB * sin(theta);
+            LocalLlm[5] += Ylm[5] * curRGB * sin(theta);
+            LocalLlm[6] += Ylm[6] * curRGB * sin(theta);
+            LocalLlm[7] += Ylm[7] * curRGB * sin(theta);
+            LocalLlm[8] += Ylm[8] * curRGB * sin(theta);
+            nrSamples++;
         }
     }
 
-    for (int i = 0; i < 9; ++i)
-        Llm[i] = PI * (Llm[i] * (1.0 / float(nrSamples)));
+    uint GlobalIndex = gl_LocalInvocationID.y * SAMPLE_INTERVAL_X + gl_LocalInvocationID.x;
+
+    GlobalLlm[GlobalIndex][0] = LocalLlm[0];
+    GlobalLlm[GlobalIndex][1] = LocalLlm[1];
+    GlobalLlm[GlobalIndex][2] = LocalLlm[2];
+    GlobalLlm[GlobalIndex][3] = LocalLlm[3];
+    GlobalLlm[GlobalIndex][4] = LocalLlm[4];
+    GlobalLlm[GlobalIndex][5] = LocalLlm[5];
+    GlobalLlm[GlobalIndex][6] = LocalLlm[6];
+    GlobalLlm[GlobalIndex][7] = LocalLlm[7];
+    GlobalLlm[GlobalIndex][8] = LocalLlm[8];
+
+    atomicAdd(GlobalNumOfSamples, nrSamples);
+
+    barrier();
+
+    if (gl_LocalInvocationIndex == 0)
+    {
+        LocalLlm[0] = vec3(0.0);
+        LocalLlm[1] = vec3(0.0);
+        LocalLlm[2] = vec3(0.0);
+        LocalLlm[3] = vec3(0.0);
+        LocalLlm[4] = vec3(0.0);
+        LocalLlm[5] = vec3(0.0);
+        LocalLlm[6] = vec3(0.0);
+        LocalLlm[7] = vec3(0.0);
+        LocalLlm[8] = vec3(0.0);
+
+        for (int k = 0; k < SAMPLE_INTERVAL_X * SAMPLE_INTERVAL_Y; ++k)
+        {
+            for (int m = 0; m < 9; ++m)
+                LocalLlm[m] += GlobalLlm[k][m];
+        }
+
+        for (int i = 0; i < 9; ++i)
+            Llm[i].xyz = 2.0f * PI * LocalLlm[i] * (1.0f / float(GlobalNumOfSamples));
+    }
 }

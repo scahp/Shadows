@@ -3,7 +3,6 @@
 precision highp float;
 
 uniform sampler2D tex_object;
-uniform samplerCube tex_object2;
 uniform float Al[3];
 uniform vec3 Llm[9];
 uniform int IsGenIrradianceMapFromSH;

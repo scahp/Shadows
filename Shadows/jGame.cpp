@@ -22,51 +22,6 @@
 #include "jPipeline.h"
 #include "jVertexAdjacency.h"
 #include "jSamplerStatePool.h"
-#include <thread>
-#include <mutex>
-#include <set>
-#include <stdio.h>
-
-static
-void parallel_for(unsigned nb_elements,
-	std::function<void(int start, int end)> functor,
-	bool use_threads = true)
-{
-	// -------
-	unsigned nb_threads_hint = std::thread::hardware_concurrency();
-	unsigned nb_threads = nb_threads_hint == 0 ? 8 : (nb_threads_hint);
-
-	unsigned batch_size = nb_elements / nb_threads;
-	unsigned batch_remainder = nb_elements % nb_threads;
-
-	std::vector< std::thread > my_threads(nb_threads);
-
-	if (use_threads)
-	{
-		// Multithread execution
-		for (unsigned i = 0; i < nb_threads; ++i)
-		{
-			int start = i * batch_size;
-			my_threads[i] = std::thread(functor, start, start + batch_size);
-		}
-	}
-	else
-	{
-		// Single thread execution (for easy debugging)
-		for (unsigned i = 0; i < nb_threads; ++i) {
-			int start = i * batch_size;
-			functor(start, start + batch_size);
-		}
-	}
-
-	// Deform the elements left
-	int start = nb_threads * batch_size;
-	functor(start, start + batch_remainder);
-
-	// Wait for the other thread to finish their task
-	if (use_threads)
-		std::for_each(my_threads.begin(), my_threads.end(), std::mem_fn(&std::thread::join));
-}
 
 jRHI* g_rhi = nullptr;
 
@@ -208,44 +163,6 @@ void jGame::RemoveSpawnedObjects()
 	SpawnedObjects.clear();
 }
 
-std::vector<uint8> input(const char* filename, const int width) { 
-
-	/* Read in light
-							probe */
-	int i, j, k;
-	FILE* fp = nullptr;
-	fp = fopen(filename, "rb");
-	assert(fp);
-
-	std::vector<uint8> data;
-	data.resize(width * width * 3 * sizeof(float));
-	float* ResultData = (float*)&data[0];
-	for (i = 0; i < width; i++)
-		for (j = 0; j < width; j++)
-			for (k = 0; k < 3; k++) {
-
-				/* This is a little ugly since the input is in binary format
-				   and we need to do some tests on endian-ness */
-
-				float val;
-				unsigned char* c = (unsigned char*)&val;
-				//if (swapflag) { /* Endianness of computer different from input
-				//		   Read in the bytes in reversed order.
-				//		 */
-				//	assert(fscanf(fp, "%c%c%c%c", &(c[3]), &(c[2]), &(c[1]), &(c[0])) == 4);
-				//}
-				//else { /* Endianness same as input */
-				int temp = fscanf(fp, "%c%c%c%c", &(c[0]), &(c[1]), &(c[2]), &(c[3]));
-					assert(temp == 4);
-				//}
-					const int32 stride = 3;
-				*(ResultData + (i * width * stride + j * stride + k)) = val; /* Remember that c pointed to val */
-
-			}
-	fclose(fp);
-	return data;
-}
-
 void jGame::Update(float deltaTime)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "Game::Update");
@@ -326,45 +243,34 @@ void jGame::Update(float deltaTime)
 
 	//Renderer->Render(MainCamera);
 
-	static jTexture* CubeMapTexture = nullptr;
-
-	// todo : ComputeShader 로 연산한 결과로 대체 하도록 하자.
-	Vector Llm[9] =
+	static jTexture* GraceProbeTexture = nullptr;
+	static jTexture* GraceProbeRGBATexture = nullptr;
+	static bool IsLoadTexture = false;
+	if (!IsLoadTexture)
 	{
-		Vector(0.79, 0.44, 0.54),         // L00
-		Vector(0.39, 0.35, 0.60),         // L1-1
-		Vector(-0.34, -0.18, -0.27),      // L10
-		Vector(-0.29, -0.06, 0.01),       // L11
-		Vector(-0.11, -0.05, -0.12),      // L2-2
-		Vector(-0.26, -0.22, -0.47),      // L2-1
-		Vector(-0.16, -0.09, -0.15),      // L20
-		Vector(0.56, 0.21, 0.14),         // L21
-		Vector(0.21, -0.05, -0.30),       // L22
-	};
+		IsLoadTexture = true;
 
-	static jTexture* Texture = nullptr;
-	//static Vector Llm[9];
-	static bool test = false;
-	if (!test)
-	{
-		test = true;
+		jImageData dataTwoMirrorBall;
+		jImageData dataTwoMirrorBallRGBA;
 
-		{
-			jImageData data;
-			jImageFileLoader::GetInstance().LoadTextureFromFile(data, "Image/grace_probe.hdr", true);
-			Texture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
-		}
+		jImageFileLoader::GetInstance().LoadTextureFromFile(dataTwoMirrorBall, "Image/grace_probe.hdr", false);
+		GraceProbeTexture = g_rhi->CreateTextureFromData(&dataTwoMirrorBall.ImageData[0], dataTwoMirrorBall.Width, dataTwoMirrorBall.Height
+			, dataTwoMirrorBall.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
 
-		jImageData dataPrev;
-		jImageFileLoader::GetInstance().LoadTextureFromFile(dataPrev, "Image/grace_cross.hdr", true);
-		//dataPrev.Width = 1000;
-		//dataPrev.Height = 1000;
-		//dataPrev.ImageData = input("C:/Github/Shadows/Shadows/Image/grace_probe.float", 1000);
-		//jImageFileLoader::GetInstance().LoadTextureFromFile(dataPrev, "Image/grace_probe.png", true);
-		
-		//jImageFileLoader::GetInstance().LoadTextureFromFile(dataPrev, "Image/grace_probe.png", true);
-		//Texture = g_rhi->CreateTextureFromData(&dataPrev.ImageData[0], dataPrev.Width, dataPrev.Height, dataPrev.sRGB, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGBA);
+		dataTwoMirrorBallRGBA.Width = dataTwoMirrorBall.Width;
+		dataTwoMirrorBallRGBA.Height = dataTwoMirrorBall.Height;
 
+		const int32 TotalPixelCount = dataTwoMirrorBall.Width * dataTwoMirrorBall.Height;
+		dataTwoMirrorBallRGBA.ImageData.resize(TotalPixelCount * sizeof(Vector4));
+
+		Vector4* DestPtr = (Vector4*)&dataTwoMirrorBallRGBA.ImageData[0];
+		Vector* SourcePtr = (Vector*)&dataTwoMirrorBall.ImageData[0];
+		for (int32 i = 0; i < TotalPixelCount; ++i)
+			*(DestPtr + i) = Vector4(*(SourcePtr + i), 1.0);
+		GraceProbeRGBATexture = g_rhi->CreateTextureFromData(&dataTwoMirrorBallRGBA.ImageData[0], dataTwoMirrorBallRGBA.Width, dataTwoMirrorBallRGBA.Height
+			, dataTwoMirrorBallRGBA.sRGB, EFormatType::FLOAT, ETextureFormat::RGBA16F);
+
+#if 0 // Generate SH Llm on CPU
 		auto GetSphericalMap_TwoMirrorBall = [](const Vector& InDir)
 		{
 			// Convert from Direction3D to UV[-1, 1]
@@ -379,266 +285,78 @@ void jGame::Update(float deltaTime)
 			// - This is why we use (1.0 / 2.0 * PI) instead of (1.0 / PI) in "r".
 			// - adding 0.5 execute next line. (here : "float u = 0.5 + InDir.x * r" and "float v = 0.5 + InDir.y * r")
 			float d = sqrt(InDir.x * InDir.x + InDir.y * InDir.y);
-			float r = (d > 0.0) ? (0.159154943 * acos(InDir.z) / d) : 0.0;
-			float u = 0.5 + InDir.x * r;
-			float v = 0.5 + InDir.y * r;
+			float r = (d > 0.0f) ? (0.159154943f * acos(InDir.z) / d) : 0.0f;
+			float u = 0.5f + InDir.x * r;
+			float v = 0.5f + InDir.y * r;
 			//color = texture(tex_object, vec2(u, v));
 			return Vector2(u, v);
 		};
 
-		//memset(&Llm[0], 0, sizeof(Llm));
+		auto GenerateLlm = [&dataTwoMirrorBall, &GetSphericalMap_TwoMirrorBall](Vector (&OutLlm)[9]){
+			memset(&OutLlm[0], 0, sizeof(OutLlm));
 
-		//Vector* dataPtr = (Vector*)&dataPrev.ImageData[0];
-		//float sampleDelta = 0.015f;
-		//int32 nrSamples = 0;
-		//float SHBasisR = 1.0f;
-		//for (float phi = 0.0; phi < 2.0 * PI; phi += sampleDelta)
-		//{
-		//	for (float theta = 0.0; theta < PI; theta += sampleDelta)
-		//	{
-		//		// spherical to cartesian (in tangent space)
-		//		Vector sampleVec = Vector(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta)); // tangent space to world
-		//		sampleVec = sampleVec.GetNormalize();
-
-		//		float LocalYlm[9];
-		//		LocalYlm[0] = 0.5 * sqrt(1.0 / PI);       // 0
-		//		LocalYlm[1] = 0.5 * sqrt(3.0 / PI) * sampleVec.y / SHBasisR;      // 1
-		//		LocalYlm[2] = 0.5 * sqrt(3.0 / PI) * sampleVec.z / SHBasisR;      // 2
-		//		LocalYlm[3] = 0.5 * sqrt(3.0 / PI) * sampleVec.x / SHBasisR;      // 3
-		//		LocalYlm[4] = 0.5 * sqrt(15.0 / PI) * sampleVec.x * sampleVec.y / (SHBasisR * SHBasisR);      // 4
-		//		LocalYlm[5] = 0.5 * sqrt(15.0 / PI) * sampleVec.y * sampleVec.z / (SHBasisR * SHBasisR);      // 5
-		//		LocalYlm[6] = 0.25 * sqrt(5.0 / PI) * (-sampleVec.x * sampleVec.x - sampleVec.y * sampleVec.y + 2.0 * sampleVec.z * sampleVec.z) / (SHBasisR * SHBasisR);     // 6
-		//		LocalYlm[7] = 0.5 * sqrt(15.0 / PI) * sampleVec.z * sampleVec.x / (SHBasisR * SHBasisR);  // 7
-		//		LocalYlm[8] = 0.25 * sqrt(15.0 / PI) * (sampleVec.x * sampleVec.x - sampleVec.y * sampleVec.y) / (SHBasisR * SHBasisR); // 8
-
-		//		Vector2 TargetUV = GetSphericalMap_TwoMirrorBall(sampleVec);
-		//		int32 DataX = (int32)(TargetUV.x * dataPrev.Width);
-		//		int32 DataY = (int32)(TargetUV.y * dataPrev.Height);
-		//		Vector curRGB = *(dataPtr + (DataY * dataPrev.Width + DataX));
-		//		//Vector InnerIntegrate = curRGB * cos(t) * sin(t);
-
-		//		Llm[0] += LocalYlm[0] * curRGB * sin(theta);
-		//		Llm[1] += LocalYlm[1] * curRGB * sin(theta);
-		//		Llm[2] += LocalYlm[2] * curRGB * sin(theta);
-		//		Llm[3] += LocalYlm[3] * curRGB * sin(theta);
-		//		Llm[4] += LocalYlm[4] * curRGB * sin(theta);
-		//		Llm[5] += LocalYlm[5] * curRGB * sin(theta);
-		//		Llm[6] += LocalYlm[6] * curRGB * sin(theta);
-		//		Llm[7] += LocalYlm[7] * curRGB * sin(theta);
-		//		Llm[8] += LocalYlm[8] * curRGB * sin(theta);
-		//		nrSamples++;
-		//	}
-		//}
-		//for (int i = 0; i < 9; ++i)
-		//	Llm[i] = 2.0 * PI * Llm[i] * (1.0 / float(nrSamples));
-
-		if (0)
-		{
-			jImageData dataNew = dataPrev;
-			dataNew.ImageData.clear();
-			dataNew.ImageData.resize(dataPrev.ImageData.size());
-
-			auto GetNormalFromTexCoord = [](Vector2 InTexCoord)
+			Vector* dataPtr = (Vector*)&dataTwoMirrorBall.ImageData[0];
+			float sampleDelta = 0.015f;
+			int32 nrSamples = 0;
+			float SHBasisR = 1.0f;
+			for (float phi = sampleDelta; phi <= 2.0 * PI; phi += sampleDelta)
 			{
-				Vector result;
-
-				// 바꿈
-				float t = InTexCoord.x;
-				float s = InTexCoord.y;
-
-				result.x = 2.0 * sqrt(-4.0 * s * s + 4.0 * s - 1.0 - 4.0 * t * t + 4.0 * t) * (2.0 * t - 1);
-				result.y = 2.0 * sqrt(-4.0 * s * s + 4.0 * s - 1.0 - 4.0 * t * t + 4.0 * t) * (2.0 * s - 1);
-				result.z = (-8.0 * s * s + 8.0 * s - 8.0 * t * t + 8.0 * t - 3.0);
-				return result.GetNormalize();
-			};
-
-			int32 Count = 0;
-			char szTemp[1024];
-			Vector* dataPtr = (Vector*)&dataPrev.ImageData[0];
-			std::mutex mu;
-			std::set<int32> completed;
-			parallel_for(dataPrev.Height* dataPrev.Width, [&](int start, int end)
-			{
-				for (int i = start; i < end; ++i)
+				for (float theta = sampleDelta; theta <= PI; theta += sampleDelta)
 				{
-					float v = (float)(i / dataPrev.Width) / (float)dataPrev.Height;
-					float u = (float)(i % dataPrev.Width) / (float)dataPrev.Width;
+					// spherical to cartesian (in tangent space)
+					Vector sampleVec = Vector(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta)); // tangent space to world
+					sampleVec = sampleVec.GetNormalize();
 
-					if (Vector2(u - 0.5f, v - 0.5f).Length() > 0.5)
-						continue;
+					float LocalYlm[9];
+					LocalYlm[0] = 0.5f * sqrt(1.0f / PI);       // 0
+					LocalYlm[1] = 0.5f * sqrt(3.0f / PI) * sampleVec.y / SHBasisR;      // 1
+					LocalYlm[2] = 0.5f * sqrt(3.0f / PI) * sampleVec.z / SHBasisR;      // 2
+					LocalYlm[3] = 0.5f * sqrt(3.0f / PI) * sampleVec.x / SHBasisR;      // 3
+					LocalYlm[4] = 0.5f * sqrt(15.0f / PI) * sampleVec.x * sampleVec.y / (SHBasisR * SHBasisR);      // 4
+					LocalYlm[5] = 0.5f * sqrt(15.0f / PI) * sampleVec.y * sampleVec.z / (SHBasisR * SHBasisR);      // 5
+					LocalYlm[6] = 0.25f * sqrt(5.0f / PI) * (-sampleVec.x * sampleVec.x - sampleVec.y * sampleVec.y + 2.0f * sampleVec.z * sampleVec.z) / (SHBasisR * SHBasisR);     // 6
+					LocalYlm[7] = 0.5f * sqrt(15.0f / PI) * sampleVec.z * sampleVec.x / (SHBasisR * SHBasisR);  // 7
+					LocalYlm[8] = 0.25f * sqrt(15.0f / PI) * (sampleVec.x * sampleVec.x - sampleVec.y * sampleVec.y) / (SHBasisR * SHBasisR); // 8
 
-					Vector normal = GetNormalFromTexCoord({ u, v });
-					//Vector normal = Vector(0.0, 0.0, 1.0);
+					Vector2 TargetUV = GetSphericalMap_TwoMirrorBall(sampleVec);
+					int32 DataX = (int32)(TargetUV.x * dataTwoMirrorBall.Width);
+					int32 DataY = (int32)((1.0 - TargetUV.y) * dataTwoMirrorBall.Height);
+					Vector curRGB = *(dataPtr + (DataY * dataTwoMirrorBall.Width + DataX));
+					//Vector InnerIntegrate = curRGB * cos(t) * sin(t);
 
-					Vector irradiance = Vector(0.0, 0.0, 0.0);
-					Vector up = Vector(0.0, 1.0, 0.0);
-					if (fabs(normal.DotProduct(up)) > (1.0f - 0.01f))
-						up = Vector(0.0, 0.0, 1.0);
-					Vector right = up.CrossProduct(normal).GetNormalize();
-					up = normal.CrossProduct(right).GetNormalize();
-					float sampleDelta = 0.025;
-					int32 nrSamples = 0;
-
-					for (float p = 0.0; p < 2.0 * PI; p += sampleDelta)
-					{
-						for (float t = 0.0; t < 0.5 * PI; t += sampleDelta)
-						{
-							// spherical to cartesian (in tangent space)
-							Vector tangentSample = Vector(sin(t) * cos(p), sin(t) * sin(p), cos(t)); // tangent space to world
-							Vector sampleVec =
-								tangentSample.x * right +
-								tangentSample.y * up +
-								tangentSample.z * normal;
-
-							sampleVec = sampleVec.GetNormalize();
-							Vector2 TargetUV = GetSphericalMap_TwoMirrorBall(sampleVec);
-							int32 DataX = (int32)(TargetUV.x * dataPrev.Width);
-							int32 DataY = (int32)(TargetUV.y * dataPrev.Height);
-							Vector curRGB = *(dataPtr + (DataY * dataPrev.Width + DataX));
-							Vector InnerIntegrate = curRGB * cos(t) * sin(t);
-							irradiance += InnerIntegrate;
-							nrSamples++;
-						}
-					}
-					irradiance = PI * irradiance * (1.0 / float(nrSamples));
-					*(((Vector*)&dataNew.ImageData[0]) + i) = irradiance;
+					OutLlm[0] += LocalYlm[0] * curRGB * sin(theta);
+					OutLlm[1] += LocalYlm[1] * curRGB * sin(theta);
+					OutLlm[2] += LocalYlm[2] * curRGB * sin(theta);
+					OutLlm[3] += LocalYlm[3] * curRGB * sin(theta);
+					OutLlm[4] += LocalYlm[4] * curRGB * sin(theta);
+					OutLlm[5] += LocalYlm[5] * curRGB * sin(theta);
+					OutLlm[6] += LocalYlm[6] * curRGB * sin(theta);
+					OutLlm[7] += LocalYlm[7] * curRGB * sin(theta);
+					OutLlm[8] += LocalYlm[8] * curRGB * sin(theta);
+					nrSamples++;
 				}
-			});
-
-			Texture = g_rhi->CreateTextureFromData(&dataNew.ImageData[0], dataNew.Width, dataNew.Height, dataNew.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
-		}
-		else
-		{
-			Vector* SourceData = ((Vector*)&dataPrev.ImageData[0]);
-
-			jImageData data[6];
-			jImageData& Top = data[2];
-			jImageData& Front = data[4];
-			jImageData& Left = data[1];
-			jImageData& Right = data[0];
-			jImageData& Bottom = data[3];
-			jImageData& Back = data[5];
-
-			{
-				Top.Width = 256;
-				Top.Height = 256;
-				Top.ImageData.resize(Top.Width * Top.Height * sizeof(Vector));
-				Vector* DestData = ((Vector*)&Top.ImageData[0]);
-
-				int32 XOffset = Top.Width;
-				int32 YOffset = 0;
-				for (int32 i = 0; i < Top.Height; ++i)
-				{
-					Vector* CurSourceData = SourceData + YOffset + XOffset + dataPrev.Width * i;
-					Vector* CurDestData = DestData + Top.Width * i;
-					memcpy(CurDestData, CurSourceData, Top.Width * sizeof(Vector));
-				}
-				//Texture = g_rhi->CreateTextureFromData(&Top.ImageData[0], Top.Width, Top.Height, Top.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
 			}
-
-			{
-				Front.Width = 256;
-				Front.Height = 256;
-				Front.ImageData.resize(Front.Width * Front.Height * sizeof(Vector));
-				Vector* DestData = ((Vector*)&Front.ImageData[0]);
-
-				int32 XOffset = Front.Width;
-				int32 YOffset = dataPrev.Width * Front.Height;
-				for (int32 i = 0; i < Front.Height; ++i)
-				{
-					Vector* CurSourceData = SourceData + YOffset + XOffset + dataPrev.Width * i;
-					Vector* CurDestData = DestData + Front.Width * i;
-					memcpy(CurDestData, CurSourceData, Front.Width * sizeof(Vector));
-				}
-				//Texture = g_rhi->CreateTextureFromData(&Front.ImageData[0], Front.Width, Front.Height, Front.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
-			}
-
-			{
-				Left.Width = 256;
-				Left.Height = 256;
-				Left.ImageData.resize(Left.Width * Left.Height * sizeof(Vector));
-				Vector* DestData = ((Vector*)&Left.ImageData[0]);
-
-				int32 XOffset = 0;
-				int32 YOffset = dataPrev.Width * Left.Height;
-				for (int32 i = 0; i < Left.Height; ++i)
-				{
-					Vector* CurSourceData = SourceData + YOffset + XOffset + dataPrev.Width * i;
-					Vector* CurDestData = DestData + Left.Width * i;
-					memcpy(CurDestData, CurSourceData, Left.Width * sizeof(Vector));
-				}
-				//Texture = g_rhi->CreateTextureFromData(&Left.ImageData[0], Left.Width, Left.Height, Left.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
-			}
-
-			{
-				Right.Width = 256;
-				Right.Height = 256;
-				Right.ImageData.resize(Right.Width * Right.Height * sizeof(Vector));
-				Vector* DestData = ((Vector*)&Right.ImageData[0]);
-
-				int32 XOffset = Right.Width * 2;
-				int32 YOffset = dataPrev.Width * Right.Height;
-				for (int32 i = 0; i < Right.Height; ++i)
-				{
-					Vector* CurSourceData = SourceData + YOffset + XOffset + dataPrev.Width * i;
-					Vector* CurDestData = DestData + Right.Width * i;
-					memcpy(CurDestData, CurSourceData, Right.Width * sizeof(Vector));
-				}
-				//Texture = g_rhi->CreateTextureFromData(&Right.ImageData[0], Right.Width, Right.Height, Right.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
-			}
-
-			{
-				Bottom.Width = 256;
-				Bottom.Height = 256;
-				Bottom.ImageData.resize(Bottom.Width * Bottom.Height * sizeof(Vector));
-				Vector* DestData = ((Vector*)&Bottom.ImageData[0]);
-
-				int32 XOffset = Bottom.Width;
-				int32 YOffset = dataPrev.Width * Bottom.Height * 2;
-				for (int32 i = 0; i < Bottom.Height; ++i)
-				{
-					Vector* CurSourceData = SourceData + YOffset + XOffset + dataPrev.Width * i;
-					Vector* CurDestData = DestData + Bottom.Width * i;
-					memcpy(CurDestData, CurSourceData, Bottom.Width * sizeof(Vector));
-				}
-				//Texture = g_rhi->CreateTextureFromData(&Bottom.ImageData[0], Bottom.Width, Bottom.Height, Bottom.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
-			}
-
-			{
-				Back.Width = 256;
-				Back.Height = 256;
-				Back.ImageData.resize(Back.Width * Back.Height * sizeof(Vector));
-				Vector* DestData = ((Vector*)&Back.ImageData[0]);
-
-				int32 XOffset = Back.Width;
-				int32 YOffset = dataPrev.Width * Back.Height * 3;
-				for (int32 i = 0; i < Back.Height; ++i)
-				{
-					for (int32 k = 0; k < Back.Width; ++k)
-					{
-						Vector* CurSourceData = SourceData + YOffset + XOffset + dataPrev.Width * i + k;
-						Vector* CurDestData = DestData + Back.Width * (Back.Height - i - 1) + (Back.Width - k - 1);		// y=x 대칭
-						*CurDestData = *CurSourceData;
-					}
-				}
-				//Texture = g_rhi->CreateTextureFromData(&Back.ImageData[0], Back.Width, Back.Height, Back.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
-			}
-
-			uint8* Datas[6];
-			for (int32 i = 0; i < 6; ++i)
-				Datas[i] = data[i].ImageData.data();
-
-			CubeMapTexture = g_rhi->CreateCubeTextureFromData(Datas, data[0].Width, data[0].Height, data[0].sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
-
-			//Texture = g_rhi->CreateTextureFromData(&dataPrev.ImageData[0], dataPrev.Width, dataPrev.Height, dataPrev.sRGB, EFormatType::FLOAT, ETextureFormat::RGB16F);
-			//Texture = g_rhi->CreateTextureFromData(&dataPrev.ImageData[0], dataPrev.Width, dataPrev.Height, dataPrev.sRGB, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGB);
-		}
+			for (int i = 0; i < 9; ++i)
+				OutLlm[i] = 2.0f * PI * OutLlm[i] * (1.0f / float(nrSamples));
+		};
+		Vector ResultLlm[9];
+		GenerateLlm(ResultLlm);
+#endif
 	}
 
-	//g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-	//g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
-	//g_rhi->EnableDepthTest(true);
-	//auto Shader = jShader::GetShader("SphericalMap");
+	// Origin paper's Llm list.
+	const Vector PreComputedLlm[9] =
+	{
+		Vector(0.79f, 0.44f, 0.54f),         // L00
+		Vector(0.39f, 0.35f, 0.60f),         // L1-1
+		Vector(-0.34f, -0.18f, -0.27f),      // L10
+		Vector(-0.29f, -0.06f, 0.01f),       // L11
+		Vector(-0.11f, -0.05f, -0.12f),      // L2-2
+		Vector(-0.26f, -0.22f, -0.47f),      // L2-1
+		Vector(-0.16f, -0.09f, -0.15f),      // L20
+		Vector(0.56f, 0.21f, 0.14f),         // L21
+		Vector(0.21f, -0.05f, -0.30f),       // L22
+	};
 
 	g_rhi->EnableDepthTest(true);
 
@@ -649,11 +367,12 @@ void jGame::Update(float deltaTime)
 	{
 	case ESHIrradianceType::SHPlot:
 	{
+		// Render SH Plot3D
 		g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
 
 		static auto sphere = jPrimitiveUtil::CreateSphere(Vector(0.0f, 0.0f, 0.0f), 0.5, 32, Vector(100.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-		sphere->RenderObject->tex_object = Texture;
+		sphere->RenderObject->tex_object = GraceProbeTexture;
 		auto shader = jShader::GetShader("SphericalHarmonicsPlot");
 
 		float Interval = 30.0f;
@@ -665,8 +384,6 @@ void jGame::Update(float deltaTime)
 
 			for (int32 m = -l; m <= l; m++)
 			{
-				//int32 index = l * (l + 1) + m;
-
 				sphere->RenderObject->Pos.x = -m * Interval;
 				SET_UNIFORM_BUFFER_STATIC(int32, "l", l, shader);
 				SET_UNIFORM_BUFFER_STATIC(int32, "m", m, shader);
@@ -679,12 +396,12 @@ void jGame::Update(float deltaTime)
 	case ESHIrradianceType::EnvMap:
 	case ESHIrradianceType::IrrEnvMap:
 	{
-		static auto EnvCube = jPrimitiveUtil::CreateSphere(Vector::ZeroVector, 0.5f, 30, Vector(1.0f), Vector4::ColorWhite);
+		// Render EnvMap
+		static auto EnvSphere = jPrimitiveUtil::CreateSphere(Vector::ZeroVector, 0.5f, 30, Vector(1.0f), Vector4::ColorWhite);
+		const bool IsIrrSHEnv = (appSettings.SHIrradianceType == ESHIrradianceType::IrrEnvMap);
 
 		g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
-
-		const bool IsIrrSHEnv = (appSettings.SHIrradianceType == ESHIrradianceType::IrrEnvMap);
 
 		jShader* shader = nullptr;
 		if (IsIrrSHEnv)
@@ -704,20 +421,20 @@ void jGame::Update(float deltaTime)
 			for (int32 i = 0; i < 9; ++i)
 			{
 				sprintf_s(szTemp, sizeof(szTemp), "Llm[%d]", i);
-				jUniformBuffer<Vector> temp(szTemp, Llm[i]);
+				jUniformBuffer<Vector> temp(szTemp, PreComputedLlm[i]);
 				g_rhi->SetUniformbuffer(&temp, shader);
 			}
 		}
 		else
 		{
 			shader = jShader::GetShader("SphereEnv");
-			EnvCube->RenderObject->tex_object = Texture;
+			EnvSphere->RenderObject->tex_object = GraceProbeTexture;
 		}
 
 		MainCamera->IsInfinityFar = true;
 		MainCamera->UpdateCamera();
-		EnvCube->Update(deltaTime);
-		EnvCube->Draw(MainCamera, shader, { DirectionalLight });
+		EnvSphere->Update(deltaTime);
+		EnvSphere->Draw(MainCamera, shader, { DirectionalLight });
 		MainCamera->IsInfinityFar = false;
 		MainCamera->UpdateCamera();
 		break;
@@ -725,102 +442,84 @@ void jGame::Update(float deltaTime)
 	case ESHIrradianceType::GenIrrMapBruteForce:
 	case ESHIrradianceType::GenIrrMapSH:
 	{
+		Vector SelectedLlm[9];
+
+		// Generate Llm from ComputeShader on Realtime
 		const bool IsGenIrradianceMapFromSH = (appSettings.SHIrradianceType == ESHIrradianceType::GenIrrMapSH);
-		//Vector Llm[9];
-		////if (IsGenIrradianceMapFromSH)
-		////{
-		//	auto GenSHLlmShader = jShader::GetShader("GenSHLlm");
-		//	g_rhi->SetShader(GenSHLlmShader);
-
-		//	float Al[3] = { 3.141593f, 2.094395f, 0.785398f };
-		//	char szTemp[128] = { 0, };
-		//	for (int32 i = 0; i < 3; ++i)
-		//	{
-		//		sprintf_s(szTemp, sizeof(szTemp), "Al[%d]", i);
-		//		jUniformBuffer<float> temp(szTemp, Al[i]);
-		//		g_rhi->SetUniformbuffer(&temp, GenSHLlmShader);
-		//	}
-
-		//	static std::vector<Vector> LlmArray;
-		//	LlmArray.resize(9, Vector::ZeroVector);
-
-		//	static auto LlmBuffer = static_cast<jShaderStorageBufferObject_OpenGL*>(g_rhi->CreateShaderStorageBufferObject("LlmBuffer"));
-		//	LlmBuffer->UpdateBufferData(LlmArray.data(), LlmArray.size() * sizeof(LlmArray[0]));
-		//	LlmBuffer->Bind(GenSHLlmShader);
-
-		//	//JASSERT(g_rhi->SetUniformbuffer(&jUniformBuffer<int>("tex_object", 0), GenSHLlmShader));
-
-		//	auto TexGl = (jTexture_OpenGL*)Texture;
-
-		//	//glBindImageTexture(0, TexGl->TextureID, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGB16F);
-		//	g_rhi->SetUniformbuffer(&jUniformBuffer<int>("tex_object", 0), GenSHLlmShader);
-		//	g_rhi->SetTexture(0, Texture);
-
-		//	size_t workGroupsX = (64 + (64 % 32)) / 32;
-		//	size_t workGroupsY = (64 + (64 % 32)) / 32;
-		//	g_rhi->DispatchCompute(1, 1, 1);
-
-		//	LlmBuffer->GetBufferData(Llm, sizeof(Llm));
-
-		//	int k = 0;
-		//	++k;
-		////}
-
-		jRenderTargetInfo info;
-		info.TextureType = ETextureType::TEXTURE_2D;
-		info.InternalFormat = ETextureFormat::RGBA32F;
-		info.Format = ETextureFormat::RGBA;
-		info.FormatType = EFormatType::FLOAT;
-		info.DepthBufferType = EDepthBufferType::NONE;
-		info.Width = SCR_WIDTH;
-		info.Height = SCR_HEIGHT;
-		info.TextureCount = 1;
-		info.Magnification = ETextureFilter::NEAREST;
-		info.Minification = ETextureFilter::NEAREST;
-
-		info.DepthBufferType = EDepthBufferType::DEPTH32;
-		static auto RT = jRenderTargetPool::GetRenderTarget(info);
-		//if (RT->Begin())
+		if (IsGenIrradianceMapFromSH && appSettings.IsGenerateLlmRealtime)
 		{
-			g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-			g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
-			g_rhi->EnableDepthTest(true);
-			auto Shader = jShader::GetShader("GenIrrSphereMap");
+			auto GenSHLlmShader = jShader::GetShader("GenSHLlm");
+			g_rhi->SetShader(GenSHLlmShader);
 
-			static auto UIQuad = jPrimitiveUtil::CreateUIQuad({ 300.0, 100.0 }, { 600, 600 }, Texture);
-			if (UIQuad)
+			float Al[3] = { 3.141593f, 2.094395f, 0.785398f };
+			char szTemp[128] = { 0, };
+			for (int32 i = 0; i < 3; ++i)
 			{
-				SET_UNIFORM_BUFFER_STATIC(bool, "IsGenIrradianceMapFromSH", IsGenIrradianceMapFromSH, Shader);
-				SET_UNIFORM_BUFFER_STATIC(bool, "IsGenerateLlmRealtime", appSettings.IsGenerateLlmRealtime, Shader);
-
-				float Al[3] = { 3.141593f, 2.094395f, 0.785398f };
-
-				g_rhi->SetShader(Shader);
-
-				char szTemp[128] = { 0, };
-				for (int32 i = 0; i < 3; ++i)
-				{
-					sprintf_s(szTemp, sizeof(szTemp), "Al[%d]", i);
-					jUniformBuffer<float> temp(szTemp, Al[i]);
-					g_rhi->SetUniformbuffer(&temp, Shader);
-				}
-
-				for (int32 i = 0; i < 9; ++i)
-				{
-					sprintf_s(szTemp, sizeof(szTemp), "Llm[%d]", i);
-					jUniformBuffer<Vector> temp(szTemp, Llm[i]);
-					g_rhi->SetUniformbuffer(&temp, Shader);
-				}
-
-				UIQuad->SetTexture(Texture);
-				UIQuad->RenderObject->tex_object2 = CubeMapTexture;
-				UIQuad->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearClamp").get();
-				UIQuad->RenderObject->samplerState2 = jSamplerStatePool::GetSamplerState("LinearClamp").get();
-
-				UIQuad->Update(deltaTime);
-				UIQuad->Draw(MainCamera, Shader, {});
+				sprintf_s(szTemp, sizeof(szTemp), "Al[%d]", i);
+				jUniformBuffer<float> temp(szTemp, Al[i]);
+				g_rhi->SetUniformbuffer(&temp, GenSHLlmShader);
 			}
-			//RT->End();
+
+			Vector4 LocalLlm[9];
+			memset(LocalLlm, 0, sizeof(LocalLlm));
+
+			static auto LlmBuffer = static_cast<jShaderStorageBufferObject_OpenGL*>(g_rhi->CreateShaderStorageBufferObject("LlmBuffer"));
+			LlmBuffer->UpdateBufferData(LocalLlm, sizeof(LocalLlm));
+			LlmBuffer->Bind(GenSHLlmShader);
+
+			SET_UNIFORM_BUFFER_STATIC(int, "TexWidth", GraceProbeRGBATexture->Width, GenSHLlmShader);
+			SET_UNIFORM_BUFFER_STATIC(int, "TexHeight", GraceProbeRGBATexture->Height, GenSHLlmShader);
+
+			g_rhi->SetImageTexture(0, GraceProbeRGBATexture, EImageTextureAccessType::READ_ONLY);
+			g_rhi->DispatchCompute(1, 1, 1);
+
+			LlmBuffer->GetBufferData(LocalLlm, sizeof(LocalLlm));
+			for (int32 i = 0; i < 9; ++i)
+				SelectedLlm[i] = Vector(LocalLlm[i]);
+		}
+		else
+		{
+			JASSERT(sizeof(SelectedLlm) == sizeof(PreComputedLlm));
+			memcpy(SelectedLlm, PreComputedLlm, sizeof(SelectedLlm));
+		}
+
+		// Render IrradianceMap as "TwoMirrorBall SphereMap(Support 360 degree)"
+		g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
+		g_rhi->EnableDepthTest(true);
+		auto Shader = jShader::GetShader("GenIrrSphereMap");
+
+		static auto UIQuad = jPrimitiveUtil::CreateUIQuad({ 300.0, 100.0 }, { 600, 600 }, GraceProbeTexture);
+		if (UIQuad)
+		{
+			SET_UNIFORM_BUFFER_STATIC(bool, "IsGenIrradianceMapFromSH", IsGenIrradianceMapFromSH, Shader);
+			SET_UNIFORM_BUFFER_STATIC(bool, "IsGenerateLlmRealtime", appSettings.IsGenerateLlmRealtime, Shader);
+
+			float Al[3] = { 3.141593f, 2.094395f, 0.785398f };
+
+			g_rhi->SetShader(Shader);
+
+			char szTemp[128] = { 0, };
+			for (int32 i = 0; i < 3; ++i)
+			{
+				sprintf_s(szTemp, sizeof(szTemp), "Al[%d]", i);
+				jUniformBuffer<float> temp(szTemp, Al[i]);
+				g_rhi->SetUniformbuffer(&temp, Shader);
+			}
+
+			for (int32 i = 0; i < 9; ++i)
+			{
+				sprintf_s(szTemp, sizeof(szTemp), "Llm[%d]", i);
+				jUniformBuffer<Vector> temp(szTemp, PreComputedLlm[i]);
+				g_rhi->SetUniformbuffer(&temp, Shader);
+			}
+
+			UIQuad->SetTexture(GraceProbeTexture);
+			UIQuad->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearClamp").get();
+			UIQuad->RenderObject->samplerState2 = jSamplerStatePool::GetSamplerState("LinearClamp").get();
+
+			UIQuad->Update(deltaTime);
+			UIQuad->Draw(MainCamera, Shader, {});
 		}
 
 		break;
