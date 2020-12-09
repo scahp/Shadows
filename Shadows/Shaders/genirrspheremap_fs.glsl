@@ -1,14 +1,21 @@
-#version 330 core
+﻿#version 330 core
 
 precision highp float;
 
 uniform sampler2D tex_object;
 uniform samplerCube tex_object2;
+uniform float Al[3];
+uniform vec3 Llm[9];
+uniform int IsGenIrradianceMapFromSH;
+uniform int IsGenerateLlmRealtime;
+
 in vec2 TexCoord_;
 
 out vec4 color;
 
 const float PI = 3.1415926535897932384626433832795028841971693993751058209749;
+const float SHBasisR = 1.0;
+const float sampleDelta = 0.025;
 
 vec2 GetSphericalMap(vec3 InDir)
 {
@@ -21,18 +28,13 @@ vec2 GetSphericalMap(vec3 InDir)
         return vec2(u, v);
     }
     return vec2(0.5);
-    //const vec2 invAtan = vec2(0.1591, 0.3183);
-    //vec2 uv = vec2(atan(InDir.z, InDir.x), asin(InDir.y));
-    //uv *= invAtan;
-    //uv += 0.5;
-    //return uv;
 }
 
 vec3 GetNormalFromTexCoord(vec2 InTexCoord)
 {
     vec3 result;
 
-    // �ٲ�
+    // 바꿈
     float t = InTexCoord.x;
     float s = InTexCoord.y;
 
@@ -93,64 +95,160 @@ vec3 GetNormalFromTexCoord_TwoMirrorBall(vec2 InTexCoord)
     return vec3(x, y, z);
 }
 
-uniform float theta;
-uniform float phi;
-
-void main()
+vec3 FetchEnvMap(vec2 InTexCoord)
 {
-    vec2 tex = TexCoord_;
-    tex.y = 1.0 - tex.y;
+    return texture(tex_object, vec2(InTexCoord.x, 1.0 - InTexCoord.y)).xyz;
+}
 
-    //if (tex.x > 0.5)
-    //{
-    //    color = vec4(0.0, 0.0, 0.0, 1.0);
-    //    return;
-    //}
+vec3 SHReconstruction(float InAlYlm[9], vec3 InLlm[9])
+{
+    /* Optimized code in paper
+    // All constant put in c[0~5].
+    float c[5];
+    c[0] = 0.429043;
+    c[1] = 0.511664;
+    c[2] = 0.743125;
+    c[3] = 0.886227;
+    c[4] = 0.247708;
 
-    //color = texture(tex_object, tex);
-    //color.xyz = pow(color.xyz, vec3(1.0 / 2.2));
-    //return;
+    return c[0] * InLlm[8] * (x * x - y * y) + c[2] * InLlm[6] * z * z + c[3] * InLlm[0] - c[4] * InLlm[6]
+        + 2.0 * c[0] * (InLlm[4] * x * y + InLlm[7] * x * z + InLlm[5] * y * z)
+        + 2.0 * c[1] * (InLlm[3] * x + InLlm[1] * y + InLlm[2] * z);
+    */
 
-    if (length(tex - vec2(0.5)) > 0.5)
+    vec3 result = vec3(0.0);
+    for (int i = 0; i < 9; ++i)
+        result += InAlYlm[i] * InLlm[i];
+    return result;
+}
+
+void GenerateYlm(out float Ylm[9], vec3 InDir)
+{
+    Ylm[0] = 0.5 * sqrt(1.0 / PI);
+    Ylm[1] = 0.5 * sqrt(3.0 / PI) * InDir.y / SHBasisR;
+    Ylm[2] = 0.5 * sqrt(3.0 / PI) * InDir.z / SHBasisR;
+    Ylm[3] = 0.5 * sqrt(3.0 / PI) * InDir.x / SHBasisR;
+    Ylm[4] = 0.5 * sqrt(15.0 / PI) * InDir.x * InDir.y / (SHBasisR * SHBasisR);
+    Ylm[5] = 0.5 * sqrt(15.0 / PI) * InDir.y * InDir.z / (SHBasisR * SHBasisR);
+    Ylm[6] = 0.25 * sqrt(5.0 / PI) * (-InDir.x * InDir.x - InDir.y * InDir.y + 2.0 * InDir.z * InDir.z) / (SHBasisR * SHBasisR);
+    Ylm[7] = 0.5 * sqrt(15.0 / PI) * InDir.z * InDir.x / (SHBasisR * SHBasisR);
+    Ylm[8] = 0.25 * sqrt(15.0 / PI) * (InDir.x * InDir.x - InDir.y * InDir.y) / (SHBasisR * SHBasisR);
+}
+
+void GenerateLlm(out vec3 Llm[9])
+{
+    Llm[0] = vec3(0.0);
+    Llm[1] = vec3(0.0);
+    Llm[2] = vec3(0.0);
+    Llm[3] = vec3(0.0);
+    Llm[4] = vec3(0.0);
+    Llm[5] = vec3(0.0);
+    Llm[6] = vec3(0.0);
+    Llm[7] = vec3(0.0);
+    Llm[8] = vec3(0.0);
+
+    // 개선이 필요함.
+    // 현재는 픽셀마다 Llm 9개를 모두 구해서 계산하는 방식임
+    float nrSamples = 0.0;
+    for (float phi = sampleDelta; phi <= 2.0 * PI; phi += sampleDelta)
     {
-        color = vec4(0.0, 0.0, 0.0, 1.0);
-        return;
+        for (float theta = sampleDelta; theta <= PI; theta += sampleDelta)
+        {
+            // spherical to cartesian (in tangent space)
+            vec3 sampleVec = vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta)); // tangent space to world
+            sampleVec = normalize(sampleVec);
+            vec3 curRGB = FetchEnvMap(GetSphericalMap_TwoMirrorBall(sampleVec));
+
+            float Ylm[9];
+            GenerateYlm(Ylm, sampleVec);
+
+            Llm[0] += Ylm[0] * curRGB * sin(theta);
+            Llm[1] += Ylm[1] * curRGB * sin(theta);
+            Llm[2] += Ylm[2] * curRGB * sin(theta);
+            Llm[3] += Ylm[3] * curRGB * sin(theta);
+            Llm[4] += Ylm[4] * curRGB * sin(theta);
+            Llm[5] += Ylm[5] * curRGB * sin(theta);
+            Llm[6] += Ylm[6] * curRGB * sin(theta);
+            Llm[7] += Ylm[7] * curRGB * sin(theta);
+            Llm[8] += Ylm[8] * curRGB * sin(theta);
+
+            ++nrSamples;
+        }
     }
+    for (int i = 0; i < 9; ++i)
+        Llm[i] = 2.0 * PI * (Llm[i] * (1.0 / float(nrSamples)));
+}
 
-    vec3 normal = GetNormalFromTexCoord_TwoMirrorBall(tex);
-    //color = vec4(normal, 1.0);
-    //return;
-
-    vec3 irradiance = vec3(0.0, 0.0, 0.0);
+vec3 GenerateIrradiance(vec3 InNormal)
+{
     vec3 up = normalize(vec3(0.0, 1.0, 0.0));
-    if (abs(dot(normal, up)) > 0.99)
+    if (abs(dot(InNormal, up)) > 0.99)
         up = vec3(0.0, 0.0, 1.0);
-    vec3 right = normalize(cross(up, normal));
-    up = normalize(cross(normal, right));
-    float sampleDelta = 0.025;
+    vec3 right = normalize(cross(up, InNormal));
+    up = normalize(cross(InNormal, right));
+
     float nrSamples = 0.0;
 
+    vec3 irradiance = vec3(0.0, 0.0, 0.0);
     for (float phi = sampleDelta; phi <= 2.0 * PI; phi += sampleDelta)
     {
         for (float theta = sampleDelta; theta <= 0.5 * PI; theta += sampleDelta)
         {
             // spherical to cartesian (in tangent space)
             vec3 tangentSample = vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta)); // tangent space to world
-            vec3 sampleVec = 
-                tangentSample.x * right + 
-                tangentSample.y * up + 
-                tangentSample.z * normal;
+            vec3 sampleVec =
+                tangentSample.x * right +
+                tangentSample.y * up +
+                tangentSample.z * InNormal;
 
             sampleVec = normalize(sampleVec);
-            vec3 curRGB = texture(tex_object, GetSphericalMap_TwoMirrorBall(sampleVec)).rgb;
-            //curRGB = pow(curRGB, vec3(1.0 / 2.5));
+            vec3 curRGB = FetchEnvMap(GetSphericalMap_TwoMirrorBall(sampleVec));
 
             irradiance += curRGB * cos(theta) * sin(theta);
             nrSamples++;
         }
     }
     irradiance = PI * (irradiance * (1.0 / float(nrSamples)));
-    color = vec4(irradiance, 1.0);
-    //color.xyz = pow(color.xyz, vec3(1.0 / 2.2));
+    return irradiance;
+}
+
+void main()
+{
+    if (length(TexCoord_ - vec2(0.5)) > 0.5)
+    {
+        color = vec4(0.0, 0.0, 0.0, 1.0);
+        return;
+    }
+
+    vec3 normal = GetNormalFromTexCoord_TwoMirrorBall(TexCoord_);
+
+    // SH로 부터 Irradiance를 생성할 것인지 여부
+    if (IsGenIrradianceMapFromSH > 0)
+    {
+        float Ylm[9];
+        GenerateYlm(Ylm, normal);
+
+        float AlYlm[9] = float[9](
+            Al[0] * Ylm[0],
+            Al[1] * Ylm[1], Al[1] * Ylm[2], Al[1] * Ylm[3],
+            Al[2] * Ylm[4], Al[2] * Ylm[5], Al[2] * Ylm[6], Al[2] * Ylm[7], Al[2] * Ylm[8]);
+
+        // 실시간으로 생성한 Llm 을 사용할 것인지? (현재는 픽셀별로 Llm을 따로 만들어서 아주 느림, 외부에서 실시간으로 생성해서 넣도록 하자.)
+        if (IsGenerateLlmRealtime > 0)
+        {
+            vec3 LocalLlm[9];
+            GenerateLlm(LocalLlm);
+            color.xyz = SHReconstruction(AlYlm, LocalLlm);
+        }
+        else
+        {
+            color.xyz = SHReconstruction(AlYlm, Llm);
+        }
+    }
+    else
+    {
+        color.xyz = GenerateIrradiance(normal);     // 현재 픽셀에 대한 Irradiance를 Brute force 방식으로 생성
+    }
+    color.w = 1.0;
     color.xyz *= exp2(-1.0);    // exposure x stop
 }

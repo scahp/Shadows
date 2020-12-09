@@ -550,5 +550,26 @@
     <None Include="Shaders\cubeenv_vs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\sphericalharmonicsplot_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\sphericalharmonicsplot_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\compute\compute_Gen_SH_Llm.glsl">
+      <Filter>Shaders\compute</Filter>
+    </None>
+    <None Include="Shaders\IrrSHEnv_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\IrrSHEnv_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\sphereenv_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\sphereenv_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

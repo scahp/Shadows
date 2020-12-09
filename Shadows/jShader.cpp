@@ -94,6 +94,10 @@ struct jShaderInfoCreation
 
 		DECLARE_SHADER_VS_FS("GenIrrSphereMap", "Shaders/tex_ui_vs.glsl", "Shaders/genirrspheremap_fs.glsl");
 		DECLARE_SHADER_VS_FS("CubeEnv", "Shaders/cubeenv_vs.glsl", "Shaders/cubeenv_fs.glsl");
+		DECLARE_SHADER_VS_FS("IrrSHEnv", "Shaders/IrrSHEnv_vs.glsl", "Shaders/IrrSHEnv_fs.glsl");
+		DECLARE_SHADER_VS_FS("SphereEnv", "Shaders/sphereenv_vs.glsl", "Shaders/sphereenv_fs.glsl");
+		DECLARE_SHADER_VS_FS("SphericalHarmonicsPlot", "Shaders/sphericalharmonicsplot_vs.glsl", "Shaders/sphericalharmonicsplot_fs.glsl");
+		DECLARE_SHADER_CS("GenSHLlm", "Shaders/compute/compute_Gen_SH_Llm.glsl");
 	}
 } s_shaderInfoCreation;
 

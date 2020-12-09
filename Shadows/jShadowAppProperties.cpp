@@ -5,12 +5,10 @@ jShadowAppSettingProperties* jShadowAppSettingProperties::_instance = nullptr;
 
 void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 {
-	appSetting->AddVariable("Theta", Theta);
-	appSetting->SetMinMax("Theta", 0.0f, 0.5*3.14);
-	appSetting->SetStep("Theta", 0.025f);
-	appSetting->AddVariable("Phi", Phi);
-	appSetting->SetMinMax("Phi", 0.0f, 2*3.14);
-	appSetting->SetStep("Phi", 0.01f);
+	appSetting->AddEnumVariable("SHIrradianceType", SHIrradianceType, "ESHIrradianceType", ESHIrradianceTypeString);
+	
+	appSetting->AddVariable("IsGenerateLlmRealtime", IsGenerateLlmRealtime);
+	appSetting->SetGroup("IsGenerateLlmRealtime", "IrrMapSH");
 
 	//appSetting->AddVariable("ShadowOn", ShadowOn);
 
@@ -136,74 +134,79 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 
 void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 {
-	appSetting->RemoveVariable("ShadowOn");
-	appSetting->RemoveVariable("EShadowType");
-	appSetting->RemoveVariable("DirectionalLightSilhouette");
-	appSetting->RemoveVariable("PointLightSilhouette");
-	appSetting->RemoveVariable("SpotLightSilhouette");
-	appSetting->RemoveVariable("IsGPUShadowVolume");	
-	appSetting->RemoveVariable("ShadowMapType");
-	appSetting->RemoveVariable("UsePoissonSample");
-	appSetting->RemoveVariable("DirectionalLightMap");
-	appSetting->RemoveVariable("UseTonemap");
-	appSetting->RemoveVariable("DirectionalLight_Info");
-	appSetting->RemoveVariable("PointLight_Info");
-	appSetting->RemoveVariable("SpotLight_Info");
-	appSetting->RemoveVariable("DirecionalLight_Direction");
-	appSetting->RemoveVariable("PointLight_PositionX");
-	appSetting->RemoveVariable("PointLight_PositionY");
-	appSetting->RemoveVariable("PointLight_PositionZ");
-	appSetting->RemoveVariable("SpotLight_PositionX");
-	appSetting->RemoveVariable("SpotLight_PositionY");
-	appSetting->RemoveVariable("SpotLight_PositionZ");
-	appSetting->RemoveVariable("SpotLight_Direction");
-	appSetting->RemoveVariable("Box");
-	appSetting->RemoveVariable("Sphere");
-	appSetting->RemoveVariable("DeepShadowAlpha");
-	appSetting->RemoveVariable("ExponentDeepShadowOn");
-	appSetting->RemoveVariable("CSMDebugOn");
-	appSetting->RemoveVariable("AdaptationRate");
-	appSetting->RemoveVariable("AutoExposureKeyValue");
-	appSetting->RemoveVariable("BloomThreshold");
-	appSetting->RemoveVariable("BloomBlurSigma");
-	appSetting->RemoveVariable("BloomMagnitude");	
+	//appSetting->RemoveVariable("ShadowOn");
+	//appSetting->RemoveVariable("EShadowType");
+	//appSetting->RemoveVariable("DirectionalLightSilhouette");
+	//appSetting->RemoveVariable("PointLightSilhouette");
+	//appSetting->RemoveVariable("SpotLightSilhouette");
+	//appSetting->RemoveVariable("IsGPUShadowVolume");	
+	//appSetting->RemoveVariable("ShadowMapType");
+	//appSetting->RemoveVariable("UsePoissonSample");
+	//appSetting->RemoveVariable("DirectionalLightMap");
+	//appSetting->RemoveVariable("UseTonemap");
+	//appSetting->RemoveVariable("DirectionalLight_Info");
+	//appSetting->RemoveVariable("PointLight_Info");
+	//appSetting->RemoveVariable("SpotLight_Info");
+	//appSetting->RemoveVariable("DirecionalLight_Direction");
+	//appSetting->RemoveVariable("PointLight_PositionX");
+	//appSetting->RemoveVariable("PointLight_PositionY");
+	//appSetting->RemoveVariable("PointLight_PositionZ");
+	//appSetting->RemoveVariable("SpotLight_PositionX");
+	//appSetting->RemoveVariable("SpotLight_PositionY");
+	//appSetting->RemoveVariable("SpotLight_PositionZ");
+	//appSetting->RemoveVariable("SpotLight_Direction");
+	//appSetting->RemoveVariable("Box");
+	//appSetting->RemoveVariable("Sphere");
+	//appSetting->RemoveVariable("DeepShadowAlpha");
+	//appSetting->RemoveVariable("ExponentDeepShadowOn");
+	//appSetting->RemoveVariable("CSMDebugOn");
+	//appSetting->RemoveVariable("AdaptationRate");
+	//appSetting->RemoveVariable("AutoExposureKeyValue");
+	//appSetting->RemoveVariable("BloomThreshold");
+	//appSetting->RemoveVariable("BloomBlurSigma");
+	//appSetting->RemoveVariable("BloomMagnitude");	
+
+	appSetting->RemoveVariable("SHIrradianceType");
+	appSetting->RemoveVariable("IsGenerateLlmRealtime");	
+	appSetting->RemoveVariable("Theta");
+	appSetting->RemoveVariable("Phi");
 }
 
 void jShadowAppSettingProperties::SwitchShadowType(jAppSettingBase* appSetting)
 {
-	switch (ShadowType)
-	{
-	case EShadowType::ShadowVolume:
-		appSetting->SetVisible("Silhouette", 1);
-		appSetting->SetVisible("IsGPUShadowVolume", 1);
-		appSetting->SetVisible("UsePoissonSample", 0);
-		appSetting->SetVisible("DirectionalLightMap", 0);
-		appSetting->SetVisible("ShadowMapType", 0);
-		appSetting->SetVisible("CSMDebugOn", 0);
-		break;
-	case EShadowType::ShadowMap:
-		appSetting->SetVisible("Silhouette", 0);
-		appSetting->SetVisible("IsGPUShadowVolume", 0);
-		appSetting->SetVisible("UsePoissonSample", 1);
-		appSetting->SetVisible("DirectionalLightMap", 1);
-		appSetting->SetVisible("ShadowMapType", 1);
-		appSetting->SetVisible("CSMDebugOn", (ShadowMapType == EShadowMapType::CSM_SSM));
-		break;
-	}
+	//switch (ShadowType)
+	//{
+	//case EShadowType::ShadowVolume:
+	//	appSetting->SetVisible("Silhouette", 1);
+	//	appSetting->SetVisible("IsGPUShadowVolume", 1);
+	//	appSetting->SetVisible("UsePoissonSample", 0);
+	//	appSetting->SetVisible("DirectionalLightMap", 0);
+	//	appSetting->SetVisible("ShadowMapType", 0);
+	//	appSetting->SetVisible("CSMDebugOn", 0);
+	//	break;
+	//case EShadowType::ShadowMap:
+	//	appSetting->SetVisible("Silhouette", 0);
+	//	appSetting->SetVisible("IsGPUShadowVolume", 0);
+	//	appSetting->SetVisible("UsePoissonSample", 1);
+	//	appSetting->SetVisible("DirectionalLightMap", 1);
+	//	appSetting->SetVisible("ShadowMapType", 1);
+	//	appSetting->SetVisible("CSMDebugOn", (ShadowMapType == EShadowMapType::CSM_SSM));
+	//	break;
+	//}
 }
 
 void jShadowAppSettingProperties::SwitchShadowMapType(jAppSettingBase* appSetting)
 {
-	appSetting->SetVisible("CSMDebugOn", (ShadowMapType == EShadowMapType::CSM_SSM));
+	//appSetting->SetVisible("CSMDebugOn", (ShadowMapType == EShadowMapType::CSM_SSM));
 
-	switch (ShadowMapType)
-	{
-	case EShadowMapType::PCF:
-	case EShadowMapType::PCSS:
-		appSetting->SetVisible("UsePoissonSample", 1);
-		break;
-	default:
-		appSetting->SetVisible("UsePoissonSample", 0);
-		break;
-	}
+	//switch (ShadowMapType)
+	//{
+	//case EShadowMapType::PCF:
+	//case EShadowMapType::PCSS:
+	//	appSetting->SetVisible("UsePoissonSample", 1);
+	//	break;
+	//default:
+	//	appSetting->SetVisible("UsePoissonSample", 0);
+	//	break;
+	//}
 }

@@ -43,7 +43,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -279,6 +279,7 @@
     <None Include="Shaders\color_only_vs.glsl" />
     <None Include="Shaders\common.glsl" />
     <None Include="Shaders\compute\compute_example.glsl" />
+    <None Include="Shaders\compute\compute_Gen_SH_Llm.glsl" />
     <None Include="Shaders\compute\compute_link_linkedlist.glsl" />
     <None Include="Shaders\compute\compute_sort_linkedlist.glsl" />
     <None Include="Shaders\cubeenv_fs.glsl" />
@@ -303,6 +304,8 @@
     <None Include="Shaders\fullscreen\vs_fullscreen_common.glsl" />
     <None Include="Shaders\genirrspheremap_fs.glsl" />
     <None Include="Shaders\genirrspheremap_vs.glsl" />
+    <None Include="Shaders\IrrSHEnv_fs.glsl" />
+    <None Include="Shaders\IrrSHEnv_vs.glsl" />
     <None Include="Shaders\shadow.glsl" />
     <None Include="Shaders\shadowmap\fs.glsl" />
     <None Include="Shaders\shadowmap\fs_deepShadowMap.glsl" />
@@ -335,6 +338,10 @@
     <None Include="Shaders\shadowvolume\vs.glsl" />
     <None Include="Shaders\shadowvolume\vs_shadowvolume_cpu.glsl" />
     <None Include="Shaders\shadowvolume\vs_shadowvolume_gpu.glsl" />
+    <None Include="Shaders\sphereenv_fs.glsl" />
+    <None Include="Shaders\sphereenv_vs.glsl" />
+    <None Include="Shaders\sphericalharmonicsplot_fs.glsl" />
+    <None Include="Shaders\sphericalharmonicsplot_vs.glsl" />
     <None Include="Shaders\sphericalmap_fs.glsl" />
     <None Include="Shaders\sphericalmap_vs.glsl" />
     <None Include="Shaders\tex_fs.glsl" />

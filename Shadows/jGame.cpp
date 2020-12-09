@@ -101,11 +101,8 @@ void jGame::ProcessInput()
 void jGame::Setup()
 {
 	//////////////////////////////////////////////////////////////////////////
-	const Vector mainCameraPos(0.0f, 0.0f, 180.63f);
-	//const Vector mainCameraTarget(171.96f, 166.02f, -180.05f);
-	//const Vector mainCameraPos(165.0f, 125.0f, -136.0f);
-	//const Vector mainCameraPos(300.0f, 100.0f, 300.0f);
-	const Vector mainCameraTarget(0.0f, 0.0f, 0.0f);
+	const Vector mainCameraPos(-56.6983185f, -28.4189625f, -139.300461f);
+	const Vector mainCameraTarget(-56.2905045f, -28.4190006f, -138.387177f);
 	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(45.0f), 10.0f, 1000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
 
@@ -331,7 +328,22 @@ void jGame::Update(float deltaTime)
 
 	static jTexture* CubeMapTexture = nullptr;
 
+	// todo : ComputeShader 로 연산한 결과로 대체 하도록 하자.
+	Vector Llm[9] =
+	{
+		Vector(0.79, 0.44, 0.54),         // L00
+		Vector(0.39, 0.35, 0.60),         // L1-1
+		Vector(-0.34, -0.18, -0.27),      // L10
+		Vector(-0.29, -0.06, 0.01),       // L11
+		Vector(-0.11, -0.05, -0.12),      // L2-2
+		Vector(-0.26, -0.22, -0.47),      // L2-1
+		Vector(-0.16, -0.09, -0.15),      // L20
+		Vector(0.56, 0.21, 0.14),         // L21
+		Vector(0.21, -0.05, -0.30),       // L22
+	};
+
 	static jTexture* Texture = nullptr;
+	//static Vector Llm[9];
 	static bool test = false;
 	if (!test)
 	{
@@ -353,23 +365,78 @@ void jGame::Update(float deltaTime)
 		//jImageFileLoader::GetInstance().LoadTextureFromFile(dataPrev, "Image/grace_probe.png", true);
 		//Texture = g_rhi->CreateTextureFromData(&dataPrev.ImageData[0], dataPrev.Width, dataPrev.Height, dataPrev.sRGB, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGBA);
 
+		auto GetSphericalMap_TwoMirrorBall = [](const Vector& InDir)
+		{
+			// Convert from Direction3D to UV[-1, 1]
+			// - Direction : (Dx, Dy, Dz)
+			// - r=(1/pi)*acos(Dz)/sqrt(Dx^2 + Dy^2)
+			// - (Dx*r,Dy*r)
+			//
+			// To rerange UV from [-1, 1] to [0, 1] below explanation with code needed.
+			// 0.159154943 == 1.0 / (2.0 * PI)
+			// Original r is "r=(1/pi)*acos(Dz)/sqrt(Dx^2 + Dy^2)"
+			// To adjust number's range from [-1.0, 1.0] to [0.0, 1.0] for TexCoord, we need this "[-1.0, 1.0] / 2.0 + 0.5"
+			// - This is why we use (1.0 / 2.0 * PI) instead of (1.0 / PI) in "r".
+			// - adding 0.5 execute next line. (here : "float u = 0.5 + InDir.x * r" and "float v = 0.5 + InDir.y * r")
+			float d = sqrt(InDir.x * InDir.x + InDir.y * InDir.y);
+			float r = (d > 0.0) ? (0.159154943 * acos(InDir.z) / d) : 0.0;
+			float u = 0.5 + InDir.x * r;
+			float v = 0.5 + InDir.y * r;
+			//color = texture(tex_object, vec2(u, v));
+			return Vector2(u, v);
+		};
+
+		//memset(&Llm[0], 0, sizeof(Llm));
+
+		//Vector* dataPtr = (Vector*)&dataPrev.ImageData[0];
+		//float sampleDelta = 0.015f;
+		//int32 nrSamples = 0;
+		//float SHBasisR = 1.0f;
+		//for (float phi = 0.0; phi < 2.0 * PI; phi += sampleDelta)
+		//{
+		//	for (float theta = 0.0; theta < PI; theta += sampleDelta)
+		//	{
+		//		// spherical to cartesian (in tangent space)
+		//		Vector sampleVec = Vector(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta)); // tangent space to world
+		//		sampleVec = sampleVec.GetNormalize();
+
+		//		float LocalYlm[9];
+		//		LocalYlm[0] = 0.5 * sqrt(1.0 / PI);       // 0
+		//		LocalYlm[1] = 0.5 * sqrt(3.0 / PI) * sampleVec.y / SHBasisR;      // 1
+		//		LocalYlm[2] = 0.5 * sqrt(3.0 / PI) * sampleVec.z / SHBasisR;      // 2
+		//		LocalYlm[3] = 0.5 * sqrt(3.0 / PI) * sampleVec.x / SHBasisR;      // 3
+		//		LocalYlm[4] = 0.5 * sqrt(15.0 / PI) * sampleVec.x * sampleVec.y / (SHBasisR * SHBasisR);      // 4
+		//		LocalYlm[5] = 0.5 * sqrt(15.0 / PI) * sampleVec.y * sampleVec.z / (SHBasisR * SHBasisR);      // 5
+		//		LocalYlm[6] = 0.25 * sqrt(5.0 / PI) * (-sampleVec.x * sampleVec.x - sampleVec.y * sampleVec.y + 2.0 * sampleVec.z * sampleVec.z) / (SHBasisR * SHBasisR);     // 6
+		//		LocalYlm[7] = 0.5 * sqrt(15.0 / PI) * sampleVec.z * sampleVec.x / (SHBasisR * SHBasisR);  // 7
+		//		LocalYlm[8] = 0.25 * sqrt(15.0 / PI) * (sampleVec.x * sampleVec.x - sampleVec.y * sampleVec.y) / (SHBasisR * SHBasisR); // 8
+
+		//		Vector2 TargetUV = GetSphericalMap_TwoMirrorBall(sampleVec);
+		//		int32 DataX = (int32)(TargetUV.x * dataPrev.Width);
+		//		int32 DataY = (int32)(TargetUV.y * dataPrev.Height);
+		//		Vector curRGB = *(dataPtr + (DataY * dataPrev.Width + DataX));
+		//		//Vector InnerIntegrate = curRGB * cos(t) * sin(t);
+
+		//		Llm[0] += LocalYlm[0] * curRGB * sin(theta);
+		//		Llm[1] += LocalYlm[1] * curRGB * sin(theta);
+		//		Llm[2] += LocalYlm[2] * curRGB * sin(theta);
+		//		Llm[3] += LocalYlm[3] * curRGB * sin(theta);
+		//		Llm[4] += LocalYlm[4] * curRGB * sin(theta);
+		//		Llm[5] += LocalYlm[5] * curRGB * sin(theta);
+		//		Llm[6] += LocalYlm[6] * curRGB * sin(theta);
+		//		Llm[7] += LocalYlm[7] * curRGB * sin(theta);
+		//		Llm[8] += LocalYlm[8] * curRGB * sin(theta);
+		//		nrSamples++;
+		//	}
+		//}
+		//for (int i = 0; i < 9; ++i)
+		//	Llm[i] = 2.0 * PI * Llm[i] * (1.0 / float(nrSamples));
+
 		if (0)
 		{
 			jImageData dataNew = dataPrev;
 			dataNew.ImageData.clear();
 			dataNew.ImageData.resize(dataPrev.ImageData.size());
-
-			auto GetSphericalMap = [](const Vector& InDir)
-			{
-				float m = 2.0 * sqrt(InDir.x * InDir.x + InDir.y * InDir.y + (InDir.z + 1.0) * (InDir.z + 1.0));
-				if (m > 0.0f)
-				{
-					float u = InDir.x / m + 0.5;
-					float v = InDir.y / m + 0.5;
-					return Vector2(u, v);
-				}
-				return Vector2(0.5f);
-			};
 
 			auto GetNormalFromTexCoord = [](Vector2 InTexCoord)
 			{
@@ -424,7 +491,7 @@ void jGame::Update(float deltaTime)
 								tangentSample.z * normal;
 
 							sampleVec = sampleVec.GetNormalize();
-							Vector2 TargetUV = GetSphericalMap(sampleVec);
+							Vector2 TargetUV = GetSphericalMap_TwoMirrorBall(sampleVec);
 							int32 DataX = (int32)(TargetUV.x * dataPrev.Width);
 							int32 DataY = (int32)(TargetUV.y * dataPrev.Height);
 							Vector curRGB = *(dataPtr + (DataY * dataPrev.Width + DataX));
@@ -568,16 +635,84 @@ void jGame::Update(float deltaTime)
 		}
 	}
 
-	// Draw cubemap
-	if (0)
+	//g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	//g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
+	//g_rhi->EnableDepthTest(true);
+	//auto Shader = jShader::GetShader("SphericalMap");
+
+	g_rhi->EnableDepthTest(true);
+
+	auto appSettings = jShadowAppSettingProperties::GetInstance();
+	jAppSettings::GetInstance().Get("MainPannel")->SetVisible("IrrMapSH", (appSettings.SHIrradianceType == ESHIrradianceType::GenIrrMapSH) ? 1 : 0);
+
+	switch (appSettings.SHIrradianceType)
 	{
-		static auto EnvCube = jPrimitiveUtil::CreateCube(Vector::ZeroVector, Vector(0.5f), Vector(1.0f), Vector4::ColorWhite);
+	case ESHIrradianceType::SHPlot:
+	{
+		g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
+
+		static auto sphere = jPrimitiveUtil::CreateSphere(Vector(0.0f, 0.0f, 0.0f), 0.5, 32, Vector(100.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+		sphere->RenderObject->tex_object = Texture;
+		auto shader = jShader::GetShader("SphericalHarmonicsPlot");
+
+		float Interval = 30.0f;
+
+		sphere->RenderObject->Rot.x = RadianToDegree(90.0f);
+		for (int32 l = 0; l <= 2; l++) 
+		{
+			sphere->RenderObject->Pos.y = -l * Interval;
+
+			for (int32 m = -l; m <= l; m++)
+			{
+				//int32 index = l * (l + 1) + m;
+
+				sphere->RenderObject->Pos.x = -m * Interval;
+				SET_UNIFORM_BUFFER_STATIC(int32, "l", l, shader);
+				SET_UNIFORM_BUFFER_STATIC(int32, "m", m, shader);
+				sphere->Draw(MainCamera, shader, {});
+			}
+		}
+
+		break;
+	}
+	case ESHIrradianceType::EnvMap:
+	case ESHIrradianceType::IrrEnvMap:
+	{
+		static auto EnvCube = jPrimitiveUtil::CreateSphere(Vector::ZeroVector, 0.5f, 30, Vector(1.0f), Vector4::ColorWhite);
 
 		g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
 
-		auto shader = jShader::GetShader("CubeEnv");
-		EnvCube->RenderObject->tex_object = CubeMapTexture;
+		const bool IsIrrSHEnv = (appSettings.SHIrradianceType == ESHIrradianceType::IrrEnvMap);
+
+		jShader* shader = nullptr;
+		if (IsIrrSHEnv)
+		{
+			shader = jShader::GetShader("IrrSHEnv");
+
+			float Al[3] = { 3.141593f, 2.094395f, 0.785398f };
+
+			char szTemp[128] = { 0, };
+			for (int32 i = 0; i < 3; ++i)
+			{
+				sprintf_s(szTemp, sizeof(szTemp), "Al[%d]", i);
+				jUniformBuffer<float> temp(szTemp, Al[i]);
+				g_rhi->SetUniformbuffer(&temp, shader);
+			}
+
+			for (int32 i = 0; i < 9; ++i)
+			{
+				sprintf_s(szTemp, sizeof(szTemp), "Llm[%d]", i);
+				jUniformBuffer<Vector> temp(szTemp, Llm[i]);
+				g_rhi->SetUniformbuffer(&temp, shader);
+			}
+		}
+		else
+		{
+			shader = jShader::GetShader("SphereEnv");
+			EnvCube->RenderObject->tex_object = Texture;
+		}
 
 		MainCamera->IsInfinityFar = true;
 		MainCamera->UpdateCamera();
@@ -585,55 +720,114 @@ void jGame::Update(float deltaTime)
 		EnvCube->Draw(MainCamera, shader, { DirectionalLight });
 		MainCamera->IsInfinityFar = false;
 		MainCamera->UpdateCamera();
-		return;
+		break;
 	}
-
-	//g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-	//g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
-	//g_rhi->EnableDepthTest(true);
-	//auto Shader = jShader::GetShader("SphericalMap");
-
-	//static auto sphere = jPrimitiveUtil::CreateSphere(Vector(0.0f, 0.0f, 0.0f), 0.5, 16, Vector(100.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-	//sphere->RenderObject->tex_object = Texture;
-	//sphere->Draw(MainCamera, Shader, {});
-
-	jRenderTargetInfo info;
-	info.TextureType = ETextureType::TEXTURE_2D;
-	info.InternalFormat = ETextureFormat::RGBA32F;
-	info.Format = ETextureFormat::RGBA;
-	info.FormatType = EFormatType::FLOAT;
-	info.DepthBufferType = EDepthBufferType::NONE;
-	info.Width = SCR_WIDTH;
-	info.Height = SCR_HEIGHT;
-	info.TextureCount = 1;
-	info.Magnification = ETextureFilter::NEAREST;
-	info.Minification = ETextureFilter::NEAREST;
-
-	info.DepthBufferType = EDepthBufferType::DEPTH32;
-	static auto RT = jRenderTargetPool::GetRenderTarget(info);
-	//if (RT->Begin())
+	case ESHIrradianceType::GenIrrMapBruteForce:
+	case ESHIrradianceType::GenIrrMapSH:
 	{
-		g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
-		g_rhi->EnableDepthTest(true);
-		auto Shader = jShader::GetShader("GenIrrSphereMap");
+		const bool IsGenIrradianceMapFromSH = (appSettings.SHIrradianceType == ESHIrradianceType::GenIrrMapSH);
+		//Vector Llm[9];
+		////if (IsGenIrradianceMapFromSH)
+		////{
+		//	auto GenSHLlmShader = jShader::GetShader("GenSHLlm");
+		//	g_rhi->SetShader(GenSHLlmShader);
 
-		static auto UIQuad = jPrimitiveUtil::CreateUIQuad({ 300.0, 100.0 }, { 600, 600 }, Texture);
-		if (UIQuad)
+		//	float Al[3] = { 3.141593f, 2.094395f, 0.785398f };
+		//	char szTemp[128] = { 0, };
+		//	for (int32 i = 0; i < 3; ++i)
+		//	{
+		//		sprintf_s(szTemp, sizeof(szTemp), "Al[%d]", i);
+		//		jUniformBuffer<float> temp(szTemp, Al[i]);
+		//		g_rhi->SetUniformbuffer(&temp, GenSHLlmShader);
+		//	}
+
+		//	static std::vector<Vector> LlmArray;
+		//	LlmArray.resize(9, Vector::ZeroVector);
+
+		//	static auto LlmBuffer = static_cast<jShaderStorageBufferObject_OpenGL*>(g_rhi->CreateShaderStorageBufferObject("LlmBuffer"));
+		//	LlmBuffer->UpdateBufferData(LlmArray.data(), LlmArray.size() * sizeof(LlmArray[0]));
+		//	LlmBuffer->Bind(GenSHLlmShader);
+
+		//	//JASSERT(g_rhi->SetUniformbuffer(&jUniformBuffer<int>("tex_object", 0), GenSHLlmShader));
+
+		//	auto TexGl = (jTexture_OpenGL*)Texture;
+
+		//	//glBindImageTexture(0, TexGl->TextureID, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGB16F);
+		//	g_rhi->SetUniformbuffer(&jUniformBuffer<int>("tex_object", 0), GenSHLlmShader);
+		//	g_rhi->SetTexture(0, Texture);
+
+		//	size_t workGroupsX = (64 + (64 % 32)) / 32;
+		//	size_t workGroupsY = (64 + (64 % 32)) / 32;
+		//	g_rhi->DispatchCompute(1, 1, 1);
+
+		//	LlmBuffer->GetBufferData(Llm, sizeof(Llm));
+
+		//	int k = 0;
+		//	++k;
+		////}
+
+		jRenderTargetInfo info;
+		info.TextureType = ETextureType::TEXTURE_2D;
+		info.InternalFormat = ETextureFormat::RGBA32F;
+		info.Format = ETextureFormat::RGBA;
+		info.FormatType = EFormatType::FLOAT;
+		info.DepthBufferType = EDepthBufferType::NONE;
+		info.Width = SCR_WIDTH;
+		info.Height = SCR_HEIGHT;
+		info.TextureCount = 1;
+		info.Magnification = ETextureFilter::NEAREST;
+		info.Minification = ETextureFilter::NEAREST;
+
+		info.DepthBufferType = EDepthBufferType::DEPTH32;
+		static auto RT = jRenderTargetPool::GetRenderTarget(info);
+		//if (RT->Begin())
 		{
-			auto appSettings = jShadowAppSettingProperties::GetInstance();
-			SET_UNIFORM_BUFFER_STATIC(float, "theta", appSettings.Theta, Shader);
-			SET_UNIFORM_BUFFER_STATIC(float, "phi", appSettings.Phi, Shader);
+			g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+			g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
+			g_rhi->EnableDepthTest(true);
+			auto Shader = jShader::GetShader("GenIrrSphereMap");
 
-			UIQuad->SetTexture(Texture);
-			UIQuad->RenderObject->tex_object2 = CubeMapTexture;
-			UIQuad->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearClamp").get();
-			UIQuad->RenderObject->samplerState2 = jSamplerStatePool::GetSamplerState("LinearClamp").get();
+			static auto UIQuad = jPrimitiveUtil::CreateUIQuad({ 300.0, 100.0 }, { 600, 600 }, Texture);
+			if (UIQuad)
+			{
+				SET_UNIFORM_BUFFER_STATIC(bool, "IsGenIrradianceMapFromSH", IsGenIrradianceMapFromSH, Shader);
+				SET_UNIFORM_BUFFER_STATIC(bool, "IsGenerateLlmRealtime", appSettings.IsGenerateLlmRealtime, Shader);
 
-			UIQuad->Update(deltaTime);
-			UIQuad->Draw(MainCamera, Shader, {});
+				float Al[3] = { 3.141593f, 2.094395f, 0.785398f };
+
+				g_rhi->SetShader(Shader);
+
+				char szTemp[128] = { 0, };
+				for (int32 i = 0; i < 3; ++i)
+				{
+					sprintf_s(szTemp, sizeof(szTemp), "Al[%d]", i);
+					jUniformBuffer<float> temp(szTemp, Al[i]);
+					g_rhi->SetUniformbuffer(&temp, Shader);
+				}
+
+				for (int32 i = 0; i < 9; ++i)
+				{
+					sprintf_s(szTemp, sizeof(szTemp), "Llm[%d]", i);
+					jUniformBuffer<Vector> temp(szTemp, Llm[i]);
+					g_rhi->SetUniformbuffer(&temp, Shader);
+				}
+
+				UIQuad->SetTexture(Texture);
+				UIQuad->RenderObject->tex_object2 = CubeMapTexture;
+				UIQuad->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearClamp").get();
+				UIQuad->RenderObject->samplerState2 = jSamplerStatePool::GetSamplerState("LinearClamp").get();
+
+				UIQuad->Update(deltaTime);
+				UIQuad->Draw(MainCamera, Shader, {});
+			}
+			//RT->End();
 		}
-		//RT->End();
+
+		break;
+	}
+	case ESHIrradianceType::MAX:
+	default:
+		break;
 	}
 }
 
