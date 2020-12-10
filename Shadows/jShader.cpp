@@ -98,6 +98,7 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("SphereEnv", "Shaders/sphereenv_vs.glsl", "Shaders/sphereenv_fs.glsl");
 		DECLARE_SHADER_VS_FS("SphericalHarmonicsPlot", "Shaders/sphericalharmonicsplot_vs.glsl", "Shaders/sphericalharmonicsplot_fs.glsl");
 		DECLARE_SHADER_CS("GenSHLlm", "Shaders/compute/compute_Gen_SH_Llm.glsl");
+		DECLARE_SHADER_VS_FS("SimpleIrrMap", "Shaders/irr_only_vs.glsl", "Shaders/irr_only_fs.glsl");
 	}
 } s_shaderInfoCreation;
 

@@ -397,46 +397,75 @@ void jGame::Update(float deltaTime)
 	case ESHIrradianceType::IrrEnvMap:
 	{
 		// Render EnvMap
+		static auto TeapotModel = jModelLoader::GetInstance().LoadFromFile("model/teapot.x");
+
 		static auto EnvSphere = jPrimitiveUtil::CreateSphere(Vector::ZeroVector, 0.5f, 30, Vector(1.0f), Vector4::ColorWhite);
 		const bool IsIrrSHEnv = (appSettings.SHIrradianceType == ESHIrradianceType::IrrEnvMap);
+
+		auto ModelShader = jShader::GetShader("SimpleIrrMap");
 
 		g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
 
 		jShader* shader = nullptr;
-		if (IsIrrSHEnv)
-		{
-			shader = jShader::GetShader("IrrSHEnv");
+		shader = jShader::GetShader("SphereEnv");
 
-			float Al[3] = { 3.141593f, 2.094395f, 0.785398f };
-
-			char szTemp[128] = { 0, };
-			for (int32 i = 0; i < 3; ++i)
-			{
-				sprintf_s(szTemp, sizeof(szTemp), "Al[%d]", i);
-				jUniformBuffer<float> temp(szTemp, Al[i]);
-				g_rhi->SetUniformbuffer(&temp, shader);
-			}
-
-			for (int32 i = 0; i < 9; ++i)
-			{
-				sprintf_s(szTemp, sizeof(szTemp), "Llm[%d]", i);
-				jUniformBuffer<Vector> temp(szTemp, PreComputedLlm[i]);
-				g_rhi->SetUniformbuffer(&temp, shader);
-			}
-		}
-		else
-		{
-			shader = jShader::GetShader("SphereEnv");
-			EnvSphere->RenderObject->tex_object = GraceProbeTexture;
-		}
+		float Al[3] = { 3.141593f, 2.094395f, 0.785398f };
+		char szTemp[128] = { 0, };
 
 		MainCamera->IsInfinityFar = true;
 		MainCamera->UpdateCamera();
+
+		g_rhi->SetShader(shader);
+		for (int32 i = 0; i < 3; ++i)
+		{
+			sprintf_s(szTemp, sizeof(szTemp), "Al[%d]", i);
+			jUniformBuffer<float> temp(szTemp, Al[i]);
+			g_rhi->SetUniformbuffer(&temp, shader);
+		}
+
+		for (int32 i = 0; i < 9; ++i)
+		{
+			sprintf_s(szTemp, sizeof(szTemp), "Llm[%d]", i);
+			jUniformBuffer<Vector> temp(szTemp, PreComputedLlm[i]);
+			g_rhi->SetUniformbuffer(&temp, shader);
+		}
+
+		EnvSphere->RenderObject->tex_object = GraceProbeTexture;
 		EnvSphere->Update(deltaTime);
-		EnvSphere->Draw(MainCamera, shader, { DirectionalLight });
+		EnvSphere->Draw(MainCamera, shader, {});
+
 		MainCamera->IsInfinityFar = false;
 		MainCamera->UpdateCamera();
+
+		g_rhi->SetShader(ModelShader);
+		for (int32 i = 0; i < 3; ++i)
+		{
+			sprintf_s(szTemp, sizeof(szTemp), "Al[%d]", i);
+			jUniformBuffer<float> temp(szTemp, Al[i]);
+			g_rhi->SetUniformbuffer(&temp, ModelShader);
+		}
+
+		for (int32 i = 0; i < 9; ++i)
+		{
+			sprintf_s(szTemp, sizeof(szTemp), "Llm[%d]", i);
+			jUniformBuffer<Vector> temp(szTemp, PreComputedLlm[i]);
+			g_rhi->SetUniformbuffer(&temp, ModelShader);
+		}
+		SET_UNIFORM_BUFFER_STATIC(int, "IsIrranceMap", IsIrrSHEnv, ModelShader);
+		EnvSphere->RenderObject->tex_object = GraceProbeTexture;
+		EnvSphere->RenderObject->Scale = Vector(40.0f);
+		EnvSphere->RenderObject->Pos.x = 100.0f;
+		EnvSphere->Update(deltaTime);
+		EnvSphere->Draw(MainCamera, ModelShader, {DirectionalLight});
+
+		EnvSphere->RenderObject->Pos.x = 0.0f;
+
+		TeapotModel->RenderObject->tex_object = GraceProbeTexture;
+		TeapotModel->RenderObject->Scale = Vector(40.0f);
+		TeapotModel->Update(deltaTime);
+		TeapotModel->Draw(MainCamera, ModelShader, { DirectionalLight });
+
 		break;
 	}
 	case ESHIrradianceType::GenIrrMapBruteForce:

@@ -571,5 +571,11 @@
     <None Include="Shaders\sphereenv_vs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\irr_only_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\irr_only_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

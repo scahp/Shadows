@@ -49,7 +49,7 @@ vec3 SHReconstruction(float InAlYlm[9], vec3 InLlm[9])
 void main()
 {
     float Ylm[9];
-    GenerateYlm(Ylm, vec3(TexCoord_.x, TexCoord_.y, TexCoord_.z));
+    GenerateYlm(Ylm, TexCoord_);
 
     float AlYlm[9] = float[9](
         Al[0] * Ylm[0],
