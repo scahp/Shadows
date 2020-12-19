@@ -16,6 +16,7 @@ const float sampleDelta = 0.015f;
 uniform int TexWidth;
 uniform int TexHeight;
 
+// SSBO
 layout(std430, binding = 0) buffer LlmBuffer
 {
 	vec4 Llm[9];        // w component is padding
@@ -89,10 +90,10 @@ void GenerateYlm(out float Ylm[9], vec3 InDir)
 
 void main(void)
 {
-    if (gl_LocalInvocationIndex == 0)
+    if (gl_LocalInvocationIndex == 0)		// Execute only first LocalInvocation
         GlobalNumOfSamples = 0;
 
-    barrier();
+    barrier();		// Sync for all LocalInvocations
 
     vec3 LocalLlm[9];
     LocalLlm[0] = vec3(0.0);
@@ -125,6 +126,7 @@ void main(void)
             int DataY = int((1.0 - TargetUV.y) * TexHeight);
             vec3 curRGB = imageLoad(tex_object, ivec2(DataX, DataY)).xyz;
 
+            // Radiance를 기록하는 것이므로 Alm 은 곱해주지 않음
             LocalLlm[0] += Ylm[0] * curRGB * sin(theta);
             LocalLlm[1] += Ylm[1] * curRGB * sin(theta);
             LocalLlm[2] += Ylm[2] * curRGB * sin(theta);
@@ -150,12 +152,13 @@ void main(void)
     GlobalLlm[GlobalIndex][7] = LocalLlm[7];
     GlobalLlm[GlobalIndex][8] = LocalLlm[8];
 
-    atomicAdd(GlobalNumOfSamples, nrSamples);
+    atomicAdd(GlobalNumOfSamples, nrSamples);		// Accumulate all SampleCounts
 
-    barrier();
+    barrier();		// Sync for all LocalInvocations
 
-    if (gl_LocalInvocationIndex == 0)
+    if (gl_LocalInvocationIndex == 0)	// Execute only first LocalInvocation
     {
+		// All put in togather to finalize computing Llm
         LocalLlm[0] = vec3(0.0);
         LocalLlm[1] = vec3(0.0);
         LocalLlm[2] = vec3(0.0);
@@ -173,6 +176,9 @@ void main(void)
         }
 
         for (int i = 0; i < 9; ++i)
-            Llm[i].xyz = 2.0f * PI * LocalLlm[i] * (1.0f / float(GlobalNumOfSamples));
+        {
+            // 반구가 아닌 Sphere 전체에 대한 적분이기 때문에 2.0 * PI 적용
+            Llm[i].xyz = 2.0 * PI * LocalLlm[i] * (1.0f / float(GlobalNumOfSamples));
+        }
     }
 }

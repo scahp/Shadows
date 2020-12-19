@@ -6,7 +6,6 @@ uniform sampler2D tex_object;
 uniform float Al[3];
 uniform vec3 Llm[9];
 uniform int IsGenIrradianceMapFromSH;
-uniform int IsGenerateLlmRealtime;
 
 in vec2 TexCoord_;
 
@@ -161,6 +160,7 @@ void GenerateLlm(out vec3 Llm[9])
             float Ylm[9];
             GenerateYlm(Ylm, sampleVec);
 
+            // Radiance를 기록하는 것이므로 Alm 은 곱해주지 않음
             Llm[0] += Ylm[0] * curRGB * sin(theta);
             Llm[1] += Ylm[1] * curRGB * sin(theta);
             Llm[2] += Ylm[2] * curRGB * sin(theta);
@@ -175,7 +175,10 @@ void GenerateLlm(out vec3 Llm[9])
         }
     }
     for (int i = 0; i < 9; ++i)
+    {
+        // 반구가 아닌 Sphere 전체에 대한 적분이기 때문에 2.0 * PI 적용
         Llm[i] = 2.0 * PI * (Llm[i] * (1.0 / float(nrSamples)));
+    }
 }
 
 vec3 GenerateIrradiance(vec3 InNormal)
@@ -232,17 +235,7 @@ void main()
             Al[1] * Ylm[1], Al[1] * Ylm[2], Al[1] * Ylm[3],
             Al[2] * Ylm[4], Al[2] * Ylm[5], Al[2] * Ylm[6], Al[2] * Ylm[7], Al[2] * Ylm[8]);
 
-        // 실시간으로 생성한 Llm 을 사용할 것인지? (현재는 픽셀별로 Llm을 따로 만들어서 아주 느림, 외부에서 실시간으로 생성해서 넣도록 하자.)
-        if (IsGenerateLlmRealtime > 0)
-        {
-            vec3 LocalLlm[9];
-            GenerateLlm(LocalLlm);
-            color.xyz = SHReconstruction(AlYlm, LocalLlm);
-        }
-        else
-        {
-            color.xyz = SHReconstruction(AlYlm, Llm);
-        }
+        color.xyz = SHReconstruction(AlYlm, Llm);
     }
     else
     {
