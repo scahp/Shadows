@@ -1936,7 +1936,7 @@ void jFrustumPrimitive::Update(float deltaTime)
 		vertexStreamData->PrimitiveType = EPrimitiveType::TRIANGLES;
 		vertexStreamData->ElementCount = elementCount;
 
-		RenderObject->UpdateVertexStream(vertexStreamData);
+		quad->RenderObject->UpdateVertexStream(vertexStreamData);
 	};
 
 	updateQuadFunc(Plane[0], far_lt, near_lt, far_lb, near_lb, Vector4(0.0f, 1.0f, 0.0f, 0.3f));

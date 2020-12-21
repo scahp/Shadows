@@ -173,6 +173,11 @@ jObject::~jObject()
 		delete iter;
 	}
 	BoundBoxObjects.clear();
+
+	delete RenderObject;
+	delete VertexAdjacency;
+	delete ShadowVolumeGPU;
+	delete ShadowVolumeCPU;
 }
 
 void jObject::Update(float deltaTime)

@@ -21,6 +21,7 @@
 #include "jForwardRenderer.h"
 #include "jPipeline.h"
 #include "jVertexAdjacency.h"
+#include "TinyXml2/tinyxml2.h"
 
 jRHI* g_rhi = nullptr;
 
@@ -35,7 +36,7 @@ jGame::~jGame()
 
 void jGame::ProcessInput()
 {
-	static float speed = 1.0f;
+	static float speed = 3.0f;
 
 	// Process Key Event
 	if (g_KeyState['a'] || g_KeyState['A']) MainCamera->MoveShift(-speed);
@@ -55,12 +56,12 @@ void jGame::ProcessInput()
 void jGame::Setup()
 {
 	//////////////////////////////////////////////////////////////////////////
-	const Vector mainCameraPos(172.66f, 160.0f, -180.63f);
+	const Vector mainCameraPos(310.392578, 297.393494, -720.757629);
 	//const Vector mainCameraTarget(171.96f, 166.02f, -180.05f);
 	//const Vector mainCameraPos(165.0f, 125.0f, -136.0f);
 	//const Vector mainCameraPos(300.0f, 100.0f, 300.0f);
-	const Vector mainCameraTarget(0.0f, 0.0f, 0.0f);
-	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(45.0f), 10.0f, 1000.0f, SCR_WIDTH, SCR_HEIGHT, true);
+	const Vector mainCameraTarget(310.389954, 297.393829, -719.757996);
+	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(45.0f), 10.0f, 5000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
 
 	// Light creation step
@@ -136,22 +137,22 @@ void jGame::Setup()
 
 void jGame::SpawnObjects(ESpawnedType spawnType)
 {
-	if (spawnType != SpawnedType)
-	{
-		SpawnedType = spawnType;
-		switch (SpawnedType)
-		{
-		case ESpawnedType::Hair:
-			SpawnHairObjects();
-			break;
-		case ESpawnedType::TestPrimitive:
-			SpawnTestPrimitives();
-			break;
-		case ESpawnedType::CubePrimitive:
-			SapwnCubePrimitives();
-			break;
-		}
-	}
+	//if (spawnType != SpawnedType)
+	//{
+	//	SpawnedType = spawnType;
+	//	switch (SpawnedType)
+	//	{
+	//	case ESpawnedType::Hair:
+	//		SpawnHairObjects();
+	//		break;
+	//	case ESpawnedType::TestPrimitive:
+	//		SpawnTestPrimitives();
+	//		break;
+	//	case ESpawnedType::CubePrimitive:
+	//		SapwnCubePrimitives();
+	//		break;
+	//	}
+	//}
 }
 
 void jGame::RemoveSpawnedObjects()
@@ -229,21 +230,507 @@ void jGame::Update(float deltaTime)
 	}
 	//////////////////////////////////////////////////////////////////////////
 
-	for (auto iter : jObject::GetStaticObject())
-		iter->Update(deltaTime);
+	//for (auto iter : jObject::GetStaticObject())
+	//	iter->Update(deltaTime);
 
-	for (auto& iter : jObject::GetBoundBoxObject())
-		iter->Update(deltaTime);
+	//for (auto& iter : jObject::GetBoundBoxObject())
+	//	iter->Update(deltaTime);
 
-	for (auto& iter : jObject::GetBoundSphereObject())
-		iter->Update(deltaTime);
+	//for (auto& iter : jObject::GetBoundSphereObject())
+	//	iter->Update(deltaTime);
 
-	for (auto& iter : jObject::GetDebugObject())
-		iter->Update(deltaTime);
+	//for (auto& iter : jObject::GetDebugObject())
+	//	iter->Update(deltaTime);
 
-	jObject::FlushDirtyState();
+	//jObject::FlushDirtyState();
 
-	Renderer->Render(MainCamera);
+	//Renderer->Render(MainCamera);
+
+	constexpr int32 ElementRenderTargetSize = 256;
+
+	struct MaterialProperties
+	{
+		Vector Diffuse;
+		Vector Emission;
+		Vector Reflectance;
+	};
+
+	//	didn't end up using this
+	struct SubElement
+	{
+		SubElement(const Vector& r, float a) : radiosity(r), area(a) { }
+		Vector radiosity;
+		float area;
+	};
+
+	struct Element
+	{
+		Vector Vertex[4];
+		MaterialProperties MatProp;
+		Vector Normal;
+		float area = 0.0f;
+		jObject* Object = nullptr;
+
+		std::vector<SubElement> Subdivision;
+		std::vector<Vector> RadianceToApply;
+
+		//	what will break if this becomes doubles?
+		std::vector<float> coords;
+
+		void Init()
+		{
+			Vector i = Vertex[0] - Vertex[1];
+			Vector j = Vertex[3] - Vertex[0];
+			float area1 = i.CrossProduct(Vertex[0] - Vertex[1]).Length();
+			Normal = i.CrossProduct(j).GetNormalize();
+			float area2 = (Vertex[3] - Vertex[1]).CrossProduct(j).Length();
+			area = (area1 + area2) / 2.0f;
+			Subdivide(5);
+		}
+
+		void Subdivide(unsigned int Divisions)
+		{
+			Vector A = Vertex[0];
+			Vector B = Vertex[1];
+			Vector C = Vertex[2];
+			Vector D = Vertex[3];
+
+			Vector i = B - A;
+			Vector j = D - A;
+
+			//	first, make the VBO
+			coords.clear();
+			RadianceToApply.clear();
+			for (unsigned int yc = 0; yc <= Divisions; ++yc)
+			{
+				float py = static_cast<float>(yc) / static_cast<float>(Divisions);
+				for (unsigned int xc = 0; xc <= Divisions; ++xc)
+				{
+					float px = static_cast<float>(xc) / static_cast<float>(Divisions);
+					Vector Coord = A + (px * i) + (py * j);
+
+					if (yc == Divisions)
+					{
+						if (xc == Divisions)
+							Coord = C;
+						else if (xc == 0)
+							Coord = D;
+					}
+					if (xc == Divisions)
+					{
+						if (yc == Divisions)
+							Coord = C;
+						else if (yc == 0)
+							Coord = B;
+					}
+
+					coords.push_back(Coord.v[0]);
+					coords.push_back(Coord.v[1]);
+					coords.push_back(Coord.v[2]);
+
+					RadianceToApply.push_back(Vector(0.0f, 0.0f, 0.0f));
+				}
+			}
+
+			//	build the index buffer
+			Subdivision.clear();
+			std::vector<uint32> indices;
+			for (uint32 yc = 0; yc < Divisions; ++yc)
+			{
+				for (uint32 xc = 0; xc < Divisions; ++xc)
+				{
+					uint32 offset = yc * (Divisions + 1);
+					indices.push_back(xc + offset);
+					indices.push_back(xc + 1 + offset);
+					indices.push_back(xc + Divisions + 1 + offset);
+					indices.push_back(xc + 1 + Divisions + 1 + offset);
+
+					Vector curA(coords[3 * (xc + offset) + 0],
+						coords[3 * (xc + offset) + 1],
+						coords[3 * (xc + offset) + 2]);
+
+					Vector curB(coords[3 * (xc + offset + 1) + 0],
+						coords[3 * (xc + offset + 1) + 1],
+						coords[3 * (xc + offset + 1) + 2]);
+
+					Vector curC(coords[3 * (xc + 1 + Divisions + offset) + 0],
+						coords[3 * (xc + 1 + Divisions + offset) + 1],
+						coords[3 * (xc + 1 + Divisions + offset) + 2]);
+
+					Vector curD(coords[3 * (xc + 1 + Divisions + 1 + offset) + 0],
+						coords[3 * (xc + 1 + Divisions + 1 + offset) + 1],
+						coords[3 * (xc + 1 + Divisions + 1 + offset) + 2]);
+
+					Vector i = curA - curB;
+					Vector j = curD - curA;
+					float area1 = i.CrossProduct(curA - curC).Length();
+					float area2 = (curD - curC).CrossProduct(j).Length();
+					area = (area1 + area2) / 2.0f;
+
+					Subdivision.push_back(SubElement(MatProp.Emission, area));
+				}
+			}
+
+			//unsigned int len = coords.size() / 3;
+			//for (unsigned int ui = 0; ui < len; ++ui)
+			//{
+			//	//	add radiance for last step
+			//	float percent = ui / static_cast<float>(len);
+			//	percent = 0.0f;
+			//	coords.push_back(MatProp.Emission.v[0]);
+			//	coords.push_back(MatProp.Emission.v[0]);
+			//	coords.push_back(MatProp.Emission.v[0]);
+			//}
+
+			////	add space for total radiance
+			//for (unsigned int ui = 0; ui < len; ++ui)
+			//{
+			//	float percent = ui / static_cast<float>(len);
+			//	percent = 0.0f;
+			//	coords.push_back(percent);
+			//	coords.push_back(percent);
+			//	coords.push_back(percent);
+			//}
+
+			int32 elementCount = static_cast<int32>(coords.size() / 3);
+
+			auto vertexStreamData = std::shared_ptr<jVertexStreamData>(new jVertexStreamData());
+			{
+				auto streamParam = new jStreamParam<float>();
+				streamParam->BufferType = EBufferType::STATIC;
+				streamParam->ElementTypeSize = sizeof(float);
+				streamParam->ElementType = EBufferElementType::FLOAT;
+				streamParam->Stride = sizeof(float) * 3;
+				streamParam->Name = "Pos";
+				streamParam->Data.resize(elementCount * 3);
+				memcpy(&streamParam->Data[0], &coords[0], elementCount * sizeof(Vector));
+				vertexStreamData->Params.push_back(streamParam);
+
+				vertexStreamData->PrimitiveType = EPrimitiveType::TRIANGLE_STRIP;
+				vertexStreamData->ElementCount = elementCount;
+			}
+
+			{
+				auto streamParam = new jStreamParam<float>();
+				streamParam->BufferType = EBufferType::STATIC;
+				streamParam->ElementType = EBufferElementType::FLOAT;
+				streamParam->ElementTypeSize = sizeof(float);
+				streamParam->Stride = sizeof(float) * 4;
+				streamParam->Name = "Color";
+				streamParam->Data.resize(elementCount * 4);
+				Vector4* DataPtr = (Vector4*)&streamParam->Data[0];
+				for (int32 i = 0; i < streamParam->Data.size() / 4; ++i)
+				{
+					*DataPtr = Vector4(MatProp.Diffuse, 1.0f);
+					++DataPtr;
+				}
+				vertexStreamData->Params.push_back(streamParam);
+			}
+
+			auto indexStreamData = std::shared_ptr<jIndexStreamData>(new jIndexStreamData());
+			indexStreamData->ElementCount = static_cast<int32>(indices.size());
+			{
+				auto streamParam = new jStreamParam<uint32>();
+				streamParam->BufferType = EBufferType::STATIC;
+				streamParam->ElementType = EBufferElementType::INT;
+				streamParam->ElementTypeSize = sizeof(uint32);
+				streamParam->Stride = sizeof(uint32) * 3;
+				streamParam->Name = "Index";
+				streamParam->Data.resize(indices.size());
+				memcpy(&streamParam->Data[0], &indices[0], indices.size() * sizeof(uint32));
+				indexStreamData->Param = streamParam;
+			}
+
+			if (Object)
+				delete Object;
+			Object = new jObject();
+			Object->RenderObject = new jRenderObject();
+			Object->RenderObject->CreateRenderObject(vertexStreamData, indexStreamData);
+		}
+
+		enum EDirection : int32
+		{
+			Up = 0,
+			Down,
+			Left,
+			Right,
+			Forward,
+			Max
+		};
+
+		jCamera GetCamera(uint32 subIndex, EDirection dir, bool drawAxes = false)
+		{
+			jCamera camera;
+			camera.Pos = Vector(coords[3 * subIndex], coords[3 * subIndex + 1], coords[3 * subIndex + 2]);
+
+			Vector up(0.0f, 1.0f, 0.0f);
+
+			if (fabs(Normal.y) >= fabs(Normal.x) && fabs(Normal.y) >= fabs(Normal.z))
+				std::swap(up.y, up.z);
+
+			Vector right = Normal.CrossProduct(up).GetNormalize();
+			up = right.CrossProduct(Normal).GetNormalize();
+			//right *= -1.0f;
+
+			Matrix Rot;
+			switch (dir)
+			{
+			case 1:	//	up
+				Rot = Matrix::MakeRotate(right, -DegreeToRadian(90.0f));
+				break;
+			case 2:	//	down
+				Rot = Matrix::MakeRotate(right, DegreeToRadian(90.0f));
+				break;
+			case 3: //	left
+				Rot = Matrix::MakeRotate(up, DegreeToRadian(90.0f));
+				break;
+			case 4:	//	right
+				Rot = Matrix::MakeRotate(up, -DegreeToRadian(90.0f));
+				break;
+			default:	//	straight ahead
+				Rot.SetIdentity();
+				break;
+			}
+
+			Vector RotatedNormal = Normal;
+			RotatedNormal = Rot.Transform(RotatedNormal).GetNormalize();
+
+			Vector RotatedUp = up;
+			RotatedUp = Rot.Transform(RotatedUp).GetNormalize();
+
+			camera.Target = camera.Pos + RotatedNormal;
+			camera.Up = camera.Pos + RotatedUp;
+
+			camera.IsPerspectiveProjection = true;
+			camera.Width = ElementRenderTargetSize;
+			camera.Height = ElementRenderTargetSize;
+			camera.FOVRad = DegreeToRadian(90.0f);
+			camera.Far = 1000.0f;
+			camera.Near = 0.1f;
+
+			//// 그림그리는 축을 그림
+			//if (drawAxes)
+			//{
+			//	Vec3 pos(c.Position[0], c.Position[1], c.Position[2]);
+			//	Vec3 normal2 = normal * 50.0f;
+			//	Vec3 right2(c.Right[0] * 50.0f, c.Right[1] * 50.0f, c.Right[2] * 50.0f);
+			//	Vec3 up2(c.Up[0] * 50.0f, c.Up[1] * 50.0f, c.Up[2] * 50.0f);
+
+			//	glColor3f(0.0f, 0.0f, 0.0f);
+
+			//	float emission1[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
+			//	cgSetParameter3fv(Element::myCgVertexParam_Emissive, &emission1[0]);
+			//	cgUpdateProgramParameters(Element::myCgVertexProgram);
+			//	checkForCgError("emission1 update");
+
+			//	glBegin(GL_LINES);
+			//	glVertex3dv(&pos[0]);
+			//	glVertex3d(pos[0] + normal2[0], pos[1] + normal2[1], pos[2] + normal2[2]);
+			//	glEnd();
+
+			//	float emission2[4] = { 1.0f, 0.0f, 0.0f, 0.0f };
+			//	cgSetParameter3fv(Element::myCgVertexParam_Emissive, &emission2[0]);
+			//	cgUpdateProgramParameters(Element::myCgVertexProgram);
+			//	checkForCgError("emission2 update");
+
+			//	glBegin(GL_LINES);
+			//	glVertex3dv(&pos[0]);
+			//	glVertex3d(pos[0] + right2[0], pos[1] + right2[1], pos[2] + right2[2]);
+			//	glEnd();
+
+			//	float emission3[4] = { 0.0f, 1.0f, 0.0f, 0.0f };
+			//	cgSetParameter3fv(Element::myCgVertexParam_Emissive, &emission3[0]);
+			//	cgUpdateProgramParameters(Element::myCgVertexProgram);
+			//	checkForCgError("emission3 update");
+
+			//	glBegin(GL_LINES);
+			//	glVertex3dv(&pos[0]);
+			//	glVertex3d(pos[0] + up2[0], pos[1] + up2[1], pos[2] + up2[2]);
+			//	glEnd();
+			//}
+
+			return camera;
+		}
+	};
+
+	static std::vector<Element> SceneElements;
+	static bool IsLoadedScene = false;
+	if (!IsLoadedScene)
+	{
+		IsLoadedScene = true;
+
+		// 1. LoadScene Data
+		auto GetVectorFromString = [](const char* InString)
+		{
+			Vector Result = Vector::ZeroVector;
+			if (InString)
+			{
+				const char* delim = ",";
+				char* next_token;
+				char* token = strtok_s((char*)InString, delim, &next_token);
+				int k = 0;
+				while (token)
+				{
+					Result.v[k] = static_cast<float>(atof(token));
+					token = strtok_s(NULL, delim, &next_token);
+					++k;
+
+					if (k >= 3)
+						break;
+				}
+			}
+			return Result;
+		};
+
+		tinyxml2::XMLDocument doc;
+		doc.LoadFile("model/CornellBox.xml");
+		tinyxml2::XMLElement* CornellBox = doc.FirstChildElement("CornellBox");
+		JASSERT(CornellBox);
+		for (tinyxml2::XMLElement* Elem = CornellBox->FirstChildElement("Element"); Elem; Elem = Elem->NextSiblingElement())
+		{
+			Element NewElement;
+			for (int32 i = 0; i < 4; ++i)
+			{
+				char szTemp[128] = { 0, };
+				sprintf_s(szTemp, sizeof(szTemp), "Vertex%d", i);
+				tinyxml2::XMLElement* VertexElement = Elem->FirstChildElement(szTemp);
+				NewElement.Vertex[i] = GetVectorFromString(VertexElement->GetText());
+			}
+
+			tinyxml2::XMLElement* MaterialProp = Elem->FirstChildElement("MaterialProperties");
+			JASSERT(MaterialProp);
+			if (MaterialProp)
+			{
+				tinyxml2::XMLElement* DiffuseColorElem = MaterialProp->FirstChildElement("DiffuseColor");
+				JASSERT(DiffuseColorElem);
+				NewElement.MatProp.Diffuse = GetVectorFromString(DiffuseColorElem->GetText());
+
+				tinyxml2::XMLElement* EmissionColorElem = MaterialProp->FirstChildElement("Emission");
+				JASSERT(EmissionColorElem);
+				NewElement.MatProp.Emission = GetVectorFromString(EmissionColorElem->GetText());
+
+				tinyxml2::XMLElement* ReflectanceColorElem = MaterialProp->FirstChildElement("Reflectance");
+				JASSERT(ReflectanceColorElem);
+				NewElement.MatProp.Reflectance = GetVectorFromString(ReflectanceColorElem->GetText());
+			}
+
+			NewElement.Init();
+			SceneElements.push_back(NewElement);
+		}
+
+		//// 2. Create Vertex
+		//for (auto Elem : SceneElements)
+		//{
+		//	Elem.Subdivide(2);
+		//}
+	}
+
+	g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
+	g_rhi->EnableCullFace(false);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+	jShader* shader = nullptr;
+	shader = jShader::GetShader("Simple");
+
+	// 선택한 Elem 만 그리기
+	g_rhi->SetViewport(SCR_WIDTH * 0.5f, 0.0f, SCR_WIDTH * 0.5f, SCR_HEIGHT * 0.5f);
+
+	static int32 SelectSubIndex = 15;
+	{
+		static bool PrevKeyStateUp = (g_KeyState['z'] || g_KeyState['Z']);
+		bool NewKeyStateUp = (g_KeyState['z'] || g_KeyState['Z']);
+		if (PrevKeyStateUp != NewKeyStateUp)
+		{
+			PrevKeyStateUp = NewKeyStateUp;
+			if (!NewKeyStateUp)
+				SelectSubIndex++;
+		}
+		static bool PrevKeyStateDown = (g_KeyState['x'] || g_KeyState['X']);
+		bool NewKeyStateDown = (g_KeyState['x'] || g_KeyState['X']);
+		if (PrevKeyStateDown != NewKeyStateDown)
+		{
+			PrevKeyStateDown = NewKeyStateDown;
+			if (!NewKeyStateDown)
+				SelectSubIndex--;
+		}
+	}
+
+	static int32 ElemIndex = 3;
+	{
+		static bool PrevKeyStateUp = (g_KeyState['c'] || g_KeyState['C']);
+		bool NewKeyStateUp = (g_KeyState['c'] || g_KeyState['C']);
+		if (PrevKeyStateUp != NewKeyStateUp)
+		{
+			PrevKeyStateUp = NewKeyStateUp;
+			if (!NewKeyStateUp)
+				ElemIndex++;
+		}
+		static bool PrevKeyStateDown = (g_KeyState['v'] || g_KeyState['V']);
+		bool NewKeyStateDown = (g_KeyState['v'] || g_KeyState['V']);
+		if (PrevKeyStateDown != NewKeyStateDown)
+		{
+			PrevKeyStateDown = NewKeyStateDown;
+			if (!NewKeyStateDown)
+				ElemIndex--;
+		}
+	}
+	ElemIndex = Clamp<int32>(ElemIndex, 0, SceneElements.size() - 1);
+
+	auto Elem = SceneElements[ElemIndex];
+
+	int32 maxIndex = Elem.coords.size() / 3;
+	SelectSubIndex = Clamp(SelectSubIndex, 0, maxIndex - 1);
+
+	Elem.Object->Update(deltaTime);
+	Elem.Object->Draw(MainCamera, shader, {});
+
+	// 선택한 Elem의 카메라에서 그리기
+	static int32 DirectionIndex = Element::Up;
+	{
+		static bool PrevKeyStateUp = (g_KeyState['b'] || g_KeyState['B']);
+		bool NewKeyStateUp = (g_KeyState['b'] || g_KeyState['B']);
+		if (PrevKeyStateUp != NewKeyStateUp)
+		{
+			PrevKeyStateUp = NewKeyStateUp;
+			if (!NewKeyStateUp)
+				DirectionIndex++;
+		}
+		static bool PrevKeyStateDown = (g_KeyState['n'] || g_KeyState['N']);
+		bool NewKeyStateDown = (g_KeyState['n'] || g_KeyState['N']);
+		if (PrevKeyStateDown != NewKeyStateDown)
+		{
+			PrevKeyStateDown = NewKeyStateDown;
+			if (!NewKeyStateDown)
+				DirectionIndex--;
+		}
+	}
+	DirectionIndex = Clamp(DirectionIndex, 0, (int32)Element::Max - 1);
+
+	g_rhi->SetViewport(SCR_WIDTH * 0.5f, SCR_HEIGHT * 0.5f, SCR_WIDTH * 0.5f, SCR_HEIGHT * 0.5f);
+	jCamera cam = Elem.GetCamera(SelectSubIndex, (Element::EDirection)DirectionIndex);
+	cam.UpdateCamera();
+	for (auto Elem : SceneElements)
+	{
+		Elem.Object->Update(deltaTime);
+		Elem.Object->Draw(&cam, shader, {});
+	}
+
+	auto CameraDebug = jPrimitiveUtil::CreateFrustumDebug(&cam);
+	
+	// 전체 그리기
+	g_rhi->SetViewport(0.0f, 0.0f, SCR_WIDTH * 0.5f, SCR_HEIGHT * 0.5f);
+
+	MainCamera->UpdateCamera();
+	for (auto Elem : SceneElements)
+	{
+		Elem.Object->Update(deltaTime);
+		Elem.Object->Draw(MainCamera, shader, {});
+	}
+	CameraDebug->Update(deltaTime);
+	CameraDebug->Draw(MainCamera, shader, {});
+
+	delete CameraDebug;
 }
 
 void jGame::UpdateAppSetting()

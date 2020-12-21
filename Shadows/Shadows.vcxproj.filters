@@ -34,6 +34,9 @@
     <Filter Include="IMGUI">
       <UniqueIdentifier>{3b4a88b3-46a4-4af9-a6f1-5ecfe188c022}</UniqueIdentifier>
     </Filter>
+    <Filter Include="TinyXml2">
+      <UniqueIdentifier>{cf322407-cc3c-466a-b784-20671514f107}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -192,6 +195,9 @@
     <ClInclude Include="stb_image.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="TinyXml2\tinyxml2.h">
+      <Filter>TinyXml2</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -334,6 +340,9 @@
     </ClCompile>
     <ClCompile Include="jSamplerStatePool.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TinyXml2\tinyxml2.cpp">
+      <Filter>TinyXml2</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
