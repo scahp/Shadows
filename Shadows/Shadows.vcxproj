@@ -306,6 +306,12 @@
     <None Include="Shaders\fullscreen\fs_scale.glsl" />
     <None Include="Shaders\fullscreen\fs_tonemap.glsl" />
     <None Include="Shaders\fullscreen\vs_fullscreen_common.glsl" />
+    <None Include="Shaders\radiosity_fs.glsl" />
+    <None Include="Shaders\radiosity_result_fs.glsl" />
+    <None Include="Shaders\radiosity_result_vs.glsl" />
+    <None Include="Shaders\radiosity_simple_fs.glsl" />
+    <None Include="Shaders\radiosity_simple_vs.glsl" />
+    <None Include="Shaders\radiosity_vs.glsl" />
     <None Include="Shaders\shadow.glsl" />
     <None Include="Shaders\shadowmap\fs.glsl" />
     <None Include="Shaders\shadowmap\fs_deepShadowMap.glsl" />

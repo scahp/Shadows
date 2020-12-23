@@ -124,11 +124,13 @@ int main()
 		g_Engine.Update(g_timeDeltaSecond);
 		jPerformanceProfile::GetInstance().Update(g_timeDeltaSecond);
 
+		if (0)
 		{
 			SCOPE_DEBUG_EVENT(g_rhi, "TwDraw");
 			TwDraw();
 		}
 
+		if (0)
 		{
 			SCOPE_DEBUG_EVENT(g_rhi, "IMGUI");
 

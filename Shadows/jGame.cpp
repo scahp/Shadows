@@ -41,12 +41,12 @@ void jGame::ProcessInput()
 	// Process Key Event
 	if (g_KeyState['a'] || g_KeyState['A']) MainCamera->MoveShift(-speed);
 	if (g_KeyState['d'] || g_KeyState['D']) MainCamera->MoveShift(speed);
-	//if (g_KeyState['1']) MainCamera->RotateForwardAxis(-0.1f);
-	//if (g_KeyState['2']) MainCamera->RotateForwardAxis(0.1f);
-	//if (g_KeyState['3']) MainCamera->RotateUpAxis(-0.1f);
-	//if (g_KeyState['4']) MainCamera->RotateUpAxis(0.1f);
-	//if (g_KeyState['5']) MainCamera->RotateRightAxis(-0.1f);
-	//if (g_KeyState['6']) MainCamera->RotateRightAxis(0.1f);
+	if (g_KeyState['1']) MainCamera->RotateForwardAxis(-0.1f);
+	if (g_KeyState['2']) MainCamera->RotateForwardAxis(0.1f);
+	if (g_KeyState['3']) MainCamera->RotateUpAxis(-0.1f);
+	if (g_KeyState['4']) MainCamera->RotateUpAxis(0.1f);
+	if (g_KeyState['5']) MainCamera->RotateRightAxis(-0.1f);
+	if (g_KeyState['6']) MainCamera->RotateRightAxis(0.1f);
 	if (g_KeyState['w'] || g_KeyState['W']) MainCamera->MoveForward(speed);
 	if (g_KeyState['s'] || g_KeyState['S']) MainCamera->MoveForward(-speed);
 	if (g_KeyState['+']) speed = Max(speed + 0.1f, 0.0f);
@@ -56,11 +56,11 @@ void jGame::ProcessInput()
 void jGame::Setup()
 {
 	//////////////////////////////////////////////////////////////////////////
-	const Vector mainCameraPos(310.392578, 297.393494, -720.757629);
+	const Vector mainCameraPos(310.392578f, 297.393494f, -720.757629f);
 	//const Vector mainCameraTarget(171.96f, 166.02f, -180.05f);
 	//const Vector mainCameraPos(165.0f, 125.0f, -136.0f);
 	//const Vector mainCameraPos(300.0f, 100.0f, 300.0f);
-	const Vector mainCameraTarget(310.389954, 297.393829, -719.757996);
+	const Vector mainCameraTarget(310.389954f, 297.393829f, -719.757996f);
 	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(45.0f), 10.0f, 5000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
 
@@ -371,28 +371,25 @@ void jGame::Update(float deltaTime)
 				}
 			}
 
-			//unsigned int len = coords.size() / 3;
-			//for (unsigned int ui = 0; ui < len; ++ui)
-			//{
-			//	//	add radiance for last step
-			//	float percent = ui / static_cast<float>(len);
-			//	percent = 0.0f;
-			//	coords.push_back(MatProp.Emission.v[0]);
-			//	coords.push_back(MatProp.Emission.v[0]);
-			//	coords.push_back(MatProp.Emission.v[0]);
-			//}
+			uint32 len = coords.size() / 3;
+			for (uint32 ui = 0; ui < len; ++ui)
+			{
+				//	add radiance for last step
+				coords.push_back(MatProp.Emission.v[0]);
+				coords.push_back(MatProp.Emission.v[1]);
+				coords.push_back(MatProp.Emission.v[2]);
+			}
 
-			////	add space for total radiance
-			//for (unsigned int ui = 0; ui < len; ++ui)
-			//{
-			//	float percent = ui / static_cast<float>(len);
-			//	percent = 0.0f;
-			//	coords.push_back(percent);
-			//	coords.push_back(percent);
-			//	coords.push_back(percent);
-			//}
+			//	add space for total radiance
+			for (uint32 ui = 0; ui < len; ++ui)
+			{
+				float percent = 0.0f;
+				coords.push_back(percent);
+				coords.push_back(percent);
+				coords.push_back(percent);
+			}
 
-			int32 elementCount = static_cast<int32>(coords.size() / 3);
+			int32 elementCount = static_cast<int32>(coords.size() / 9);
 
 			auto vertexStreamData = std::shared_ptr<jVertexStreamData>(new jVertexStreamData());
 			{
@@ -415,15 +412,22 @@ void jGame::Update(float deltaTime)
 				streamParam->BufferType = EBufferType::STATIC;
 				streamParam->ElementType = EBufferElementType::FLOAT;
 				streamParam->ElementTypeSize = sizeof(float);
-				streamParam->Stride = sizeof(float) * 4;
-				streamParam->Name = "Color";
-				streamParam->Data.resize(elementCount * 4);
-				Vector4* DataPtr = (Vector4*)&streamParam->Data[0];
-				for (int32 i = 0; i < streamParam->Data.size() / 4; ++i)
-				{
-					*DataPtr = Vector4(MatProp.Diffuse, 1.0f);
-					++DataPtr;
-				}
+				streamParam->Stride = sizeof(float) * 3;
+				streamParam->Name = "Radiance";
+				streamParam->Data.resize(elementCount * 3);
+				memcpy(&streamParam->Data[0], &coords[(coords.size() / 3)], elementCount * sizeof(Vector));
+				vertexStreamData->Params.push_back(streamParam);
+			}
+
+			{
+				auto streamParam = new jStreamParam<float>();
+				streamParam->BufferType = EBufferType::STATIC;
+				streamParam->ElementType = EBufferElementType::FLOAT;
+				streamParam->ElementTypeSize = sizeof(float);
+				streamParam->Stride = sizeof(float) * 3;
+				streamParam->Name = "TotalRadiance";
+				streamParam->Data.resize(elementCount * 3, 0.0f);
+				memcpy(&streamParam->Data[0], &coords[(coords.size() / 3) * 2], elementCount * sizeof(Vector));
 				vertexStreamData->Params.push_back(streamParam);
 			}
 
@@ -475,16 +479,16 @@ void jGame::Update(float deltaTime)
 			Matrix Rot;
 			switch (dir)
 			{
-			case 1:	//	up
+			case EDirection::Up:	//	up
 				Rot = Matrix::MakeRotate(right, -DegreeToRadian(90.0f));
 				break;
-			case 2:	//	down
+			case EDirection::Down:	//	down
 				Rot = Matrix::MakeRotate(right, DegreeToRadian(90.0f));
 				break;
-			case 3: //	left
+			case EDirection::Left: //	left
 				Rot = Matrix::MakeRotate(up, DegreeToRadian(90.0f));
 				break;
-			case 4:	//	right
+			case EDirection::Right:	//	right
 				Rot = Matrix::MakeRotate(up, -DegreeToRadian(90.0f));
 				break;
 			default:	//	straight ahead
@@ -550,6 +554,108 @@ void jGame::Update(float deltaTime)
 			//}
 
 			return camera;
+		}
+
+		int32 GetSubElementCount() const
+		{
+			return coords.size() / 9;
+		}
+
+		void IncomingAt(uint32 InSubIndex, const Vector& InRadiance)
+		{
+			RadianceToApply[InSubIndex] = InRadiance;
+		}
+
+		bool Update()
+		{
+			// 이전 스탭에서 받은 Radiance를 적용하는 코드인듯 한데, 조금 이상하네? coords 의 개수가 달라지면 참조하는 위치가 틀려짐
+			unsigned int size = coords.size() / 3;
+			//	first, remove the power the element just shoved into the scene
+			for (unsigned int ui = size; ui < size * 2; ui += 3)
+			{
+				coords[ui + 0 + size] += Min(1.0f, coords[ui + 0]);
+				coords[ui + 1 + size] += Min(1.0f, coords[ui + 1]);
+				coords[ui + 2 + size] += Min(1.0f, coords[ui + 2]);
+
+				//coords[ui + 0] = 0.0f;
+				//coords[ui + 1] = 0.0f;
+				//coords[ui + 2] = 0.0f;
+
+				coords[ui + 0] -= 1.0f;
+				coords[ui + 0] = ::Max(coords[ui + 0], 0.0f);
+				coords[ui + 1] -= 1.0f;
+				coords[ui + 1] = ::Max(coords[ui + 1], 0.0f);
+				coords[ui + 2] -= 1.0f;
+				coords[ui + 2] = ::Max(coords[ui + 2], 0.0f);
+			}
+
+			// 현재 Radiance에 RadianceToApply 를 추가해준다.
+			//	then, apply the radiances to the new radiances section of the buffer
+			unsigned int count = 0;
+			for (unsigned int ui = size; ui < size * 2; ui += 3)
+			{
+				coords[ui + 0] += RadianceToApply[count].v[0];
+				coords[ui + 1] += RadianceToApply[count].v[1];
+				coords[ui + 2] += RadianceToApply[count].v[2];
+				++count;
+			}
+
+			// 총 Radiance에 RadianceToApply 를 추가해준다.
+			//	next, sum the total radiance
+			count = 0;
+			for (unsigned int ui = size * 2; ui < size * 3; ui += 3)
+			{
+				coords[ui + 0] += RadianceToApply[count].v[0];
+				coords[ui + 1] += RadianceToApply[count].v[1];
+				coords[ui + 2] += RadianceToApply[count].v[2];
+				++count;
+			}
+
+			////	next, update the VBO
+			//glBindBufferARB(GL_ARRAY_BUFFER_ARB, VBOId);
+			//glBufferSubDataARB(GL_ARRAY_BUFFER_ARB, sizeof(float) * size, sizeof(float) * size * 2, &coords[size]);
+			////glBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(float) * coords.size( ), &coords[0], GL_STATIC_DRAW_ARB);
+
+			int32 elementCount = static_cast<int32>(coords.size() / 9);
+			{
+				auto streamParam = new jStreamParam<float>();
+				streamParam->BufferType = EBufferType::STATIC;
+				streamParam->ElementType = EBufferElementType::FLOAT;
+				streamParam->ElementTypeSize = sizeof(float);
+				streamParam->Stride = sizeof(float) * 3;
+				streamParam->Name = "Radiance";
+				streamParam->Data.resize(elementCount * 3);
+				memcpy(&streamParam->Data[0], &coords[size], elementCount * sizeof(Vector));
+				delete Object->RenderObject->VertexStream->Params[1];
+				Object->RenderObject->VertexStream->Params[1] = streamParam;
+			}
+
+			{
+				auto streamParam = new jStreamParam<float>();
+				streamParam->BufferType = EBufferType::STATIC;
+				streamParam->ElementType = EBufferElementType::FLOAT;
+				streamParam->ElementTypeSize = sizeof(float);
+				streamParam->Stride = sizeof(float) * 3;
+				streamParam->Name = "TotalRadiance";
+				streamParam->Data.resize(elementCount * 3, 0.0f);
+				memcpy(&streamParam->Data[0], &coords[size * 2], elementCount * sizeof(Vector));
+				delete Object->RenderObject->VertexStream->Params[2];
+				Object->RenderObject->VertexStream->Params[2] = streamParam;
+			}
+			Object->RenderObject->UpdateVertexStream();
+
+			return true;
+		}
+
+		void Draw(const jCamera& InCamera, const jShader* InShader)
+		{
+			g_rhi->SetShader(InShader);
+			SET_UNIFORM_BUFFER_STATIC(Vector, "Diffuse", MatProp.Diffuse, InShader);
+			SET_UNIFORM_BUFFER_STATIC(Vector, "Emission", Vector(0.0f), InShader);
+			SET_UNIFORM_BUFFER_STATIC(float, "Area", area / static_cast<float>(Subdivision.size() * Subdivision.size()), InShader);
+
+			JASSERT(Object);
+			Object->Draw(&InCamera, InShader, {});
 		}
 	};
 
@@ -625,38 +731,87 @@ void jGame::Update(float deltaTime)
 		//}
 	}
 
-	g_rhi->SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-	g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
-	g_rhi->EnableCullFace(false);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-	jShader* shader = nullptr;
-	shader = jShader::GetShader("Simple");
-
-	// 선택한 Elem 만 그리기
-	g_rhi->SetViewport(SCR_WIDTH * 0.5f, 0.0f, SCR_WIDTH * 0.5f, SCR_HEIGHT * 0.5f);
-
-	static int32 SelectSubIndex = 15;
+	//////////////////////////////////////////////////////////////////////////
+	static bool BuiltShapeMaps = false;
+	static double SumOfPixelsInMaps = 0.0;
+	static std::vector<float> ShapeMaps[5];
+	auto funcPixelSum = [&]()
 	{
-		static bool PrevKeyStateUp = (g_KeyState['z'] || g_KeyState['Z']);
-		bool NewKeyStateUp = (g_KeyState['z'] || g_KeyState['Z']);
-		if (PrevKeyStateUp != NewKeyStateUp)
-		{
-			PrevKeyStateUp = NewKeyStateUp;
-			if (!NewKeyStateUp)
-				SelectSubIndex++;
-		}
-		static bool PrevKeyStateDown = (g_KeyState['x'] || g_KeyState['X']);
-		bool NewKeyStateDown = (g_KeyState['x'] || g_KeyState['X']);
-		if (PrevKeyStateDown != NewKeyStateDown)
-		{
-			PrevKeyStateDown = NewKeyStateDown;
-			if (!NewKeyStateDown)
-				SelectSubIndex--;
-		}
-	}
+		constexpr int32 RTSize = SCR_WIDTH;
 
-	static int32 ElemIndex = 3;
+		double sum = 0.0f;
+		for (uint32 dir = 0; dir < 5; ++dir)
+		{
+			std::vector<float>& map = ShapeMaps[dir];
+			map.resize(4 * RTSize * RTSize, 1.0f);
+
+			// 카메라는 텍스쳐 가운데, 아래에서 텍스쳐를 바라보는 형태임
+			Vector CamPos(RTSize / 2.0f, RTSize / 2.0f, -RTSize / 2.0f);
+			Vector CamView(0.0f, 0.0f, 1.0f);
+
+			for (uint32 pi = 0; pi < RTSize * RTSize * 4; pi += 4)
+			{
+				float row = pi / (RTSize * 4.0f);
+				float col = pi % (RTSize * 4) / 4.0f;
+
+				// 카메라에서 픽셀위치까지 벡터와 카메라의 방향 사이의 각도를 계산
+				Vector ShapePixelPos(col, row, 0.0f);
+				Vector PixelShapeView = (ShapePixelPos - CamPos).GetNormalize();
+				float ShapeCosTheta = CamView.DotProduct(PixelShapeView);
+
+				//// 현재의 면을 방향에 맞게 회전 시킨다.([0~480], [0~480], [-480~0])
+				Vector PixelPos(col, row, 0.0f);
+				switch ((Element::EDirection)dir)
+				{
+				case Element::Up:	//	up
+					PixelPos.v[1] -= RTSize - 1;
+					std::swap(PixelPos.v[1], PixelPos.v[2]);
+					break;
+				case Element::Down:	//	down
+					std::swap(PixelPos.v[1], PixelPos.v[2]);
+					PixelPos.v[1] = RTSize - 1;
+					PixelPos.v[2] *= -1;
+					break;
+				case Element::Left:	//	left
+					PixelPos.v[0] -= RTSize - 1;
+					std::swap(PixelPos.v[0], PixelPos.v[2]);
+					break;
+				case Element::Right:	//	right
+					std::swap(PixelPos.v[0], PixelPos.v[2]);
+					PixelPos.v[0] = RTSize - 1;
+					PixelPos.v[2] *= -1;
+					break;
+				default:	//	ahead
+					;
+				}
+
+				Vector PixelView = (PixelPos - CamPos).GetNormalize();
+				float WrapCosTheta = CamView.DotProduct(PixelView);
+
+				// 반대면에 있다면 영향을 받지 않으므로 0으로 처리
+				if (WrapCosTheta * ShapeCosTheta <= 0.0f)
+				{
+					WrapCosTheta = 0.0f;
+					ShapeCosTheta = 0.0f;
+				}
+
+				map[pi + 0] *= WrapCosTheta * ShapeCosTheta;
+				map[pi + 1] *= WrapCosTheta * ShapeCosTheta;
+				map[pi + 2] *= WrapCosTheta * ShapeCosTheta;
+
+				sum += WrapCosTheta * ShapeCosTheta;
+			}
+		}
+		SumOfPixelsInMaps = sum;
+	};
+	//////////////////////////////////////////////////////////////////////////
+
+	//static int32 ElemIndex = 4;
+	//static int32 ElemIndex = 5;
+	static int32 ElemIndex = 0;
+	static int32 SelectSubIndex = 0;
+	static int32 DirectionIndex = Element::Up;
+
 	{
 		static bool PrevKeyStateUp = (g_KeyState['c'] || g_KeyState['C']);
 		bool NewKeyStateUp = (g_KeyState['c'] || g_KeyState['C']);
@@ -679,14 +834,31 @@ void jGame::Update(float deltaTime)
 
 	auto Elem = SceneElements[ElemIndex];
 
+	{
+		static bool PrevKeyStateUp = (g_KeyState['z'] || g_KeyState['Z']);
+		bool NewKeyStateUp = (g_KeyState['z'] || g_KeyState['Z']);
+		if (PrevKeyStateUp != NewKeyStateUp)
+		{
+			PrevKeyStateUp = NewKeyStateUp;
+			if (!NewKeyStateUp)
+				SelectSubIndex++;
+		}
+		static bool PrevKeyStateDown = (g_KeyState['x'] || g_KeyState['X']);
+		bool NewKeyStateDown = (g_KeyState['x'] || g_KeyState['X']);
+		if (PrevKeyStateDown != NewKeyStateDown)
+		{
+			PrevKeyStateDown = NewKeyStateDown;
+			if (!NewKeyStateDown)
+				SelectSubIndex--;
+		}
+
+		SelectSubIndex = SelectSubIndex % Elem.GetSubElementCount();
+	}
+
 	int32 maxIndex = Elem.coords.size() / 3;
 	SelectSubIndex = Clamp(SelectSubIndex, 0, maxIndex - 1);
 
-	Elem.Object->Update(deltaTime);
-	Elem.Object->Draw(MainCamera, shader, {});
-
 	// 선택한 Elem의 카메라에서 그리기
-	static int32 DirectionIndex = Element::Up;
 	{
 		static bool PrevKeyStateUp = (g_KeyState['b'] || g_KeyState['B']);
 		bool NewKeyStateUp = (g_KeyState['b'] || g_KeyState['B']);
@@ -707,30 +879,218 @@ void jGame::Update(float deltaTime)
 	}
 	DirectionIndex = Clamp(DirectionIndex, 0, (int32)Element::Max - 1);
 
-	g_rhi->SetViewport(SCR_WIDTH * 0.5f, SCR_HEIGHT * 0.5f, SCR_WIDTH * 0.5f, SCR_HEIGHT * 0.5f);
-	jCamera cam = Elem.GetCamera(SelectSubIndex, (Element::EDirection)DirectionIndex);
-	cam.UpdateCamera();
-	for (auto Elem : SceneElements)
+	static bool test = 1;
+	if (test)
 	{
-		Elem.Object->Update(deltaTime);
-		Elem.Object->Draw(&cam, shader, {});
+		static std::shared_ptr<jRenderTarget> RenderTarget = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget(
+			{ ETextureType::TEXTURE_2D, ETextureFormat::RGBA16F, ETextureFormat::RGBA, EFormatType::FLOAT
+			, EDepthBufferType::DEPTH24, SCR_WIDTH, SCR_HEIGHT, 1 }));
+
+		g_rhi->SetViewport(0.0f, 0.0f, SCR_WIDTH, SCR_HEIGHT);
+		g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
+		g_rhi->EnableCullFace(false);
+		g_rhi->EnableDepthTest(true);
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+		jShader* shader = nullptr;
+		shader = jShader::GetShader("Radiosity");
+
+		MainCamera->UpdateCamera();
+		for (auto Elem : SceneElements)
+			Elem.Object->Update(deltaTime);
+
+		jCamera CurCamera;
+
+		for (int32 ElemIndex = 0; ElemIndex <= SceneElements.size();++ElemIndex)
+		{
+			auto& Elem = SceneElements[ElemIndex];
+			//if (Elem.MatProp.Diffuse == Vector(0.0f))
+			//	continue;
+
+			int32 SubElemCount = Elem.GetSubElementCount();
+			for (int32 i = 0; i < SubElemCount; ++i)
+			{
+				Vector CurrentRadiosity(0.0f);
+				for (int32 dir = 0; dir < Element::Max; ++dir)
+				{
+					CurCamera = Elem.GetCamera(i, (Element::EDirection)dir);
+
+					g_rhi->SetShader(shader);
+					g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
+
+					CurCamera.UpdateCamera();
+					CurCamera.BindCamera(shader);
+
+					if (!RenderTarget->Begin())
+						return;
+
+					SET_UNIFORM_BUFFER_STATIC(Vector, "Diffuse", Elem.MatProp.Diffuse, shader);
+					SET_UNIFORM_BUFFER_STATIC(Vector, "Emission", Vector(0.0f), shader);
+					SET_UNIFORM_BUFFER_STATIC(float, "Area", Elem.area / static_cast<float>(Elem.Subdivision.size() * Elem.Subdivision.size()), shader);
+
+					glDisable(GL_CULL_FACE);
+					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+					g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+					g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
+					g_rhi->EnableBlend(true);
+					g_rhi->SetBlendFunc(EBlendSrc::ONE, EBlendDest::ZERO);
+					g_rhi->EnableDepthTest(true);
+
+					for (unsigned int ui = 0; ui < SceneElements.size(); ++ui)
+						SceneElements[ui].Object->Draw(&CurCamera, shader, {});
+					
+					RenderTarget->End();
+					if (1)
+					{
+						constexpr int32 RTSize = SCR_WIDTH;
+						static std::vector<float> newPixels(RTSize * RTSize * 4, 0.0);
+
+						jTexture_OpenGL* Tex = (jTexture_OpenGL*)RenderTarget->GetTexture();
+						glBindTexture(GL_TEXTURE_2D, Tex->TextureID);
+						glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, (GLvoid*)(&newPixels[0]));
+
+						if (!BuiltShapeMaps)
+						{
+							BuiltShapeMaps = true;
+							funcPixelSum();
+						}
+
+						Vector sum(0.0f, 0.0f, 0.0f);
+						std::vector<float>& ShapeMap = ShapeMaps[dir];
+						for (uint32 ui = 0; ui < RTSize * RTSize * 4; ui += 4)
+						{
+							//if (newPixels[ui + 0] != 0.0f || newPixels[ui + 1] != 0.0f || newPixels[ui + 2] != 0.0f)
+							//{
+							//	int k = 0;
+							//	++k;
+							//}
+
+							sum.v[0] += newPixels[ui + 0] * ShapeMap[ui + 0];
+							sum.v[1] += newPixels[ui + 1] * ShapeMap[ui + 1];
+							sum.v[2] += newPixels[ui + 2] * ShapeMap[ui + 2];
+						}
+
+						CurrentRadiosity += sum;
+					}
+				}
+				if (SumOfPixelsInMaps > 0)
+				{
+					CurrentRadiosity /= SumOfPixelsInMaps;
+					Elem.IncomingAt(i, CurrentRadiosity);
+				}
+			}
+
+
+//			const Vector2 PreviewSize(SCR_WIDTH, SCR_HEIGHT);
+//			static auto PreviewUI = jPrimitiveUtil::CreateUIQuad(Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y), PreviewSize, nullptr);
+//
+//#define PREVIEW_TEXTURE(TEXTURE)\
+//	{\
+//		auto EnableClear = false;\
+//		auto EnableDepthTest = false;\
+//		auto DepthStencilFunc = EComparisonFunc::LESS;\
+//		auto EnableBlend = false;\
+//		auto BlendSrc = EBlendSrc::ONE;\
+//		auto BlendDest = EBlendDest::ZERO;\
+//		auto Shader = jShader::GetShader("UIShader");\
+//		g_rhi->EnableDepthTest(false);\
+//		g_rhi->EnableBlend(EnableBlend);\
+//		g_rhi->SetBlendFunc(BlendSrc, BlendDest);\
+//		g_rhi->SetShader(Shader);\
+//		MainCamera->BindCamera(Shader);\
+//		PreviewUI->RenderObject->tex_object = TEXTURE;\
+//		PreviewUI->Draw(MainCamera, Shader, {});\
+//	}
+//			PREVIEW_TEXTURE(RenderTarget->GetTexture());
+//			return;
+		}
+		for (auto Elem : SceneElements)
+			Elem.Update();
+
+		g_rhi->SetViewport(0.0f, 0.0f, SCR_WIDTH, SCR_HEIGHT);
+		g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
+		shader = jShader::GetShader("RadiosityResult");
+		g_rhi->EnableBlend(false);
+		//g_rhi->SetBlendFunc(EBlendSrc::ONE, EBlendDest::ONE_MINUS_SRC_ALPHA);
+		for (auto Elem : SceneElements)
+		{
+			//Elem.Object->Draw(&CurCamera, shader, {});
+			Elem.Draw(*MainCamera, shader);
+		}
+		//Elem.Object->Draw(MainCamera, shader, {});
+		++ElemIndex;
+
+		//// 전체 그리기
+		//auto CameraDebug = jPrimitiveUtil::CreateFrustumDebug(&CurCamera);
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		//shader = jShader::GetShader("Simple");
+		//CameraDebug->Update(deltaTime);
+		//CameraDebug->Draw(MainCamera, shader, {});
+		//delete CameraDebug;
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
-
-	auto CameraDebug = jPrimitiveUtil::CreateFrustumDebug(&cam);
-	
-	// 전체 그리기
-	g_rhi->SetViewport(0.0f, 0.0f, SCR_WIDTH * 0.5f, SCR_HEIGHT * 0.5f);
-
-	MainCamera->UpdateCamera();
-	for (auto Elem : SceneElements)
+	else
 	{
+		g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
+		g_rhi->EnableCullFace(false);
+		g_rhi->EnableDepthTest(true);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+		jShader* shader = nullptr;
+		shader = jShader::GetShader("RadiositySimple");
+
+		// 선택한 Elem 만 그리기
+		g_rhi->SetViewport(SCR_WIDTH * 0.5f, 0.0f, SCR_WIDTH * 0.5f, SCR_HEIGHT * 0.5f);
+
+		SET_UNIFORM_BUFFER_STATIC(bool, "DrawRadiance", false, shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "Diffuse", Elem.MatProp.Diffuse, shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "Emission", Vector(0.0f), shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "Area", Elem.area / static_cast<float>(Elem.Subdivision.size() * Elem.Subdivision.size()), shader);
+
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		Elem.Object->Update(deltaTime);
 		Elem.Object->Draw(MainCamera, shader, {});
-	}
-	CameraDebug->Update(deltaTime);
-	CameraDebug->Draw(MainCamera, shader, {});
 
-	delete CameraDebug;
+		g_rhi->SetViewport(SCR_WIDTH * 0.5f, SCR_HEIGHT * 0.5f, SCR_WIDTH * 0.5f, SCR_HEIGHT * 0.5f);
+		jCamera cam = Elem.GetCamera(SelectSubIndex, (Element::EDirection)DirectionIndex);
+		cam.UpdateCamera();
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		for (auto Elem : SceneElements)
+		{
+			SET_UNIFORM_BUFFER_STATIC(bool, "DrawRadiance", true, shader);
+			SET_UNIFORM_BUFFER_STATIC(Vector, "Diffuse", Elem.MatProp.Diffuse, shader);
+			SET_UNIFORM_BUFFER_STATIC(Vector, "Emission", Vector(0.0f), shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "Area", Elem.area / static_cast<float>(Elem.Subdivision.size() * Elem.Subdivision.size()), shader);
+
+			Elem.Object->Update(deltaTime);
+			Elem.Object->Draw(&cam, shader, {});
+		}
+
+		auto CameraDebug = jPrimitiveUtil::CreateFrustumDebug(&cam);
+
+		// 전체 그리기
+		g_rhi->SetViewport(0.0f, 0.0f, SCR_WIDTH * 0.5f, SCR_HEIGHT * 0.5f);
+
+		MainCamera->UpdateCamera();
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		for (auto Elem : SceneElements)
+		{
+			SET_UNIFORM_BUFFER_STATIC(bool, "DrawRadiance", false, shader);
+			SET_UNIFORM_BUFFER_STATIC(Vector, "Diffuse", Elem.MatProp.Diffuse, shader);
+			SET_UNIFORM_BUFFER_STATIC(Vector, "Emission", Vector(0.0f), shader);
+			SET_UNIFORM_BUFFER_STATIC(float, "Area", Elem.area / static_cast<float>(Elem.Subdivision.size() * Elem.Subdivision.size()), shader);
+
+			Elem.Object->Update(deltaTime);
+			Elem.Object->Draw(MainCamera, shader, {});
+		}
+		CameraDebug->Update(deltaTime);
+		CameraDebug->Draw(MainCamera, shader, {});
+
+		delete CameraDebug;
+	 }
 }
 
 void jGame::UpdateAppSetting()

@@ -41,8 +41,8 @@ using uint64 = unsigned __int64;
 using tchar = wchar_t;
 
 // settings
-const unsigned int SCR_WIDTH = 1280;
-const unsigned int SCR_HEIGHT = 720;
+const unsigned int SCR_WIDTH = 480;
+const unsigned int SCR_HEIGHT = 480;
 
 const unsigned int SM_WIDTH = 1024;
 const unsigned int SM_HEIGHT = 1024;
