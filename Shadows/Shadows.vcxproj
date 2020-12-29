@@ -307,6 +307,8 @@
     <None Include="Shaders\fullscreen\fs_tonemap.glsl" />
     <None Include="Shaders\fullscreen\vs_fullscreen_common.glsl" />
     <None Include="Shaders\radiosity_fs.glsl" />
+    <None Include="Shaders\radiosity_hemisphereprojection_fs.glsl" />
+    <None Include="Shaders\radiosity_hemisphereprojection_vs.glsl" />
     <None Include="Shaders\radiosity_result_fs.glsl" />
     <None Include="Shaders\radiosity_result_vs.glsl" />
     <None Include="Shaders\radiosity_simple_fs.glsl" />

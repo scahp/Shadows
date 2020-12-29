@@ -93,6 +93,8 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("RadiosityResult", "Shaders/radiosity_result_vs.glsl", "Shaders/radiosity_result_fs.glsl");
 		DECLARE_SHADER_VS_FS("RadiositySimple", "Shaders/radiosity_simple_vs.glsl", "Shaders/radiosity_simple_fs.glsl");
 
+		DECLARE_SHADER_VS_FS("RadiosityHemisphereProjection", "Shaders/radiosity_hemisphereprojection_vs.glsl", "Shaders/radiosity_hemisphereprojection_fs.glsl");
+
 	}
 } s_shaderInfoCreation;
 
