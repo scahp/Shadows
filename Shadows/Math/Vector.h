@@ -111,6 +111,22 @@ struct Vector
 
 		return Vector(x / fValue, y / fValue, z / fValue);
 	}
+	
+	FORCEINLINE Vector operator/(Vector const& vector) const
+	{
+		JASSERT(!IsNearlyZero(vector.x));
+		JASSERT(!IsNearlyZero(vector.y));
+		JASSERT(!IsNearlyZero(vector.z));
+
+		if (IsNearlyZero(vector.x))
+			return Vector(ZeroType);
+		if (IsNearlyZero(vector.y))
+			return Vector(ZeroType);
+		if (IsNearlyZero(vector.z))
+			return Vector(ZeroType);
+
+		return Vector(x / vector.x, y / vector.y, z / vector.z);
+	}
 
 	FORCEINLINE Vector& operator/=(float fValue)
 	{

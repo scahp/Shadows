@@ -89,12 +89,14 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("GaussianBlurV", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/fullscreen/fs_blur_gaussian_vertical.glsl");
 
 		DECLARE_SHADER_VS_FS("Graph2D", "shaders/vs_graph.glsl", "shaders/fs_graph.glsl");
+
 		DECLARE_SHADER_VS_FS("Radiosity", "Shaders/radiosity_vs.glsl", "Shaders/radiosity_fs.glsl");
 		DECLARE_SHADER_VS_FS("RadiosityResult", "Shaders/radiosity_result_vs.glsl", "Shaders/radiosity_result_fs.glsl");
 		DECLARE_SHADER_VS_FS("RadiositySimple", "Shaders/radiosity_simple_vs.glsl", "Shaders/radiosity_simple_fs.glsl");
-
 		DECLARE_SHADER_VS_FS("RadiosityHemisphereProjection", "Shaders/radiosity_hemisphereprojection_vs.glsl", "Shaders/radiosity_hemisphereprojection_fs.glsl");
 
+		DECLARE_SHADER_VS_FS("RadiosityDebug", "Shaders/radiosity_debug_vs.glsl", "Shaders/radiosity_debug_fs.glsl");
+		DECLARE_SHADER_VS_FS("RadiosityElementID", "Shaders/radiosity_elementid_vs.glsl", "Shaders/radiosity_elementid_fs.glsl");
 	}
 } s_shaderInfoCreation;
 

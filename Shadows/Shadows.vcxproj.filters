@@ -565,5 +565,17 @@
     <None Include="Shaders\radiosity_hemisphereprojection_vs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\radiosity_debug_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\radiosity_debug_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\radiosity_elementid_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\radiosity_elementid_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

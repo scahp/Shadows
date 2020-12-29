@@ -220,8 +220,8 @@ public:
 	jAmbientLight* Ambient = nullptr;
 	bool UseAmbient = false;
 	jFrustumPlane Frustum;
-	float Width = 0.0f;
-	float Height = 0.0f;
+	int32 Width = 0;
+	int32 Height = 0;
 
 	// todo 현재 렌더 스테이트를 저장하는 객체로 옮길 예정
 	bool IsEnableCullMode = false;

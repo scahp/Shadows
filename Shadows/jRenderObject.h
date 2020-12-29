@@ -26,6 +26,7 @@ public:
 
 	void CreateRenderObject(const std::shared_ptr<jVertexStreamData>& vertexStream, const std::shared_ptr<jIndexStreamData>& indexStream);
 	void UpdateVertexStream(const std::shared_ptr<jVertexStreamData>& vertexStream);
+	void UpdateVertexStream(int32 streamIndex);
 	void UpdateVertexStream();
 
 	//void Draw(const jCamera* camera, const jShader* shader, int32 startIndex = -1, int32 count = -1);

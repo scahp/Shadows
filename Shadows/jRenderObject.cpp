@@ -37,6 +37,11 @@ void jRenderObject::UpdateVertexStream()
 	g_rhi->UpdateVertexBuffer(VertexBuffer, VertexStream);
 }
 
+void jRenderObject::UpdateVertexStream(int32 streamIndex)
+{
+	g_rhi->UpdateVertexBuffer(VertexBuffer, VertexStream->Params[streamIndex], streamIndex);
+}
+
 //void jRenderObject::Draw(const jCamera* camera, const jShader* shader, int32 startIndex, int32 count)
 //{
 //	if (VertexBuffer->VertexStreamData.expired())
