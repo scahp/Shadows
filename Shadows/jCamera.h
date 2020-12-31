@@ -167,6 +167,11 @@ public:
 		RotateCameraAxis(Vector(0.0f, 0.0f, 1.0f), radian);
 	}
 
+	FORCEINLINE Matrix GetViewProjectionMatrix() const
+	{
+		return Projection * View;
+	}
+
 	bool IsInFrustum(const Vector& pos, float radius)
 	{
 		for (auto& iter : Frustum.Planes)

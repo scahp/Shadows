@@ -577,5 +577,26 @@
     <None Include="Shaders\radiosity_elementid_vs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\radiosity_linearcolor_debug_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\radiosity_linearcolor_debug_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\empty_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\quad_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\quad_gs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\quad_radiosity_id_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\quad_radiosity_id_gs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

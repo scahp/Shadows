@@ -96,7 +96,11 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("RadiosityHemisphereProjection", "Shaders/radiosity_hemisphereprojection_vs.glsl", "Shaders/radiosity_hemisphereprojection_fs.glsl");
 
 		DECLARE_SHADER_VS_FS("RadiosityDebug", "Shaders/radiosity_debug_vs.glsl", "Shaders/radiosity_debug_fs.glsl");
-		DECLARE_SHADER_VS_FS("RadiosityElementID", "Shaders/radiosity_elementid_vs.glsl", "Shaders/radiosity_elementid_fs.glsl");
+		DECLARE_SHADER_VS_FS("RadiosityLinearColorDebug", "Shaders/radiosity_linearcolor_debug_vs.glsl", "Shaders/radiosity_linearcolor_debug_fs.glsl");
+		DECLARE_SHADER_VS_FS("RadiosityElementID", "Shaders/radiosity_elementid_vs.glsl", "Shaders/radiosity_elementid_fs.glsl");		
+		
+		DECLARE_SHADER_VS_GS_FS("SimpleQuad", "Shaders/empty_vs.glsl", "Shaders/quad_gs.glsl", "Shaders/quad_fs.glsl");
+		DECLARE_SHADER_VS_GS_FS("RadiosityQuadID", "Shaders/empty_vs.glsl", "Shaders/quad_radiosity_id_gs.glsl", "Shaders/quad_radiosity_id_fs.glsl");
 	}
 } s_shaderInfoCreation;
 

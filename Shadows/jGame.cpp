@@ -59,9 +59,15 @@ void jGame::Setup()
 	//const Vector mainCameraPos(110.321266f, 98.3155670f, -198.161148f);
 	//const Vector mainCameraTarget(110.311089f, 98.3600845f, -197.162262f);
 	//const Vector mainCameraUp(110.321724f, 99.3145294f, -198.205750f);
-	const Vector mainCameraPos(100.015862f, 117.436371f, 401.567474f);
-	const Vector mainCameraTarget(100.047562f, 117.411041f, 400.568176f);
-	const Vector mainCameraUp(100.016640f, 118.436211f, 401.542267f);
+
+	Vector mainCameraPos(100.015862f, 117.436371f, 401.567474f);
+	Vector mainCameraTarget(100.047562f, 117.411041f, 400.568176f);
+	Vector mainCameraUp(100.016640f, 118.436211f, 401.542267f);
+
+	//mainCameraPos.x = 249.691452; mainCameraPos.y = 186.690109; mainCameraPos.z = 104.297935;
+	//mainCameraTarget.x = 248.695450; mainCameraTarget.y = 186.614731; mainCameraTarget.z = 104.345070;
+	//mainCameraUp.x = 249.616226; mainCameraUp.y = 187.687225; mainCameraUp.z = 104.301460;
+
 	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraUp, DegreeToRadian(60.0f), 10.0f, 5000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
 
@@ -210,12 +216,13 @@ namespace Radiosity
 		double Threshold = 0.0001;
 		std::vector<Patch> Patches;
 		std::vector<Element> Elements;
-		std::vector<Vector> Vertices;
+		std::vector<Vector> AllVertices;
+		std::vector<Vector> AllColors;
 		jCamera* DisplayCamera = nullptr;
 		uint32 HemicubeResolution = 512;
-		float WorldSize = 1000.0f;
+		float WorldSize = 500.0f;
 		float IntensityScale = 20.0f;
-		int32 AddAmbient = 0;
+		int32 AddAmbient = 1;
 
 		double TotalEnergy = 0.0;
 		std::vector<double> Formfactors;
@@ -229,31 +236,36 @@ namespace Radiosity
 	Vector red = { 0.80f, 0.10f, 0.075f };
 	Vector yellow = { 0.9f, 0.8f, 0.1f };
 	Vector blue = { 0.075f, 0.10f, 0.35f };
+	Vector green = { 0.075f, 0.8f, 0.1f };
+	//Vector red = { 1.0f, 0.0f, 0.0f };
+	//Vector yellow = { 1.0f, 1.0f, 0.0f };
+	//Vector blue = { 0.0f, 0.0f, 1.0f };
+	//Vector green = { 0.0f, 1.0f, 0.0f };
 	Vector white = { 1.0f, 1.0f, 1.0f };
 	Vector lightGrey = { 0.9f, 0.9f, 0.9f };
 	Vector black = { 0.0f, 0.0f, 0.0f };
 
 #define numberOfPolys 	19
 	Quad roomPolys[numberOfPolys] = {
-		{{4, 5, 6, 7}, 2, 8, 216 * 215, {0, -1, 0}, lightGrey, black}, /* ceiling */
-		{{0, 3, 2, 1}, 3, 8, 216 * 215, {0, 1, 0}, lightGrey, black}, /* floor */
-		{{0, 4, 7, 3}, 2, 8, 221 * 215, {1, 0, 0}, red, black}, /* wall */
-		{{0, 1, 5, 4}, 2, 8, 221 * 216, {0, 0, 1}, lightGrey, black}, /* wall */
-		{{2, 6, 5, 1}, 2, 8, 221 * 215, {-1, 0, 0}, blue, black}, /* wall */
-		{{2, 3, 7, 6}, 2, 8, 221 * 216, {0, 0,-1}, lightGrey, black}, /* ADDED wall */
-		{{8, 9, 10, 11}, 2, 1, 40 * 45, {0, -1, 0}, black, white}, /* light */
-		{{16, 19, 18, 17}, 1, 5, 65 * 65, {0, 1, 0}, yellow, black}, /* box 1 */
-		{{12, 13, 14, 15}, 1, 1, 65 * 65, {0, -1, 0}, yellow, black},
-		{{12, 15, 19, 16}, 1, 5, 65 * 65, {-0.866, 0, -0.5}, yellow, black},
-		{{12, 16, 17, 13}, 1, 5, 65 * 65, {0.5, 0, -0.866}, yellow, black},
-		{{14, 13, 17, 18}, 1, 5, 65 * 65, {0.866, 0, 0.5}, yellow, black},
-		{{14, 18, 19, 15}, 1, 5, 65 * 65, {-0.5, 0, 0.866}, yellow, black},
-		{{24, 27, 26, 25}, 1, 5, 65 * 65, {0, 1, 0}, lightGrey, black}, /* box 2 */
-		{{20, 21, 22, 23}, 1, 1, 65 * 65, {0, -1, 0}, lightGrey, black},
-		{{20, 23, 27, 24}, 1, 6, 65 * 130, {-0.866, 0, -0.5}, lightGrey, black},
-		{{20, 24, 25, 21}, 1, 6, 65 * 130, {0.5, 0, -0.866}, lightGrey, black},
-		{{22, 21, 25, 26}, 1, 6, 65 * 130, {0.866, 0, 0.5}, lightGrey, black},
-		{{22, 26, 27, 23}, 1, 6, 65 * 130, {-0.5, 0, 0.866}, lightGrey, black},
+		{{4, 5, 6, 7},		2, 8, 216 * 215, {0, -1, 0}, lightGrey, black}, /* ceiling */
+		{{0, 3, 2, 1},		3, 8, 216 * 215, {0, 1, 0}, lightGrey, black}, /* floor */
+		{{0, 4, 7, 3},		2, 8, 221 * 215, {1, 0, 0}, red, black}, /* wall */
+		{{0, 1, 5, 4},		2, 8, 221 * 216, {0, 0, 1}, lightGrey, black}, /* wall */
+		{{2, 6, 5, 1},		2, 8, 221 * 215, {-1, 0, 0}, green, black}, /* wall */
+		{{2, 3, 7, 6},		2, 8, 221 * 216, {0, 0,-1}, lightGrey, black}, /* ADDED wall */
+		{{8, 9, 10, 11},	2, 1, 40 * 45, {0, -1, 0}, black, white}, /* light */
+		{{16, 19, 18, 17},	1, 5, 65 * 65, {0, 1, 0}, yellow, black}, /* box 1 */
+		{{12, 13, 14, 15},	1, 1, 65 * 65, {0, -1, 0}, yellow, black},
+		{{12, 15, 19, 16},	1, 5, 65 * 65, {-0.866, 0, -0.5}, yellow, black},
+		{{12, 16, 17, 13},	1, 5, 65 * 65, {0.5, 0, -0.866}, yellow, black},
+		{{14, 13, 17, 18},	1, 5, 65 * 65, {0.866, 0, 0.5}, yellow, black},
+		{{14, 18, 19, 15},	1, 5, 65 * 65, {-0.5, 0, 0.866}, yellow, black},
+		{{24, 27, 26, 25},	1, 5, 65 * 65, {0, 1, 0}, lightGrey, black}, /* box 2 */
+		{{20, 21, 22, 23},	1, 1, 65 * 65, {0, -1, 0}, lightGrey, black},
+		{{20, 23, 27, 24},	1, 6, 65 * 130, {-0.866, 0, -0.5}, lightGrey, black},
+		{{20, 24, 25, 21},	1, 6, 65 * 130, {0.5, 0, -0.866}, lightGrey, black},
+		{{22, 21, 25, 26},	1, 6, 65 * 130, {0.866, 0, 0.5}, lightGrey, black},
+		{{22, 26, 27, 23},	1, 6, 65 * 130, {-0.5, 0, 0.866}, lightGrey, black},
 	};
 
 	Vector roomPoints[] = {
@@ -330,7 +342,8 @@ Radiosity::InputParams* InitInputParams()
 		const int32 VerticesWidth = Radiosity::roomPolys[i].ElementLevel * Radiosity::roomPolys[i].PatchLevel + 1;
 		NumOfVertices += VerticesWidth * VerticesWidth;
 	}
-	Params->Vertices.resize(NumOfVertices);
+	Params->AllVertices.resize(NumOfVertices);
+	Params->AllColors.resize(NumOfVertices, Vector::ZeroVector);
 
 	int32 VertexIndex = 0;
 	int32 ElementIndex = 0;
@@ -363,7 +376,7 @@ Radiosity::InputParams* InitInputParams()
 				for (int32 m = 0; m < nv; ++m)
 				{
 					double v = m * dv;
-					Params->Vertices[VertexIndex++] = UVToXYZ(Vertices, u, v);
+					Params->AllVertices[VertexIndex++] = UVToXYZ(Vertices, u, v);
 					++NumOfCurQuadVertices;
 				}
 			}
@@ -388,15 +401,15 @@ Radiosity::InputParams* InitInputParams()
 					CurElement.Indices.resize(4);
 					
 					//CurElement.Indices[0] = VertexOffset + k * (nv + 1) + m;
-					//CurElement.Indices[1] = VertexOffset + (k+1) * (nv + 1) + m;
-					//CurElement.Indices[2] = VertexOffset + (k+1) * (nv + 1) + (m+1);
-					//CurElement.Indices[3] = VertexOffset + k * (nv + 1) + (m+1);
-					
+					//CurElement.Indices[1] = VertexOffset + (k + 1) * (nv + 1) + m;
+					//CurElement.Indices[2] = VertexOffset + (k + 1) * (nv + 1) + (m + 1);
+					//CurElement.Indices[3] = VertexOffset + k * (nv + 1) + (m + 1);
+
 					CurElement.Indices[0] = VertexOffset + k * (nv + 1) + m;
 					CurElement.Indices[1] = VertexOffset + k * (nv + 1) + (m + 1);
 					CurElement.Indices[2] = VertexOffset + (k + 1) * (nv + 1) + m;
 					CurElement.Indices[3] = VertexOffset + (k + 1) * (nv + 1) + (m + 1);
-					
+
 					CurElement.Area = CurQuad.Area / (nu * nv);
 
 					float fi = k / (float)nu;
@@ -426,7 +439,7 @@ Radiosity::InputParams* InitInputParams()
 					CurPatch.Normal = CurQuad.Normal;
 					CurPatch.Reflectance = CurQuad.Reflectance;
 					CurPatch.Emission = CurQuad.Emission;
-					CurPatch.Area = CurQuad.Area / (nu, nv);
+					CurPatch.Area = CurQuad.Area / (nu * nv);
 				}
 			}
 		}
@@ -477,14 +490,15 @@ void InitRadiosity(Radiosity::InputParams* InParams)
 		double halfRes = Res / 2.0;
 		for (int32 i = 0; i < halfRes; ++i)
 		{
-			double di = i;
+			double di = i - halfRes*0.5;
 			double y = (halfRes - (di + 0.5)) / halfRes;
+			//double y = (di + 0.5) / halfRes;
 			double ySq = y * y;
 			for (int32 k = 0; k < halfRes; ++k)
 			{
 				double dk = k;
-				double xSq = (halfRes - (dk + 0.5)) / halfRes;
-				xSq *= xSq;
+				double x = (halfRes - (dk + 0.5)) / halfRes;
+				double xSq = x * x;
 				double xy1Sq = xSq + ySq + 1.0;
 				xy1Sq *= xy1Sq;
 				InParams->SideFactors[Index++] = y / (xy1Sq * PI * halfRes * halfRes);
@@ -536,6 +550,7 @@ void SumFactors(Radiosity::InputParams* InParams, bool InIsTop)
 	int32 ResX = InParams->HemicubeCamera->Width;
 	int32 ResY = InParams->HemicubeCamera->Height;
 	int32 StartY = 0;
+	int32 EndY = ResY;
 	if (!InIsTop)
 		StartY = ResY / 2;
 
@@ -543,13 +558,14 @@ void SumFactors(Radiosity::InputParams* InParams, bool InIsTop)
 
 	int32 HalfResX = ResX / 2;
 
-	for (int32 i = StartY; i < ResY; ++i)
+	for (int32 i = StartY; i < EndY; ++i)
 	{
 		int32 indexY;
 		if (i < HalfResX)
 			indexY = i;
 		else
 			indexY = (HalfResX - 1 - (i % HalfResX));
+		indexY *= HalfResX;
 
 		register unsigned long int current_backItem = kBackgroundItem;
 
@@ -569,56 +585,179 @@ void SumFactors(Radiosity::InputParams* InParams, bool InIsTop)
 	}
 }
 
-void DrawQuadWithID(const std::vector<Vector>& InVertices, const Vector& InNormal, int32 InID
-	, jCamera* InCamera, jShader* InShader)
-{
-	JASSERT(InShader);
+//void DrawQuadWithID(const std::vector<Vector>& InVertices, const Vector& InNormal, int32 InID
+//	, jCamera* InCamera, jShader* InShader)
+//{
+//	JASSERT(InShader);
+//
+//	g_rhi->SetShader(InShader);
+//	SET_UNIFORM_BUFFER_STATIC(Vector, "Normal", InNormal, InShader);
+//	SET_UNIFORM_BUFFER_STATIC(Vector, "CameraPos", InCamera->Pos, InShader);
+//	SET_UNIFORM_BUFFER_STATIC(int32, "ID", InID, InShader);
+//
+//	static jObject* QuadObject = nullptr;
+//	static bool InitializedDrawQuad = false;
+//	if (!InitializedDrawQuad)
+//	{
+//		// attribute 추가
+//		auto vertexStreamData = std::shared_ptr<jVertexStreamData>(new jVertexStreamData());
+//		{
+//			auto streamParam = new jStreamParam<float>();
+//			streamParam->BufferType = EBufferType::STATIC;
+//			streamParam->ElementTypeSize = sizeof(float);
+//			streamParam->ElementType = EBufferElementType::FLOAT;
+//			streamParam->Stride = sizeof(float) * 3;
+//			streamParam->Name = "Pos";
+//			streamParam->Data.resize(InVertices.size() * 4);
+//			memcpy(&streamParam->Data[0], &InVertices[0], sizeof(Vector) * 4);
+//			vertexStreamData->Params.push_back(streamParam);
+//		}
+//
+//		vertexStreamData->PrimitiveType = EPrimitiveType::TRIANGLE_STRIP;
+//		vertexStreamData->ElementCount = InVertices.size();
+//
+//		auto renderObject = new jRenderObject();
+//		renderObject->CreateRenderObject(vertexStreamData, nullptr);
+//		renderObject->Pos = Vector::ZeroVector;
+//		renderObject->Scale = Vector::OneVector;
+//
+//		QuadObject = new jObject();
+//		QuadObject->RenderObject = renderObject;
+//
+//		InitializedDrawQuad = true;
+//	}
+//	jStreamParam<float>* Stream = static_cast<jStreamParam<float>*>(QuadObject->RenderObject->VertexStream->Params[0]);
+//	if (Stream)
+//	{
+//		memcpy(&Stream->Data[0], &InVertices[0], sizeof(Vector) * 4);
+//		QuadObject->RenderObject->UpdateVertexStream(0);
+//	}
+//
+//	static std::list<const jLight*> EmtpyLights;
+//	QuadObject->Draw(InCamera, InShader, EmtpyLights);
+//}
 
-	g_rhi->SetShader(InShader);
-	SET_UNIFORM_BUFFER_STATIC(Vector, "Normal", InNormal, InShader);
-	SET_UNIFORM_BUFFER_STATIC(int32, "ID", InID, InShader);
+//void DrawQuad(const std::vector<Vector>& InVertices, const Vector& InNormal, const Vector4& InColor
+//	, jCamera* InCamera)
+//{
+//	jShader* shader = jShader::GetShader("RadiosityDebug");
+//	JASSERT(shader);
+//
+//	g_rhi->SetShader(shader);
+//
+//	SET_UNIFORM_BUFFER_STATIC(Vector, "Normal", InNormal, shader);
+//	SET_UNIFORM_BUFFER_STATIC(Vector4, "ColorTest", InColor, shader);
+//
+//	static jObject* QuadObject = nullptr;
+//	static bool InitializedDrawQuad = false;
+//	if (!InitializedDrawQuad)
+//	{
+//		// attribute 추가
+//		auto vertexStreamData = std::shared_ptr<jVertexStreamData>(new jVertexStreamData());
+//		{
+//			auto streamParam = new jStreamParam<float>();
+//			streamParam->BufferType = EBufferType::STATIC;
+//			streamParam->ElementTypeSize = sizeof(float);
+//			streamParam->ElementType = EBufferElementType::FLOAT;
+//			streamParam->Stride = sizeof(float) * 3;
+//			streamParam->Name = "Pos";
+//			streamParam->Data.resize(InVertices.size() * 4);
+//			memcpy(&streamParam->Data[0], &InVertices[0], sizeof(Vector) * 4);
+//			vertexStreamData->Params.push_back(streamParam);
+//		}
+//
+//		vertexStreamData->PrimitiveType = EPrimitiveType::TRIANGLE_STRIP;
+//		vertexStreamData->ElementCount = InVertices.size();
+//
+//		auto renderObject = new jRenderObject();
+//		renderObject->CreateRenderObject(vertexStreamData, nullptr);
+//		renderObject->Pos = Vector::ZeroVector;
+//		renderObject->Scale = Vector::OneVector;
+//
+//		QuadObject = new jObject();
+//		QuadObject->RenderObject = renderObject;
+//
+//		InitializedDrawQuad = true;
+//	}
+//	jStreamParam<float>* Stream = static_cast<jStreamParam<float>*>(QuadObject->RenderObject->VertexStream->Params[0]);
+//	if (Stream)
+//	{
+//		memcpy(&Stream->Data[0], &InVertices[0], sizeof(Vector) * 4);
+//		QuadObject->RenderObject->UpdateVertexStream(0);
+//	}
+//
+//	static std::list<const jLight*> EmtpyLights;
+//	QuadObject->Draw(InCamera, shader, EmtpyLights);
+//}
 
-	static jObject* QuadObject = nullptr;
-	static bool InitializedDrawQuad = false;
-	if (!InitializedDrawQuad)
-	{
-		// attribute 추가
-		auto vertexStreamData = std::shared_ptr<jVertexStreamData>(new jVertexStreamData());
-		{
-			auto streamParam = new jStreamParam<float>();
-			streamParam->BufferType = EBufferType::STATIC;
-			streamParam->ElementTypeSize = sizeof(float);
-			streamParam->ElementType = EBufferElementType::FLOAT;
-			streamParam->Stride = sizeof(float) * 3;
-			streamParam->Name = "Pos";
-			streamParam->Data.resize(InVertices.size() * 4);
-			memcpy(&streamParam->Data[0], &InVertices[0], sizeof(Vector) * 4);
-			vertexStreamData->Params.push_back(streamParam);
-		}
-
-		vertexStreamData->PrimitiveType = EPrimitiveType::TRIANGLE_STRIP;
-		vertexStreamData->ElementCount = InVertices.size();
-
-		auto renderObject = new jRenderObject();
-		renderObject->CreateRenderObject(vertexStreamData, nullptr);
-		renderObject->Pos = Vector::ZeroVector;
-		renderObject->Scale = Vector::OneVector;
-
-		QuadObject = new jObject();
-		QuadObject->RenderObject = renderObject;
-
-		InitializedDrawQuad = true;
-	}
-	jStreamParam<float>* Stream = static_cast<jStreamParam<float>*>(QuadObject->RenderObject->VertexStream->Params[0]);
-	if (Stream)
-	{
-		memcpy(&Stream->Data[0], &InVertices[0], sizeof(Vector) * 4);
-		QuadObject->RenderObject->UpdateVertexStream(0);
-	}
-
-	static std::list<const jLight*> EmtpyLights;
-	QuadObject->Draw(InCamera, InShader, EmtpyLights);
-}
+//void DrawQuad(const std::vector<Vector>& InVertices, const std::vector<Vector4>& InColors, const Vector& InNormal, jCamera* InCamera)
+//{
+//	jShader* shader = jShader::GetShader("RadiosityLinearColorDebug");
+//	JASSERT(shader);
+//
+//	g_rhi->SetShader(shader);
+//
+//	SET_UNIFORM_BUFFER_STATIC(Vector, "Normal", InNormal, shader);
+//
+//	static jObject* QuadObject = nullptr;
+//	static bool InitializedDrawQuad = false;
+//	if (!InitializedDrawQuad)
+//	{
+//		// attribute 추가
+//		auto vertexStreamData = std::shared_ptr<jVertexStreamData>(new jVertexStreamData());
+//		{
+//			auto streamParam = new jStreamParam<float>();
+//			streamParam->BufferType = EBufferType::STATIC;
+//			streamParam->ElementTypeSize = sizeof(float);
+//			streamParam->ElementType = EBufferElementType::FLOAT;
+//			streamParam->Stride = sizeof(float) * 3;
+//			streamParam->Name = "Pos";
+//			streamParam->Data.resize(InVertices.size() * 4);
+//			memcpy(&streamParam->Data[0], &InVertices[0], sizeof(Vector) * 4);
+//			vertexStreamData->Params.push_back(streamParam);
+//		}
+//
+//		{
+//			auto streamParam = new jStreamParam<float>();
+//			streamParam->BufferType = EBufferType::STATIC;
+//			streamParam->ElementTypeSize = sizeof(float);
+//			streamParam->ElementType = EBufferElementType::FLOAT;
+//			streamParam->Stride = sizeof(float) * 4;
+//			streamParam->Name = "Color";
+//			streamParam->Data.resize(InVertices.size() * 4);
+//			memcpy(&streamParam->Data[0], &InColors[0], sizeof(Vector4) * 4);
+//			vertexStreamData->Params.push_back(streamParam);
+//		}
+//
+//		vertexStreamData->PrimitiveType = EPrimitiveType::TRIANGLE_STRIP;
+//		vertexStreamData->ElementCount = InVertices.size();
+//
+//		auto renderObject = new jRenderObject();
+//		renderObject->CreateRenderObject(vertexStreamData, nullptr);
+//		renderObject->Pos = Vector::ZeroVector;
+//		renderObject->Scale = Vector::OneVector;
+//
+//		QuadObject = new jObject();
+//		QuadObject->RenderObject = renderObject;
+//
+//		InitializedDrawQuad = true;
+//	}
+//	jStreamParam<float>* Stream = static_cast<jStreamParam<float>*>(QuadObject->RenderObject->VertexStream->Params[0]);
+//	if (Stream)
+//	{
+//		memcpy(&Stream->Data[0], &InVertices[0], sizeof(Vector) * 4);
+//		QuadObject->RenderObject->UpdateVertexStream(0);
+//	}
+//	jStreamParam<float>* Stream2 = static_cast<jStreamParam<float>*>(QuadObject->RenderObject->VertexStream->Params[1]);
+//	if (Stream2)
+//	{
+//		memcpy(&Stream2->Data[0], &InColors[0], sizeof(Vector4) * 4);
+//		QuadObject->RenderObject->UpdateVertexStream(1);
+//	}
+//
+//	static std::list<const jLight*> EmtpyLights;
+//	QuadObject->Draw(InCamera, shader, EmtpyLights);
+//}
 
 void ComputeFormfactors(int32 InShootPatchIndex, Radiosity::InputParams* InParams)
 {
@@ -637,7 +776,11 @@ void ComputeFormfactors(int32 InShootPatchIndex, Radiosity::InputParams* InParam
 	{
 		do
 		{
-			Vector RandVec(((float)rand() / float(RAND_MAX)), ((float)rand() / float(RAND_MAX)), ((float)rand() / float(RAND_MAX)));
+			//Vector RandVec(((float)rand() / float(RAND_MAX)), ((float)rand() / float(RAND_MAX)), ((float)rand() / float(RAND_MAX)));
+			Vector RandVec = Vector::UpVector;
+			auto temp = Normal.DotProduct(RandVec);
+			if (fabs(temp) > 0.9 )
+				RandVec = Vector::FowardVector;
 			TangentU = Normal.CrossProduct(RandVec).GetNormalize();
 
 		} while (TangentU.Length() == 0);
@@ -651,19 +794,19 @@ void ComputeFormfactors(int32 InShootPatchIndex, Radiosity::InputParams* InParam
 	Vector Up[5];
 
 	LookAt[0] = Center + Normal;
-	Up[0] = TangentU;
+	Up[0] = Center + TangentU;
 
 	LookAt[1] = Center + TangentU;
-	Up[1] = Normal;
+	Up[1] = Center + Normal;
 
 	LookAt[2] = Center + TangentV;
-	Up[2] = Normal;
+	Up[2] = Center + Normal;
 
 	LookAt[3] = Center - TangentU;
-	Up[3] = Normal;
+	Up[3] = Center + Normal;
 
 	LookAt[4] = Center - TangentV;
-	Up[4] = Normal;
+	Up[4] = Center + Normal;
 
 	for (int32 i = 0; i < InParams->Formfactors.size(); ++i)
 		InParams->Formfactors[i] = 0.0;
@@ -672,8 +815,8 @@ void ComputeFormfactors(int32 InShootPatchIndex, Radiosity::InputParams* InParam
 	InParams->HemicubeCamera->Pos = Center + (Normal * InParams->WorldSize * 0.00000001);
 
 	static std::vector<Vector> Vertices(4, Vector::ZeroVector);
-	jShader* shader = jShader::GetShader("RadiosityElementID");
-	g_rhi->SetShader(shader);
+	//jShader* shader = jShader::GetShader("RadiosityElementID");
+	//g_rhi->SetShader(shader);
 
 	static std::shared_ptr<jRenderTarget> RenderTarget = jRenderTargetPool::GetRenderTarget(
 		{ ETextureType::TEXTURE_2D, ETextureFormat::R32F, ETextureFormat::R, EFormatType::FLOAT
@@ -681,21 +824,22 @@ void ComputeFormfactors(int32 InShootPatchIndex, Radiosity::InputParams* InParam
 
 	// 전체 그리기
 	//for (int32 face = 0; face < 5; ++face)
-	{
-		//static int32 face = 0;
-		//InParams->HemicubeCamera->Target = LookAt[face];
-		//InParams->HemicubeCamera->Up = Up[face];
+		static int32 face = 1;
+	//if (0)
+	//{
+	//	InParams->HemicubeCamera->Target = LookAt[face];
+	//	InParams->HemicubeCamera->Up = Up[face];
 
-		//InParams->HemicubeCamera->UpdateCamera();
-		//auto CameraDebug = jPrimitiveUtil::CreateFrustumDebug(InParams->HemicubeCamera);
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		//shader = jShader::GetShader("Simple");
-		//CameraDebug->Update(0.0f);
-		//CameraDebug->Draw(InParams->DisplayCamera, jShader::GetShader("Simple"), {});
-		//delete CameraDebug;
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		//return;
-	}
+	//	InParams->HemicubeCamera->UpdateCamera();
+	//	auto CameraDebug = jPrimitiveUtil::CreateFrustumDebug(InParams->HemicubeCamera);
+	//	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	//	shader = jShader::GetShader("Simple");
+	//	CameraDebug->Update(0.0f);
+	//	CameraDebug->Draw(InParams->DisplayCamera, jShader::GetShader("Simple"), {});
+	//	delete CameraDebug;
+	//	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	//	//return;
+	//}
 
 	char szTemp[1024];
 	for (int32 face = 0; face < 5; ++face)
@@ -713,19 +857,40 @@ void ComputeFormfactors(int32 InShootPatchIndex, Radiosity::InputParams* InParam
 			g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
 			g_rhi->EnableCullFace(true);
 			g_rhi->EnableDepthTest(true);
+			
+			jShader* shader = jShader::GetShader("RadiosityQuadID");
+			g_rhi->SetShader(shader);
+			SET_UNIFORM_BUFFER_STATIC(Vector, "CameraPos", InParams->HemicubeCamera->Pos, shader);
+			SET_UNIFORM_BUFFER_STATIC(Matrix, "MVP", InParams->HemicubeCamera->GetViewProjectionMatrix(), shader);
+			SET_UNIFORM_BUFFER_STATIC(Matrix, "M", Matrix(IdentityType), shader);
 
 			for (int32 i = 0; i < InParams->Elements.size(); ++i)
 			{
+				if (InParams->Elements[i].ParentPatch == &ShootPatch)
+					continue;
+
 				for (int32 k = 0; k < InParams->Elements[i].Indices.size(); ++k)
 				{
 					int32 Index = InParams->Elements[i].Indices[k];
-					Vertices[k] = (InParams->Vertices[Index]);
+					Vertices[k] = (InParams->AllVertices[Index]);
 				}
-				DrawQuadWithID(Vertices, InParams->Elements[i].Normal, i, InParams->HemicubeCamera, shader);
+				//DrawQuadWithID(Vertices, InParams->Elements[i].Normal, i, InParams->HemicubeCamera, shader);
+				//float Temp = (float)i / InParams->Elements.size();
+				//DrawQuad(Vertices, InParams->Elements[i].Normal, Vector4(Vector(Temp), 1.0), InParams->HemicubeCamera);
+
+				SET_UNIFORM_BUFFER_STATIC(int32, "ID", i, shader);
+				SET_UNIFORM_BUFFER_STATIC(Vector, "Normal", InParams->Elements[i].Normal, shader);
+
+				SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[0]", Vertices[0], shader);
+				SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[1]", Vertices[1], shader);
+				SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[2]", Vertices[2], shader);
+				SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[3]", Vertices[3], shader);
+
+				g_rhi->DrawArrays(EPrimitiveType::POINTS, 0, 1);
 			}
-				
 			RenderTarget->End();
 		}
+		//return;
 
 		InParams->CurrentBuffer.resize(RenderTarget->Info.Width * RenderTarget->Info.Height);
 		jTexture_OpenGL* Tex = (jTexture_OpenGL*)RenderTarget->GetTexture();
@@ -767,6 +932,7 @@ void DistributeRadiosity(int32 InShootPatchIndex, Radiosity::InputParams* InPara
 			continue;
 
 		Vector DeltaRadiosity = ShootPatch.UnShotRadiosity * (InParams->Formfactors[i] * InParams->Elements[i].ParentPatch->Reflectance);
+		//Vector DeltaRadiosity = ShootPatch.UnShotRadiosity * InParams->Elements[i].ParentPatch->Reflectance;
 
 		/* incremental element's radiosity and patch's unshot radiosity */
 		double w = InParams->Elements[i].Area / InParams->Elements[i].ParentPatch->Area;
@@ -810,66 +976,12 @@ Vector GetAmbient(Radiosity::InputParams* InParams)
 	return Ambient;
 }
 
-void DrawQuad(const std::vector<Vector>& InVertices, const Vector& InNormal, const Vector4& InColor
-	, jCamera* InCamera, jShader* InShader)
-{
-	JASSERT(InShader);
-
-	g_rhi->SetShader(InShader);
-	SET_UNIFORM_BUFFER_STATIC(Vector, "Normal", InNormal, InShader);
-	SET_UNIFORM_BUFFER_STATIC(Vector4, "ColorTest", InColor, InShader);
-
-	static jObject* QuadObject = nullptr;
-	static bool InitializedDrawQuad = false;
-	if (!InitializedDrawQuad)
-	{
-		// attribute 추가
-		auto vertexStreamData = std::shared_ptr<jVertexStreamData>(new jVertexStreamData());
-		{
-			auto streamParam = new jStreamParam<float>();
-			streamParam->BufferType = EBufferType::STATIC;
-			streamParam->ElementTypeSize = sizeof(float);
-			streamParam->ElementType = EBufferElementType::FLOAT;
-			streamParam->Stride = sizeof(float) * 3;
-			streamParam->Name = "Pos";
-			streamParam->Data.resize(InVertices.size() * 4);
-			memcpy(&streamParam->Data[0], &InVertices[0], sizeof(Vector) * 4);
-			vertexStreamData->Params.push_back(streamParam);
-		}
-
-		vertexStreamData->PrimitiveType = EPrimitiveType::TRIANGLE_STRIP;
-		vertexStreamData->ElementCount = InVertices.size();
-
-		auto renderObject = new jRenderObject();
-		renderObject->CreateRenderObject(vertexStreamData, nullptr);
-		renderObject->Pos = Vector::ZeroVector;
-		renderObject->Scale = Vector::OneVector;
-		
-		QuadObject = new jObject();
-		QuadObject->RenderObject = renderObject;
-
-		InitializedDrawQuad = true;
-	}
-	jStreamParam<float>* Stream = static_cast<jStreamParam<float>*>(QuadObject->RenderObject->VertexStream->Params[0]);
-	if (Stream)
-	{
-		memcpy(&Stream->Data[0], &InVertices[0], sizeof(Vector) * 4);
-		QuadObject->RenderObject->UpdateVertexStream(0);
-	}
-
-	static std::list<const jLight*> EmtpyLights;
-	QuadObject->Draw(InCamera, InShader, EmtpyLights);
-}
-
-void DisplayResults(Radiosity::InputParams* InParams)
+void DisplayResults(Radiosity::InputParams* InParams, int32 InSelectedPatch = -1, bool InIsUpdated = false)
 {
 	SCOPE_PROFILE(DisplayResults);
 	Vector Ambient = GetAmbient(InParams);
 
 	InParams->DisplayCamera->UpdateCamera();
-
-	jShader* shader = jShader::GetShader("RadiosityDebug");
-	g_rhi->SetShader(shader);
 
 	//g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	//g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
@@ -879,31 +991,70 @@ void DisplayResults(Radiosity::InputParams* InParams)
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	static std::vector<Vector> Vertices(4, Vector::ZeroVector);
+	static std::vector<Vector4> Colors(4, Vector4::ZeroVector);
+	static std::vector<int32> SummedCount(InParams->AllVertices.size(), 0);
+
+	//if (InIsUpdated)
+	{
+		//InParams->AllColors.resize(InParams->AllVertices.size(), Vector::ZeroVector);
+		//SummedCount.resize(InParams->AllVertices.size(), 0);
+		memset(&InParams->AllColors[0], 0, InParams->AllColors.size() * sizeof(Vector));
+		memset(&SummedCount[0], 0, SummedCount.size() * sizeof(int32));
+
+		for (int32 i = 0; i < InParams->Elements.size(); ++i)
+		{
+			Vector Color;
+			if (InParams->AddAmbient)
+				Color = (InParams->Elements[i].Radiosity + (Ambient * InParams->Elements[i].ParentPatch->Reflectance)) * InParams->IntensityScale;
+			else
+				Color = InParams->Elements[i].Radiosity * InParams->IntensityScale;
+
+			for (int32 k = 0; k < InParams->Elements[i].Indices.size(); ++k)
+			{
+				int32 Index = InParams->Elements[i].Indices[k];
+				InParams->AllColors[Index] += Color;
+				++SummedCount[Index];
+			}
+		}
+	}
+
+	jShader* shader = jShader::GetShader("SimpleQuad");
+	g_rhi->SetShader(shader);
+
+	SET_UNIFORM_BUFFER_STATIC(Matrix, "MVP", InParams->DisplayCamera->GetViewProjectionMatrix(), shader);
 
 	for (int32 i = 0; i < InParams->Elements.size(); ++i)
 	{
-		Vector Color;
-		if (InParams->AddAmbient)
-		{
-			Color = InParams->Elements[i].Radiosity + (Ambient * InParams->Elements[i].ParentPatch->Reflectance) * InParams->IntensityScale;
-		}
-		else
-		{
-			Color = InParams->Elements[i].Radiosity * InParams->IntensityScale;
-		}
-
+		if ((InSelectedPatch != -1) && (&InParams->Patches[InSelectedPatch] != InParams->Elements[i].ParentPatch))
+			continue;
+			
 		Vector Normal = InParams->Elements[i].Normal;
 		for (int32 k = 0; k < InParams->Elements[i].Indices.size(); ++k)
 		{
 			int32 Index = InParams->Elements[i].Indices[k];
-			Vertices[k] = (InParams->Vertices[Index]);
+			Vertices[k] = (InParams->AllVertices[Index]);
+			Colors[k] = Vector4(InParams->AllColors[Index] / (float)SummedCount[Index], 1.0);
 		}
 
 		float Temp = (float)i / InParams->Elements.size();
-		//DrawQuad(Vertices, InParams->Elements[i].Normal, Vector4(Vector(Temp), 1.0), InParams->DisplayCamera, shader);
-		DrawQuad(Vertices, InParams->Elements[i].Normal, Vector4(Color, 1.0), InParams->DisplayCamera, shader);
+		//DrawQuad(Vertices, InParams->Elements[i].Normal, Vector4(Vector(Temp), 1.0), InParams->DisplayCamera);
+		//DrawQuad(Vertices, InParams->Elements[i].Normal, MaxColors[i], InParams->DisplayCamera);
 		//DrawQuad(Vertices, InParams->Elements[i].Normal, Vector4(InParams->Elements[i].ParentPatch->Reflectance, 1.0)
 		//	, InParams->DisplayCamera, shader);
+		
+		//DrawQuad(Vertices, Colors, Normal, InParams->DisplayCamera);
+
+		SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[0]", Vertices[0], shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[1]", Vertices[1], shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[2]", Vertices[2], shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[3]", Vertices[3], shader);
+
+		SET_UNIFORM_BUFFER_STATIC(Vector4, "Color[0]", Colors[0], shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector4, "Color[1]", Colors[1], shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector4, "Color[2]", Colors[2], shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector4, "Color[3]", Colors[3], shader);
+
+		g_rhi->DrawArrays(EPrimitiveType::POINTS, 0, 1);
 	}
 }
 
@@ -937,14 +1088,29 @@ void jGame::Update(float deltaTime)
 	g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
 
-
-	int32 FoundShootPatch = FindShootPatch(RadiosityParams);
-	if (FoundShootPatch != -1)
+	int32 a = 1;
+	bool Updated = false;
+	int32 FoundShootPatch = 23;
+	while (a--)
 	{
-		ComputeFormfactors(FoundShootPatch, RadiosityParams);
-		DistributeRadiosity(FoundShootPatch, RadiosityParams);
+		FoundShootPatch = FindShootPatch(RadiosityParams);
+		if (FoundShootPatch != -1)
+		//if (1)
+		{
+			auto& tempPatch = RadiosityParams->Patches[FoundShootPatch];
+
+			ComputeFormfactors(FoundShootPatch, RadiosityParams);
+			//if (!Updated)
+				DistributeRadiosity(FoundShootPatch, RadiosityParams);
+			Updated = true;
+			//break;
+		}
+		else
+		{
+			break;
+		}
 	}
-	DisplayResults(RadiosityParams);
+	DisplayResults(RadiosityParams, -1, Updated);
 }
 
 void jGame::UpdateAppSetting()
