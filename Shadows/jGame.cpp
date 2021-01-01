@@ -247,25 +247,25 @@ namespace Radiosity
 
 #define numberOfPolys 	19
 	Quad roomPolys[numberOfPolys] = {
-		{{4, 5, 6, 7},		2, 8, 216 * 215, {0, -1, 0}, lightGrey, black}, /* ceiling */
-		{{0, 3, 2, 1},		3, 8, 216 * 215, {0, 1, 0}, lightGrey, black}, /* floor */
-		{{0, 4, 7, 3},		2, 8, 221 * 215, {1, 0, 0}, red, black}, /* wall */
-		{{0, 1, 5, 4},		2, 8, 221 * 216, {0, 0, 1}, lightGrey, black}, /* wall */
-		{{2, 6, 5, 1},		2, 8, 221 * 215, {-1, 0, 0}, green, black}, /* wall */
-		{{2, 3, 7, 6},		2, 8, 221 * 216, {0, 0,-1}, lightGrey, black}, /* ADDED wall */
-		{{8, 9, 10, 11},	2, 1, 40 * 45, {0, -1, 0}, black, white}, /* light */
-		{{16, 19, 18, 17},	1, 5, 65 * 65, {0, 1, 0}, yellow, black}, /* box 1 */
+		{{4, 5, 6, 7},		8*2, 1, 216 * 215, {0, -1, 0}, lightGrey, black}, /* ceiling */
+		{{0, 3, 2, 1},		8*3, 1, 216 * 215, {0, 1, 0}, lightGrey, black}, /* floor */
+		{{0, 4, 7, 3},		8*2, 1, 221 * 215, {1, 0, 0}, red, black}, /* wall */
+		{{0, 1, 5, 4},		8*2, 1, 221 * 216, {0, 0, 1}, lightGrey, black}, /* wall */
+		{{2, 6, 5, 1},		8*2, 1, 221 * 215, {-1, 0, 0}, green, black}, /* wall */
+		{{2, 3, 7, 6},		8*2, 1, 221 * 216, {0, 0,-1}, lightGrey, black}, /* ADDED wall */
+		{{8, 9, 10, 11},	1, 1, 40 * 45, {0, -1, 0}, black, white}, /* light */
+		{{16, 19, 18, 17},	5, 1, 65 * 65, {0, 1, 0}, yellow, black}, /* box 1 */
 		{{12, 13, 14, 15},	1, 1, 65 * 65, {0, -1, 0}, yellow, black},
-		{{12, 15, 19, 16},	1, 5, 65 * 65, {-0.866, 0, -0.5}, yellow, black},
-		{{12, 16, 17, 13},	1, 5, 65 * 65, {0.5, 0, -0.866}, yellow, black},
-		{{14, 13, 17, 18},	1, 5, 65 * 65, {0.866, 0, 0.5}, yellow, black},
-		{{14, 18, 19, 15},	1, 5, 65 * 65, {-0.5, 0, 0.866}, yellow, black},
-		{{24, 27, 26, 25},	1, 5, 65 * 65, {0, 1, 0}, lightGrey, black}, /* box 2 */
+		{{12, 15, 19, 16},	5, 1, 65 * 65, {-0.866, 0, -0.5}, yellow, black},
+		{{12, 16, 17, 13},	5, 1, 65 * 65, {0.5, 0, -0.866}, yellow, black},
+		{{14, 13, 17, 18},	5, 1, 65 * 65, {0.866, 0, 0.5}, yellow, black},
+		{{14, 18, 19, 15},	5, 1, 65 * 65, {-0.5, 0, 0.866}, yellow, black},
+		{{24, 27, 26, 25},	5, 1, 65 * 65, {0, 1, 0}, lightGrey, black}, /* box 2 */
 		{{20, 21, 22, 23},	1, 1, 65 * 65, {0, -1, 0}, lightGrey, black},
-		{{20, 23, 27, 24},	1, 6, 65 * 130, {-0.866, 0, -0.5}, lightGrey, black},
-		{{20, 24, 25, 21},	1, 6, 65 * 130, {0.5, 0, -0.866}, lightGrey, black},
-		{{22, 21, 25, 26},	1, 6, 65 * 130, {0.866, 0, 0.5}, lightGrey, black},
-		{{22, 26, 27, 23},	1, 6, 65 * 130, {-0.5, 0, 0.866}, lightGrey, black},
+		{{20, 23, 27, 24},	6, 1, 65 * 130, {-0.866, 0, -0.5}, lightGrey, black},
+		{{20, 24, 25, 21},	6, 1, 65 * 130, {0.5, 0, -0.866}, lightGrey, black},
+		{{22, 21, 25, 26},	6, 1, 65 * 130, {0.866, 0, 0.5}, lightGrey, black},
+		{{22, 26, 27, 23},	6, 1, 65 * 130, {-0.5, 0, 0.866}, lightGrey, black},
 	};
 
 	Vector roomPoints[] = {
@@ -490,7 +490,7 @@ void InitRadiosity(Radiosity::InputParams* InParams)
 		double halfRes = Res / 2.0;
 		for (int32 i = 0; i < halfRes; ++i)
 		{
-			double di = i - halfRes*0.5;
+			double di = i;// -halfRes * 0.5;
 			double y = (halfRes - (di + 0.5)) / halfRes;
 			//double y = (di + 0.5) / halfRes;
 			double ySq = y * y;
