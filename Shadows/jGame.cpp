@@ -25,7 +25,7 @@
 
 #define WITH_REFLECTANCE 1
 bool IsOnlyUseFormFactor = false;
-int32 FixedFace = -1;
+int32 FixedFace = 3;
 int32 StartShooterPatch = -1;
 bool SelectedShooterPatchAsDrawLine = true;
 bool WireFrame = false;
@@ -398,7 +398,7 @@ namespace Radiosity
 	Vector lightGrey = { 0.9f, 0.9f, 0.9f };
 	Vector black = { 0.0f, 0.0f, 0.0f };
 
-#define numberOfPolys 	19
+#define numberOfPolys 	2
 	//Quad roomPolys[numberOfPolys] = {
 	//	{{4, 5, 6, 7},		2, 8, 216 * 215, {0, -1, 0}, lightGrey, black}, /* ceiling */
 	//	{{0, 3, 2, 1},		3, 8, 216 * 215, {0, 1, 0}, lightGrey, black}, /* floor */
@@ -421,25 +421,25 @@ namespace Radiosity
 	//	{{22, 26, 27, 23},	1, 6, 65 * 130, {-0.5, 0, 0.866}, lightGrey, black},
 	//};
 	Quad roomPolys[numberOfPolys] = {
-		{{4, 5, 6, 7},		8, 1, 216 * 215, {0, -1, 0}, lightGrey, black}, /* ceiling */
-		{{0, 3, 2, 1},		8, 1, 216 * 215, {0, 1, 0}, lightGrey, black}, /* floor */
-		{{0, 4, 7, 3},		8, 1, 221 * 215, {1, 0, 0}, red, black}, /* wall */
-		{{0, 1, 5, 4},		8, 1, 221 * 216, {0, 0, 1}, lightGrey, black}, /* wall */
-		{{2, 6, 5, 1},		8, 1, 221 * 215, {-1, 0, 0}, green, black}, /* wall */
-		{{2, 3, 7, 6},		8, 1, 221 * 216, {0, 0,-1}, lightGrey, black}, /* ADDED wall */
-		{{8, 9, 10, 11},	2, 1, 40 * 45, {0, -1, 0}, black, white}, /* light */
-		{{16, 19, 18, 17},	2, 1, 65 * 65, {0, 1, 0}, yellow, black}, /* box 1 */
-		{{12, 13, 14, 15},	1, 1, 65 * 65, {0, -1, 0}, yellow, black},
-		{{12, 15, 19, 16},	4, 1, 65 * 65, {-0.866, 0, -0.5}, yellow, black},
-		{{12, 16, 17, 13},	4, 1, 65 * 65, {0.5, 0, -0.866}, yellow, black},
-		{{14, 13, 17, 18},	4, 1, 65 * 65, {0.866, 0, 0.5}, yellow, black},
-		{{14, 18, 19, 15},	4, 1, 65 * 65, {-0.5, 0, 0.866}, yellow, black},
-		{{24, 27, 26, 25},	4, 1, 65 * 65, {0, 1, 0}, lightGrey, black}, /* box 2 */
-		{{20, 21, 22, 23},	1, 1, 65 * 65, {0, -1, 0}, lightGrey, black},
-		{{20, 23, 27, 24},	4, 1, 65 * 130, {-0.866, 0, -0.5}, lightGrey, black},
-		{{20, 24, 25, 21},	4, 1, 65 * 130, {0.5, 0, -0.866}, lightGrey, black},
-		{{22, 21, 25, 26},	4, 1, 65 * 130, {0.866, 0, 0.5}, lightGrey, black},
-		{{22, 26, 27, 23},	4, 1, 65 * 130, {-0.5, 0, 0.866}, lightGrey, black},
+		{{4, 5, 6, 7},		4, 4, 216 * 215, {0, -1, 0}, lightGrey, white * 0.1f}, /* ceiling */
+		//{{0, 3, 2, 1},		4, 4, 216 * 215, {0, 1, 0}, lightGrey, black}, /* floor */
+		//{{0, 4, 7, 3},		4, 4, 221 * 215, {1, 0, 0}, red, black}, /* wall */
+		//{{0, 1, 5, 4},		4, 4, 221 * 216, {0, 0, 1}, lightGrey, black}, /* wall */
+		{{2, 6, 5, 1},		4, 4, 221 * 215, {-1, 0, 0}, green, black}, /* wall */
+		//{{2, 3, 7, 6},		4, 4, 221 * 216, {0, 0,-1}, lightGrey, black}, /* ADDED wall */
+		//{{8, 9, 10, 11},	1, 1, 40 * 45, {0, -1, 0}, black, white}, /* light */
+		//{{16, 19, 18, 17},	8, 1, 65 * 65, {0, 1, 0}, yellow, black}, /* box 1 */
+		//{{12, 13, 14, 15},	8, 1, 65 * 65, {0, -1, 0}, yellow, black},
+		//{{12, 15, 19, 16},	8, 1, 65 * 65, {-0.866, 0, -0.5}, yellow, black},
+		//{{12, 16, 17, 13},	8, 1, 65 * 65, {0.5, 0, -0.866}, yellow, black},
+		//{{14, 13, 17, 18},	8, 1, 65 * 65, {0.866, 0, 0.5}, yellow, black},
+		//{{14, 18, 19, 15},	8, 1, 65 * 65, {-0.5, 0, 0.866}, yellow, black},
+		//{{24, 27, 26, 25},	8, 1, 65 * 65, {0, 1, 0}, lightGrey, black}, /* box 2 */
+		//{{20, 21, 22, 23},	8, 1, 65 * 65, {0, -1, 0}, lightGrey, black},
+		//{{20, 23, 27, 24},	8, 1, 65 * 130, {-0.866, 0, -0.5}, lightGrey, black},
+		//{{20, 24, 25, 21},	8, 1, 65 * 130, {0.5, 0, -0.866}, lightGrey, black},
+		//{{22, 21, 25, 26},	8, 1, 65 * 130, {0.866, 0, 0.5}, lightGrey, black},
+		//{{22, 26, 27, 23},	8, 1, 65 * 130, {-0.5, 0, 0.866}, lightGrey, black},
 	};
 
 	Vector roomPoints[] = {
@@ -874,7 +874,8 @@ void ComputeFormfactors(int32 InShootPatchIndex, Radiosity::InputParams* InParam
 		sprintf_s(szTemp, sizeof(szTemp), "ComputeFormfactors Face : %d", face);
 		SCOPE_DEBUG_EVENT(g_rhi, szTemp);
 		
-		Vector Offset = Vector::ZeroVector;// (lookAtAndUp.LookAt[face] - ShootPatch.Center).GetNormalize()* (sqrt(ShootPatch.Area) * 0.25f);
+		//Vector Offset = -(lookAtAndUp.LookAt[face] - ShootPatch.Center).GetNormalize() * (sqrt(ShootPatch.Area) * 0.25f);
+		Vector Offset = Vector::ZeroVector;
 		InParams->HemicubeCamera->Target = lookAtAndUp.LookAt[face] + Offset;
 		InParams->HemicubeCamera->Up = lookAtAndUp.Up[face] + Offset;
 		InParams->HemicubeCamera->Pos = ShootPatch.Center + Offset;
@@ -1228,7 +1229,7 @@ void jGame::Update(float deltaTime)
 	g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
 
-	int32 a = 1;
+	static int32 a = 1;
 	static int32 PrevShooter = -1;
 	int32 FoundShootPatch = StartShooterPatch;
 	static int32 TotalProcessingCounts = 0;
@@ -1293,7 +1294,8 @@ void jGame::Update(float deltaTime)
 		static int32 face = (FixedFace == -1) ? 0 : FixedFace;
 		//for (int32 face = 0; face < 5; ++face)
 		{
-			Vector Offset = Vector::ZeroVector;// (lookAtAndUp.LookAt[face] - ShootPatch.Center).GetNormalize()* (sqrt(ShootPatch.Area) * 0.25f);
+			//Vector Offset = -(lookAtAndUp.LookAt[face] - ShootPatch.Center).GetNormalize() * (sqrt(ShootPatch.Area) * 0.25f);
+			Vector Offset = Vector::ZeroVector;
 			RadiosityParams->HemicubeCamera->Target = lookAtAndUp.LookAt[face] + Offset;
 			RadiosityParams->HemicubeCamera->Up = lookAtAndUp.Up[face] + Offset;
 			RadiosityParams->HemicubeCamera->Pos = ShootPatch.Center + Offset;
