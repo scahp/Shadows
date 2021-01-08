@@ -22,12 +22,14 @@
 #include "jPipeline.h"
 #include "jVertexAdjacency.h"
 #include "TinyXml2/tinyxml2.h"
+#include <time.h>
+#include <stdlib.h>
 
 #define WITH_REFLECTANCE 1
 bool IsOnlyUseFormFactor = false;
-int32 FixedFace = 3;
+int32 FixedFace = -1;
 int32 StartShooterPatch = -1;
-bool SelectedShooterPatchAsDrawLine = true;
+bool SelectedShooterPatchAsDrawLine = false;
 bool WireFrame = false;
 
 jRHI* g_rhi = nullptr;
@@ -62,6 +64,7 @@ void jGame::ProcessInput()
 
 void jGame::Setup()
 {
+	srand(time(NULL));
 	//////////////////////////////////////////////////////////////////////////
 	//const Vector mainCameraPos(110.321266f, 98.3155670f, -198.161148f);
 	//const Vector mainCameraTarget(110.311089f, 98.3600845f, -197.162262f);
@@ -225,8 +228,8 @@ namespace Radiosity
 			{
 				do
 				{
-					//Vector RandVec(((float)rand() / float(RAND_MAX)), ((float)rand() / float(RAND_MAX)), ((float)rand() / float(RAND_MAX)));
-					Vector RandVec = Vector::UpVector;
+					Vector RandVec(((float)rand() / float(RAND_MAX)), ((float)rand() / float(RAND_MAX)), ((float)rand() / float(RAND_MAX)));
+					//Vector RandVec = Vector::UpVector;
 					auto temp = Normal.DotProduct(RandVec);
 					if (fabs(temp) > 0.9)
 						RandVec = Vector::FowardVector;
@@ -373,7 +376,7 @@ namespace Radiosity
 		uint32 HemicubeResolution = 512;
 		float WorldSize = 500.0f;
 		float IntensityScale = 20.0f;
-		int32 AddAmbient = 0;
+		int32 AddAmbient = 1;
 
 		double TotalEnergy = 0.0;
 		std::vector<double> Formfactors;
@@ -390,56 +393,31 @@ namespace Radiosity
 	Vector yellow = { 0.9f, 0.8f, 0.1f };
 	Vector blue = { 0.075f, 0.10f, 0.35f };
 	Vector green = { 0.075f, 0.8f, 0.1f };
-	//Vector red = { 1.0f, 0.0f, 0.0f };
-	//Vector yellow = { 1.0f, 1.0f, 0.0f };
-	//Vector blue = { 0.0f, 0.0f, 1.0f };
-	//Vector green = { 0.0f, 1.0f, 0.0f };
 	Vector white = { 1.0f, 1.0f, 1.0f };
 	Vector lightGrey = { 0.9f, 0.9f, 0.9f };
 	Vector black = { 0.0f, 0.0f, 0.0f };
 
-#define numberOfPolys 	2
-	//Quad roomPolys[numberOfPolys] = {
-	//	{{4, 5, 6, 7},		2, 8, 216 * 215, {0, -1, 0}, lightGrey, black}, /* ceiling */
-	//	{{0, 3, 2, 1},		3, 8, 216 * 215, {0, 1, 0}, lightGrey, black}, /* floor */
-	//	{{0, 4, 7, 3},		2, 8, 221 * 215, {1, 0, 0}, red, black}, /* wall */
-	//	{{0, 1, 5, 4},		2, 8, 221 * 216, {0, 0, 1}, lightGrey, black}, /* wall */
-	//	{{2, 6, 5, 1},		2, 8, 221 * 215, {-1, 0, 0}, green, black}, /* wall */
-	//	{{2, 3, 7, 6},		2, 8, 221 * 216, {0, 0,-1}, lightGrey, black}, /* ADDED wall */
-	//	{{8, 9, 10, 11},	2, 1, 40 * 45, {0, -1, 0}, black, white}, /* light */
-	//	{{16, 19, 18, 17},	1, 5, 65 * 65, {0, 1, 0}, yellow, black}, /* box 1 */
-	//	{{12, 13, 14, 15},	1, 1, 65 * 65, {0, -1, 0}, yellow, black},
-	//	{{12, 15, 19, 16},	1, 5, 65 * 65, {-0.866, 0, -0.5}, yellow, black},
-	//	{{12, 16, 17, 13},	1, 5, 65 * 65, {0.5, 0, -0.866}, yellow, black},
-	//	{{14, 13, 17, 18},	1, 5, 65 * 65, {0.866, 0, 0.5}, yellow, black},
-	//	{{14, 18, 19, 15},	1, 5, 65 * 65, {-0.5, 0, 0.866}, yellow, black},
-	//	{{24, 27, 26, 25},	1, 5, 65 * 65, {0, 1, 0}, lightGrey, black}, /* box 2 */
-	//	{{20, 21, 22, 23},	1, 1, 65 * 65, {0, -1, 0}, lightGrey, black},
-	//	{{20, 23, 27, 24},	1, 6, 65 * 130, {-0.866, 0, -0.5}, lightGrey, black},
-	//	{{20, 24, 25, 21},	1, 6, 65 * 130, {0.5, 0, -0.866}, lightGrey, black},
-	//	{{22, 21, 25, 26},	1, 6, 65 * 130, {0.866, 0, 0.5}, lightGrey, black},
-	//	{{22, 26, 27, 23},	1, 6, 65 * 130, {-0.5, 0, 0.866}, lightGrey, black},
-	//};
+#define numberOfPolys 	19
 	Quad roomPolys[numberOfPolys] = {
-		{{4, 5, 6, 7},		4, 4, 216 * 215, {0, -1, 0}, lightGrey, white * 0.1f}, /* ceiling */
-		//{{0, 3, 2, 1},		4, 4, 216 * 215, {0, 1, 0}, lightGrey, black}, /* floor */
-		//{{0, 4, 7, 3},		4, 4, 221 * 215, {1, 0, 0}, red, black}, /* wall */
-		//{{0, 1, 5, 4},		4, 4, 221 * 216, {0, 0, 1}, lightGrey, black}, /* wall */
-		{{2, 6, 5, 1},		4, 4, 221 * 215, {-1, 0, 0}, green, black}, /* wall */
-		//{{2, 3, 7, 6},		4, 4, 221 * 216, {0, 0,-1}, lightGrey, black}, /* ADDED wall */
-		//{{8, 9, 10, 11},	1, 1, 40 * 45, {0, -1, 0}, black, white}, /* light */
-		//{{16, 19, 18, 17},	8, 1, 65 * 65, {0, 1, 0}, yellow, black}, /* box 1 */
-		//{{12, 13, 14, 15},	8, 1, 65 * 65, {0, -1, 0}, yellow, black},
-		//{{12, 15, 19, 16},	8, 1, 65 * 65, {-0.866, 0, -0.5}, yellow, black},
-		//{{12, 16, 17, 13},	8, 1, 65 * 65, {0.5, 0, -0.866}, yellow, black},
-		//{{14, 13, 17, 18},	8, 1, 65 * 65, {0.866, 0, 0.5}, yellow, black},
-		//{{14, 18, 19, 15},	8, 1, 65 * 65, {-0.5, 0, 0.866}, yellow, black},
-		//{{24, 27, 26, 25},	8, 1, 65 * 65, {0, 1, 0}, lightGrey, black}, /* box 2 */
-		//{{20, 21, 22, 23},	8, 1, 65 * 65, {0, -1, 0}, lightGrey, black},
-		//{{20, 23, 27, 24},	8, 1, 65 * 130, {-0.866, 0, -0.5}, lightGrey, black},
-		//{{20, 24, 25, 21},	8, 1, 65 * 130, {0.5, 0, -0.866}, lightGrey, black},
-		//{{22, 21, 25, 26},	8, 1, 65 * 130, {0.866, 0, 0.5}, lightGrey, black},
-		//{{22, 26, 27, 23},	8, 1, 65 * 130, {-0.5, 0, 0.866}, lightGrey, black},
+		{{4, 5, 6, 7},		16, 1, 216 * 215, {0, -1, 0}, lightGrey, black}, /* ceiling */
+		{{0, 3, 2, 1},		16, 1, 216 * 215, {0, 1, 0}, lightGrey, black}, /* floor */
+		{{0, 4, 7, 3},		16, 1, 221 * 215, {1, 0, 0}, red, black}, /* wall */
+		{{0, 1, 5, 4},		16, 1, 221 * 216, {0, 0, 1}, lightGrey, black}, /* wall */
+		{{2, 6, 5, 1},		16, 1, 221 * 215, {-1, 0, 0}, green, black}, /* wall */
+		{{2, 3, 7, 6},		16, 1, 221 * 216, {0, 0,-1}, lightGrey, black}, /* ADDED wall */
+		{{8, 9, 10, 11},	2, 1, 40 * 45, {0, -1, 0}, black, white}, /* light */
+		{{16, 19, 18, 17},	4, 1, 65 * 65, {0, 1, 0}, yellow, black}, /* box 1 */
+		{{12, 13, 14, 15},	1, 1, 65 * 65, {0, -1, 0}, yellow, black},
+		{{12, 15, 19, 16},	4, 1, 65 * 65, {-0.866, 0, -0.5}, yellow, black},
+		{{12, 16, 17, 13},	4, 1, 65 * 65, {0.5, 0, -0.866}, yellow, black},
+		{{14, 13, 17, 18},	4, 1, 65 * 65, {0.866, 0, 0.5}, yellow, black},
+		{{14, 18, 19, 15},	4, 1, 65 * 65, {-0.5, 0, 0.866}, yellow, black},
+		{{24, 27, 26, 25},	8, 1, 65 * 65, {0, 1, 0}, lightGrey, black}, /* box 2 */
+		{{20, 21, 22, 23},	1, 1, 65 * 65, {0, -1, 0}, lightGrey, black},
+		{{20, 23, 27, 24},	8, 1, 65 * 130, {-0.866, 0, -0.5}, lightGrey, black},
+		{{20, 24, 25, 21},	8, 1, 65 * 130, {0.5, 0, -0.866}, lightGrey, black},
+		{{22, 21, 25, 26},	8, 1, 65 * 130, {0.866, 0, 0.5}, lightGrey, black},
+		{{22, 26, 27, 23},	8, 1, 65 * 130, {-0.5, 0, 0.866}, lightGrey, black},
 	};
 
 	Vector roomPoints[] = {
@@ -496,21 +474,21 @@ Radiosity::InputParams* InitInputParams()
 	Radiosity::InputParams* Params = new Radiosity::InputParams();;
 
 	int32 NumOfPatches = 0;
-	for (int32 i = numberOfPolys - 1; i >= 0;--i)
+	for (int32 i = 0; i < numberOfPolys;++i)
 	{
 		NumOfPatches += Radiosity::roomPolys[i].PatchLevel * Radiosity::roomPolys[i].PatchLevel;
 	}
 	Params->Patches.resize(NumOfPatches);
 
 	int32 NumOfElement = 0;
-	for (int32 i = numberOfPolys - 1; i >= 0; --i)
+	for (int32 i = 0; i < numberOfPolys; ++i)
 	{
 		const int32 ElementWidth = Radiosity::roomPolys[i].ElementLevel * Radiosity::roomPolys[i].PatchLevel;
 		NumOfElement += ElementWidth * ElementWidth;
 	}
 
 	int32 NumOfVertices = 0;
-	for (int32 i = numberOfPolys - 1; i >= 0; --i)
+	for (int32 i = 0; i < numberOfPolys; ++i)
 	{
 		const int32 VerticesWidth = Radiosity::roomPolys[i].ElementLevel * Radiosity::roomPolys[i].PatchLevel + 1;
 		NumOfVertices += VerticesWidth * VerticesWidth;
@@ -588,8 +566,6 @@ Radiosity::InputParams* InitInputParams()
 		}
 
 		// Element 계산
-		//const int32 PatchCnt = CurQuad.PatchLevel * CurQuad.PatchLevel;
-		//for(int32 PatchIndex = 0;PatchIndex < PatchCnt;++PatchIndex)
 		{
 			int32 nu = CurQuad.PatchLevel * CurQuad.ElementLevel;
 			int32 nv = CurQuad.PatchLevel * CurQuad.ElementLevel;
@@ -597,13 +573,6 @@ Radiosity::InputParams* InitInputParams()
 			double dv = 1.0 / nv;
 
 			int32 CurLevel = CurQuad.ElementLevel;
-			//Params->Elements.resize(NumOfElement);
-
-			//Params->RootElements.push_back(Radiosity::Element());
-			//Radiosity::Element* RootElement = &Params->RootElements[Params->RootElements.size() - 1];
-
-			//std::vector<Radiosity::Element*> CurElements;
-			//CurElements.push_back(RootElement);
 
 			while (CurLevel > 0)
 			{
@@ -619,6 +588,7 @@ Radiosity::InputParams* InitInputParams()
 					{
 						double v = m * dv + dv / 2.0;
 
+						// GeoHash algorithm https://en.wikipedia.org/wiki/Geohash
 						int curCnt = cnt;
 						int Multi = 1;
 						int x = 0;
@@ -630,6 +600,7 @@ Radiosity::InputParams* InitInputParams()
 							curCnt = curCnt >> 2;
 							Multi *= 2;
 						}
+						//////////////////////////////////////////////////////////////////////////
 						x *= CurLevel;
 						y *= CurLevel;
 
@@ -642,24 +613,8 @@ Radiosity::InputParams* InitInputParams()
 						Radiosity::Patch* CurrentPatch = &Params->Patches[CurrentPatchIndex];
 
 						Radiosity::Element* CurElement = CurrentPatch->RootElement->GetNextEmptyElement(CurrentPatch->RootElement);
-						//if (CurLevel == Level)
-						//{
-						//	CurElement = CurElements[0];
-						//}
-						//else
-						//{
-						//	for (auto it = CurElements.begin(); it != CurElements.end(); ++it)
-						//	{
-						//		if ((*it)->ID == -1)
-						//		{
-						//			CurElement = *it;
-						//			break;
-						//		}
-						//	}
-						//}
 						JASSERT(CurElement);
 
-						//Radiosity::Element& CurElement = Params->Elements[ElementIndex++];
 						CurElement->ID = ID_Gen++;
 						CurElement->Normal = CurQuad.Normal;
 						CurElement->Indices.resize(4);
@@ -678,17 +633,6 @@ Radiosity::InputParams* InitInputParams()
 
 				if (CurLevel > 0)
 				{
-					//std::vector<Radiosity::Element*> TempElement;
-					//TempElement.swap(CurElements);
-					//for (auto it = TempElement.begin(); it != TempElement.end(); ++it)
-					//{
-					//	auto Elem = *it;
-					//	for (int w = 0; w < 4; ++w)
-					//	{
-					//		Elem->ChildElement[w] = new Radiosity::Element();
-					//		CurElements.push_back(Elem->ChildElement[w]);
-					//	}
-					//}
 					for (int32 Index : CurrentGeneratedPatches)
 						Params->Patches[Index].RootElement->GenerateEmptyChildElement();
 				}
@@ -708,7 +652,7 @@ void InitRadiosity(Radiosity::InputParams* InParams)
 	// Hemicube Resolution이 짝수이도록 함.
 	float Res = (int32)((InParams->HemicubeResolution / 2.0 + 0.5)) * 2;
 	InParams->HemicubeCamera = jCamera::CreateCamera(Vector::ZeroVector, Vector::ZeroVector, Vector::ZeroVector
-		, DegreeToRadian(90.0f), InParams->WorldSize * 0.001f, InParams->WorldSize, Res, Res, true);
+		, DegreeToRadian(90.0f), 0.1f, InParams->WorldSize, Res, Res, true);
 
 	/* take advantage of the symmetry in the delta form-factors */
 	InParams->TopFactors.resize(Res * Res / 4, 0.0);
@@ -846,20 +790,15 @@ void SumFactors(Radiosity::InputParams* InParams, bool InIsTop)
 
 void ComputeFormfactors(int32 InShootPatchIndex, Radiosity::InputParams* InParams)
 {
-	Radiosity::Patch& ShootPatch = InParams->Patches[InShootPatchIndex];
-
 	// 슈팅 패치를 얻음
-	Vector Center = ShootPatch.Center;
-	Vector Normal = ShootPatch.Normal;
-	//jPlane Plane(Normal, -(Normal.DotProduct(Center)));
-
+	Radiosity::Patch& ShootPatch = InParams->Patches[InShootPatchIndex];
 	Radiosity::Patch::LookAtAndUp lookAtAndUp = ShootPatch.GenerateHemicubeLookAtAndUp();
 
 	for (int32 i = 0; i < InParams->Formfactors.size(); ++i)
 		InParams->Formfactors[i] = 0.0;
 
 	// hemicube 를 Shooting Patch의 중심보다 살짝 위에 위치시킴.
-	//InParams->HemicubeCamera->Pos = Center + (Normal * InParams->WorldSize * 0.00000001);
+	InParams->HemicubeCamera->Pos = ShootPatch.Center + (ShootPatch.Normal * InParams->WorldSize * 0.00000001);
 
 	static std::shared_ptr<jRenderTarget> RenderTarget = jRenderTargetPool::GetRenderTarget(
 		{ ETextureType::TEXTURE_2D, ETextureFormat::R32F, ETextureFormat::R, EFormatType::FLOAT
@@ -874,11 +813,8 @@ void ComputeFormfactors(int32 InShootPatchIndex, Radiosity::InputParams* InParam
 		sprintf_s(szTemp, sizeof(szTemp), "ComputeFormfactors Face : %d", face);
 		SCOPE_DEBUG_EVENT(g_rhi, szTemp);
 		
-		//Vector Offset = -(lookAtAndUp.LookAt[face] - ShootPatch.Center).GetNormalize() * (sqrt(ShootPatch.Area) * 0.25f);
-		Vector Offset = Vector::ZeroVector;
-		InParams->HemicubeCamera->Target = lookAtAndUp.LookAt[face] + Offset;
-		InParams->HemicubeCamera->Up = lookAtAndUp.Up[face] + Offset;
-		InParams->HemicubeCamera->Pos = ShootPatch.Center + Offset;
+		InParams->HemicubeCamera->Target = lookAtAndUp.LookAt[face];
+		InParams->HemicubeCamera->Up = lookAtAndUp.Up[face];
 
 		InParams->HemicubeCamera->UpdateCamera();
 		InParams->HemicubeCamera->IsEnableCullMode = true;
@@ -1151,44 +1087,6 @@ void DisplayResults(Radiosity::InputParams* InParams, int32 InSelectedPatch = -1
 		DrawElement(InParams, InParams->Patches[i].RootElement, SummedCount, shader, IsSelected);
 	}
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-	//for (int32 kk = 0; kk < numberOfPolys; ++kk)
-	//{
-	//	int32 Cnt = 0;
-	//	Vector RadiositySum = Vector::ZeroVector;
-
-	//	for (int32 i = 0; i < InParams->Patches.size(); ++i)
-	//	{
-	//		if (InParams->Patches[i].QuadID != kk)
-	//			continue;
-
-	//		InParams->Patches[i].RootElement->IterateUsingElement([&](Radiosity::Element* InElement)
-	//			{
-	//				++Cnt;
-	//				RadiositySum += InElement->Delta;
-	//			});
-	//	}
-	//	float Average = (RadiositySum / Cnt).Length();
-
-	//	for (int32 i = 0; i < InParams->Patches.size(); ++i)
-	//	{
-	//		if (InParams->Patches[i].QuadID != kk)
-	//			continue;
-	//		//RadiositySqrtSum /= Cnt;
-	//		//RadiositySum = ((RadiositySum / Cnt) * (RadiositySum / Cnt));
-	//		//float Variance = (RadiositySqrtSum - RadiositySum).Length();
-	//		//if (Variance > 0.03f)
-	//		{
-	//			InParams->Patches[i].RootElement->IterateUsingElement([&](Radiosity::Element* InElement)
-	//				{
-	//					float CurElementDelta = InElement->Delta.Length();
-	//					float temp = fabs(Average - CurElementDelta);
-	//					if (temp > 0.0015)
-	//						InElement->Subdivide();
-	//				});
-	//		}
-	//	}
-	//}
 }
 
 void jGame::Update(float deltaTime)
@@ -1229,7 +1127,7 @@ void jGame::Update(float deltaTime)
 	g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
 
-	static int32 a = 1;
+	int32 a = 1;
 	static int32 PrevShooter = -1;
 	int32 FoundShootPatch = StartShooterPatch;
 	static int32 TotalProcessingCounts = 0;
@@ -1248,15 +1146,6 @@ void jGame::Update(float deltaTime)
 			{
 				ComputeFormfactors(FoundShootPatch, RadiosityParams);
 				DistributeRadiosity(FoundShootPatch, RadiosityParams);
-
-				//for (int i = 0; i < RadiosityParams->Patches.size(); ++i)
-				//{
-				//	if (RadiosityParams->Patches[i].QuadID != 4)
-				//		continue;
-
-				//	ComputeFormfactors(i, RadiosityParams);
-				//	DistributeRadiosity(i, RadiosityParams);
-				//}
 			}
 			else
 			{
@@ -1277,31 +1166,25 @@ void jGame::Update(float deltaTime)
 
 	DisplayResults(RadiosityParams, FoundShootPatch);
 
-	if (FoundShootPatch != -1)
+	//if (FoundShootPatch != -1)
+	if (0)
 	{
-		//for (int i = 0; i < RadiosityParams->Patches.size(); ++i)
-		//{
-		//	if (RadiosityParams->Patches[i].QuadID != 1)
-		//		continue;
-		//	FoundShootPatch = i;
-		//}
 		const auto& ShootPatch = RadiosityParams->Patches[FoundShootPatch];
-
-		//Vector Center = ShootPatch.Center + ShootPatch.Normal * 10.0f;
-		//Vector Offset = ShootPatch.Normal * 10.0f;
 		Radiosity::Patch::LookAtAndUp lookAtAndUp = ShootPatch.GenerateHemicubeLookAtAndUp();
 
 		static int32 face = (FixedFace == -1) ? 0 : FixedFace;
 		//for (int32 face = 0; face < 5; ++face)
 		{
-			//Vector Offset = -(lookAtAndUp.LookAt[face] - ShootPatch.Center).GetNormalize() * (sqrt(ShootPatch.Area) * 0.25f);
-			Vector Offset = Vector::ZeroVector;
-			RadiosityParams->HemicubeCamera->Target = lookAtAndUp.LookAt[face] + Offset;
-			RadiosityParams->HemicubeCamera->Up = lookAtAndUp.Up[face] + Offset;
-			RadiosityParams->HemicubeCamera->Pos = ShootPatch.Center + Offset;
+			// hemicube 를 Shooting Patch의 중심보다 살짝 위에 위치시킴.
+			RadiosityParams->HemicubeCamera->Pos = ShootPatch.Center + (ShootPatch.Normal * RadiosityParams->WorldSize * 0.00000001);
 
+			RadiosityParams->HemicubeCamera->Target = lookAtAndUp.LookAt[face];
+			RadiosityParams->HemicubeCamera->Up = lookAtAndUp.Up[face];
+
+			// Draw shooter frustum without clear
 			//g_rhi->SetClearColor(-1.0f, -1.0f, -1.0f, 1.0f);
 			//g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
+
 			g_rhi->EnableCullFace(true);
 			g_rhi->EnableDepthTest(true);
 
@@ -1314,8 +1197,6 @@ void jGame::Update(float deltaTime)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
 	}
-
-	
 
 	if (FoundShootPatch == -1)
 		TitleText = " Converged";
