@@ -72,6 +72,7 @@ enum class EMouseButtonType
 extern std::map<int, bool> g_KeyState;
 extern std::map<EMouseButtonType, bool> g_MouseState;
 extern float g_timeDeltaSecond;
+extern std::string TitleText;
 
 //////////////////////////////////////////////////////////////////////////
 // https://stackoverflow.com/questions/2590677/how-do-i-combine-hash-values-in-c0x

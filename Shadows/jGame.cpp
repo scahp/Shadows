@@ -23,6 +23,13 @@
 #include "jVertexAdjacency.h"
 #include "TinyXml2/tinyxml2.h"
 
+#define WITH_REFLECTANCE 1
+bool IsOnlyUseFormFactor = false;
+int32 FixedFace = -1;
+int32 StartShooterPatch = -1;
+bool SelectedShooterPatchAsDrawLine = true;
+bool WireFrame = false;
+
 jRHI* g_rhi = nullptr;
 
 jGame::jGame()
@@ -188,21 +195,166 @@ namespace Radiosity
 
 	struct Patch
 	{
+		int32 QuadID = -1;
 		Vector Reflectance = Vector::ZeroVector;
 		Vector Emission = Vector::ZeroVector;
 		Vector Center = Vector::ZeroVector;
 		Vector Normal = Vector::ZeroVector;
 		Vector UnShotRadiosity = Vector::ZeroVector;
 		double Area = 0.0f;
+		struct Element* RootElement = nullptr;
+
+		struct LookAtAndUp
+		{
+			Vector LookAt[5];
+			Vector Up[5];
+		};
+
+		LookAtAndUp GenerateHemicubeLookAtAndUp() const
+		{
+			return GenerateHemicubeLookAtAndUp(Center);
+		}
+
+		LookAtAndUp GenerateHemicubeLookAtAndUp(Vector InCenter) const
+		{
+			// hemi-cube를 Patch의 normal 축을 기준으로 랜덤하게 회전시킨다.
+			// 이 것이 hemi-cube의 앨리어싱 아티팩트를 줄여준다.
+
+			Vector TangentU = Vector::ZeroVector;
+			//if (Vector::ZeroVector == TangentU)
+			{
+				do
+				{
+					//Vector RandVec(((float)rand() / float(RAND_MAX)), ((float)rand() / float(RAND_MAX)), ((float)rand() / float(RAND_MAX)));
+					Vector RandVec = Vector::UpVector;
+					auto temp = Normal.DotProduct(RandVec);
+					if (fabs(temp) > 0.9)
+						RandVec = Vector::FowardVector;
+					TangentU = Normal.CrossProduct(RandVec).GetNormalize();
+
+				} while (TangentU.Length() == 0);
+			}
+
+			// TangentV 를 계산
+			Vector TangentV = Normal.CrossProduct(TangentU).GetNormalize();
+
+			// Hemicube face를 계산한다.
+			LookAtAndUp Result;
+
+			Result.LookAt[0] = InCenter + Normal;
+			Result.Up[0] = InCenter + TangentU;
+
+			Result.LookAt[1] = InCenter + TangentU;
+			Result.Up[1] = InCenter + Normal;
+
+			Result.LookAt[2] = InCenter + TangentV;
+			Result.Up[2] = InCenter + Normal;
+
+			Result.LookAt[3] = InCenter - TangentU;
+			Result.Up[3] = InCenter + Normal;
+
+			Result.LookAt[4] = InCenter - TangentV;
+			Result.Up[4] = InCenter + Normal;
+
+			return Result;
+		}
 	};
 
 	struct Element
 	{
+		int32 ID = -1;
 		std::vector<int32> Indices;
 		Vector Normal = Vector::ZeroVector;
 		Vector Radiosity = Vector::ZeroVector;
 		double Area = 0.0;
 		Patch* ParentPatch = nullptr;
+
+		bool HasUseChild() const
+		{
+			for (int32 i = 0; i < 4; ++i)
+			{
+				if (UseChild[i])
+					return true;
+			}
+			return false;
+		}
+
+		template <typename T>
+		void IterateOnlyLeaf(T func)
+		{
+			if (HasUseChild())
+			{
+				for (int32 i = 0; i < 4; ++i)
+				{
+					if (UseChild[i] && ChildElement[i])
+						ChildElement[i]->IterateOnlyLeaf(func);
+				}
+				return;
+			}
+
+			func(this);
+		}
+
+		template <typename T>
+		void Iterate(T func)
+		{
+			func(this);
+
+			for (int32 i = 0; i < 4; ++i)
+			{
+				if (ChildElement[i])
+					ChildElement[i]->Iterate(func);
+			}
+		}
+		
+		bool Subdivide()
+		{
+			bool IsSubDivided = false;
+			for (int32 i = 0; i < 4; ++i)
+			{
+				if (ChildElement[i])
+				{
+					IsSubDivided = true;
+					UseChild[i] = true;
+
+					Radiosity = Vector::ZeroVector;
+					ChildElement[i]->Radiosity = Radiosity;
+				}
+			}
+			return IsSubDivided;
+		}
+
+		void GenerateEmptyChildElement()
+		{
+			for (int32 i = 0; i < 4; ++i)
+			{
+				if (ChildElement[i])
+					ChildElement[i]->GenerateEmptyChildElement();
+				else
+					ChildElement[i] = new Radiosity::Element();
+			}
+		}
+
+		static Radiosity::Element* GetNextEmptyElement(Radiosity::Element* InElement)
+		{
+			if (InElement->ID == -1)
+				return InElement;
+
+			for (int32 i = 0; i < 4; ++i)
+			{
+				if (!InElement->ChildElement[i])
+					continue;
+
+				auto Ret = InElement->GetNextEmptyElement(InElement->ChildElement[i]);
+				if (Ret)
+					return Ret;
+			}
+
+			return nullptr;
+		}
+
+		bool UseChild[4] = { false, false, false, false };
+		Element* ChildElement[4] = { nullptr, nullptr, nullptr, nullptr };
 	};
 
 	struct InputParams
@@ -215,14 +367,13 @@ namespace Radiosity
 
 		double Threshold = 0.0001;
 		std::vector<Patch> Patches;
-		std::vector<Element> Elements;
 		std::vector<Vector> AllVertices;
 		std::vector<Vector> AllColors;
 		jCamera* DisplayCamera = nullptr;
 		uint32 HemicubeResolution = 512;
 		float WorldSize = 500.0f;
 		float IntensityScale = 20.0f;
-		int32 AddAmbient = 1;
+		int32 AddAmbient = 0;
 
 		double TotalEnergy = 0.0;
 		std::vector<double> Formfactors;
@@ -231,6 +382,8 @@ namespace Radiosity
 		std::vector<double> TopFactors;
 		std::vector<double> SideFactors;
 		std::vector<float> CurrentBuffer;
+
+		int32 TotalElementCount = 0;
 	};
 
 	Vector red = { 0.80f, 0.10f, 0.075f };
@@ -246,26 +399,47 @@ namespace Radiosity
 	Vector black = { 0.0f, 0.0f, 0.0f };
 
 #define numberOfPolys 	19
+	//Quad roomPolys[numberOfPolys] = {
+	//	{{4, 5, 6, 7},		2, 8, 216 * 215, {0, -1, 0}, lightGrey, black}, /* ceiling */
+	//	{{0, 3, 2, 1},		3, 8, 216 * 215, {0, 1, 0}, lightGrey, black}, /* floor */
+	//	{{0, 4, 7, 3},		2, 8, 221 * 215, {1, 0, 0}, red, black}, /* wall */
+	//	{{0, 1, 5, 4},		2, 8, 221 * 216, {0, 0, 1}, lightGrey, black}, /* wall */
+	//	{{2, 6, 5, 1},		2, 8, 221 * 215, {-1, 0, 0}, green, black}, /* wall */
+	//	{{2, 3, 7, 6},		2, 8, 221 * 216, {0, 0,-1}, lightGrey, black}, /* ADDED wall */
+	//	{{8, 9, 10, 11},	2, 1, 40 * 45, {0, -1, 0}, black, white}, /* light */
+	//	{{16, 19, 18, 17},	1, 5, 65 * 65, {0, 1, 0}, yellow, black}, /* box 1 */
+	//	{{12, 13, 14, 15},	1, 1, 65 * 65, {0, -1, 0}, yellow, black},
+	//	{{12, 15, 19, 16},	1, 5, 65 * 65, {-0.866, 0, -0.5}, yellow, black},
+	//	{{12, 16, 17, 13},	1, 5, 65 * 65, {0.5, 0, -0.866}, yellow, black},
+	//	{{14, 13, 17, 18},	1, 5, 65 * 65, {0.866, 0, 0.5}, yellow, black},
+	//	{{14, 18, 19, 15},	1, 5, 65 * 65, {-0.5, 0, 0.866}, yellow, black},
+	//	{{24, 27, 26, 25},	1, 5, 65 * 65, {0, 1, 0}, lightGrey, black}, /* box 2 */
+	//	{{20, 21, 22, 23},	1, 1, 65 * 65, {0, -1, 0}, lightGrey, black},
+	//	{{20, 23, 27, 24},	1, 6, 65 * 130, {-0.866, 0, -0.5}, lightGrey, black},
+	//	{{20, 24, 25, 21},	1, 6, 65 * 130, {0.5, 0, -0.866}, lightGrey, black},
+	//	{{22, 21, 25, 26},	1, 6, 65 * 130, {0.866, 0, 0.5}, lightGrey, black},
+	//	{{22, 26, 27, 23},	1, 6, 65 * 130, {-0.5, 0, 0.866}, lightGrey, black},
+	//};
 	Quad roomPolys[numberOfPolys] = {
-		{{4, 5, 6, 7},		8*2, 1, 216 * 215, {0, -1, 0}, lightGrey, black}, /* ceiling */
-		{{0, 3, 2, 1},		8*3, 1, 216 * 215, {0, 1, 0}, lightGrey, black}, /* floor */
-		{{0, 4, 7, 3},		8*2, 1, 221 * 215, {1, 0, 0}, red, black}, /* wall */
-		{{0, 1, 5, 4},		8*2, 1, 221 * 216, {0, 0, 1}, lightGrey, black}, /* wall */
-		{{2, 6, 5, 1},		8*2, 1, 221 * 215, {-1, 0, 0}, green, black}, /* wall */
-		{{2, 3, 7, 6},		8*2, 1, 221 * 216, {0, 0,-1}, lightGrey, black}, /* ADDED wall */
-		{{8, 9, 10, 11},	1, 1, 40 * 45, {0, -1, 0}, black, white}, /* light */
-		{{16, 19, 18, 17},	5, 1, 65 * 65, {0, 1, 0}, yellow, black}, /* box 1 */
+		{{4, 5, 6, 7},		8, 1, 216 * 215, {0, -1, 0}, lightGrey, black}, /* ceiling */
+		{{0, 3, 2, 1},		8, 1, 216 * 215, {0, 1, 0}, lightGrey, black}, /* floor */
+		{{0, 4, 7, 3},		8, 1, 221 * 215, {1, 0, 0}, red, black}, /* wall */
+		{{0, 1, 5, 4},		8, 1, 221 * 216, {0, 0, 1}, lightGrey, black}, /* wall */
+		{{2, 6, 5, 1},		8, 1, 221 * 215, {-1, 0, 0}, green, black}, /* wall */
+		{{2, 3, 7, 6},		8, 1, 221 * 216, {0, 0,-1}, lightGrey, black}, /* ADDED wall */
+		{{8, 9, 10, 11},	2, 1, 40 * 45, {0, -1, 0}, black, white}, /* light */
+		{{16, 19, 18, 17},	2, 1, 65 * 65, {0, 1, 0}, yellow, black}, /* box 1 */
 		{{12, 13, 14, 15},	1, 1, 65 * 65, {0, -1, 0}, yellow, black},
-		{{12, 15, 19, 16},	5, 1, 65 * 65, {-0.866, 0, -0.5}, yellow, black},
-		{{12, 16, 17, 13},	5, 1, 65 * 65, {0.5, 0, -0.866}, yellow, black},
-		{{14, 13, 17, 18},	5, 1, 65 * 65, {0.866, 0, 0.5}, yellow, black},
-		{{14, 18, 19, 15},	5, 1, 65 * 65, {-0.5, 0, 0.866}, yellow, black},
-		{{24, 27, 26, 25},	5, 1, 65 * 65, {0, 1, 0}, lightGrey, black}, /* box 2 */
+		{{12, 15, 19, 16},	4, 1, 65 * 65, {-0.866, 0, -0.5}, yellow, black},
+		{{12, 16, 17, 13},	4, 1, 65 * 65, {0.5, 0, -0.866}, yellow, black},
+		{{14, 13, 17, 18},	4, 1, 65 * 65, {0.866, 0, 0.5}, yellow, black},
+		{{14, 18, 19, 15},	4, 1, 65 * 65, {-0.5, 0, 0.866}, yellow, black},
+		{{24, 27, 26, 25},	4, 1, 65 * 65, {0, 1, 0}, lightGrey, black}, /* box 2 */
 		{{20, 21, 22, 23},	1, 1, 65 * 65, {0, -1, 0}, lightGrey, black},
-		{{20, 23, 27, 24},	6, 1, 65 * 130, {-0.866, 0, -0.5}, lightGrey, black},
-		{{20, 24, 25, 21},	6, 1, 65 * 130, {0.5, 0, -0.866}, lightGrey, black},
-		{{22, 21, 25, 26},	6, 1, 65 * 130, {0.866, 0, 0.5}, lightGrey, black},
-		{{22, 26, 27, 23},	6, 1, 65 * 130, {-0.5, 0, 0.866}, lightGrey, black},
+		{{20, 23, 27, 24},	4, 1, 65 * 130, {-0.866, 0, -0.5}, lightGrey, black},
+		{{20, 24, 25, 21},	4, 1, 65 * 130, {0.5, 0, -0.866}, lightGrey, black},
+		{{22, 21, 25, 26},	4, 1, 65 * 130, {0.866, 0, 0.5}, lightGrey, black},
+		{{22, 26, 27, 23},	4, 1, 65 * 130, {-0.5, 0, 0.866}, lightGrey, black},
 	};
 
 	Vector roomPoints[] = {
@@ -331,10 +505,9 @@ Radiosity::InputParams* InitInputParams()
 	int32 NumOfElement = 0;
 	for (int32 i = numberOfPolys - 1; i >= 0; --i)
 	{
-		const int32 ElementWidth = Radiosity::roomPolys[i].ElementLevel* Radiosity::roomPolys[i].PatchLevel;
+		const int32 ElementWidth = Radiosity::roomPolys[i].ElementLevel * Radiosity::roomPolys[i].PatchLevel;
 		NumOfElement += ElementWidth * ElementWidth;
 	}
-	Params->Elements.resize(NumOfElement);
 
 	int32 NumOfVertices = 0;
 	for (int32 i = numberOfPolys - 1; i >= 0; --i)
@@ -344,6 +517,8 @@ Radiosity::InputParams* InitInputParams()
 	}
 	Params->AllVertices.resize(NumOfVertices);
 	Params->AllColors.resize(NumOfVertices, Vector::ZeroVector);
+
+	static int32 ID_Gen = 0;
 
 	int32 VertexIndex = 0;
 	int32 ElementIndex = 0;
@@ -382,70 +557,148 @@ Radiosity::InputParams* InitInputParams()
 			}
 		}
 
-		// Element 계산
-		{
-			int32 nu = CurQuad.PatchLevel * CurQuad.ElementLevel;
-			int32 nv = CurQuad.PatchLevel * CurQuad.ElementLevel;
-			double du = 1.0 / nu;
-			double dv = 1.0 / nv;
+		int32 PrvPatchIndex = PatchIndex;
 
-			for (int32 k = 0; k < nu; ++k)
-			{
-				double u = k * du + du / 2.0;
-				for (int32 m = 0; m < nv; ++m)
-				{
-					double v = m * dv + dv / 2.0;
-
-					Radiosity::Element& CurElement = Params->Elements[ElementIndex++];
-					CurElement.Normal = CurQuad.Normal;
-					CurElement.Indices.resize(4);
-					
-					//CurElement.Indices[0] = VertexOffset + k * (nv + 1) + m;
-					//CurElement.Indices[1] = VertexOffset + (k + 1) * (nv + 1) + m;
-					//CurElement.Indices[2] = VertexOffset + (k + 1) * (nv + 1) + (m + 1);
-					//CurElement.Indices[3] = VertexOffset + k * (nv + 1) + (m + 1);
-
-					CurElement.Indices[0] = VertexOffset + k * (nv + 1) + m;
-					CurElement.Indices[1] = VertexOffset + k * (nv + 1) + (m + 1);
-					CurElement.Indices[2] = VertexOffset + (k + 1) * (nv + 1) + m;
-					CurElement.Indices[3] = VertexOffset + (k + 1) * (nv + 1) + (m + 1);
-
-					CurElement.Area = CurQuad.Area / (nu * nv);
-
-					float fi = k / (float)nu;
-					float fj = m / (float)nv;
-					int32 pi = (int32)(fi * CurQuad.PatchLevel);
-					int32 pj = (int32)(fj * CurQuad.PatchLevel);
-					CurElement.ParentPatch = &Params->Patches[PatchIndex + pi * CurQuad.PatchLevel + pj];
-				}
-			}
-		}
-
+		std::vector<int32> CurrentGeneratedPatches;
 		// Patch 계산
 		{
 			int32 nu = CurQuad.PatchLevel;
 			int32 nv = CurQuad.PatchLevel;
 			double du = 1.0 / nu;
 			double dv = 1.0 / nv;
-			
+
 			for (int32 k = 0; k < nu; ++k)
 			{
 				double u = k * du + du / 2.0;
 				for (int32 m = 0; m < nv; ++m)
 				{
 					double v = m * dv + dv / 2.0;
-					Radiosity::Patch& CurPatch = Params->Patches[PatchIndex++];
+					Radiosity::Patch& CurPatch = Params->Patches[PatchIndex];
+					CurPatch.QuadID = i;
 					CurPatch.Center = UVToXYZ(Vertices, u, v);
 					CurPatch.Normal = CurQuad.Normal;
 					CurPatch.Reflectance = CurQuad.Reflectance;
 					CurPatch.Emission = CurQuad.Emission;
 					CurPatch.Area = CurQuad.Area / (nu * nv);
+					CurPatch.RootElement = new Radiosity::Element();
+					CurrentGeneratedPatches.push_back(PatchIndex);
+					++PatchIndex;
+				}
+			}
+		}
+
+		// Element 계산
+		//const int32 PatchCnt = CurQuad.PatchLevel * CurQuad.PatchLevel;
+		//for(int32 PatchIndex = 0;PatchIndex < PatchCnt;++PatchIndex)
+		{
+			int32 nu = CurQuad.PatchLevel * CurQuad.ElementLevel;
+			int32 nv = CurQuad.PatchLevel * CurQuad.ElementLevel;
+			double du = 1.0 / nu;
+			double dv = 1.0 / nv;
+
+			int32 CurLevel = CurQuad.ElementLevel;
+			//Params->Elements.resize(NumOfElement);
+
+			//Params->RootElements.push_back(Radiosity::Element());
+			//Radiosity::Element* RootElement = &Params->RootElements[Params->RootElements.size() - 1];
+
+			//std::vector<Radiosity::Element*> CurElements;
+			//CurElements.push_back(RootElement);
+
+			while (CurLevel > 0)
+			{
+				const int32 CurAreaWidth = (nu / CurLevel);
+				const int32 CurAreaHeight = (nv / CurLevel);
+				const int32 CurrentArea = CurQuad.Area / (CurAreaWidth * CurAreaHeight);
+
+				int cnt = 0;
+				for (int32 k = 0; k < nu; k += CurLevel)
+				{
+					double u = k * du + du / 2.0;
+					for (int32 m = 0; m < nv; m += CurLevel, ++cnt)
+					{
+						double v = m * dv + dv / 2.0;
+
+						int curCnt = cnt;
+						int Multi = 1;
+						int x = 0;
+						int y = 0;
+						while (curCnt)
+						{
+							y += !!(curCnt & 0x1) * Multi;
+							x += !!(curCnt & 0x2) * Multi;
+							curCnt = curCnt >> 2;
+							Multi *= 2;
+						}
+						x *= CurLevel;
+						y *= CurLevel;
+
+						float fi = y / (float)nv;
+						float fj = x / (float)nu;
+						int32 pi = (int32)(fi * CurQuad.PatchLevel);
+						int32 pj = (int32)(fj * CurQuad.PatchLevel);
+						const int32 CurrentPatchIndex = PrvPatchIndex + pi * CurQuad.PatchLevel + pj;
+						JASSERT(Params->Patches.size() > CurrentPatchIndex);
+						Radiosity::Patch* CurrentPatch = &Params->Patches[CurrentPatchIndex];
+
+						Radiosity::Element* CurElement = CurrentPatch->RootElement->GetNextEmptyElement(CurrentPatch->RootElement);
+						//if (CurLevel == Level)
+						//{
+						//	CurElement = CurElements[0];
+						//}
+						//else
+						//{
+						//	for (auto it = CurElements.begin(); it != CurElements.end(); ++it)
+						//	{
+						//		if ((*it)->ID == -1)
+						//		{
+						//			CurElement = *it;
+						//			break;
+						//		}
+						//	}
+						//}
+						JASSERT(CurElement);
+
+						//Radiosity::Element& CurElement = Params->Elements[ElementIndex++];
+						CurElement->ID = ID_Gen++;
+						CurElement->Normal = CurQuad.Normal;
+						CurElement->Indices.resize(4);
+
+						CurElement->Indices[0] = VertexOffset + (y * (nv + 1) + x);
+						CurElement->Indices[1] = VertexOffset + (y * (nv + 1) + (x + CurLevel));
+						CurElement->Indices[2] = VertexOffset + ((y + CurLevel) * (nv + 1) + x);
+						CurElement->Indices[3] = VertexOffset + ((y + CurLevel) * (nv + 1) + (x + CurLevel));
+
+						CurElement->Area = CurrentArea;
+
+						CurElement->ParentPatch = CurrentPatch;
+					}
+				}
+				CurLevel /= 2;
+
+				if (CurLevel > 0)
+				{
+					//std::vector<Radiosity::Element*> TempElement;
+					//TempElement.swap(CurElements);
+					//for (auto it = TempElement.begin(); it != TempElement.end(); ++it)
+					//{
+					//	auto Elem = *it;
+					//	for (int w = 0; w < 4; ++w)
+					//	{
+					//		Elem->ChildElement[w] = new Radiosity::Element();
+					//		CurElements.push_back(Elem->ChildElement[w]);
+					//	}
+					//}
+					for (int32 Index : CurrentGeneratedPatches)
+						Params->Patches[Index].RootElement->GenerateEmptyChildElement();
 				}
 			}
 		}
 
 		VertexOffset += NumOfCurQuadVertices;
 	}
+
+	Params->TotalElementCount = ID_Gen;
 
 	return Params;
 }
@@ -490,9 +743,8 @@ void InitRadiosity(Radiosity::InputParams* InParams)
 		double halfRes = Res / 2.0;
 		for (int32 i = 0; i < halfRes; ++i)
 		{
-			double di = i;// -halfRes * 0.5;
-			double y = (halfRes - (di + 0.5)) / halfRes;
-			//double y = (di + 0.5) / halfRes;
+			double di = i;
+			double y = (halfRes - (di-0.5)) / halfRes;	// ((halfRes - 0.5) / HalfRes), ((halfRes - 1.5) / HalfRes), ... (1.5 / HalfRes), (0.5 / HalfRes)
 			double ySq = y * y;
 			for (int32 k = 0; k < halfRes; ++k)
 			{
@@ -506,17 +758,23 @@ void InitRadiosity(Radiosity::InputParams* InParams)
 		}
 	}
 
-	InParams->Formfactors.resize(InParams->Elements.size());
+	InParams->Formfactors.resize(InParams->TotalElementCount);
 
 	// Initialize Raidosity
-	for (int32 i = InParams->Patches.size() - 1; i >= 0; --i)
+	for (int32 i = 0; i < InParams->Patches.size(); ++i)
 		InParams->Patches[i].UnShotRadiosity = InParams->Patches[i].Emission;
-	for (int32 i = InParams->Elements.size() - 1; i >= 0; --i)
-		InParams->Elements[i].Radiosity = InParams->Elements[i].ParentPatch->Emission;
+
+	for (int32 i = 0; i < InParams->Patches.size(); ++i)
+	{
+		InParams->Patches[i].RootElement->IterateOnlyLeaf([](Radiosity::Element* InElement)
+		{
+			InElement->Radiosity = InElement->ParentPatch->Emission;
+		});
+	}
 
 	// 총 에너지 계산
 	InParams->TotalEnergy = 0.0;
-	for (int32 i = InParams->Patches.size() - 1; i >= 0; --i)
+	for (int32 i = 0; i < InParams->Patches.size(); ++i)
 		InParams->TotalEnergy += InParams->Patches[i].Emission.DotProduct(Vector(InParams->Patches[i].Area));
 }
 
@@ -557,14 +815,13 @@ void SumFactors(Radiosity::InputParams* InParams, bool InIsTop)
 	const std::vector<double>& CurrentFactors = (InIsTop ? InParams->TopFactors : InParams->SideFactors);
 
 	int32 HalfResX = ResX / 2;
-
 	for (int32 i = StartY; i < EndY; ++i)
 	{
 		int32 indexY;
 		if (i < HalfResX)
-			indexY = i;
+			indexY = i;		// 0, 1, 2, 3 ... HalfResX-1
 		else
-			indexY = (HalfResX - 1 - (i % HalfResX));
+			indexY = (HalfResX - 1 - (i % HalfResX));	// HalfResX-1, HalfResX-2, HalfResX-3 ... 2, 1, 0
 		indexY *= HalfResX;
 
 		register unsigned long int current_backItem = kBackgroundItem;
@@ -579,185 +836,13 @@ void SumFactors(Radiosity::InputParams* InParams, bool InIsTop)
 					indexX = k;
 				else
 					indexX = (HalfResX - 1 - (k % HalfResX));
+				JASSERT(InParams->Formfactors.size() > CurrentID);
+				JASSERT(CurrentFactors.size() > (indexX + indexY));
 				InParams->Formfactors[CurrentID] += CurrentFactors[indexX + indexY];
 			}
 		}
 	}
 }
-
-//void DrawQuadWithID(const std::vector<Vector>& InVertices, const Vector& InNormal, int32 InID
-//	, jCamera* InCamera, jShader* InShader)
-//{
-//	JASSERT(InShader);
-//
-//	g_rhi->SetShader(InShader);
-//	SET_UNIFORM_BUFFER_STATIC(Vector, "Normal", InNormal, InShader);
-//	SET_UNIFORM_BUFFER_STATIC(Vector, "CameraPos", InCamera->Pos, InShader);
-//	SET_UNIFORM_BUFFER_STATIC(int32, "ID", InID, InShader);
-//
-//	static jObject* QuadObject = nullptr;
-//	static bool InitializedDrawQuad = false;
-//	if (!InitializedDrawQuad)
-//	{
-//		// attribute 추가
-//		auto vertexStreamData = std::shared_ptr<jVertexStreamData>(new jVertexStreamData());
-//		{
-//			auto streamParam = new jStreamParam<float>();
-//			streamParam->BufferType = EBufferType::STATIC;
-//			streamParam->ElementTypeSize = sizeof(float);
-//			streamParam->ElementType = EBufferElementType::FLOAT;
-//			streamParam->Stride = sizeof(float) * 3;
-//			streamParam->Name = "Pos";
-//			streamParam->Data.resize(InVertices.size() * 4);
-//			memcpy(&streamParam->Data[0], &InVertices[0], sizeof(Vector) * 4);
-//			vertexStreamData->Params.push_back(streamParam);
-//		}
-//
-//		vertexStreamData->PrimitiveType = EPrimitiveType::TRIANGLE_STRIP;
-//		vertexStreamData->ElementCount = InVertices.size();
-//
-//		auto renderObject = new jRenderObject();
-//		renderObject->CreateRenderObject(vertexStreamData, nullptr);
-//		renderObject->Pos = Vector::ZeroVector;
-//		renderObject->Scale = Vector::OneVector;
-//
-//		QuadObject = new jObject();
-//		QuadObject->RenderObject = renderObject;
-//
-//		InitializedDrawQuad = true;
-//	}
-//	jStreamParam<float>* Stream = static_cast<jStreamParam<float>*>(QuadObject->RenderObject->VertexStream->Params[0]);
-//	if (Stream)
-//	{
-//		memcpy(&Stream->Data[0], &InVertices[0], sizeof(Vector) * 4);
-//		QuadObject->RenderObject->UpdateVertexStream(0);
-//	}
-//
-//	static std::list<const jLight*> EmtpyLights;
-//	QuadObject->Draw(InCamera, InShader, EmtpyLights);
-//}
-
-//void DrawQuad(const std::vector<Vector>& InVertices, const Vector& InNormal, const Vector4& InColor
-//	, jCamera* InCamera)
-//{
-//	jShader* shader = jShader::GetShader("RadiosityDebug");
-//	JASSERT(shader);
-//
-//	g_rhi->SetShader(shader);
-//
-//	SET_UNIFORM_BUFFER_STATIC(Vector, "Normal", InNormal, shader);
-//	SET_UNIFORM_BUFFER_STATIC(Vector4, "ColorTest", InColor, shader);
-//
-//	static jObject* QuadObject = nullptr;
-//	static bool InitializedDrawQuad = false;
-//	if (!InitializedDrawQuad)
-//	{
-//		// attribute 추가
-//		auto vertexStreamData = std::shared_ptr<jVertexStreamData>(new jVertexStreamData());
-//		{
-//			auto streamParam = new jStreamParam<float>();
-//			streamParam->BufferType = EBufferType::STATIC;
-//			streamParam->ElementTypeSize = sizeof(float);
-//			streamParam->ElementType = EBufferElementType::FLOAT;
-//			streamParam->Stride = sizeof(float) * 3;
-//			streamParam->Name = "Pos";
-//			streamParam->Data.resize(InVertices.size() * 4);
-//			memcpy(&streamParam->Data[0], &InVertices[0], sizeof(Vector) * 4);
-//			vertexStreamData->Params.push_back(streamParam);
-//		}
-//
-//		vertexStreamData->PrimitiveType = EPrimitiveType::TRIANGLE_STRIP;
-//		vertexStreamData->ElementCount = InVertices.size();
-//
-//		auto renderObject = new jRenderObject();
-//		renderObject->CreateRenderObject(vertexStreamData, nullptr);
-//		renderObject->Pos = Vector::ZeroVector;
-//		renderObject->Scale = Vector::OneVector;
-//
-//		QuadObject = new jObject();
-//		QuadObject->RenderObject = renderObject;
-//
-//		InitializedDrawQuad = true;
-//	}
-//	jStreamParam<float>* Stream = static_cast<jStreamParam<float>*>(QuadObject->RenderObject->VertexStream->Params[0]);
-//	if (Stream)
-//	{
-//		memcpy(&Stream->Data[0], &InVertices[0], sizeof(Vector) * 4);
-//		QuadObject->RenderObject->UpdateVertexStream(0);
-//	}
-//
-//	static std::list<const jLight*> EmtpyLights;
-//	QuadObject->Draw(InCamera, shader, EmtpyLights);
-//}
-
-//void DrawQuad(const std::vector<Vector>& InVertices, const std::vector<Vector4>& InColors, const Vector& InNormal, jCamera* InCamera)
-//{
-//	jShader* shader = jShader::GetShader("RadiosityLinearColorDebug");
-//	JASSERT(shader);
-//
-//	g_rhi->SetShader(shader);
-//
-//	SET_UNIFORM_BUFFER_STATIC(Vector, "Normal", InNormal, shader);
-//
-//	static jObject* QuadObject = nullptr;
-//	static bool InitializedDrawQuad = false;
-//	if (!InitializedDrawQuad)
-//	{
-//		// attribute 추가
-//		auto vertexStreamData = std::shared_ptr<jVertexStreamData>(new jVertexStreamData());
-//		{
-//			auto streamParam = new jStreamParam<float>();
-//			streamParam->BufferType = EBufferType::STATIC;
-//			streamParam->ElementTypeSize = sizeof(float);
-//			streamParam->ElementType = EBufferElementType::FLOAT;
-//			streamParam->Stride = sizeof(float) * 3;
-//			streamParam->Name = "Pos";
-//			streamParam->Data.resize(InVertices.size() * 4);
-//			memcpy(&streamParam->Data[0], &InVertices[0], sizeof(Vector) * 4);
-//			vertexStreamData->Params.push_back(streamParam);
-//		}
-//
-//		{
-//			auto streamParam = new jStreamParam<float>();
-//			streamParam->BufferType = EBufferType::STATIC;
-//			streamParam->ElementTypeSize = sizeof(float);
-//			streamParam->ElementType = EBufferElementType::FLOAT;
-//			streamParam->Stride = sizeof(float) * 4;
-//			streamParam->Name = "Color";
-//			streamParam->Data.resize(InVertices.size() * 4);
-//			memcpy(&streamParam->Data[0], &InColors[0], sizeof(Vector4) * 4);
-//			vertexStreamData->Params.push_back(streamParam);
-//		}
-//
-//		vertexStreamData->PrimitiveType = EPrimitiveType::TRIANGLE_STRIP;
-//		vertexStreamData->ElementCount = InVertices.size();
-//
-//		auto renderObject = new jRenderObject();
-//		renderObject->CreateRenderObject(vertexStreamData, nullptr);
-//		renderObject->Pos = Vector::ZeroVector;
-//		renderObject->Scale = Vector::OneVector;
-//
-//		QuadObject = new jObject();
-//		QuadObject->RenderObject = renderObject;
-//
-//		InitializedDrawQuad = true;
-//	}
-//	jStreamParam<float>* Stream = static_cast<jStreamParam<float>*>(QuadObject->RenderObject->VertexStream->Params[0]);
-//	if (Stream)
-//	{
-//		memcpy(&Stream->Data[0], &InVertices[0], sizeof(Vector) * 4);
-//		QuadObject->RenderObject->UpdateVertexStream(0);
-//	}
-//	jStreamParam<float>* Stream2 = static_cast<jStreamParam<float>*>(QuadObject->RenderObject->VertexStream->Params[1]);
-//	if (Stream2)
-//	{
-//		memcpy(&Stream2->Data[0], &InColors[0], sizeof(Vector4) * 4);
-//		QuadObject->RenderObject->UpdateVertexStream(1);
-//	}
-//
-//	static std::list<const jLight*> EmtpyLights;
-//	QuadObject->Draw(InCamera, shader, EmtpyLights);
-//}
 
 void ComputeFormfactors(int32 InShootPatchIndex, Radiosity::InputParams* InParams)
 {
@@ -766,88 +851,33 @@ void ComputeFormfactors(int32 InShootPatchIndex, Radiosity::InputParams* InParam
 	// 슈팅 패치를 얻음
 	Vector Center = ShootPatch.Center;
 	Vector Normal = ShootPatch.Normal;
-	jPlane Plane(Normal, -(Normal.DotProduct(Center)));
+	//jPlane Plane(Normal, -(Normal.DotProduct(Center)));
 
-	// hemi-cube를 Patch의 normal 축을 기준으로 랜덤하게 회전시킨다.
-	// 이 것이 hemi-cube의 앨리어싱 아티팩트를 줄여준다.
-
-	Vector TangentU = Vector::ZeroVector;
-	//if (Vector::ZeroVector == TangentU)
-	{
-		do
-		{
-			//Vector RandVec(((float)rand() / float(RAND_MAX)), ((float)rand() / float(RAND_MAX)), ((float)rand() / float(RAND_MAX)));
-			Vector RandVec = Vector::UpVector;
-			auto temp = Normal.DotProduct(RandVec);
-			if (fabs(temp) > 0.9 )
-				RandVec = Vector::FowardVector;
-			TangentU = Normal.CrossProduct(RandVec).GetNormalize();
-
-		} while (TangentU.Length() == 0);
-	}
-
-	// TangentV 를 계산
-	Vector TangentV = Normal.CrossProduct(TangentU).GetNormalize();
-
-	// Hemicube face를 계산한다.
-	Vector LookAt[5];
-	Vector Up[5];
-
-	LookAt[0] = Center + Normal;
-	Up[0] = Center + TangentU;
-
-	LookAt[1] = Center + TangentU;
-	Up[1] = Center + Normal;
-
-	LookAt[2] = Center + TangentV;
-	Up[2] = Center + Normal;
-
-	LookAt[3] = Center - TangentU;
-	Up[3] = Center + Normal;
-
-	LookAt[4] = Center - TangentV;
-	Up[4] = Center + Normal;
+	Radiosity::Patch::LookAtAndUp lookAtAndUp = ShootPatch.GenerateHemicubeLookAtAndUp();
 
 	for (int32 i = 0; i < InParams->Formfactors.size(); ++i)
 		InParams->Formfactors[i] = 0.0;
 
 	// hemicube 를 Shooting Patch의 중심보다 살짝 위에 위치시킴.
-	InParams->HemicubeCamera->Pos = Center + (Normal * InParams->WorldSize * 0.00000001);
-
-	static std::vector<Vector> Vertices(4, Vector::ZeroVector);
-	//jShader* shader = jShader::GetShader("RadiosityElementID");
-	//g_rhi->SetShader(shader);
+	//InParams->HemicubeCamera->Pos = Center + (Normal * InParams->WorldSize * 0.00000001);
 
 	static std::shared_ptr<jRenderTarget> RenderTarget = jRenderTargetPool::GetRenderTarget(
 		{ ETextureType::TEXTURE_2D, ETextureFormat::R32F, ETextureFormat::R, EFormatType::FLOAT
 		, EDepthBufferType::DEPTH24, InParams->HemicubeCamera->Width, InParams->HemicubeCamera->Height, 1 });
 
-	// 전체 그리기
-	//for (int32 face = 0; face < 5; ++face)
-		static int32 face = 1;
-	//if (0)
-	//{
-	//	InParams->HemicubeCamera->Target = LookAt[face];
-	//	InParams->HemicubeCamera->Up = Up[face];
-
-	//	InParams->HemicubeCamera->UpdateCamera();
-	//	auto CameraDebug = jPrimitiveUtil::CreateFrustumDebug(InParams->HemicubeCamera);
-	//	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	//	shader = jShader::GetShader("Simple");
-	//	CameraDebug->Update(0.0f);
-	//	CameraDebug->Draw(InParams->DisplayCamera, jShader::GetShader("Simple"), {});
-	//	delete CameraDebug;
-	//	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	//	//return;
-	//}
-
 	char szTemp[1024];
 	for (int32 face = 0; face < 5; ++face)
 	{
+		if (FixedFace != -1)
+			face = FixedFace;
+
 		sprintf_s(szTemp, sizeof(szTemp), "ComputeFormfactors Face : %d", face);
 		SCOPE_DEBUG_EVENT(g_rhi, szTemp);
-		InParams->HemicubeCamera->Target = LookAt[face];
-		InParams->HemicubeCamera->Up = Up[face];
+		
+		Vector Offset = Vector::ZeroVector;// (lookAtAndUp.LookAt[face] - ShootPatch.Center).GetNormalize()* (sqrt(ShootPatch.Area) * 0.25f);
+		InParams->HemicubeCamera->Target = lookAtAndUp.LookAt[face] + Offset;
+		InParams->HemicubeCamera->Up = lookAtAndUp.Up[face] + Offset;
+		InParams->HemicubeCamera->Pos = ShootPatch.Center + Offset;
 
 		InParams->HemicubeCamera->UpdateCamera();
 		InParams->HemicubeCamera->IsEnableCullMode = true;
@@ -864,33 +894,37 @@ void ComputeFormfactors(int32 InShootPatchIndex, Radiosity::InputParams* InParam
 			SET_UNIFORM_BUFFER_STATIC(Matrix, "MVP", InParams->HemicubeCamera->GetViewProjectionMatrix(), shader);
 			SET_UNIFORM_BUFFER_STATIC(Matrix, "M", Matrix(IdentityType), shader);
 
-			for (int32 i = 0; i < InParams->Elements.size(); ++i)
+			for (int32 i = 0; i < InParams->Patches.size(); ++i)
 			{
-				if (InParams->Elements[i].ParentPatch == &ShootPatch)
-					continue;
-
-				for (int32 k = 0; k < InParams->Elements[i].Indices.size(); ++k)
+				InParams->Patches[i].RootElement->IterateOnlyLeaf([&](Radiosity::Element* InElement)
 				{
-					int32 Index = InParams->Elements[i].Indices[k];
-					Vertices[k] = (InParams->AllVertices[Index]);
-				}
-				//DrawQuadWithID(Vertices, InParams->Elements[i].Normal, i, InParams->HemicubeCamera, shader);
-				//float Temp = (float)i / InParams->Elements.size();
-				//DrawQuad(Vertices, InParams->Elements[i].Normal, Vector4(Vector(Temp), 1.0), InParams->HemicubeCamera);
+					if (!InElement)
+						return;
 
-				SET_UNIFORM_BUFFER_STATIC(int32, "ID", i, shader);
-				SET_UNIFORM_BUFFER_STATIC(Vector, "Normal", InParams->Elements[i].Normal, shader);
+					static std::vector<Vector> Vertices(4, Vector::ZeroVector);
 
-				SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[0]", Vertices[0], shader);
-				SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[1]", Vertices[1], shader);
-				SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[2]", Vertices[2], shader);
-				SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[3]", Vertices[3], shader);
+					if (InElement->ParentPatch == &ShootPatch)
+						return;
 
-				g_rhi->DrawArrays(EPrimitiveType::POINTS, 0, 1);
+					for (int32 k = 0; k < InElement->Indices.size(); ++k)
+					{
+						int32 Index = InElement->Indices[k];
+						Vertices[k] = (InParams->AllVertices[Index]);
+					}
+
+					SET_UNIFORM_BUFFER_STATIC(int32, "ID", InElement->ID, shader);
+					SET_UNIFORM_BUFFER_STATIC(Vector, "Normal", InElement->Normal, shader);
+
+					SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[0]", Vertices[0], shader);
+					SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[1]", Vertices[1], shader);
+					SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[2]", Vertices[2], shader);
+					SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[3]", Vertices[3], shader);
+
+					g_rhi->DrawArrays(EPrimitiveType::POINTS, 0, 1);
+				});
 			}
 			RenderTarget->End();
 		}
-		//return;
 
 		InParams->CurrentBuffer.resize(RenderTarget->Info.Width * RenderTarget->Info.Height);
 		jTexture_OpenGL* Tex = (jTexture_OpenGL*)RenderTarget->GetTexture();
@@ -906,38 +940,56 @@ void ComputeFormfactors(int32 InShootPatchIndex, Radiosity::InputParams* InParam
 		{
 			SumFactors(InParams, false);
 		}
+
+		if (FixedFace != -1)
+			break;
 	}
 
 	// reciprocal form-factor 계산
-	for (int32 i = 0; i < InParams->Elements.size();++i)
+	for (int32 i = 0; i < InParams->Patches.size();++i)
 	{
-		InParams->Formfactors[i] *= ShootPatch.Area / InParams->Elements[i].Area;
+		InParams->Patches[i].RootElement->IterateOnlyLeaf([&](Radiosity::Element* InElement)
+		{
+			int32 index = InElement->ID;
+			InParams->Formfactors[index] *= ShootPatch.Area / InElement->Area;
 
-		/* This is a potential source of hemi-cube aliasing */
-		/* To do this right, we need to subdivide the shooting patch
-		and reshoot. For now we just clip it to unity */
-		if (InParams->Formfactors[i] > 1.0)
-			InParams->Formfactors[i] = 1.0;
+			/* This is a potential source of hemi-cube aliasing */
+			/* To do this right, we need to subdivide the shooting patch
+			and reshoot. For now we just clip it to unity */
+			if (InParams->Formfactors[index] > 1.0)
+				InParams->Formfactors[index] = 1.0;
+		});
 	}
 }
 
 void DistributeRadiosity(int32 InShootPatchIndex, Radiosity::InputParams* InParams)
 {
 	Radiosity::Patch& ShootPatch = InParams->Patches[InShootPatchIndex];
-
 	/* distribute unshotRad to every element */
-	for (int32 i = 0; i < InParams->Elements.size(); ++i)
+	for (int32 i = 0; i < InParams->Patches.size(); ++i)
 	{
-		if (InParams->Formfactors[i] == 0.0)
-			continue;
+		InParams->Patches[i].RootElement->IterateOnlyLeaf([&](Radiosity::Element* InElement)
+		{
+			const int32 index = InElement->ID;
 
-		Vector DeltaRadiosity = ShootPatch.UnShotRadiosity * (InParams->Formfactors[i] * InParams->Elements[i].ParentPatch->Reflectance);
-		//Vector DeltaRadiosity = ShootPatch.UnShotRadiosity * InParams->Elements[i].ParentPatch->Reflectance;
+			JASSERT(InParams->Formfactors.size() > index);
 
-		/* incremental element's radiosity and patch's unshot radiosity */
-		double w = InParams->Elements[i].Area / InParams->Elements[i].ParentPatch->Area;
-		InParams->Elements[i].Radiosity += DeltaRadiosity;
-		InParams->Elements[i].ParentPatch->UnShotRadiosity += DeltaRadiosity * w;
+			if (InParams->Formfactors[index] == 0.0)
+				return;
+
+#if WITH_REFLECTANCE
+			Vector DeltaRadiosity = ShootPatch.UnShotRadiosity * (InParams->Formfactors[index] * InElement->ParentPatch->Reflectance);
+#else
+			Vector DeltaRadiosity = ShootPatch.UnShotRadiosity * (InParams->Formfactors[index]);
+#endif
+			if (IsOnlyUseFormFactor)
+				DeltaRadiosity = Vector(InParams->Formfactors[index]);
+
+			/* incremental element's radiosity and patch's unshot radiosity */
+			double w = InElement->Area / InElement->ParentPatch->Area;
+			InElement->Radiosity += DeltaRadiosity;
+			InElement->ParentPatch->UnShotRadiosity += DeltaRadiosity * w;
+		});
 	}
 
 	/* reset shooting patch's unshot radiosity */
@@ -948,73 +1000,126 @@ Vector GetAmbient(Radiosity::InputParams* InParams)
 {
 	Vector Ambient = Radiosity::black;
 	Vector Sum = Radiosity::black;
-	static Vector BaseSum = Radiosity::black;
+	static Vector OverallInterreflectance = Radiosity::black;
 	static int first = 1;
+	static double AreaSum = 0.0f;
 	if (first) {
-		double areaSum = 0.0;
+		Vector AverageReflectance = Radiosity::black;
 		Vector rSum;
 		rSum = Radiosity::black;
 		/* sum area and (area*reflectivity) */
 		for (int32 i = 0; i < InParams->Patches.size(); ++i)
 		{
-			areaSum += InParams->Patches[i].Area;
+			AreaSum += InParams->Patches[i].Area;
 			rSum += InParams->Patches[i].Reflectance * InParams->Patches[i].Area;
 		}
-		BaseSum = areaSum - rSum;
+		AverageReflectance = rSum / AreaSum;
+		OverallInterreflectance = 1.0f / (1.0f - AverageReflectance);
 		first = 0;
 	}
 
 	/* sum (unshot radiosity * area) */
 	for (int32 i = 0; i < InParams->Patches.size(); ++i)
 	{
-		Sum += InParams->Patches[i].UnShotRadiosity * InParams->Patches[i].Area;
+		Sum += InParams->Patches[i].UnShotRadiosity * (InParams->Patches[i].Area / AreaSum);
 	}
 
 	/* compute ambient */
-	Ambient = Sum / BaseSum;
+	Ambient = OverallInterreflectance * Sum;
 
 	return Ambient;
 }
 
-void DisplayResults(Radiosity::InputParams* InParams, int32 InSelectedPatch = -1, bool InIsUpdated = false)
+void DrawElement(Radiosity::InputParams* InParams, Radiosity::Element* InElement, const std::vector<int32>& SummedCount, jShader* shader, bool IsSelected = false)
+{
+	static Vector Vertices[4];
+	static Vector4 Colors[4];
+	if (InElement->HasUseChild())
+	{
+		for (int32 i = 0; i < 4; ++i)
+		{
+			DrawElement(InParams, InElement->ChildElement[i], SummedCount, shader, IsSelected);
+		}
+	}
+	else
+	{
+		Vector Normal = InElement->Normal;
+		for (int32 k = 0; k < InElement->Indices.size(); ++k)
+		{
+			int32 Index = InElement->Indices[k];
+			Vertices[k] = (InParams->AllVertices[Index]);
+			Colors[k] = Vector4(InParams->AllColors[Index] / (float)SummedCount[Index], 1.0);
+		}
+
+		SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[0]", Vertices[0], shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[1]", Vertices[1], shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[2]", Vertices[2], shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[3]", Vertices[3], shader);
+
+		if (SelectedShooterPatchAsDrawLine && IsSelected)
+		{
+			SET_UNIFORM_BUFFER_STATIC(Vector4, "Color[0]", Vector4::OneVector, shader);
+			SET_UNIFORM_BUFFER_STATIC(Vector4, "Color[1]", Vector4::OneVector, shader);
+			SET_UNIFORM_BUFFER_STATIC(Vector4, "Color[2]", Vector4::OneVector, shader);
+			SET_UNIFORM_BUFFER_STATIC(Vector4, "Color[3]", Vector4::OneVector, shader);
+		}
+		else
+		{
+			SET_UNIFORM_BUFFER_STATIC(Vector4, "Color[0]", Colors[0], shader);
+			SET_UNIFORM_BUFFER_STATIC(Vector4, "Color[1]", Colors[1], shader);
+			SET_UNIFORM_BUFFER_STATIC(Vector4, "Color[2]", Colors[2], shader);
+			SET_UNIFORM_BUFFER_STATIC(Vector4, "Color[3]", Colors[3], shader);
+		}
+
+		g_rhi->DrawArrays(EPrimitiveType::POINTS, 0, 1);
+	}
+};
+
+void DisplayResults(Radiosity::InputParams* InParams, int32 InSelectedPatch = -1)
 {
 	SCOPE_PROFILE(DisplayResults);
 	Vector Ambient = GetAmbient(InParams);
 
 	InParams->DisplayCamera->UpdateCamera();
 
-	//g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	//g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
+	g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
 	g_rhi->EnableCullFace(true);
 	g_rhi->EnableDepthTest(true);
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	if (WireFrame)
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	else
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	static std::vector<Vector> Vertices(4, Vector::ZeroVector);
 	static std::vector<Vector4> Colors(4, Vector4::ZeroVector);
 	static std::vector<int32> SummedCount(InParams->AllVertices.size(), 0);
-
-	//if (InIsUpdated)
+	
 	{
-		//InParams->AllColors.resize(InParams->AllVertices.size(), Vector::ZeroVector);
-		//SummedCount.resize(InParams->AllVertices.size(), 0);
 		memset(&InParams->AllColors[0], 0, InParams->AllColors.size() * sizeof(Vector));
 		memset(&SummedCount[0], 0, SummedCount.size() * sizeof(int32));
 
-		for (int32 i = 0; i < InParams->Elements.size(); ++i)
+		for (int32 i = 0; i < InParams->Patches.size(); ++i)
 		{
-			Vector Color;
-			if (InParams->AddAmbient)
-				Color = (InParams->Elements[i].Radiosity + (Ambient * InParams->Elements[i].ParentPatch->Reflectance)) * InParams->IntensityScale;
-			else
-				Color = InParams->Elements[i].Radiosity * InParams->IntensityScale;
-
-			for (int32 k = 0; k < InParams->Elements[i].Indices.size(); ++k)
+			InParams->Patches[i].RootElement->IterateOnlyLeaf([&](Radiosity::Element* InElement)
 			{
-				int32 Index = InParams->Elements[i].Indices[k];
-				InParams->AllColors[Index] += Color;
-				++SummedCount[Index];
-			}
+				Vector Color;
+#if WITH_REFLECTANCE
+				if (InParams->AddAmbient)
+					Color = (InElement->Radiosity + (Ambient * InElement->ParentPatch->Reflectance)) * InParams->IntensityScale;
+				else
+#endif
+					Color = InElement->Radiosity * InParams->IntensityScale;
+
+				//Color = InElement->Radiosity * InParams->IntensityScale;
+
+				for (int32 k = 0; k < InElement->Indices.size(); ++k)
+				{
+					int32 Index = InElement->Indices[k];
+					InParams->AllColors[Index] += Color;
+					++SummedCount[Index];
+				}
+			});			
 		}
 	}
 
@@ -1023,39 +1128,66 @@ void DisplayResults(Radiosity::InputParams* InParams, int32 InSelectedPatch = -1
 
 	SET_UNIFORM_BUFFER_STATIC(Matrix, "MVP", InParams->DisplayCamera->GetViewProjectionMatrix(), shader);
 
-	for (int32 i = 0; i < InParams->Elements.size(); ++i)
+	for (int32 i = 0; i < InParams->Patches.size(); ++i)
 	{
-		if ((InSelectedPatch != -1) && (&InParams->Patches[InSelectedPatch] != InParams->Elements[i].ParentPatch))
-			continue;
-			
-		Vector Normal = InParams->Elements[i].Normal;
-		for (int32 k = 0; k < InParams->Elements[i].Indices.size(); ++k)
+		const bool IsSelected = (InSelectedPatch == i);
+		if (SelectedShooterPatchAsDrawLine)
 		{
-			int32 Index = InParams->Elements[i].Indices[k];
-			Vertices[k] = (InParams->AllVertices[Index]);
-			Colors[k] = Vector4(InParams->AllColors[Index] / (float)SummedCount[Index], 1.0);
+			if (IsSelected)
+			{
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				g_rhi->EnableCullFace(false);
+			}
+			else
+			{
+				if (WireFrame)
+					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				else
+					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+				g_rhi->EnableCullFace(true);
+			}
 		}
-
-		float Temp = (float)i / InParams->Elements.size();
-		//DrawQuad(Vertices, InParams->Elements[i].Normal, Vector4(Vector(Temp), 1.0), InParams->DisplayCamera);
-		//DrawQuad(Vertices, InParams->Elements[i].Normal, MaxColors[i], InParams->DisplayCamera);
-		//DrawQuad(Vertices, InParams->Elements[i].Normal, Vector4(InParams->Elements[i].ParentPatch->Reflectance, 1.0)
-		//	, InParams->DisplayCamera, shader);
-		
-		//DrawQuad(Vertices, Colors, Normal, InParams->DisplayCamera);
-
-		SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[0]", Vertices[0], shader);
-		SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[1]", Vertices[1], shader);
-		SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[2]", Vertices[2], shader);
-		SET_UNIFORM_BUFFER_STATIC(Vector, "Pos[3]", Vertices[3], shader);
-
-		SET_UNIFORM_BUFFER_STATIC(Vector4, "Color[0]", Colors[0], shader);
-		SET_UNIFORM_BUFFER_STATIC(Vector4, "Color[1]", Colors[1], shader);
-		SET_UNIFORM_BUFFER_STATIC(Vector4, "Color[2]", Colors[2], shader);
-		SET_UNIFORM_BUFFER_STATIC(Vector4, "Color[3]", Colors[3], shader);
-
-		g_rhi->DrawArrays(EPrimitiveType::POINTS, 0, 1);
+		DrawElement(InParams, InParams->Patches[i].RootElement, SummedCount, shader, IsSelected);
 	}
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+	//for (int32 kk = 0; kk < numberOfPolys; ++kk)
+	//{
+	//	int32 Cnt = 0;
+	//	Vector RadiositySum = Vector::ZeroVector;
+
+	//	for (int32 i = 0; i < InParams->Patches.size(); ++i)
+	//	{
+	//		if (InParams->Patches[i].QuadID != kk)
+	//			continue;
+
+	//		InParams->Patches[i].RootElement->IterateUsingElement([&](Radiosity::Element* InElement)
+	//			{
+	//				++Cnt;
+	//				RadiositySum += InElement->Delta;
+	//			});
+	//	}
+	//	float Average = (RadiositySum / Cnt).Length();
+
+	//	for (int32 i = 0; i < InParams->Patches.size(); ++i)
+	//	{
+	//		if (InParams->Patches[i].QuadID != kk)
+	//			continue;
+	//		//RadiositySqrtSum /= Cnt;
+	//		//RadiositySum = ((RadiositySum / Cnt) * (RadiositySum / Cnt));
+	//		//float Variance = (RadiositySqrtSum - RadiositySum).Length();
+	//		//if (Variance > 0.03f)
+	//		{
+	//			InParams->Patches[i].RootElement->IterateUsingElement([&](Radiosity::Element* InElement)
+	//				{
+	//					float CurElementDelta = InElement->Delta.Length();
+	//					float temp = fabs(Average - CurElementDelta);
+	//					if (temp > 0.0015)
+	//						InElement->Subdivide();
+	//				});
+	//		}
+	//	}
+	//}
 }
 
 void jGame::Update(float deltaTime)
@@ -1079,6 +1211,14 @@ void jGame::Update(float deltaTime)
 	static bool IsInitialized = false;
 	if (!IsInitialized)
 	{
+		for (int32 i = 0; i < RadiosityParams->Patches.size(); ++i)
+		{
+			RadiosityParams->Patches[i].RootElement->Iterate([](Radiosity::Element* InElement)
+			{
+				InElement->Subdivide();
+			});
+		}
+
 		InitRadiosity(RadiosityParams);
 		RadiosityParams->DisplayCamera = MainCamera;
 
@@ -1089,28 +1229,96 @@ void jGame::Update(float deltaTime)
 	g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
 
 	int32 a = 1;
-	bool Updated = false;
-	int32 FoundShootPatch = 23;
-	while (a--)
+	static int32 PrevShooter = -1;
+	int32 FoundShootPatch = StartShooterPatch;
+	static int32 TotalProcessingCounts = 0;
+	if (a < 0)
 	{
-		FoundShootPatch = FindShootPatch(RadiosityParams);
-		if (FoundShootPatch != -1)
-		//if (1)
+		FoundShootPatch = PrevShooter;
+	}
+	else
+	{
+		while (a-- > 0)
 		{
-			auto& tempPatch = RadiosityParams->Patches[FoundShootPatch];
-
-			ComputeFormfactors(FoundShootPatch, RadiosityParams);
-			//if (!Updated)
+			++TotalProcessingCounts;
+			if (FoundShootPatch == -1)
+				FoundShootPatch = FindShootPatch(RadiosityParams);
+			if (FoundShootPatch != -1)
+			{
+				ComputeFormfactors(FoundShootPatch, RadiosityParams);
 				DistributeRadiosity(FoundShootPatch, RadiosityParams);
-			Updated = true;
-			//break;
-		}
-		else
-		{
-			break;
+
+				//for (int i = 0; i < RadiosityParams->Patches.size(); ++i)
+				//{
+				//	if (RadiosityParams->Patches[i].QuadID != 4)
+				//		continue;
+
+				//	ComputeFormfactors(i, RadiosityParams);
+				//	DistributeRadiosity(i, RadiosityParams);
+				//}
+			}
+			else
+			{
+				break;
+			}
+			PrevShooter = FoundShootPatch;
 		}
 	}
-	DisplayResults(RadiosityParams, -1, Updated);
+
+	// 하는 중인 것 
+	// fixedface = 3 으로 설정해두고, 4, 4와 4, 1을 변경해가면서 문제가 왜 발생하는지 파악해보자.
+	static auto oldstate = g_KeyState['z'];
+	if (g_KeyState['z'] != oldstate && oldstate == true)
+	{
+		a = 1;
+	}
+	oldstate = g_KeyState['z'];
+
+	DisplayResults(RadiosityParams, FoundShootPatch);
+
+	if (FoundShootPatch != -1)
+	{
+		//for (int i = 0; i < RadiosityParams->Patches.size(); ++i)
+		//{
+		//	if (RadiosityParams->Patches[i].QuadID != 1)
+		//		continue;
+		//	FoundShootPatch = i;
+		//}
+		const auto& ShootPatch = RadiosityParams->Patches[FoundShootPatch];
+
+		//Vector Center = ShootPatch.Center + ShootPatch.Normal * 10.0f;
+		//Vector Offset = ShootPatch.Normal * 10.0f;
+		Radiosity::Patch::LookAtAndUp lookAtAndUp = ShootPatch.GenerateHemicubeLookAtAndUp();
+
+		static int32 face = (FixedFace == -1) ? 0 : FixedFace;
+		//for (int32 face = 0; face < 5; ++face)
+		{
+			Vector Offset = Vector::ZeroVector;// (lookAtAndUp.LookAt[face] - ShootPatch.Center).GetNormalize()* (sqrt(ShootPatch.Area) * 0.25f);
+			RadiosityParams->HemicubeCamera->Target = lookAtAndUp.LookAt[face] + Offset;
+			RadiosityParams->HemicubeCamera->Up = lookAtAndUp.Up[face] + Offset;
+			RadiosityParams->HemicubeCamera->Pos = ShootPatch.Center + Offset;
+
+			//g_rhi->SetClearColor(-1.0f, -1.0f, -1.0f, 1.0f);
+			//g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
+			g_rhi->EnableCullFace(true);
+			g_rhi->EnableDepthTest(true);
+
+			RadiosityParams->HemicubeCamera->UpdateCamera();
+			auto CameraDebug = jPrimitiveUtil::CreateFrustumDebug(RadiosityParams->HemicubeCamera);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			CameraDebug->Update(0.0f);
+			CameraDebug->Draw(RadiosityParams->DisplayCamera, jShader::GetShader("Simple"), {});
+			delete CameraDebug;
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		}
+	}
+
+	
+
+	if (FoundShootPatch == -1)
+		TitleText = " Converged";
+	else
+		TitleText = " Progressing : " + std::to_string(TotalProcessingCounts);
 }
 
 void jGame::UpdateAppSetting()

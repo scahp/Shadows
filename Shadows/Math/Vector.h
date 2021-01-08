@@ -595,9 +595,9 @@ Vector::Vector(Vector2 const& vector, float fZ)
 template <typename T>
 FORCEINLINE Vector operator/(T value, Vector const& vector)
 {
-	JASSERT(IsNearlyZero(vector.x));
-	JASSERT(IsNearlyZero(vector.y));
-	JASSERT(IsNearlyZero(vector.z));
+	JASSERT(!IsNearlyZero(vector.x));
+	JASSERT(!IsNearlyZero(vector.y));
+	JASSERT(!IsNearlyZero(vector.z));
 
 	return Vector(
 		IsNearlyZero(vector.x) ? 0.0f : value / vector.x

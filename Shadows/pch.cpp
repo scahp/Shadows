@@ -4,3 +4,4 @@
 std::map<int, bool> g_KeyState;
 std::map<EMouseButtonType, bool> g_MouseState;
 float g_timeDeltaSecond = 0.0f;
+std::string TitleText;

@@ -326,7 +326,7 @@ void showFPS(GLFWwindow* pWindow)
 		double fps = double(nbFrames) / delta;
 
 		std::stringstream ss;
-		ss << "OpenGL" << " " << 0.1 << " [" << fps << " FPS]";
+		ss << "OpenGL" << " " << 0.1 << " [" << fps << " FPS]" << TitleText.c_str();
 
 		glfwSetWindowTitle(pWindow, ss.str().c_str());
 
