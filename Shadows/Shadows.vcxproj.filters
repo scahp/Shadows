@@ -198,6 +198,9 @@
     <ClInclude Include="TinyXml2\tinyxml2.h">
       <Filter>TinyXml2</Filter>
     </ClInclude>
+    <ClInclude Include="Radiosity.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -343,6 +346,9 @@
     </ClCompile>
     <ClCompile Include="TinyXml2\tinyxml2.cpp">
       <Filter>TinyXml2</Filter>
+    </ClCompile>
+    <ClCompile Include="Radiosity.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

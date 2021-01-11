@@ -16,5 +16,7 @@ void main()
     if (dot(WorldLookAt, -Normal) < 0.0)
         discard;
 
-    color = vec4(float(ID));
+    //color = vec4(float(ID));
+    color.x = float(ID);
+    color.y = length(Pos_ - CameraPos);
 }

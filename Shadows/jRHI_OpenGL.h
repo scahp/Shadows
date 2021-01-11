@@ -196,5 +196,6 @@ public:
 	virtual void GetQueryTimeStampResult(jQueryTime* queryTimeStamp) const override;
 	virtual void BeginQueryTimeElapsed(const jQueryTime* queryTimeElpased) const override;
 	virtual void EndQueryTimeElapsed(const jQueryTime* queryTimeElpased) const override;
+	virtual void EnableWireframe(bool enable) const override;
 };
 

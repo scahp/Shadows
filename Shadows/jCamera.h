@@ -79,8 +79,8 @@ public:
 		camera->FOVRad = fovRad;
 		camera->Near = nearDist;
 		camera->Far = farDist;
-		camera->Width = width;
-		camera->Height = height;
+		camera->Width = static_cast<int32>(width);
+		camera->Height = static_cast<int32>(height);
 		camera->IsPerspectiveProjection = isPerspectiveProjection;
 		return camera;
 	}

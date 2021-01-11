@@ -628,6 +628,14 @@ void jRHI_OpenGL::EndQueryTimeElapsed(const jQueryTime* queryTimeElpased) const
 	glEndQuery(GL_TIME_ELAPSED);
 }
 
+void jRHI_OpenGL::EnableWireframe(bool enable) const
+{
+	if (enable)
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	else
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
 void jRHI_OpenGL::SetClear(ERenderBufferType typeBit) const
 {
 	uint32 clearBufferBit = 0;
