@@ -193,6 +193,7 @@ void jGame::Update(float deltaTime)
 		JASSERT(light);
 		light->Update(deltaTime);
 	}
+	auto& AppSettings = jShadowAppSettingProperties::GetInstance();
 
 	// Initialize Radiosity Params
 	static Radiosity::InputParams* RadiosityParams = Radiosity::InputParams::InitInputParams();
@@ -219,22 +220,36 @@ void jGame::Update(float deltaTime)
 	g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
 
-	int32 RemainingLoop = 1;
 	int32 FoundShootPatch = StartShooterPatch;
+	int32 RemainingLoop = (AppSettings.UntilConverged ? 1 : (AppSettings.OnceProcess ? 1 : 0));
+	AppSettings.OnceProcess = 0;
+
 	static int32 TotalProcessingCounts = 0;
-	while (RemainingLoop-- > 0)
+	static int32 PrevShooterPatch = -1;
+	if (RemainingLoop <= 0)
 	{
 		if (FoundShootPatch == -1)
-			FoundShootPatch = FindShootPatch(RadiosityParams);		// 1
-		if (FoundShootPatch != -1)
+			FoundShootPatch = PrevShooterPatch;
+	}
+	else
+	{
+		while (RemainingLoop-- > 0)
 		{
-			++TotalProcessingCounts;
-			ComputeFormfactors(FoundShootPatch, RadiosityParams);	// 2
-			DistributeRadiosity(FoundShootPatch, RadiosityParams);	// 3
-		}
-		else
-		{
-			break;
+			if (FoundShootPatch == -1)
+				FoundShootPatch = FindShootPatch(RadiosityParams);		// 1
+
+			PrevShooterPatch = FoundShootPatch;
+
+			if (FoundShootPatch != -1)
+			{
+				++TotalProcessingCounts;
+				ComputeFormfactors(FoundShootPatch, RadiosityParams);	// 2
+				DistributeRadiosity(FoundShootPatch, RadiosityParams);	// 3
+			}
+			else
+			{
+				break;
+			}
 		}
 	}
 
@@ -245,7 +260,7 @@ void jGame::Update(float deltaTime)
 		if (g_KeyState['z'] != oldstate && oldstate == true)
 		{
 			//RemainingLoop = 1;
-			IsWireFrame = !IsWireFrame;
+			AppSettings.IsWireFrame = !AppSettings.IsWireFrame;
 		}
 		oldstate = g_KeyState['z'];
 	}

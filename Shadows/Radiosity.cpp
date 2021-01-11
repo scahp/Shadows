@@ -7,12 +7,7 @@
 bool IsOnlyUseFormFactor = false;
 int32 FixedFace = -1;
 int32 StartShooterPatch = -1;
-bool SelectedShooterPatchAsDrawLine = false;
-bool IsWireFrame = 0;
-bool IsWireFrameWhite = 0;
 bool IsFullSubdivide = 0;
-int32 IsAddAmbient = 1;
-bool IsDrawFormfactorsCamera = false;
 
 namespace Radiosity
 {
@@ -238,7 +233,7 @@ namespace Radiosity
 					{
 						float v = m * dv + dv / 2.0f;
 						Patch& CurPatch = Params->Patches[PatchIndex];
-						CurPatch.QuadID = i;
+						CurPatch.QuadID = PatchIndex;
 						CurPatch.Center = UVToXYZ(Vertices, u, v);
 						CurPatch.Normal = CurQuad.Normal;
 						CurPatch.Reflectance = CurQuad.Reflectance;
@@ -662,6 +657,8 @@ namespace Radiosity
 	void DisplayResults(InputParams* InParams, int32 InSelectedPatch /*= -1*/)
 	{
 		SCOPE_PROFILE(DisplayResults);
+		auto& AppSettings = jShadowAppSettingProperties::GetInstance();
+
 		Vector Ambient = GetAmbient(InParams);
 
 		InParams->DisplayCamera->UpdateCamera();
@@ -670,7 +667,7 @@ namespace Radiosity
 		g_rhi->SetClear({ ERenderBufferType::COLOR | ERenderBufferType::DEPTH });
 		g_rhi->EnableCullFace(true);
 		g_rhi->EnableDepthTest(true);
-		g_rhi->EnableWireframe(IsWireFrame);
+		g_rhi->EnableWireframe(AppSettings.IsWireFrame);
 
 		static std::vector<int32> SummedCount(InParams->AllVertices.size(), 0);
 
@@ -681,7 +678,7 @@ namespace Radiosity
 		InParams->ElementIterateOnlyLeaf([&](Element* InElement) {
 			Vector Color;
 #if WITH_REFLECTANCE
-			if (InParams->AddAmbient)
+			if (AppSettings.IsAddAmbient)
 				Color = (InElement->Radiosity + (Ambient * InElement->ParentPatch->Reflectance)) * InParams->IntensityScale;
 			else
 #endif
@@ -705,8 +702,9 @@ namespace Radiosity
 		// 2. Draw all elements
 		InParams->ElementIterateOnlyLeaf([&](Element* InElement) {
 			const bool IsSelected = (InSelectedPatch == InElement->ParentPatch->QuadID);
-			const bool IsUseWhiteColor = (SelectedShooterPatchAsDrawLine && IsSelected) || (IsWireFrameWhite && IsWireFrame);
-			if (SelectedShooterPatchAsDrawLine)
+			const bool IsUseWhiteColor = (AppSettings.SelectedShooterPatchAsDrawLine && IsSelected) 
+				|| (AppSettings.IsWireFrameWhite && AppSettings.IsWireFrame);
+			if (AppSettings.SelectedShooterPatchAsDrawLine)
 			{
 				if (IsSelected)
 				{
@@ -715,7 +713,7 @@ namespace Radiosity
 				}
 				else
 				{
-					g_rhi->EnableWireframe(IsWireFrame);
+					g_rhi->EnableWireframe(AppSettings.IsWireFrame);
 					g_rhi->EnableCullFace(true);
 				}
 			}
@@ -750,7 +748,8 @@ namespace Radiosity
 		if (InSelectedPatch == -1)
 			return;
 
-		if (!IsDrawFormfactorsCamera)
+		auto& AppSettings = jShadowAppSettingProperties::GetInstance();
+		if (!AppSettings.IsDrawFormfactorsCamera)
 			return;
 
 		const auto& ShootPatch = InParams->Patches[InSelectedPatch];
@@ -777,7 +776,7 @@ namespace Radiosity
 		CameraDebug->Update(0.0f);
 		CameraDebug->Draw(InParams->DisplayCamera, jShader::GetShader("Simple"), {});
 		delete CameraDebug;
-		g_rhi->EnableWireframe(IsWireFrame);
+		g_rhi->EnableWireframe(AppSettings.IsWireFrame);
 	}
 
 }

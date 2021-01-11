@@ -12,6 +12,22 @@ public:
 		return *_instance;
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+	// Radiosity options
+	//bool IsOnlyUseFormFactor;
+	//int32 FixedFace;
+	//int32 StartShooterPatch;
+	//bool IsFullSubdivide;
+
+	bool SelectedShooterPatchAsDrawLine = false;
+	bool IsWireFrame = false;
+	bool IsWireFrameWhite = false;
+	bool IsAddAmbient = true;
+	bool IsDrawFormfactorsCamera = false;
+	bool UntilConverged = true;
+	bool OnceProcess = true;
+
+	//////////////////////////////////////////////////////////////////////////
 	bool ShadowOn = true;
 	EShadowType ShadowType = EShadowType::ShadowMap;
 	bool ShowSilhouette_DirectionalLight = false;

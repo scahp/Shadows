@@ -4,12 +4,7 @@
 extern bool IsOnlyUseFormFactor;
 extern int32 FixedFace;
 extern int32 StartShooterPatch;
-extern bool SelectedShooterPatchAsDrawLine;
-extern bool IsWireFrame;
-extern bool IsWireFrameWhite;
 extern bool IsFullSubdivide;
-extern int32 IsAddAmbient;
-extern bool IsDrawFormfactorsCamera;
 
 class jCamera;
 
@@ -134,7 +129,6 @@ namespace Radiosity
 		uint32 HemicubeResolution = 512;
 		float WorldSize = 500.0f;
 		float IntensityScale = 20.0f;
-		int32 AddAmbient = IsAddAmbient;
 		float TotalEnergy = 0.0f;
 		jCamera* HemicubeCamera = nullptr;
 
