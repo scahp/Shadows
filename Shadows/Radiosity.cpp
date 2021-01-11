@@ -101,7 +101,7 @@ namespace Radiosity
 	{
 		for (int32 i = 0; i < 4; ++i)
 		{
-			if (IsUsingChild[i])
+			if (UsingChild[i])
 				return true;
 		}
 		return false;
@@ -115,7 +115,7 @@ namespace Radiosity
 			if (ChildElement[i])
 			{
 				IsSubDivided = true;
-				IsUsingChild[i] = true;
+				UsingChild[i] = true;
 
 				ChildElement[i]->Radiosity = Radiosity;
 			}

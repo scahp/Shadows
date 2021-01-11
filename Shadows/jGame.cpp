@@ -224,12 +224,11 @@ void jGame::Update(float deltaTime)
 	static int32 TotalProcessingCounts = 0;
 	while (RemainingLoop-- > 0)
 	{
-		++TotalProcessingCounts;
-
 		if (FoundShootPatch == -1)
 			FoundShootPatch = FindShootPatch(RadiosityParams);		// 1
 		if (FoundShootPatch != -1)
 		{
+			++TotalProcessingCounts;
 			ComputeFormfactors(FoundShootPatch, RadiosityParams);	// 2
 			DistributeRadiosity(FoundShootPatch, RadiosityParams);	// 3
 		}

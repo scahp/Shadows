@@ -77,7 +77,7 @@ namespace Radiosity
 		float Area = 0.0f;
 		Patch* ParentPatch = nullptr;
 		Element* Parentlement = nullptr;
-		bool IsUsingChild[4] = { false, false, false, false };
+		bool UsingChild[4] = { false, false, false, false };
 		Element* ChildElement[4] = { nullptr, nullptr, nullptr, nullptr };
 		ElementFormFactor Formfactor;
 
@@ -99,7 +99,7 @@ namespace Radiosity
 			{
 				for (int32 i = 0; i < 4; ++i)
 				{
-					if (IsUsingChild[i] && ChildElement[i])
+					if (UsingChild[i] && ChildElement[i])
 						ChildElement[i]->IterateOnlyLeaf(func);
 				}
 				return;
@@ -180,26 +180,31 @@ namespace Radiosity
 #define numberOfPolys 	19
 
 	// Patch and Element Count should be 2^n. because It use quadtree for subdivide.
+	// ** ElementCnt is max subdivision for quad, so It will not subdivide if don't need it. **
+	static int32 AdaptiveSubdivisionCnt = 1;		// 1 is not using adaptive subdivision
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	//  Quad Indices,  PatchCnt, ElementCnt,  Area,         Normal,              Color,    Emission
+	////////////////////////////////////////////////////////////////////////////////////////////////
 	static Quad roomPolys[numberOfPolys] = {
-		{{4, 5, 6, 7},		16,		1, 216 * 215,	{0.0f, -1.0f, 0.0f},	lightGrey,	black}, /* ceiling */
-		{{0, 3, 2, 1},		16,		1, 216 * 215,	{0.0f, 1.0f, 0.0f},		lightGrey,	black}, /* floor */
-		{{0, 4, 7, 3},		16,		1, 221 * 215,	{1.0f, 0.0f, 0.0f},		red,		black}, /* wall */
-		{{0, 1, 5, 4},		16,		1, 221 * 216,	{0.0f, 0.0f, 1.0f},		lightGrey,	black}, /* wall */
-		{{2, 6, 5, 1},		16,		1, 221 * 215,	{-1.0f, 0.0f, 0.0f},	green,		black}, /* wall */
-		{{2, 3, 7, 6},		16,		1, 221 * 216,	{0.0f, 0.0f,-1.0f},		lightGrey,	black}, /* ADDED wall */
-		{{8, 9, 10, 11},	1,		1, 40 * 45,		{0.0f, -1.0f, 0.0f},	black,		white}, /* light */
-		{{16, 19, 18, 17},	2,		1, 65 * 65,		{0.0f, 1.0f, 0.0f},		yellow,		black}, /* box 1 */
-		{{12, 13, 14, 15},	2,		1, 65 * 65,		{0.0f, -1.0f, 0.0f},	yellow,		black},
-		{{12, 15, 19, 16},	2,		1, 65 * 65,		{-0.866f, 0.0f, -0.5f},	yellow,		black},
-		{{12, 16, 17, 13},	2,		1, 65 * 65,		{0.5f, 0.0f, -0.866f},	yellow,		black},
-		{{14, 13, 17, 18},	2,		1, 65 * 65,		{0.866f, 0.0f, 0.5f},	yellow,		black},
-		{{14, 18, 19, 15},	2,		1, 65 * 65,		{-0.5f, 0.0f, 0.866f},	yellow,		black},
-		{{24, 27, 26, 25},	2,		1, 65 * 65,		{0.0f, 1.0f, 0.0f},		lightGrey,	black}, /* box 2 */
-		{{20, 21, 22, 23},	2,		1, 65 * 65,		{0.0f, -1.0f, 0.0f},	lightGrey,	black},
-		{{20, 23, 27, 24},	2,		1, 65 * 130,	{-0.866f, 0.0f, -0.5f},	lightGrey,	black},
-		{{20, 24, 25, 21},	2,		1, 65 * 130,	{0.5f, 0.0f, -0.866f},	lightGrey,	black},
-		{{22, 21, 25, 26},	2,		1, 65 * 130,	{0.866f, 0.0f, 0.5f},	lightGrey,	black},
-		{{22, 26, 27, 23},	2,		1, 65 * 130,	{-0.5f, 0.0f, 0.866f},	lightGrey,	black},
+		{{4, 5, 6, 7},		16,		AdaptiveSubdivisionCnt,		216 * 215,	{0.0f, -1.0f, 0.0f},	lightGrey,	black}, /* ceiling */
+		{{0, 3, 2, 1},		16,		AdaptiveSubdivisionCnt,		216 * 215,	{0.0f, 1.0f, 0.0f},		lightGrey,	black}, /* floor */
+		{{0, 4, 7, 3},		16,		AdaptiveSubdivisionCnt,		221 * 215,	{1.0f, 0.0f, 0.0f},		red,		black}, /* wall */
+		{{0, 1, 5, 4},		16,		AdaptiveSubdivisionCnt,		221 * 216,	{0.0f, 0.0f, 1.0f},		lightGrey,	black}, /* wall */
+		{{2, 6, 5, 1},		16,		AdaptiveSubdivisionCnt,		221 * 215,	{-1.0f, 0.0f, 0.0f},	green,		black}, /* wall */
+		{{2, 3, 7, 6},		16,		AdaptiveSubdivisionCnt,		221 * 216,	{0.0f, 0.0f,-1.0f},		lightGrey,	black}, /* ADDED wall */
+		{{8, 9, 10, 11},	1,		1,							40 * 45,	{0.0f, -1.0f, 0.0f},	black,		white}, /* light */
+		{{16, 19, 18, 17},	2,		1,							65 * 65,	{0.0f, 1.0f, 0.0f},		yellow,		black}, /* box 1 */
+		{{12, 13, 14, 15},	2,		1,							65 * 65,	{0.0f, -1.0f, 0.0f},	yellow,		black},
+		{{12, 15, 19, 16},	2,		1,							65 * 65,	{-0.866f, 0.0f, -0.5f},	yellow,		black},
+		{{12, 16, 17, 13},	2,		1,							65 * 65,	{0.5f, 0.0f, -0.866f},	yellow,		black},
+		{{14, 13, 17, 18},	2,		1,							65 * 65,	{0.866f, 0.0f, 0.5f},	yellow,		black},
+		{{14, 18, 19, 15},	2,		1,							65 * 65,	{-0.5f, 0.0f, 0.866f},	yellow,		black},
+		{{24, 27, 26, 25},	4,		1,							65 * 65,	{0.0f, 1.0f, 0.0f},		lightGrey,	black}, /* box 2 */
+		{{20, 21, 22, 23},	4,		1,							65 * 65,	{0.0f, -1.0f, 0.0f},	lightGrey,	black},
+		{{20, 23, 27, 24},	4,		1,							65 * 130,	{-0.866f, 0.0f, -0.5f},	lightGrey,	black},
+		{{20, 24, 25, 21},	4,		1,							65 * 130,	{0.5f, 0.0f, -0.866f},	lightGrey,	black},
+		{{22, 21, 25, 26},	4,		1,							65 * 130,	{0.866f, 0.0f, 0.5f},	lightGrey,	black},
+		{{22, 26, 27, 23},	4,		1,							65 * 130,	{-0.5f, 0.0f, 0.866f},	lightGrey,	black},
 	};
 
 	static Vector roomPoints[] = {
