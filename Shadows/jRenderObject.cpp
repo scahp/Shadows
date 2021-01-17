@@ -80,11 +80,13 @@ void jRenderObject::Draw(const jCamera* camera, const jShader* shader, const std
 
 	jMaterialData materialData;
 
+	std::vector<const jMaterialData*> DynamicMaterialData;
+
 	SetRenderProperty(shader);
 	SetCameraProperty(shader, camera);
 	SetLightProperty(shader, camera, lights, &materialData);
 	SetTextureProperty(shader, &materialData);
-	SetMaterialProperty(shader, &materialData);
+	SetMaterialProperty(shader, &materialData, DynamicMaterialData);
 	
 	startIndex = startIndex != -1 ? startIndex : 0;
 
@@ -117,30 +119,38 @@ void jRenderObject::DrawBaseVertexIndex(const jCamera* camera, const jShader* sh
 	g_rhi->SetShader(shader);
 	g_rhi->EnableCullFace(camera->IsEnableCullMode && !IsTwoSided);
 
-	jMaterialData materialData;
-
-	SetRenderProperty(shader);
-	SetCameraProperty(shader, camera);
-	SetLightProperty(shader, camera, lights, &materialData);
-	SetTextureProperty(shader, &materialData);
-	SetMaterialProperty(shader, &materialData);
-
-	auto vertexStreamData = VertexBuffer->VertexStreamData.lock();
-	auto primitiveType = vertexStreamData->PrimitiveType;
-	if (IndexBuffer)
 	{
-		auto indexStreamData = IndexBuffer->IndexStreamData.lock();
-		if (instanceCount <= 0)
-			g_rhi->DrawElementsBaseVertex(primitiveType, static_cast<int32>(indexStreamData->Param->GetElementSize()), startIndex, count, baseVertexIndex);
-		else
-			g_rhi->DrawElementsInstancedBaseVertex(primitiveType, static_cast<int32>(indexStreamData->Param->GetElementSize()), startIndex, count, baseVertexIndex, instanceCount);
+		//SCOPE_PROFILE(jRenderObject_UpdateMaterialData);
+		std::vector<const jMaterialData*> DynamicMaterialData;
+
+		SetRenderProperty(shader);
+		SetCameraProperty(shader, camera);
+		//SetLightProperty(shader, camera, lights, &DynamicMaterialData);
+		for (auto iter : lights)
+			DynamicMaterialData.push_back(iter->GetMaterialData());
+		SetTextureProperty(shader, nullptr);
+		SetMaterialProperty(shader, &MaterialData, DynamicMaterialData);
 	}
-	else
+
 	{
-		if (instanceCount <= 0)
-			g_rhi->DrawArrays(primitiveType, baseVertexIndex, count);
+		//SCOPE_PROFILE(jRenderObject_DrawBaseVertexIndex);
+		auto vertexStreamData = VertexBuffer->VertexStreamData.lock();
+		auto primitiveType = vertexStreamData->PrimitiveType;
+		if (IndexBuffer)
+		{
+			auto indexStreamData = IndexBuffer->IndexStreamData.lock();
+			if (instanceCount <= 0)
+				g_rhi->DrawElementsBaseVertex(primitiveType, static_cast<int32>(indexStreamData->Param->GetElementSize()), startIndex, count, baseVertexIndex);
+			else
+				g_rhi->DrawElementsInstancedBaseVertex(primitiveType, static_cast<int32>(indexStreamData->Param->GetElementSize()), startIndex, count, baseVertexIndex, instanceCount);
+		}
 		else
-			g_rhi->DrawArraysInstanced(primitiveType, baseVertexIndex, count, instanceCount);
+		{
+			if (instanceCount <= 0)
+				g_rhi->DrawArrays(primitiveType, baseVertexIndex, count);
+			else
+				g_rhi->DrawArraysInstanced(primitiveType, baseVertexIndex, count, instanceCount);
+		}
 	}
 }
 
@@ -251,50 +261,71 @@ void jRenderObject::SetLightProperty(const jShader* shader, const jCamera* camer
 
 void jRenderObject::SetTextureProperty(const jShader* shader, jMaterialData* materialData)
 {
-	if (materialData)
+	//if (materialData)
 	{
-		if (tex_object)
-		{
-			auto tex_object_param = new jMaterialParam();
-			tex_object_param->Name = "tex_object";
-			tex_object_param->Texture = tex_object;
-			tex_object_param->SamplerState = samplerState;
-			materialData->Params.push_back(tex_object_param);
-		}
+		//if (tex_object)
+		//{
+		//	auto tex_object_param = new jMaterialParam();
+		//	tex_object_param->Name = "tex_object";
+		//	tex_object_param->Texture = tex_object;
+		//	tex_object_param->SamplerState = samplerState;
+		//	materialData->Params.push_back(tex_object_param);
+		//}
 
-		bool useTexture = false;
-		if (tex_object2)
-		{
-			auto tex_object2_param = new jMaterialParam();
-			tex_object2_param->Name = "tex_object2";
-			tex_object2_param->Texture = tex_object2;
-			tex_object2_param->SamplerState = samplerState2;
-			materialData->Params.push_back(tex_object2_param);
-			useTexture = true;
-		}
-		if (tex_object3)
-		{
-			auto tex_object3_param = new jMaterialParam();
-			tex_object3_param->Name = "tex_object3";
-			tex_object3_param->Texture = tex_object3;
-			tex_object3_param->SamplerState = samplerState3;
-			materialData->Params.push_back(tex_object3_param);
-			useTexture = true;
-		}
-		SET_UNIFORM_BUFFER_STATIC(int, "UseTexture", useTexture, shader);
+		//bool useTexture = false;
+		//if (tex_object2)
+		//{
+		//	auto tex_object2_param = new jMaterialParam();
+		//	tex_object2_param->Name = "tex_object2";
+		//	tex_object2_param->Texture = tex_object2;
+		//	tex_object2_param->SamplerState = samplerState2;
+		//	materialData->Params.push_back(tex_object2_param);
+		//	useTexture = true;
+		//}
+		//if (tex_object3)
+		//{
+		//	auto tex_object3_param = new jMaterialParam();
+		//	tex_object3_param->Name = "tex_object3";
+		//	tex_object3_param->Texture = tex_object3;
+		//	tex_object3_param->SamplerState = samplerState3;
+		//	materialData->Params.push_back(tex_object3_param);
+		//	useTexture = true;
+		//}
 
-		if (tex_object_array)
-		{
-			auto tex_objectArray_param = new jMaterialParam();
-			tex_objectArray_param->Name = "tex_object_array";
-			tex_objectArray_param->Texture = tex_object_array;
-			tex_objectArray_param->SamplerState = samplerStateTexArray;
-			materialData->Params.push_back(tex_objectArray_param);
-		}
+		// todo remove this.
+		bool useTexture = true;
+		g_rhi->SetUniformbuffer("UseTexture", useTexture, shader);
+		//for (jMaterialParam* pParam : MaterialData.Params)
+		//{
+		//	if (pParam->Name == "tex_object2")
+		//	{
+		//		useTexture = true;
+		//		break;
+		//	}
+		//}
+		//SET_UNIFORM_BUFFER_STATIC(int, "UseTexture", useTexture, shader);
+		//static jUniformBuffer<int> temp("UseTexture", useTexture);
+		//g_rhi->SetUniformbuffer(&temp, shader);
+
+		//if (tex_object_array)
+		//{
+		//	auto tex_objectArray_param = new jMaterialParam();
+		//	tex_objectArray_param->Name = "tex_object_array";
+		//	tex_objectArray_param->Texture = tex_object_array;
+		//	tex_objectArray_param->SamplerState = samplerStateTexArray;
+		//	materialData->Params.push_back(tex_objectArray_param);
+		//}
 	}
 }
 
-void jRenderObject::SetMaterialProperty(const jShader* shader, jMaterialData* materialData)
+void jRenderObject::SetMaterialProperty(const jShader* shader, jMaterialData* materialData, const std::vector<const jMaterialData*>& dynamicMaterialData)
 {
-	g_rhi->SetMatetrial(materialData, shader);
+	int32 lastIndex = 0;
+	if (materialData)
+		lastIndex = g_rhi->SetMatetrial(materialData, shader, lastIndex);
+	
+	for (auto MatData : dynamicMaterialData)
+	{
+		lastIndex = g_rhi->SetMatetrial(MatData, shader, lastIndex);
+	}
 }

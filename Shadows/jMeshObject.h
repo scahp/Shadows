@@ -6,6 +6,22 @@ struct jTexture;
 
 struct jMeshMaterial
 {
+	enum class EMaterialTextureType : int8
+	{
+		Diffuse = 0,
+		Specular,
+		Ambient,
+		Emissive,
+		Height,				// Height or Bump map
+		Normals,
+		Shininess,
+		Opacity,
+		Displacement,
+		Lightmap,
+		Reflection,
+		Max
+	};
+
 	struct LightData
 	{
 		Vector4 Diffuse = Vector4::OneVector;
@@ -14,9 +30,15 @@ struct jMeshMaterial
 		float SpecularPow = 0.0f;
 	};
 
+	struct TextureData
+	{
+		jTexture* Texture = nullptr;
+		ETextureAddressMode TextureAddressMode = ETextureAddressMode::REPEAT;
+		std::string TextureName;
+	};
+
 	LightData Data;
-	jTexture* Texture = nullptr;
-	std::string TextureName;
+	TextureData TexData[static_cast<int32>(EMaterialTextureType::Max)];
 };
 
 struct jMeshData

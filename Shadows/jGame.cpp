@@ -60,7 +60,7 @@ void jGame::Setup()
 	//const Vector mainCameraPos(165.0f, 125.0f, -136.0f);
 	//const Vector mainCameraPos(300.0f, 100.0f, 300.0f);
 	const Vector mainCameraTarget(0.0f, 0.0f, 0.0f);
-	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(45.0f), 10.0f, 1000.0f, SCR_WIDTH, SCR_HEIGHT, true);
+	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(60.0f), 10.0f, 5000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
 
 	// Light creation step
@@ -186,64 +186,25 @@ void jGame::Update(float deltaTime)
 		light->Update(deltaTime);
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-	// Get the 8 points of the view frustum in world space
-	if (jShadowAppSettingProperties::GetInstance().ShadowMapType != EShadowMapType::DeepShadowMap_DirectionalLight)
-	{
-		Vector frustumCornersWS[8] =
-		{
-			Vector(-1.0f,  1.0f, -1.0f),
-			Vector(1.0f,  1.0f, -1.0f),
-			Vector(1.0f, -1.0f, -1.0f),
-			Vector(-1.0f, -1.0f, -1.0f),
-			Vector(-1.0f,  1.0f, 1.0f),
-			Vector(1.0f,  1.0f, 1.0f),
-			Vector(1.0f, -1.0f, 1.0f),
-			Vector(-1.0f, -1.0f, 1.0f),
-		};
-
-		Vector frustumCenter(0.0f);
-		Matrix invViewProj = (MainCamera->Projection * MainCamera->View).GetInverse();
-		for (uint32 i = 0; i < 8; ++i)
-		{
-			frustumCornersWS[i] = invViewProj.Transform(frustumCornersWS[i]);
-			frustumCenter = frustumCenter + frustumCornersWS[i];
-		}
-		frustumCenter = frustumCenter * (1.0f / 8.0f);
-
-		auto upDir = Vector::UpVector;
-
-		float width = SM_WIDTH;
-		float height = SM_HEIGHT;
-		float nearDist = 10.0f;
-		float farDist = 1000.0f;
-
-		// Get position of the shadow camera
-		Vector shadowCameraPos = frustumCenter + DirectionalLight->Data.Direction * -(farDist - nearDist) / 2.0f;
+	//jModelLoader::GetInstance().ConvertToFBX("Scene/sponza/sponza.dae", "Scene/sponza/sponza.obj");
+	static jMeshObject* s_Sponza = jModelLoader::GetInstance().LoadFromFile("Scene/sponza/sponza.obj", "Scene/sponza");
 	
-		auto shadowCamera = jOrthographicCamera::CreateCamera(shadowCameraPos, frustumCenter, shadowCameraPos + upDir
-			, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
-		shadowCamera->UpdateCamera();
-		DirectionalLight->GetLightCamra()->Projection = shadowCamera->Projection;
-		DirectionalLight->GetLightCamra()->View = shadowCamera->View;
+	g_rhi->SetClearColor({ 0.0f, 0.0f, 0.0f, 1.0f });
+	g_rhi->SetClear(ERenderBufferType::COLOR | ERenderBufferType::DEPTH);
+	g_rhi->EnableDepthTest(true);
+
+	s_Sponza->Update(deltaTime);
+	
+	jShader* shader = jShader::GetShader("BaseTexture");
+	g_rhi->SetShader(shader);
+	
+	jLight* light = MainCamera->GetLight(ELightType::DIRECTIONAL);
+	light->BindLight(shader);
+
+	{
+		SCOPE_PROFILE(s_Sponza_Draw);
+		s_Sponza->Draw(MainCamera, shader, { light });
 	}
-	//////////////////////////////////////////////////////////////////////////
-
-	for (auto iter : jObject::GetStaticObject())
-		iter->Update(deltaTime);
-
-	for (auto& iter : jObject::GetBoundBoxObject())
-		iter->Update(deltaTime);
-
-	for (auto& iter : jObject::GetBoundSphereObject())
-		iter->Update(deltaTime);
-
-	for (auto& iter : jObject::GetDebugObject())
-		iter->Update(deltaTime);
-
-	jObject::FlushDirtyState();
-
-	Renderer->Render(MainCamera);
 }
 
 void jGame::UpdateAppSetting()

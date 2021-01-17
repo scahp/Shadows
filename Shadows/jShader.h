@@ -95,6 +95,13 @@ struct jShader : public std::enable_shared_from_this<jShader>
 	static std::shared_ptr<jShader> CreateShaderPtr(const jShaderInfo& shaderInfo);
 	static void UpdateShaders();
 
+	bool SetUniformbuffer(const char* name, const Matrix& InData) const;
+	bool SetUniformbuffer(const char* name, const bool InData) const;
+	bool SetUniformbuffer(const char* name, const int32 InData) const;
+	bool SetUniformbuffer(const char* name, const Vector2& InData) const;
+	bool SetUniformbuffer(const char* name, const Vector& InData) const;
+	bool SetUniformbuffer(const char* name, const Vector4& InData) const;
+
 	uint64 TimeStamp = 0;
 	jShaderInfo ShaderInfo;
 

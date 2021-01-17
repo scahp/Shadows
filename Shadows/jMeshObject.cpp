@@ -2,6 +2,7 @@
 #include "jMeshObject.h"
 #include "jRenderObject.h"
 #include "jRHI.h"
+#include "jSamplerStatePool.h"
 
 jMeshMaterial jMeshObject::NullMeshMateral;
 
@@ -29,6 +30,9 @@ void jMeshObject::SetMaterialUniform(const jShader* shader, const jMeshMaterial*
 
 void jMeshObject::DrawNode(const jMeshNode* node, const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights)
 {
+	if (SubMeshes.empty())
+		return;
+
 	for (auto& iter : node->MeshIndex)
 		DrawSubMesh(iter, camera, shader, lights);
 
@@ -39,16 +43,38 @@ void jMeshObject::DrawNode(const jMeshNode* node, const jCamera* camera, const j
 void jMeshObject::DrawSubMesh(int32 meshIndex, const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights)
 {
 	auto& subMesh = SubMeshes[meshIndex];
-	auto it_find = MeshData->Materials.find(subMesh.MaterialIndex);
-	if (MeshData->Materials.end() != it_find)
 	{
-		RenderObject->tex_object2 = it_find->second->Texture;
-		SetMaterialUniform(shader, it_find->second);
-	}
-	else
-	{
-		RenderObject->tex_object2 = nullptr;
-		SetMaterialUniform(shader, &NullMeshMateral);
+		//SCOPE_PROFILE(jMeshObject_DrawSubMesh_SetMaterialUniform);
+
+		auto it_find = MeshData->Materials.find(subMesh.MaterialIndex);
+		if (MeshData->Materials.end() != it_find)
+		{
+			const jMeshMaterial* curMeshMaterial = it_find->second;
+			JASSERT(curMeshMaterial);
+
+			const jMeshMaterial::TextureData& DiffuseTextureData = curMeshMaterial->TexData[(int32)jMeshMaterial::EMaterialTextureType::Diffuse];
+			const bool IsValidMatTexture = DiffuseTextureData.Texture;
+			if (IsValidMatTexture)
+			{
+				if (RenderObject->MaterialData.Params.empty())
+				{
+					auto param = jRenderObject::CreateMaterialParam("tex_object2", DiffuseTextureData.Texture, jSamplerStatePool::GetSamplerState("LinearWrapMipmap").get());
+					RenderObject->MaterialData.Params.push_back(param);
+				}
+				else
+				{
+					RenderObject->MaterialData.Params[0]->Texture = DiffuseTextureData.Texture;
+				}
+			}
+			//RenderObject->tex_object2 = it_find->second->Texture;
+			//RenderObject->samplerState2 = jSamplerStatePool::GetSamplerState("LinearWrapMipmap").get();
+			SetMaterialUniform(shader, it_find->second);
+		}
+		else
+		{
+			//RenderObject->tex_object2 = nullptr;
+			SetMaterialUniform(shader, &NullMeshMateral);
+		}
 	}
 
 	if (subMesh.EndFace > 0)

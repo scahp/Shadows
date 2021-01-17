@@ -13,6 +13,12 @@ std::list<jQueryTime*> jQueryTimePool::s_resting;
 std::list<jProfile_GPU> jProfile_GPU::WatingResultList[2];
 int32 jProfile_GPU::CurrentWatingResultListIndex = 0;
 
+void ClearFramePerformanceData(int32 frameIndex)
+{
+	ScopedProfileCPUMap[frameIndex].clear();
+	ScopedProfileGPUMap[frameIndex].clear();
+}
+
 int32 NextFrame()
 {
 	PerformanceFrame = (PerformanceFrame + 1) % MaxProfileFrame;
@@ -27,7 +33,11 @@ void ClearScopedProfileCPU()
 
 void AddScopedProfileCPU(const std::string& name, uint64 elapsedTick)
 {
-	ScopedProfileCPUMap[PerformanceFrame][name] = elapsedTick;
+	const bool AlreadyHas = ScopedProfileCPUMap[PerformanceFrame].find(name) != ScopedProfileCPUMap[PerformanceFrame].end();
+	if (AlreadyHas)
+		ScopedProfileCPUMap[PerformanceFrame][name] += elapsedTick;
+	else
+		ScopedProfileCPUMap[PerformanceFrame][name] = elapsedTick;
 }
 
 void ClearScopedProfileGPU()
@@ -38,7 +48,11 @@ void ClearScopedProfileGPU()
 
 void AddScopedProfileGPU(const std::string& name, uint64 elapsedTick)
 {
-	ScopedProfileGPUMap[PerformanceFrame][name] = elapsedTick;
+	const bool AlreadyHas = ScopedProfileGPUMap[PerformanceFrame].find(name) != ScopedProfileGPUMap[PerformanceFrame].end();
+	if (AlreadyHas)
+		ScopedProfileGPUMap[PerformanceFrame][name] += elapsedTick;
+	else
+		ScopedProfileGPUMap[PerformanceFrame][name] = elapsedTick;
 }
 
 void jPerformanceProfile::Update(float deltaTime)
@@ -46,10 +60,12 @@ void jPerformanceProfile::Update(float deltaTime)
 	jProfile_GPU::ProcessWaitings();
 
 	CalcAvg();
-	NextFrame();
 
 	if (TRUE_PER_MS(1000))
 		PrintOutputDebugString();
+
+	const int32 NewFrameIndex = NextFrame();
+	ClearFramePerformanceData(NewFrameIndex);
 }
 
 void jPerformanceProfile::CalcAvg()

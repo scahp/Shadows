@@ -35,6 +35,9 @@ struct jIndexBuffer_OpenGL : public jIndexBuffer
 struct jShader_OpenGL : public jShader
 {
 	unsigned int program = 0;
+
+	int32 TryGetUniformLocation(const char* name) const;
+	mutable std::unordered_map<size_t, int32> UniformNameMap;		// <string hash, location>
 };
 
 struct jTexture_OpenGL : public jTexture
@@ -156,9 +159,15 @@ public:
 	virtual void ReleaseShader(jShader* shader) const override;
 	virtual jTexture* CreateNullTexture() const override;
 	virtual jTexture* CreateTextureFromData(void* data, int32 width, int32 height, bool sRGB
-		, EFormatType dataType = EFormatType::UNSIGNED_BYTE, ETextureFormat textureFormat = ETextureFormat::RGBA) const override;
-	virtual bool SetUniformbuffer(const IUniformBuffer* buffer, const jShader* shader) const override;
-	virtual void SetMatetrial(jMaterialData* materialData, const jShader* shader, int32 baseBindingIndex = 0) const override;
+		, EFormatType dataType = EFormatType::UNSIGNED_BYTE, ETextureFormat textureFormat = ETextureFormat::RGBA, bool createMipmap = false) const override;
+	virtual bool SetUniformbuffer(const char* name, const Matrix& InData, const jShader* InShader) const override;
+	virtual bool SetUniformbuffer(const char* name, const int InData, const jShader* InShader) const override;
+	virtual bool SetUniformbuffer(const char* name, const float InData, const jShader* InShader) const override;
+	virtual bool SetUniformbuffer(const char* name, const Vector2& InData, const jShader* InShader) const override;
+	virtual bool SetUniformbuffer(const char* name, const Vector& InData, const jShader* InShader) const override;
+	virtual bool SetUniformbuffer(const char* name, const Vector4& InData, const jShader* InShader) const override;
+	//virtual bool SetUniformbuffer(const IUniformBuffer* buffer, const jShader* shader) const override;
+	virtual int32 SetMatetrial(const jMaterialData* materialData, const jShader* shader, int32 baseBindingIndex = 0) const override;
 	virtual void SetTexture(int32 index, const jTexture* texture) const override;
 	virtual void SetTextureFilter(ETextureType type, ETextureFilterTarget target, ETextureFilter filter) const override;
 	virtual void EnableCullFace(bool enable) const override;
@@ -196,5 +205,8 @@ public:
 	virtual void GetQueryTimeStampResult(jQueryTime* queryTimeStamp) const override;
 	virtual void BeginQueryTimeElapsed(const jQueryTime* queryTimeElpased) const override;
 	virtual void EndQueryTimeElapsed(const jQueryTime* queryTimeElpased) const override;
+
+	//////////////////////////////////////////////////////////////////////////
+	uint32 GetUniformLocation(uint32 InProgram, const char* name) const;
 };
 

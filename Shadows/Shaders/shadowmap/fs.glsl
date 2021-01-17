@@ -36,7 +36,7 @@ layout (std140) uniform DirectionalLightShadowMapBlock
 {
 	mat4 ShadowVP;
 	mat4 ShadowV;
-	vec3 LightPos;      // Directional Light Pos юс╫ц
+	vec3 LightPos;      // Directional Light Pos О©╫с╫О©╫
 	float LightZNear;
 	float LightZFar;
 	vec2 ShadowMapSize;
@@ -177,6 +177,8 @@ void main()
 			diffuse *= texture(tex_object2, TexCoord_);
 		}
 	}
+	color = diffuse;
+	return;
 #else
 	diffuse = Color_;
 #endif // USE_TEXTURE

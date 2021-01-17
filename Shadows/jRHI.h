@@ -76,7 +76,7 @@ struct IUniformBuffer : public IBuffer
 	virtual ~IUniformBuffer() {}
 	std::string Name;
 	virtual EUniformType GetType() const { return EUniformType::NONE; }
-
+	virtual void SetUniformbuffer(const jShader* /*InShader*/) const {}
 	virtual void Bind(const jShader* shader) const override;
 };
 
@@ -85,26 +85,6 @@ struct jUniformBuffer : public IUniformBuffer
 {
 	T Data;
 };
-
-#define DECLARE_UNIFORMBUFFER(EnumType, DataType) \
-template <> struct jUniformBuffer<DataType> : public IUniformBuffer\
-{\
-	jUniformBuffer() = default;\
-	jUniformBuffer(const std::string& name, const DataType& data)\
-		: IUniformBuffer(name), Data(data)\
-	{}\
-	static constexpr EUniformType Type = EnumType;\
-	virtual EUniformType GetType() const { return Type; }\
-	DataType Data;\
-};
-
-DECLARE_UNIFORMBUFFER(EUniformType::MATRIX, Matrix);
-DECLARE_UNIFORMBUFFER(EUniformType::BOOL, bool);
-DECLARE_UNIFORMBUFFER(EUniformType::INT, int);
-DECLARE_UNIFORMBUFFER(EUniformType::FLOAT, float);
-DECLARE_UNIFORMBUFFER(EUniformType::VECTOR2, Vector2);
-DECLARE_UNIFORMBUFFER(EUniformType::VECTOR3, Vector);
-DECLARE_UNIFORMBUFFER(EUniformType::VECTOR4, Vector4);
 
 //template <>
 //struct jUniformBuffer<Matrix> : public IUniformBuffer
@@ -298,7 +278,7 @@ struct jSamplerStateInfo
 	ETextureAddressMode AddressV = ETextureAddressMode::CLAMP_TO_EDGE;
 	ETextureAddressMode AddressW = ETextureAddressMode::CLAMP_TO_EDGE;
 	float MipLODBias = 0.0f;
-	float MaxAnisotropy = 1.0f;			// if you anisotropy filtering tuned on, set this variable greater than 1.
+	float MaxAnisotropy = 8.0f;			// if you anisotropy filtering tuned on, set this variable greater than 1.
 	ETextureComparisonMode TextureComparisonMode = ETextureComparisonMode::NONE;
 	EComparisonFunc ComparisonFunc = EComparisonFunc::LESS;
 	Vector4 BorderColor = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -357,11 +337,19 @@ public:
 	virtual void SetViewportIndexed(int32 index, float x, float y, float width, float height) const {}
 	virtual void SetViewportIndexed(int32 index, const jViewport& viewport) const {}
 	virtual void SetViewportIndexedArray(int32 startIndex, int32 count, const jViewport* viewports) const {}
-	virtual bool SetUniformbuffer(const IUniformBuffer* buffer, const jShader* shader) const { return false; }
+	virtual bool SetUniformbuffer(const char* name, const Matrix& InData, const jShader* InShader) const { return false; }
+	virtual bool SetUniformbuffer(const char* name, const int InData, const jShader* InShader) const { return false; }
+	FORCEINLINE virtual bool SetUniformbuffer(const char* name, const bool InData, const jShader* InShader) const { return SetUniformbuffer(name, (int32)InData, InShader); }
+	FORCEINLINE virtual bool SetUniformbuffer(const char* name, const uint32 InData, const jShader* InShader) const { return SetUniformbuffer(name, (int32)InData, InShader); }
+	virtual bool SetUniformbuffer(const char* name, const float InData, const jShader* InShader) const { return false; }
+	virtual bool SetUniformbuffer(const char* name, const Vector2& InData, const jShader* InShader) const { return false; }
+	virtual bool SetUniformbuffer(const char* name, const Vector& InData, const jShader* InShader) const { return false; }
+	virtual bool SetUniformbuffer(const char* name, const Vector4& InData, const jShader* InShader) const { return false; }
+	//virtual bool SetUniformbuffer(const IUniformBuffer* buffer, const jShader* shader) const { return false; }
 	virtual jTexture* CreateNullTexture() const { return nullptr; }
-	virtual jTexture* CreateTextureFromData(void* data, int32 width, int32 height, bool sRGB
-		, EFormatType dataType = EFormatType::UNSIGNED_BYTE, ETextureFormat textureFormat = ETextureFormat::RGBA) const { return nullptr; }
-	virtual void SetMatetrial(jMaterialData* materialData, const jShader* shader, int32 baseBindingIndex = 0) const {}
+	virtual jTexture* CreateTextureFromData(void* data, int32 width, int32 height, bool sRGB, EFormatType dataType = EFormatType::UNSIGNED_BYTE
+		, ETextureFormat textureFormat = ETextureFormat::RGBA, bool createMipmap = false) const { return nullptr; }
+	virtual int32 SetMatetrial(const jMaterialData* materialData, const jShader* shader, int32 baseBindingIndex = 0) const { return baseBindingIndex; }
 	virtual void EnableCullFace(bool enable) const {}
 	virtual jRenderTarget* CreateRenderTarget(const jRenderTargetInfo& info) const { return nullptr; }
 	virtual void EnableDepthTest(bool enable) const {}
@@ -393,9 +381,7 @@ public:
 // Not thred safe
 #define SET_UNIFORM_BUFFER_STATIC(Type, Name, CurrentData, Shader) \
 {\
-	static jUniformBuffer<Type> temp(Name, CurrentData);\
-	temp.Data = CurrentData;\
-	g_rhi->SetUniformbuffer(&temp, Shader);\
+	g_rhi->SetUniformbuffer(Name, CurrentData, Shader);\
 }
 
 struct jScopeDebugEvent final
@@ -414,3 +400,25 @@ struct jScopeDebugEvent final
 	const jRHI* RHI = nullptr;
 };
 #define SCOPE_DEBUG_EVENT(rhi, name) jScopeDebugEvent scope_debug_event(rhi, name);
+
+//////////////////////////////////////////////////////////////////////////
+#define DECLARE_UNIFORMBUFFER(EnumType, DataType) \
+template <> struct jUniformBuffer<DataType> : public IUniformBuffer\
+{\
+	jUniformBuffer() = default;\
+	jUniformBuffer(const std::string& name, const DataType& data)\
+		: IUniformBuffer(name), Data(data)\
+	{}\
+	static constexpr EUniformType Type = EnumType;\
+	virtual EUniformType GetType() const { return Type; }\
+	virtual void SetUniformbuffer(const jShader* InShader) const { g_rhi->SetUniformbuffer(Name.c_str(), Data, InShader); }\
+	DataType Data;\
+};
+
+DECLARE_UNIFORMBUFFER(EUniformType::MATRIX, Matrix);
+DECLARE_UNIFORMBUFFER(EUniformType::BOOL, bool);
+DECLARE_UNIFORMBUFFER(EUniformType::INT, int);
+DECLARE_UNIFORMBUFFER(EUniformType::FLOAT, float);
+DECLARE_UNIFORMBUFFER(EUniformType::VECTOR2, Vector2);
+DECLARE_UNIFORMBUFFER(EUniformType::VECTOR3, Vector);
+DECLARE_UNIFORMBUFFER(EUniformType::VECTOR4, Vector4);

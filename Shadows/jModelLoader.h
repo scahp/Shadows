@@ -14,7 +14,10 @@ public:
 		return *_instance;
 	}
 
+	//bool ConvertToFBX(const char* destFilename, const char* filename) const;
+
 	jMeshObject* LoadFromFile(const char* filename);
+	jMeshObject* LoadFromFile(const char* filename, const char* materialRootDir);
 
 private:
 	jModelLoader();

@@ -5,6 +5,7 @@
 #include "assimp\cimport.h"
 #include "assimp\postprocess.h"
 #include "assimp\scene.h"
+#include "assimp\Exporter.hpp"
 #include "jMeshObject.h"
 #include "Math\Vector.h"
 #include "jRenderObject.h"
@@ -12,9 +13,9 @@
 #include "jRHI.h"
 
 #if defined _DEBUG
-#pragma comment(lib, "assimp-vc141-mtd.lib")
+#pragma comment(lib, "assimp-vc142-mtd.lib")
 #else
-#pragma comment(lib, "assimp-vc141-mt.lib")
+#pragma comment(lib, "assimp-vc142-mt.lib")
 #endif
 
 jModelLoader* jModelLoader::_instance = nullptr;
@@ -28,7 +29,21 @@ jModelLoader::~jModelLoader()
 {
 }
 
-jMeshObject* jModelLoader::LoadFromFile(const char* filename)
+//bool jModelLoader::ConvertToFBX(const char* destFilename, const char* filename) const
+//{
+//	Assimp::Exporter exporter;
+//	//for (int32 i = 0; i < exporter.GetExportFormatCount(); ++i)
+//	//	const aiExportFormatDesc* format = exporter.GetExportFormatDescription(i);
+//
+//	Assimp::Importer importer;
+//	const aiScene* scene = importer.ReadFile(filename, 0);
+//	aiReturn Ret = exporter.Export(scene, "fbx", destFilename, 0, nullptr);
+//	//aiReleaseImport(scene);
+//
+//	return (Ret == aiReturn_SUCCESS);
+//}
+
+jMeshObject* jModelLoader::LoadFromFile(const char* filename, const char* materialRootDir)
 {
 	Assimp::Importer importer;
 	const aiScene *scene = importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_FlipUVs);
@@ -90,15 +105,66 @@ jMeshObject* jModelLoader::LoadFromFile(const char* filename)
 	{
 		aiMaterial* material = scene->mMaterials[i];
 
-		auto newMeshMaterial = new jMeshMaterial();
-		if (material->GetTextureCount(aiTextureType_DIFFUSE))
+		std::string name = material->GetName().C_Str();
+
+		for (uint32 k = 0; k < material->mNumProperties; ++k)
 		{
+			aiMaterialProperty* Property = material->mProperties[k];
+		}
+
+		auto newMeshMaterial = new jMeshMaterial();
+		for (uint32 k = aiTextureType_DIFFUSE; k <= aiTextureType_REFLECTION; ++k)
+		{
+			auto curTexType = static_cast<aiTextureType>(k);
+			if (0 >= material->GetTextureCount(curTexType))
+				continue;
+
+			jMeshMaterial::TextureData& curTexData = newMeshMaterial->TexData[k - 1];
+
 			aiString str;
-			material->GetTexture(aiTextureType_DIFFUSE, 0, &str);
+			aiTextureMapping mapping;
+			aiTextureMapMode mode;
+			aiTextureOp op;
+			material->GetTexture(curTexType, 0, &str, &mapping, nullptr, nullptr, &op, &mode);
+
+			switch (mode)
+			{
+			case aiTextureMapMode_Wrap:
+				curTexData.TextureAddressMode = ETextureAddressMode::REPEAT;
+				break;
+			case aiTextureMapMode_Clamp:
+				curTexData.TextureAddressMode = ETextureAddressMode::CLAMP_TO_EDGE;
+				break;
+			case aiTextureMapMode_Decal:
+				curTexData.TextureAddressMode = ETextureAddressMode::CLAMP_TO_BORDER;
+				break;
+			case aiTextureMapMode_Mirror:
+				curTexData.TextureAddressMode = ETextureAddressMode::MIRRORED_REPEAT;
+				break;
+			default:
+				break;
+			}
+
+			std::string FilePath;
+			if (materialRootDir)
+				FilePath = materialRootDir;
+
+			if (FilePath.length() > 0 && str.length > 0)
+			{
+				const char last = FilePath[FilePath.length() - 1];
+				const char first = str.data[0];
+				const bool lastHasNoSlash = (last != '/' && last != '\\');
+				const bool firstHasNoSlash = (first != '/' && first != '\\');
+				if (lastHasNoSlash && firstHasNoSlash)
+					FilePath += "\\";
+			}
+			FilePath += str.C_Str();
+
 			jImageData data;
-			jImageFileLoader::GetInstance().LoadTextureFromFile(data, std::string("Image/") + str.C_Str(), true);
-			newMeshMaterial->Texture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
-			newMeshMaterial->TextureName = str.C_Str();
+			jImageFileLoader::GetInstance().LoadTextureFromFile(data, FilePath, true);
+			curTexData.Texture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB
+				, EFormatType::UNSIGNED_BYTE, data.Format, true);
+			curTexData.TextureName = str.C_Str();
 		}
 
 		aiColor3D emissive;
@@ -214,4 +280,9 @@ jMeshObject* jModelLoader::LoadFromFile(const char* filename)
 	renderObject->UseMaterial = 1;
 	object->RenderObject = renderObject;
 	return object;
+}
+
+jMeshObject* jModelLoader::LoadFromFile(const char* filename)
+{
+	return LoadFromFile(filename, "Image/");
 }

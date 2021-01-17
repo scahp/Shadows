@@ -25,6 +25,7 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("Simple", "Shaders/color_only_vs.glsl", "Shaders/color_only_fs.glsl");
 		DECLARE_SHADER_VS_FS("ShadowMap", "Shaders/vs_shadowMap.glsl", "Shaders/fs_shadowMap.glsl");
 		DECLARE_SHADER_VS_FS("Base", "Shaders/shadowmap/vs.glsl", "Shaders/shadowmap/fs.glsl");
+		DECLARE_SHADER_VS_FS_WITH_OPTION("BaseTexture", "Shaders/shadowmap/vs.glsl", "Shaders/shadowmap/fs.glsl", true, true);
 		DECLARE_SHADER_VS_GS_FS("ShadowMapOmni", "Shaders/shadowmap/vs_omniDirectionalShadowMap.glsl", "shaders/shadowmap/gs_omniDirectionalShadowMap.glsl", "Shaders/shadowmap/fs_omniDirectionalShadowMap.glsl");
 		DECLARE_SHADER_VS_FS("ShadowVolumeBase", "Shaders/shadowvolume/vs.glsl", "Shaders/shadowvolume/fs.glsl");
 		DECLARE_SHADER_VS_FS("ExpDeepShadowMapGen", "Shaders/shadowmap/vs_expDeepShadowMap.glsl", "Shaders/shadowmap/fs_expDeepShadowMap.glsl");
@@ -180,6 +181,36 @@ void jShader::UpdateShaders()
 	const std::shared_ptr<jShader>& currentShader = ShaderVector[currentFile];
 	JASSERT(currentShader);
 	currentShader->UpdateShader();
+}
+
+bool jShader::SetUniformbuffer(const char* name, const Matrix& InData) const
+{
+	return g_rhi->SetUniformbuffer(name, InData, this);
+}
+
+bool jShader::SetUniformbuffer(const char* name, const bool InData) const
+{
+	return g_rhi->SetUniformbuffer(name, InData, this);
+}
+
+bool jShader::SetUniformbuffer(const char* name, const int32 InData) const
+{
+	return g_rhi->SetUniformbuffer(name, InData, this);
+}
+
+bool jShader::SetUniformbuffer(const char* name, const Vector2& InData) const
+{
+	return g_rhi->SetUniformbuffer(name, InData, this);
+}
+
+bool jShader::SetUniformbuffer(const char* name, const Vector& InData) const
+{
+	return g_rhi->SetUniformbuffer(name, InData, this);
+}
+
+bool jShader::SetUniformbuffer(const char* name, const Vector4& InData) const
+{
+	return g_rhi->SetUniformbuffer(name, InData, this);
 }
 
 void jShader::UpdateShader()

@@ -7,6 +7,8 @@ struct jImageData
 	int32 Height = 0;
 	std::string Filename;
 	std::vector<unsigned char> ImageData;
+	ETextureFormat Format = ETextureFormat::RGBA;
+	EFormatType FormatType = EFormatType::UNSIGNED_BYTE;
 };
 
 class jImageFileLoader

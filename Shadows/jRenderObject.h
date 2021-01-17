@@ -37,7 +37,7 @@ public:
 	
 	void SetRenderProperty(const jShader* shader);
 	void SetCameraProperty(const jShader* shader, const jCamera* camera);
-	void SetMaterialProperty(const jShader* shader, jMaterialData* materialData);
+	void SetMaterialProperty(const jShader* shader, jMaterialData* materialData, const std::vector<const jMaterialData*>& dynamicMaterialData);
 	void SetLightProperty(const jShader* shader, const jCamera* camera, const std::list<const jLight*>& lights, jMaterialData* materialData);
 	//void SetLightProperty(const jShader* shader, const jLight* light, jMaterialData* materialData);
 	void SetTextureProperty(const jShader* shader, jMaterialData* materialData);
@@ -48,12 +48,23 @@ public:
 	std::shared_ptr<jIndexStreamData> IndexStream;
 	jIndexBuffer* IndexBuffer = nullptr;
 
-	const jTexture* tex_object = nullptr;
-	const jTexture* tex_object2 = nullptr;
-	const jTexture* tex_object3 = nullptr;
-	const jSamplerState* samplerState = nullptr;
-	const jSamplerState* samplerState2 = nullptr;
-	const jSamplerState* samplerState3 = nullptr;
+	static jMaterialParam* CreateMaterialParam(const char* name, const jTexture* texture, const jSamplerState* sampler = nullptr)
+	{
+		JASSERT(name);
+		auto NewParam = new jMaterialParam();
+		NewParam->Name = name;
+		NewParam->Texture = texture;
+		NewParam->SamplerState = sampler;
+		return NewParam;
+	}
+
+	jMaterialData MaterialData;
+	//const jTexture* tex_object = nullptr;
+	//const jTexture* tex_object2 = nullptr;
+	//const jTexture* tex_object3 = nullptr;
+	//const jSamplerState* samplerState = nullptr;
+	//const jSamplerState* samplerState2 = nullptr;
+	//const jSamplerState* samplerState3 = nullptr;
 
 	jTexture* tex_object_array = nullptr;
 	jSamplerState* samplerStateTexArray = nullptr;

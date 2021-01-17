@@ -8,6 +8,7 @@
 
 #include <AntTweakBar.h>
 #include "jAppSettings.h"
+#include "jSamplerStatePool.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -126,6 +127,7 @@ int main()
 
 		{
 			SCOPE_DEBUG_EVENT(g_rhi, "TwDraw");
+			g_rhi->BindSamplerState(0, jSamplerStatePool::GetSamplerState("LinearClamp").get());
 			TwDraw();
 		}
 
