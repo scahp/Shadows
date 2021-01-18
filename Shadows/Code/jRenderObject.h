@@ -73,7 +73,6 @@ public:
 	Vector Rot = Vector::ZeroVector;
 	Vector Scale = Vector::OneVector;
 
-
 	// todo 정리 필요.
 	int UseUniformColor = 0;
 	Vector4 Color = Vector4::OneVector;

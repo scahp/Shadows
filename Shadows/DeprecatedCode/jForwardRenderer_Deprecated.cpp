@@ -1,5 +1,5 @@
 ﻿#include "pch.h"
-#include "jForwardRenderer.h"
+#include "jForwardRenderer_Deprecated.h"
 #include "jObject.h"
 #include "jShadowAppProperties.h"
 #include "jRenderTargetPool.h"
@@ -11,11 +11,11 @@
 
 //////////////////////////////////////////////////////////////////////////
 // jForwardRenderer
-jForwardRenderer::~jForwardRenderer()
+jForwardRenderer_Deprecated::~jForwardRenderer_Deprecated()
 {
 }
 
-void jForwardRenderer::Setup()
+void jForwardRenderer_Deprecated::Setup()
 {
 	RenderTarget = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA16F, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT, 1 }));
 
@@ -133,12 +133,12 @@ void jForwardRenderer::Setup()
 	}
 }
 
-void jForwardRenderer::Teardown()
+void jForwardRenderer_Deprecated::Teardown()
 {
 	
 }
 
-void jForwardRenderer::ShadowPrePass(const jCamera* camera)
+void jForwardRenderer_Deprecated::ShadowPrePass(const jCamera* camera)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "ShadowPrePass");
 	SCOPE_PROFILE(ShadowPrePass);
@@ -152,7 +152,7 @@ void jForwardRenderer::ShadowPrePass(const jCamera* camera)
 		iter->Do(data);
 }
 
-void jForwardRenderer::RenderPass(const jCamera* camera)
+void jForwardRenderer_Deprecated::RenderPass(const jCamera* camera)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "RenderPass");
 	SCOPE_PROFILE(RenderPass);
@@ -166,7 +166,7 @@ void jForwardRenderer::RenderPass(const jCamera* camera)
 		iter->Do(data);
 }
 
-void jForwardRenderer::DebugRenderPass(const jCamera* camera)
+void jForwardRenderer_Deprecated::DebugRenderPass(const jCamera* camera)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "DebugRenderPass");
 	SCOPE_PROFILE(DebugRenderPass);
@@ -177,7 +177,7 @@ void jForwardRenderer::DebugRenderPass(const jCamera* camera)
 		iter->Do(data);
 }
 
-void jForwardRenderer::BoundVolumeRenderPass(const jCamera* camera)
+void jForwardRenderer_Deprecated::BoundVolumeRenderPass(const jCamera* camera)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "BoundVolumeRenderPass");
 	SCOPE_PROFILE(BoundVolumeRenderPass);
@@ -198,7 +198,7 @@ void jForwardRenderer::BoundVolumeRenderPass(const jCamera* camera)
 	}
 }
 
-void jForwardRenderer::PostProcessPass(const jCamera* camera)
+void jForwardRenderer_Deprecated::PostProcessPass(const jCamera* camera)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "PostProcessPass");
 	SCOPE_PROFILE(PostProcessPass);
@@ -206,7 +206,7 @@ void jForwardRenderer::PostProcessPass(const jCamera* camera)
 	PostProcessChain.Process(camera);
 }
 
-void jForwardRenderer::PostRenderPass(const jCamera* camera)
+void jForwardRenderer_Deprecated::PostRenderPass(const jCamera* camera)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "PostRenderPass");
 	SCOPE_PROFILE(PostRenderPass);
@@ -215,7 +215,7 @@ void jForwardRenderer::PostRenderPass(const jCamera* camera)
 		iter->Do({});
 }
 
-void jForwardRenderer::DebugUIPass(const jCamera* camera)
+void jForwardRenderer_Deprecated::DebugUIPass(const jCamera* camera)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "DebugUIPass");
 	SCOPE_PROFILE(DebugUIPass);

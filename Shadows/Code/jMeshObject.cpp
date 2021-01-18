@@ -10,13 +10,13 @@ jMeshObject::jMeshObject()
 {	
 }
 
-void jMeshObject::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 0*/)
+void jMeshObject::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 0*/) const
 {
 	if (Visible && RenderObject)
 		DrawNode(RootNode, camera, shader, lights);
 }
 
-void jMeshObject::SetMaterialUniform(const jShader* shader, const jMeshMaterial* material)
+void jMeshObject::SetMaterialUniform(const jShader* shader, const jMeshMaterial* material) const
 {
 	g_rhi->SetShader(shader);
 	SET_UNIFORM_BUFFER_STATIC(Vector4, "Material.Diffuse", material->Data.Diffuse, shader);
@@ -28,7 +28,7 @@ void jMeshObject::SetMaterialUniform(const jShader* shader, const jMeshMaterial*
 	SET_UNIFORM_BUFFER_STATIC(float, "Material.Shininess", material->Data.SpecularPow, shader);
 }
 
-void jMeshObject::DrawNode(const jMeshNode* node, const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights)
+void jMeshObject::DrawNode(const jMeshNode* node, const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights) const
 {
 	if (SubMeshes.empty())
 		return;
@@ -40,7 +40,7 @@ void jMeshObject::DrawNode(const jMeshNode* node, const jCamera* camera, const j
 		DrawNode(iter, camera, shader, lights);
 }
 
-void jMeshObject::DrawSubMesh(int32 meshIndex, const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights)
+void jMeshObject::DrawSubMesh(int32 meshIndex, const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights) const
 {
 	auto& subMesh = SubMeshes[meshIndex];
 	{

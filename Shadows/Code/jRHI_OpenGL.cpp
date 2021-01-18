@@ -239,6 +239,35 @@ uint32 GetOpenGLTextureComparisonMode(ETextureComparisonMode mode)
 	return result;
 }
 
+bool GetDepthBufferFormatAndType(uint32& depthBufferFormat, uint32& depthBufferType, const EDepthBufferType& InType)
+{
+	switch (InType)
+	{
+	case EDepthBufferType::DEPTH16:
+		depthBufferFormat = GL_DEPTH_COMPONENT16;
+		depthBufferType = GL_DEPTH_ATTACHMENT;
+		break;
+	case EDepthBufferType::DEPTH24:
+		depthBufferFormat = GL_DEPTH_COMPONENT24;
+		depthBufferType = GL_DEPTH_ATTACHMENT;
+		break;
+	case EDepthBufferType::DEPTH32:
+		depthBufferFormat = GL_DEPTH_COMPONENT32;
+		depthBufferType = GL_DEPTH_ATTACHMENT;
+		break;
+	case EDepthBufferType::DEPTH24_STENCIL8:
+		depthBufferFormat = GL_DEPTH24_STENCIL8;
+		depthBufferType = GL_DEPTH_STENCIL_ATTACHMENT;
+		break;
+	default:
+		depthBufferFormat = 0;
+		depthBufferType = 0;
+		return false;
+	}
+
+	return true;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // jRHI_OpenGL
 jRHI_OpenGL::jRHI_OpenGL()
@@ -1124,7 +1153,7 @@ int32 jRHI_OpenGL::SetMatetrial(const jMaterialData* materialData, const jShader
 	JASSERT(materialData);
 
 	int32 index = baseBindingIndex;
-	const int32 NumOfParams = materialData->Params.size();
+	const int32 NumOfParams = (int32)materialData->Params.size();
 	for (int32 i = 0; i < NumOfParams; ++i)
 	{
 		auto matParam = materialData->Params[i];
@@ -1232,31 +1261,9 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 		break;
 	}
 
-	bool hasDepthAttachment = true;
 	uint32 depthBufferFormat = 0;
 	uint32 depthBufferType = 0;
-	switch (info.DepthBufferType)
-	{
-	case EDepthBufferType::DEPTH16:
-		depthBufferFormat = GL_DEPTH_COMPONENT16;
-		depthBufferType = GL_DEPTH_ATTACHMENT;
-		break;
-	case EDepthBufferType::DEPTH24:
-		depthBufferFormat = GL_DEPTH_COMPONENT24;
-		depthBufferType = GL_DEPTH_ATTACHMENT;
-		break;
-	case EDepthBufferType::DEPTH32:
-		depthBufferFormat = GL_DEPTH_COMPONENT32;
-		depthBufferType = GL_DEPTH_ATTACHMENT;
-		break;
-	case EDepthBufferType::DEPTH24_STENCIL8:
-		depthBufferFormat = GL_DEPTH24_STENCIL8;
-		depthBufferType = GL_DEPTH_STENCIL_ATTACHMENT;
-		break;
-	default:
-		hasDepthAttachment = false;
-		break;
-	}
+	const bool hasDepthAttachment = GetDepthBufferFormatAndType(depthBufferFormat, depthBufferType, info.DepthBufferType);
 
 	const uint32 magnification = GetOpenGLTextureFilterType(info.Magnification);
 	const uint32 minification = GetOpenGLTextureFilterType(info.Minification);
@@ -1264,7 +1271,6 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 	auto rt_gl = new jRenderTarget_OpenGL();
 	rt_gl->Info = info;
 	
-	JASSERT(info.TextureCount > 0);
 	if (info.TextureType == ETextureType::TEXTURE_2D)
 	{
 		uint32 fbo = 0;
@@ -1290,7 +1296,7 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 			tex_gl->Magnification = info.Magnification;
 			tex_gl->Minification = info.Minification;
 			tex_gl->TextureID = tbo;
-			rt_gl->Textures[i] = tex_gl;
+			rt_gl->Textures[i] = std::shared_ptr<jTexture>(tex_gl);
 		}
 
 		if (hasDepthAttachment)
@@ -1304,7 +1310,8 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 			auto tex_gl = new jTexture_OpenGL();
 			tex_gl->TextureType = info.TextureType;
 			tex_gl->TextureID = tbo;
-			rt_gl->TextureDepth = tex_gl;
+			tex_gl->DepthBufferType = info.DepthBufferType;
+			rt_gl->TextureDepth = std::shared_ptr<jTexture>(tex_gl);
 		}
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -1353,7 +1360,8 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 			tex_gl->Magnification = info.Magnification;
 			tex_gl->Minification = info.Minification;
 			tex_gl->TextureID = tbo;
-			rt_gl->TextureDepth = tex_gl;
+			tex_gl->DepthBufferType = info.DepthBufferType;
+			rt_gl->TextureDepth = std::shared_ptr<jTexture>(tex_gl);
 		}
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -1367,7 +1375,7 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 
 		tex_gl->TextureType = info.TextureType;
 		tex_gl->TextureID = tbo;
-		rt_gl->Textures.push_back(tex_gl);
+		rt_gl->Textures.push_back(std::shared_ptr<jTexture>(tex_gl));
 
 		rt_gl->fbos.push_back(fbo);
 	}
@@ -1398,7 +1406,7 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 			tex_gl->Magnification = info.Magnification;
 			tex_gl->Minification = info.Minification;
 			tex_gl->TextureID = tbo;
-			rt_gl->Textures[i] = tex_gl;
+			rt_gl->Textures[i] = std::shared_ptr<jTexture>(tex_gl);
 		}
 
 		if (hasDepthAttachment)
@@ -1414,7 +1422,8 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 			tex_gl->Magnification = info.Magnification;
 			tex_gl->Minification = info.Minification;
 			tex_gl->TextureID = tbo;
-			rt_gl->TextureDepth = tex_gl;
+			tex_gl->DepthBufferType = info.DepthBufferType;
+			rt_gl->TextureDepth = std::shared_ptr<jTexture>(tex_gl);
 		}
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -1447,7 +1456,7 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 		tex_gl->TextureID = tbo;
 		tex_gl->Magnification = info.Magnification;
 		tex_gl->Minification = info.Minification;
-		rt_gl->Textures.push_back(tex_gl);
+		rt_gl->Textures.push_back(std::shared_ptr<jTexture>(tex_gl));
 
 		for (int i = 0; i < 6; ++i)
 		{
@@ -1851,6 +1860,36 @@ void jRenderTarget_OpenGL::End() const
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+}
+
+bool jRenderTarget_OpenGL::SetDepthAttachment(const std::shared_ptr<jTexture>& InDepth)
+{
+	if (!__super::SetDepthAttachment(InDepth))
+		return false;
+
+	const jTexture_OpenGL* tex_gl = static_cast<jTexture_OpenGL*>(InDepth.get());
+
+	uint32 depthBufferFormat = 0;
+	uint32 depthBufferType = 0;
+	const bool hasDepthAttachment = GetDepthBufferFormatAndType(depthBufferFormat, depthBufferType, tex_gl->DepthBufferType);
+	JASSERT(hasDepthAttachment);
+	if (!hasDepthAttachment)
+		return false;
+
+	JASSERT(fbos.size() == 1);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbos[0]);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, depthBufferType, GetOpenGLTextureType(tex_gl->TextureType), tex_gl->TextureID, 0);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		auto status_code = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		char szTemp[256] = { 0, };
+		sprintf_s(szTemp, sizeof(szTemp), "Failed to create Texture2D framebuffer which is not complete : %d", status_code);
+		JMESSAGE(szTemp);
+		return false;
+	}
+
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////

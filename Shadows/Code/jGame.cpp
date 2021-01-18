@@ -17,10 +17,12 @@
 #include "jFile.h"
 #include "jRenderTargetPool.h"
 #include "glad\glad.h"
-#include "jDeferredRenderer.h"
-#include "jForwardRenderer.h"
+#include "jDeferredRenderer_Deprecated.h"
+#include "jForwardRenderer_Deprecated.h"
 #include "jPipeline.h"
 #include "jVertexAdjacency.h"
+#include "Renderer\jDeferredRenderer.h"
+#include "Renderer\jRenderContext.h"
 
 jRHI* g_rhi = nullptr;
 
@@ -122,10 +124,10 @@ void jGame::Setup()
 	// todo 정리 필요
 	const auto currentShadowPipelineSet = (jShadowAppSettingProperties::GetInstance().ShadowType == EShadowType::ShadowMap) 
 		? ShadowPipelineSetMap[CurrentShadowMapType]  : ShadowVolumePipelineSet;
-	ForwardRenderer = new jForwardRenderer(currentShadowPipelineSet);
+	ForwardRenderer = new jForwardRenderer_Deprecated(currentShadowPipelineSet);
 	ForwardRenderer->Setup();
 
-	DeferredRenderer = new jDeferredRenderer({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::DEPTH16, SCR_WIDTH, SCR_HEIGHT, 4 });
+	DeferredRenderer = new jDeferredRenderer_Deprecated({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::DEPTH16, SCR_WIDTH, SCR_HEIGHT, 4 });
 	DeferredRenderer->Setup();
 
 	//for (int32 i = 0; i < NUM_CASCADES; ++i)
@@ -186,25 +188,42 @@ void jGame::Update(float deltaTime)
 		light->Update(deltaTime);
 	}
 
-	//jModelLoader::GetInstance().ConvertToFBX("Scene/sponza/sponza.dae", "Scene/sponza/sponza.obj");
-	static jMeshObject* s_Sponza = jModelLoader::GetInstance().LoadFromFile("Scene/sponza/sponza.obj", "Scene/sponza");
-	
-	g_rhi->SetClearColor({ 0.0f, 0.0f, 0.0f, 1.0f });
-	g_rhi->SetClear(ERenderBufferType::COLOR | ERenderBufferType::DEPTH);
-	g_rhi->EnableDepthTest(true);
-
-	s_Sponza->Update(deltaTime);
-	
-	jShader* shader = jShader::GetShader("BaseTexture");
-	g_rhi->SetShader(shader);
-	
-	jLight* light = MainCamera->GetLight(ELightType::DIRECTIONAL);
-	light->BindLight(shader);
-
+	static bool IsInit = false;
+	static jRenderContext RenderContext;
+	static jDeferredRenderer DeferredRenderer;
+	if (!IsInit)
 	{
-		SCOPE_PROFILE(s_Sponza_Draw);
-		s_Sponza->Draw(MainCamera, shader, { light });
+		IsInit = true;
+
+		DeferredRenderer.Init();
+
+		static jMeshObject* s_Sponza = jModelLoader::GetInstance().LoadFromFile("Scene/sponza/sponza.obj", "Scene/sponza");
+		RenderContext.AllObjects.push_back(s_Sponza);
+		RenderContext.Camera = MainCamera;
+		RenderContext.Lights = { MainCamera->GetLight(ELightType::DIRECTIONAL) };
 	}
+
+	DeferredRenderer.Render(&RenderContext);
+
+	////jModelLoader::GetInstance().ConvertToFBX("Scene/sponza/sponza.dae", "Scene/sponza/sponza.obj");
+	//static jMeshObject* s_Sponza = jModelLoader::GetInstance().LoadFromFile("Scene/sponza/sponza.obj", "Scene/sponza");
+	//
+	//g_rhi->SetClearColor({ 0.0f, 0.0f, 0.0f, 1.0f });
+	//g_rhi->SetClear(ERenderBufferType::COLOR | ERenderBufferType::DEPTH);
+	//g_rhi->EnableDepthTest(true);
+
+	//s_Sponza->Update(deltaTime);
+	//
+	//jShader* shader = jShader::GetShader("BaseTexture");
+	//g_rhi->SetShader(shader);
+	//
+	//jLight* light = MainCamera->GetLight(ELightType::DIRECTIONAL);
+	//light->BindLight(shader);
+
+	//{
+	//	SCOPE_PROFILE(s_Sponza_Draw);
+	//	s_Sponza->Draw(MainCamera, shader, { light });
+	//}
 }
 
 void jGame::UpdateAppSetting()

@@ -33,7 +33,7 @@ void jBillboardQuadPrimitive::Update(float deltaTime)
 	}
 }
 
-void jUIQuadPrimitive::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 1 */)
+void jUIQuadPrimitive::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 1 */) const
 {
 	SetUniformParams(shader);
 	__super::Draw(camera, shader, lights, instanceCount);
@@ -45,7 +45,7 @@ void jUIQuadPrimitive::SetTexture(const jTexture* texture)
 	//RenderObject->tex_object = texture;
 }
 
-void jUIQuadPrimitive::SetUniformParams(const jShader* shader)
+void jUIQuadPrimitive::SetUniformParams(const jShader* shader) const
 {
 	g_rhi->SetShader(shader);
 	SET_UNIFORM_BUFFER_STATIC(Vector2, "PixelSize", Vector2(1.0f / SCR_WIDTH, 1.0f / SCR_HEIGHT), shader);
@@ -53,13 +53,13 @@ void jUIQuadPrimitive::SetUniformParams(const jShader* shader)
 	SET_UNIFORM_BUFFER_STATIC(Vector2, "Size", Size, shader);
 }
 
-void jFullscreenQuadPrimitive::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount)
+void jFullscreenQuadPrimitive::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount) const
 {
 	SetUniformBuffer(shader);
 	__super::Draw(camera, shader, lights, instanceCount);
 }
 
-void jFullscreenQuadPrimitive::SetUniformBuffer(const jShader* shader)
+void jFullscreenQuadPrimitive::SetUniformBuffer(const jShader* shader) const
 {
 	g_rhi->SetShader(shader);
 	SET_UNIFORM_BUFFER_STATIC(Vector2, "PixelSize", Vector2(1.0f / SCR_WIDTH, 1.0f / SCR_HEIGHT), shader);
@@ -115,7 +115,7 @@ void jFullscreenQuadPrimitive::SetTexture3(const jTexture* texture, const jSampl
 	//RenderObject->samplerState3 = samplerState;
 }
 
-void jBoundBoxObject::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 1 */)
+void jBoundBoxObject::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 1 */) const
 {
 	__super::Draw(camera, shader, lights);
 }
@@ -126,7 +126,7 @@ void jBoundBoxObject::SetUniformBuffer(const jShader* shader)
 	SET_UNIFORM_BUFFER_STATIC(Vector4, "Color", Color, shader);
 }
 
-void jBoundSphereObject::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 1 */)
+void jBoundSphereObject::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 1 */) const
 {
 	__super::Draw(camera, shader, lights);
 }
@@ -147,7 +147,7 @@ void jArrowSegmentPrimitive::Update(float deltaTime)
 		ConeObject->Update(deltaTime);
 }
 
-void jArrowSegmentPrimitive::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 1 */)
+void jArrowSegmentPrimitive::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 1 */) const
 {
 	__super::Draw(camera, shader, lights);
 
@@ -256,12 +256,13 @@ void CreateShadowVolume(const std::vector<float>& vertices, const std::vector<ui
 
 void CreateBoundObjects(const std::vector<float>& vertices, jObject* ownerObject)
 {
-	auto boundBoxObject = CreateBoundBox(GenerateBoundBox(vertices), ownerObject);
-	auto boundSphereObject = CreateBoundSphere(GenerateBoundSphere(vertices), ownerObject);
-	ownerObject->BoundBoxObjects.emplace_back(boundBoxObject);
-	ownerObject->BoundSphereObjects.emplace_back(boundSphereObject);
-	jObject::AddBoundBoxObject(boundBoxObject);
-	jObject::AddBoundSphereObject(boundSphereObject);
+	ownerObject->BoundBox = GenerateBoundBox(vertices);
+	ownerObject->BoundSphere = GenerateBoundSphere(vertices);
+
+	ownerObject->BoundBoxObjects = CreateBoundBox(ownerObject->BoundBox, ownerObject);
+	ownerObject->BoundSphereObjects = CreateBoundSphere(ownerObject->BoundSphere, ownerObject);
+	jObject::AddBoundBoxObject(ownerObject->BoundBoxObjects);
+	jObject::AddBoundSphereObject(ownerObject->BoundSphereObjects);
 }
 
 jBoundBoxObject* CreateBoundBox(jBoundBox boundBox, jObject* ownerObject, const Vector4& color)
@@ -1759,7 +1760,7 @@ void jDirectionalLightPrimitive::Update(float deltaTime)
 }
 
 
-void jDirectionalLightPrimitive::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 1 */)
+void jDirectionalLightPrimitive::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 1 */) const
 {
 	__super::Draw(camera, shader, lights);
 
@@ -1822,7 +1823,7 @@ void jPointLightPrimitive::Update(float deltaTime)
 	SphereObject->Update(deltaTime);
 }
 
-void jPointLightPrimitive::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 1 */)
+void jPointLightPrimitive::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 1 */) const
 {
 	__super::Draw(camera, shader, lights);
 	BillboardObject->Draw(camera, shader, lights);
@@ -1837,7 +1838,7 @@ void jSpotLightPrimitive::Update(float deltaTime)
 	PenumbraConeObject->Update(deltaTime);
 }
 
-void jSpotLightPrimitive::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 1 */)
+void jSpotLightPrimitive::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 1 */) const
 {
 	__super::Draw(camera, shader, lights);
 	BillboardObject->Draw(camera, shader, lights);
@@ -1978,7 +1979,7 @@ void jFrustumPrimitive::Update(float deltaTime)
 		Plane[i]->Update(deltaTime);
 }
 
-void jFrustumPrimitive::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 1 */)
+void jFrustumPrimitive::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 1 */) const
 {
 	__super::Draw(camera, shader, lights);
 	for (int32 i = 0; i < 12; ++i)
@@ -1993,9 +1994,9 @@ void jGraph2D::Update(float deltaTime)
 	UpdateBuffer();
 }
 
-void jGraph2D::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 0*/)
+void jGraph2D::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 0*/) const
 {
-	UpdateBuffer();
+	//UpdateBuffer();
 	SET_UNIFORM_BUFFER_STATIC(Vector2, "InvViewportSize", Vector2(1.0f / SCR_WIDTH, 1.0f / SCR_HEIGHT), shader);
 	SET_UNIFORM_BUFFER_STATIC(Vector4, "LineColor", Vector4::ColorRed, shader);
 	SET_UNIFORM_BUFFER_STATIC(Vector4, "GuardLineColor", Vector4::ColorWhite, shader);
@@ -2017,7 +2018,7 @@ void jGraph2D::SetPoints(const std::vector<Vector2>& points)
 	DirtyFlag = true;
 }
 
-void jGraph2D::UpdateBuffer()
+void jGraph2D::UpdateBuffer() 
 {
 	if (DirtyFlag)
 	{

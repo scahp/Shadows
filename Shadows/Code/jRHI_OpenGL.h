@@ -57,6 +57,7 @@ struct jRenderTarget_OpenGL : public jRenderTarget
 
 	virtual bool Begin(int index = 0, bool mrt = false) const override;
 	virtual void End() const override;
+	virtual bool SetDepthAttachment(const std::shared_ptr<jTexture>& InDepth) override;
 };
 
 struct jUniformBufferBlock_OpenGL : public IUniformBufferBlock

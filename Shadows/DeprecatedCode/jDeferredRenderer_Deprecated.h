@@ -6,11 +6,11 @@
 
 class jCamera;
 
-class jDeferredRenderer : public jRenderer
+class jDeferredRenderer_Deprecated : public jRenderer
 {
 public:
-	jDeferredRenderer(const jRenderTargetInfo& geometryBufferInfo);
-	virtual ~jDeferredRenderer();
+	jDeferredRenderer_Deprecated(const jRenderTargetInfo& geometryBufferInfo);
+	virtual ~jDeferredRenderer_Deprecated();
 
 	typedef void (*RenderPassFunc)(jCamera*);
 

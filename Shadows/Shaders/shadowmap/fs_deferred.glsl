@@ -11,7 +11,7 @@ layout (std140) uniform DirectionalLightShadowMapBlock
 {
 	mat4 ShadowVP;
 	mat4 ShadowV;
-	vec3 LightPos;      // Directional Light Pos юс╫ц
+	vec3 LightPos;      // Directional Light Pos О©╫с╫О©╫
 	float LightZNear;
 	float LightZFar;
 };

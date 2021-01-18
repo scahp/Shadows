@@ -7,6 +7,17 @@ class jLight;
 class jVertexAdjacency;
 class IShadowVolume;
 
+struct jBoundBox
+{
+	Vector Min;
+	Vector Max;
+};
+
+struct jBoundSphere
+{
+	float Radius = 0.0f;
+};
+
 class jObject
 {
 public:
@@ -44,7 +55,7 @@ public:
 
 	virtual void Update(float deltaTime);
 	//virtual void Draw(const jCamera* camera, const jShader* shader);
-	virtual void Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount = 0);
+	virtual void Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount = 0) const;
 
 	void SetDirtyState() { DirtyObjectState = true; s_DirtyStateObjects.insert(this); }
 
@@ -66,8 +77,11 @@ public:
 	std::function<void(jObject*, float)> PostUpdateFunc;
 
 	// todo 현재는 보유만 하고있음.
-	std::vector<jObject*> BoundBoxObjects;
-	std::vector<jObject*> BoundSphereObjects;
+	jObject* BoundBoxObjects = nullptr;
+	jObject* BoundSphereObjects = nullptr;
+
+	jBoundBox BoundBox;
+	jBoundSphere BoundSphere;
 
 private:
 	static std::list<jObject*> s_ShadowCasterObject;

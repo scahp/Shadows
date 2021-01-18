@@ -6,11 +6,11 @@
 
 class jCamera;
 
-class jForwardRenderer : public jRenderer
+class jForwardRenderer_Deprecated : public jRenderer
 {
 public:
 	using jRenderer::jRenderer;
-	virtual ~jForwardRenderer();
+	virtual ~jForwardRenderer_Deprecated();
 
 	typedef void (*RenderPassFunc)(jCamera*);
 

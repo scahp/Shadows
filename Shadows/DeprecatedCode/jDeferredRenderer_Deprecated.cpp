@@ -1,5 +1,5 @@
-﻿#include "pch.h"
-#include "jDeferredRenderer.h"
+﻿#include <pch.h>
+#include "jDeferredRenderer_Deprecated.h"
 #include "jObject.h"
 #include "jShadowAppProperties.h"
 #include "jRenderTargetPool.h"
@@ -11,16 +11,16 @@
 
 //////////////////////////////////////////////////////////////////////////
 // jDeferredRenderer
-jDeferredRenderer::jDeferredRenderer(const jRenderTargetInfo& geometryBufferInfo)
+jDeferredRenderer_Deprecated::jDeferredRenderer_Deprecated(const jRenderTargetInfo& geometryBufferInfo)
 {
 	GeometryBufferInfo = geometryBufferInfo;
 }
 
-jDeferredRenderer::~jDeferredRenderer()
+jDeferredRenderer_Deprecated::~jDeferredRenderer_Deprecated()
 {
 }
 
-void jDeferredRenderer::Setup()
+void jDeferredRenderer_Deprecated::Setup()
 {
 	GBuffer.GeometryBuffer = jRenderTargetPool::GetRenderTarget(GeometryBufferInfo);
 
@@ -170,12 +170,12 @@ void jDeferredRenderer::Setup()
 	}
 }
 
-void jDeferredRenderer::Teardown()
+void jDeferredRenderer_Deprecated::Teardown()
 {
 	
 }
 
-void jDeferredRenderer::ShadowPrePass(const jCamera* camera)
+void jDeferredRenderer_Deprecated::ShadowPrePass(const jCamera* camera)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "ShadowPrePass");
 
@@ -191,7 +191,7 @@ void jDeferredRenderer::ShadowPrePass(const jCamera* camera)
 		iter->Do(data);
 }
 
-void jDeferredRenderer::RenderPass(const jCamera* camera)
+void jDeferredRenderer_Deprecated::RenderPass(const jCamera* camera)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "RenderPass");
 
@@ -209,7 +209,7 @@ void jDeferredRenderer::RenderPass(const jCamera* camera)
 		iter->Do(data);
 }
 
-void jDeferredRenderer::DebugRenderPass(const jCamera* camera)
+void jDeferredRenderer_Deprecated::DebugRenderPass(const jCamera* camera)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "DebugRenderPass");
 
@@ -222,7 +222,7 @@ void jDeferredRenderer::DebugRenderPass(const jCamera* camera)
 	}
 }
 
-void jDeferredRenderer::BoundVolumeRenderPass(const jCamera* camera)
+void jDeferredRenderer_Deprecated::BoundVolumeRenderPass(const jCamera* camera)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "BoundVolumeRenderPass");
 
@@ -245,13 +245,13 @@ void jDeferredRenderer::BoundVolumeRenderPass(const jCamera* camera)
 	}
 }
 
-void jDeferredRenderer::PostProcessPass(const jCamera* camera)
+void jDeferredRenderer_Deprecated::PostProcessPass(const jCamera* camera)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "PostProcessPass");
 	PostProcessChain.Process(camera);
 }
 
-void jDeferredRenderer::PostRenderPass(const jCamera* camera)
+void jDeferredRenderer_Deprecated::PostRenderPass(const jCamera* camera)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "PostRenderPass");
 	for (auto& iter : PipelineSet->PostRenderPass)

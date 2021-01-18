@@ -33,7 +33,11 @@ struct jIndexBuffer : public IBuffer
 struct jTexture
 {
 	bool sRGB = false;
-	ETextureType TextureType;
+	union
+	{
+		ETextureType TextureType;
+		EDepthBufferType DepthBufferType;
+	};
 
 	ETextureFilter Minification = ETextureFilter::NEAREST;
 	ETextureFilter Magnification = ETextureFilter::NEAREST;
@@ -232,16 +236,17 @@ struct jRenderTarget : public std::enable_shared_from_this<jRenderTarget>
 {
 	virtual ~jRenderTarget() {}
 
-	virtual jTexture* GetTexture(int32 index = 0) const { return Textures[index]; }
-	virtual jTexture* GetTextureDepth(int32 index = 0) const { return TextureDepth; }
+	virtual jTexture* GetTexture(int32 index = 0) const { return Textures[index].get(); }
+	virtual jTexture* GetTextureDepth(int32 index = 0) const { return TextureDepth.get(); }
 	virtual ETextureType GetTextureType() const { return Info.TextureType; }
+	virtual bool SetDepthAttachment(const std::shared_ptr<jTexture>& InDepth) { TextureDepth = InDepth; return true; }
 
 	virtual bool Begin(int index = 0, bool mrt = false) const { return true; };
 	virtual void End() const {}
 
 	jRenderTargetInfo Info;
-	std::vector<jTexture*> Textures;
-	jTexture* TextureDepth = nullptr;
+	std::vector<std::shared_ptr<jTexture> > Textures;
+	std::shared_ptr<jTexture> TextureDepth;
 };
 
 struct jQueryTime

@@ -160,19 +160,11 @@ jObject::jObject()
 
 jObject::~jObject()
 {
-	for (auto iter : BoundSphereObjects)
-	{
-		jObject::RemoveBoundSphereObject(iter);
-		delete iter;
-	}
-	BoundSphereObjects.clear();
+	jObject::RemoveBoundSphereObject(BoundSphereObjects);
+	delete BoundSphereObjects;
 
-	for (auto iter : BoundBoxObjects)
-	{
-		jObject::RemoveBoundBoxObject(iter);
-		delete iter;
-	}
-	BoundBoxObjects.clear();
+	jObject::RemoveBoundBoxObject(BoundBoxObjects);
+	delete BoundBoxObjects;
 }
 
 void jObject::Update(float deltaTime)
@@ -184,7 +176,7 @@ void jObject::Update(float deltaTime)
 		PostUpdateFunc(this, deltaTime);
 }
 
-void jObject::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 0*/)
+void jObject::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 0*/) const
 {
 	if (Visible && RenderObject)
 		RenderObject->Draw(camera, shader, lights, 0, -1, instanceCount);

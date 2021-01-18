@@ -84,7 +84,7 @@ struct Matrix
 		float const K = m33 * m21 - m31 * m23;
 		float const L = m33 * m22 - m32 * m23;
 
-		// Çà·Ä½Ä °è»ê·® ÃÖÀûÈ­
+		// ï¿½ï¿½Ä½ï¿½ ï¿½ï¿½ê·® ï¿½ï¿½ï¿½ï¿½È­
 		// Det calculate optimize
 		//float const det = m00 * (m11 * L - m12 * K + m13 * J) - m10 * (m01 * L - m02 * K + m03 * J)
 		//              + m20 * (m31 * F - m32 * E + m33 * D) - m30 * (m21 * F - m22 * E + m23 * D);
@@ -114,7 +114,7 @@ struct Matrix
 		float const K = m33 * m21 - m31 * m23;
 		float const L = m33 * m22 - m32 * m23;
 
-		// Çà·Ä½Ä °è»ê·® ÃÖÀûÈ­
+		// ï¿½ï¿½Ä½ï¿½ ï¿½ï¿½ê·® ï¿½ï¿½ï¿½ï¿½È­
 		// Det calculate optimize
 		//float const det = m00 * (m11 * L - m12 * K + m13 * J) - m10 * (m01 * L - m02 * K + m03 * J)
 		//              + m20 * (m31 * F - m32 * E + m33 * D) - m30 * (m21 * F - m22 * E + m23 * D);
@@ -127,12 +127,12 @@ struct Matrix
 		float const det = A * L -B * K + C * J + G * F -H * E + I * D;
 		if (0.0f == det)
 		{
-			JASSERT("¿ªÇà·ÄÀ» ±¸ÇÒ ¼ö ¾ø½À´Ï´Ù.");
+			JASSERT("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½.");
 			return *this;
 		}
 
 		float const InverseDet = 1.0f / det;
-		// ¼ö¹ÝÇà·Ä. (-1)^(i+j) * M[i][j] ·Î Çà·ÄÀ» ¸¸µç ÈÄ ÀüÄ¡ ½ÃÅ² Çà·Ä
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½. (-1)^(i+j) * M[i][j] ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½Ä¡ ï¿½ï¿½Å² ï¿½ï¿½ï¿½
 		// Adjoint matrix. Make a matrix (-1)^(i+j) * M[i][j] and then transpose the matrix.
 		Matrix inverseMatrix;
 		inverseMatrix.m[0][0] = (m11 * L - m12 * K + m13 * J) * InverseDet;
@@ -661,12 +661,12 @@ struct Matrix3
 		float const det = m00 * F - m01 * E + m02 * D;
 		if (0.0f == det)
 		{
-			JASSERT("¿ªÇà·ÄÀ» ±¸ÇÒ ¼ö ¾ø½À´Ï´Ù.");
+			JASSERT("ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½.");
 			return *this;
 		}
 
 		float const InverseDet = 1.0f / det;
-		// ¼ö¹ÝÇà·Ä. (-1)^(i+j) * M[i][j] ·Î Çà·ÄÀ» ¸¸µç ÈÄ ÀüÄ¡ ½ÃÅ² Çà·Ä
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½. (-1)^(i+j) * M[i][j] ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½Ä¡ ï¿½ï¿½Å² ï¿½ï¿½ï¿½
 		// Adjoint matrix. Make a matrix (-1)^(i+j) * M[i][j] and then transpose the matrix.
 		Matrix3 inverseMatrix;
 		inverseMatrix.m[0][0] = F * InverseDet;

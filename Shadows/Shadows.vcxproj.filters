@@ -1,23 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
     <Filter Include="Shaders">
       <UniqueIdentifier>{6f4943cf-ecf8-4183-a927-7a0305aeaf37}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Math">
-      <UniqueIdentifier>{2b3ef8ae-2267-4362-b802-d9ca949d9d43}</UniqueIdentifier>
     </Filter>
     <Filter Include="Shaders\shadowmap">
       <UniqueIdentifier>{527d965c-4437-4bf2-9733-9273495c8649}</UniqueIdentifier>
@@ -31,309 +16,368 @@
     <Filter Include="Shaders\compute">
       <UniqueIdentifier>{3d6c23d8-7b15-4ec7-85cb-fe2c92541182}</UniqueIdentifier>
     </Filter>
-    <Filter Include="IMGUI">
+    <Filter Include="Code">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="DeprecatedCode">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Code\Math">
+      <UniqueIdentifier>{2b3ef8ae-2267-4362-b802-d9ca949d9d43}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\External">
+      <UniqueIdentifier>{e7220f1e-aca3-4245-af88-c7e7d53a90a3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\External\IMGUI">
       <UniqueIdentifier>{3b4a88b3-46a4-4af9-a6f1-5ecfe188c022}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\Generic">
+      <UniqueIdentifier>{6d27c2a6-a6fe-4400-9a66-30be23234747}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\Renderer">
+      <UniqueIdentifier>{e4f13002-ebba-409d-b741-2c52b111e788}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\NewShaders">
+      <UniqueIdentifier>{eb56a836-03b1-47e4-bba8-7237d70077f0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="pch.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="DeprecatedCode\jPipeline.h">
+      <Filter>DeprecatedCode</Filter>
     </ClInclude>
-    <ClInclude Include="jEngine.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="DeprecatedCode\jPostProcess.h">
+      <Filter>DeprecatedCode</Filter>
     </ClInclude>
-    <ClInclude Include="jGame.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="DeprecatedCode\jShadowAppProperties.h">
+      <Filter>DeprecatedCode</Filter>
     </ClInclude>
-    <ClInclude Include="jCamera.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="DeprecatedCode\jShadowTypes.h">
+      <Filter>DeprecatedCode</Filter>
     </ClInclude>
-    <ClInclude Include="jLight.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="DeprecatedCode\jShadowVolume.h">
+      <Filter>DeprecatedCode</Filter>
     </ClInclude>
-    <ClInclude Include="jRenderer.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="DeprecatedCode\jShadowVolumeTypes.h">
+      <Filter>DeprecatedCode</Filter>
     </ClInclude>
-    <ClInclude Include="jObject.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="DeprecatedCode\jVertexAdjacency.h">
+      <Filter>DeprecatedCode</Filter>
     </ClInclude>
-    <ClInclude Include="jPrimitiveUtil.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jAppSettings.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jInputEvent.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jCamera.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jUtil.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jCollision.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jRHI.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jEngine.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jRHI_OpenGL.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jFile.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jRHI_DirectX11.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jGame.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jRHI_Vulkan.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jGBuffer.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jCollision.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jHairModelLoader.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jRenderObject.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jImageFileLoader.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jRenderTargetPool.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jImageLoader.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jRHIType.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="Code\jInputEvent.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="Math\MathUtility.h">
-      <Filter>Math</Filter>
+    <ClInclude Include="Code\jLight.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="Math\Matrix.h">
-      <Filter>Math</Filter>
+    <ClInclude Include="Code\jMaterial.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="Math\Vector.h">
-      <Filter>Math</Filter>
+    <ClInclude Include="Code\jMeshObject.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jFile.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="Code\jModelLoader.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="Math\Plane.h">
-      <Filter>Math</Filter>
+    <ClInclude Include="Code\jObject.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jVertexAdjacency.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="Code\jPerformanceProfile.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jShadowVolume.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jPrimitiveUtil.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jAppSettings.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jRenderer.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jShadowVolumeTypes.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jRendererTemplate.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jShadowAppProperties.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jRenderObject.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jShadowTypes.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jRenderTargetPool.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jImageFileLoader.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jRHI.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="TGALoader.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jRHI_DirectX11.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="lodepng.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jRHI_OpenGL.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jHairModelLoader.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jRHI_Vulkan.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jMeshObject.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jRHIType.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jModelLoader.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\jSamplerStatePool.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jPostProcess.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="Code\jShader.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jDeferredRenderer.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="Code\jUtil.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jGBuffer.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="Code\TGALoader.h">
+      <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="jPipeline.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="Code\Math\MathUtility.h">
+      <Filter>Code\Math</Filter>
     </ClInclude>
-    <ClInclude Include="jForwardRenderer.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="Code\Math\Matrix.h">
+      <Filter>Code\Math</Filter>
     </ClInclude>
-    <ClInclude Include="jShader.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="Code\Math\Plane.h">
+      <Filter>Code\Math</Filter>
     </ClInclude>
-    <ClInclude Include="jPerformanceProfile.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\Math\Vector.h">
+      <Filter>Code\Math</Filter>
     </ClInclude>
-    <ClInclude Include="IMGUI\imconfig.h">
-      <Filter>IMGUI</Filter>
+    <ClInclude Include="Code\External\IMGUI\imconfig.h">
+      <Filter>Code\External\IMGUI</Filter>
     </ClInclude>
-    <ClInclude Include="IMGUI\imgui.h">
-      <Filter>IMGUI</Filter>
+    <ClInclude Include="Code\External\IMGUI\imgui.h">
+      <Filter>Code\External\IMGUI</Filter>
     </ClInclude>
-    <ClInclude Include="IMGUI\imgui_impl_glfw.h">
-      <Filter>IMGUI</Filter>
+    <ClInclude Include="Code\External\IMGUI\imgui_impl_glfw.h">
+      <Filter>Code\External\IMGUI</Filter>
     </ClInclude>
-    <ClInclude Include="IMGUI\imgui_internal.h">
-      <Filter>IMGUI</Filter>
+    <ClInclude Include="Code\External\IMGUI\imgui_impl_opengl3.h">
+      <Filter>Code\External\IMGUI</Filter>
     </ClInclude>
-    <ClInclude Include="IMGUI\imstb_rectpack.h">
-      <Filter>IMGUI</Filter>
+    <ClInclude Include="Code\External\IMGUI\imgui_internal.h">
+      <Filter>Code\External\IMGUI</Filter>
     </ClInclude>
-    <ClInclude Include="IMGUI\imstb_textedit.h">
-      <Filter>IMGUI</Filter>
+    <ClInclude Include="Code\External\IMGUI\imstb_rectpack.h">
+      <Filter>Code\External\IMGUI</Filter>
     </ClInclude>
-    <ClInclude Include="IMGUI\imstb_truetype.h">
-      <Filter>IMGUI</Filter>
+    <ClInclude Include="Code\External\IMGUI\imstb_textedit.h">
+      <Filter>Code\External\IMGUI</Filter>
     </ClInclude>
-    <ClInclude Include="IMGUI\imgui_impl_opengl3.h">
-      <Filter>IMGUI</Filter>
+    <ClInclude Include="Code\External\IMGUI\imstb_truetype.h">
+      <Filter>Code\External\IMGUI</Filter>
     </ClInclude>
-    <ClInclude Include="jSamplerStatePool.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\External\lodepng.h">
+      <Filter>Code\External</Filter>
     </ClInclude>
-    <ClInclude Include="stb_image.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Code\External\stb_image.h">
+      <Filter>Code\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Generic\TemplateUtility.h">
+      <Filter>Code\Generic</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\pch.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="DeprecatedCode\jForwardRenderer_Deprecated.h">
+      <Filter>DeprecatedCode</Filter>
+    </ClInclude>
+    <ClInclude Include="DeprecatedCode\jDeferredRenderer_Deprecated.h">
+      <Filter>DeprecatedCode</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Renderer\jForwardRenderer.h">
+      <Filter>Code\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Renderer\jDeferredRenderer.h">
+      <Filter>Code\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Renderer\jRenderContext.h">
+      <Filter>Code\Renderer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="pch.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="DeprecatedCode\jPipeline.cpp">
+      <Filter>DeprecatedCode</Filter>
     </ClCompile>
-    <ClCompile Include="glad.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="DeprecatedCode\jPostProcess.cpp">
+      <Filter>DeprecatedCode</Filter>
     </ClCompile>
-    <ClCompile Include="jEngine.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="DeprecatedCode\jShadowAppProperties.cpp">
+      <Filter>DeprecatedCode</Filter>
     </ClCompile>
-    <ClCompile Include="jGame.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="DeprecatedCode\jShadowVolume.cpp">
+      <Filter>DeprecatedCode</Filter>
     </ClCompile>
-    <ClCompile Include="jCamera.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="DeprecatedCode\jVertexAdjacency.cpp">
+      <Filter>DeprecatedCode</Filter>
     </ClCompile>
-    <ClCompile Include="jLight.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jAppSettings.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jRenderer.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jCamera.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jObject.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jCollision.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jPrimitiveUtil.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jEngine.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jInputEvent.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jFile.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jUtil.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jGame.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jRHI.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jGBuffer.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jRHI_OpenGL.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jHairModelLoader.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jRHI_DirectX11.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jImageFileLoader.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jRHI_Vulkan.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jImageLoader.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jCollision.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jInputEvent.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jRenderObject.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jLight.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jRenderTargetPool.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jMaterial.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="Math\Matrix.cpp">
-      <Filter>Math</Filter>
+    <ClCompile Include="Code\jMeshObject.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="Math\Vector.cpp">
-      <Filter>Math</Filter>
+    <ClCompile Include="Code\jModelLoader.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jFile.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jObject.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="Math\Plane.cpp">
-      <Filter>Math</Filter>
+    <ClCompile Include="Code\jPerformanceProfile.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jVertexAdjacency.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jPrimitiveUtil.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jShadowVolume.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jRenderer.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jAppSettings.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jRenderObject.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jShadowAppProperties.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jRenderTargetPool.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jImageFileLoader.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jRHI.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="TGALoader.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jRHI_DirectX11.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="loadpng.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jRHI_OpenGL.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="Main.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jRHI_Vulkan.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jHairModelLoader.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jSamplerStatePool.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jMeshObject.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jShader.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jModelLoader.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\jUtil.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jPostProcess.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\Main.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jDeferredRenderer.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\TGALoader.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="jGBuffer.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\Math\Matrix.cpp">
+      <Filter>Code\Math</Filter>
     </ClCompile>
-    <ClCompile Include="jPipeline.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\Math\Plane.cpp">
+      <Filter>Code\Math</Filter>
     </ClCompile>
-    <ClCompile Include="jForwardRenderer.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\Math\Vector.cpp">
+      <Filter>Code\Math</Filter>
     </ClCompile>
-    <ClCompile Include="jShader.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\External\IMGUI\imgui.cpp">
+      <Filter>Code\External\IMGUI</Filter>
     </ClCompile>
-    <ClCompile Include="jPerformanceProfile.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\External\IMGUI\imgui_demo.cpp">
+      <Filter>Code\External\IMGUI</Filter>
     </ClCompile>
-    <ClCompile Include="IMGUI\imgui.cpp">
-      <Filter>IMGUI</Filter>
+    <ClCompile Include="Code\External\IMGUI\imgui_draw.cpp">
+      <Filter>Code\External\IMGUI</Filter>
     </ClCompile>
-    <ClCompile Include="IMGUI\imgui_demo.cpp">
-      <Filter>IMGUI</Filter>
+    <ClCompile Include="Code\External\IMGUI\imgui_impl_glfw.cpp">
+      <Filter>Code\External\IMGUI</Filter>
     </ClCompile>
-    <ClCompile Include="IMGUI\imgui_draw.cpp">
-      <Filter>IMGUI</Filter>
+    <ClCompile Include="Code\External\IMGUI\imgui_impl_opengl3.cpp">
+      <Filter>Code\External\IMGUI</Filter>
     </ClCompile>
-    <ClCompile Include="IMGUI\imgui_impl_glfw.cpp">
-      <Filter>IMGUI</Filter>
+    <ClCompile Include="Code\External\IMGUI\imgui_widgets.cpp">
+      <Filter>Code\External\IMGUI</Filter>
     </ClCompile>
-    <ClCompile Include="IMGUI\imgui_widgets.cpp">
-      <Filter>IMGUI</Filter>
+    <ClCompile Include="Code\External\glad.c">
+      <Filter>Code\External</Filter>
     </ClCompile>
-    <ClCompile Include="IMGUI\imgui_impl_opengl3.cpp">
-      <Filter>IMGUI</Filter>
+    <ClCompile Include="Code\External\loadpng.cpp">
+      <Filter>Code\External</Filter>
     </ClCompile>
-    <ClCompile Include="jSamplerStatePool.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Code\pch.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="DeprecatedCode\jForwardRenderer_Deprecated.cpp">
+      <Filter>DeprecatedCode</Filter>
+    </ClCompile>
+    <ClCompile Include="DeprecatedCode\jDeferredRenderer_Deprecated.cpp">
+      <Filter>DeprecatedCode</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Renderer\jForwardRenderer.cpp">
+      <Filter>Code\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Renderer\jDeferredRenderer.cpp">
+      <Filter>Code\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Renderer\jRenderContext.cpp">
+      <Filter>Code\Renderer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -531,6 +575,24 @@
     </None>
     <None Include="Shaders\vs_graph.glsl">
       <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\empty_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\depthonly_vs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\NewShaders\deferred_fs.glsl">
+      <Filter>Shaders\NewShaders</Filter>
+    </None>
+    <None Include="Shaders\NewShaders\deferred_vs.glsl">
+      <Filter>Shaders\NewShaders</Filter>
+    </None>
+    <None Include="Shaders\NewShaders\depthonly_vs.glsl">
+      <Filter>Shaders\NewShaders</Filter>
+    </None>
+    <None Include="Shaders\NewShaders\empty_fs.glsl">
+      <Filter>Shaders\NewShaders</Filter>
     </None>
   </ItemGroup>
 </Project>
