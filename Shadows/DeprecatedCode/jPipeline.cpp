@@ -656,7 +656,7 @@ bool jForward_ShadowVolume_Pipeline::CanSkipShadowObject(const IShadowVolume* sh
 	if (!shadowVolume || object->SkipUpdateShadowVolume)
 		return true;
 
-	const float radius = object->RenderObject->Scale.x;
+	const float radius = object->RenderObject->GetScale().x;
 	//var radius = 0.0;
 	//if (obj.hasOwnProperty('radius'))
 	//	radius = obj.radius;
@@ -672,18 +672,18 @@ bool jForward_ShadowVolume_Pipeline::CanSkipShadowObject(const IShadowVolume* sh
 			maxDistance = static_cast<const jSpotLight*>(light)->Data.MaxDistance;
 
 		// 1. check out of light radius with obj
-		const auto isCasterOutOfLightRadius = ((lightPosOrDirection - object->RenderObject->Pos).Length() > maxDistance);
+		const auto isCasterOutOfLightRadius = ((lightPosOrDirection - object->RenderObject->GetPos()).Length() > maxDistance);
 		if (isCasterOutOfLightRadius)
 			return true;
 
 		// 2. check direction against frustum
-		if (!camera->IsInFrustumWithDirection(object->RenderObject->Pos, object->RenderObject->Pos - lightPosOrDirection, radius))
+		if (!camera->IsInFrustumWithDirection(object->RenderObject->GetPos(), object->RenderObject->GetPos() - lightPosOrDirection, radius))
 			return true;
 
 		// 3. check Spot light range with obj
 		if (light->Type == ELightType::SPOT)
 		{
-			const auto lightToObjVector = object->RenderObject->Pos - lightPosOrDirection;
+			const auto lightToObjVector = object->RenderObject->GetPos() - lightPosOrDirection;
 			const auto radianOfRadiusOffset = atanf(radius / lightToObjVector.Length());
 
 			auto spotLight = static_cast<const jSpotLight*>(light);
@@ -696,7 +696,7 @@ bool jForward_ShadowVolume_Pipeline::CanSkipShadowObject(const IShadowVolume* sh
 	else       // Directional light
 	{
 		// 1. check direction against frustum
-		if (!camera->IsInFrustumWithDirection(object->RenderObject->Pos, lightPosOrDirection, radius))
+		if (!camera->IsInFrustumWithDirection(object->RenderObject->GetPos(), lightPosOrDirection, radius))
 			return true;
 	}
 	return false;

@@ -445,7 +445,9 @@ void jGame::SpawnTestPrimitives()
 	auto triangle = jPrimitiveUtil::CreateTriangle(Vector(60.0, 100.0, 20.0), Vector::OneVector, Vector(40.0, 40.0, 40.0), Vector4(0.5f, 0.1f, 1.0f, 1.0f));
 	triangle->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
-		thisObject->RenderObject->Rot.x += 0.05f;
+		auto Rot = thisObject->RenderObject->GetRot();
+		Rot.x += 0.05f;
+		thisObject->RenderObject->SetRot(Rot);
 	};
 	jObject::AddObject(triangle);
 	SpawnedObjects.push_back(triangle);
@@ -453,7 +455,9 @@ void jGame::SpawnTestPrimitives()
 	auto cube = jPrimitiveUtil::CreateCube(Vector(-60.0f, 55.0f, -20.0f), Vector::OneVector, Vector(50.0f, 50.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
 	cube->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
-		thisObject->RenderObject->Rot.z += 0.005f;
+		auto Rot = thisObject->RenderObject->GetRot();
+		Rot.z += 0.005f;
+		thisObject->RenderObject->SetRot(Rot);
 	};
 	jObject::AddObject(cube);
 	SpawnedObjects.push_back(cube);
@@ -465,7 +469,9 @@ void jGame::SpawnTestPrimitives()
 	auto capsule = jPrimitiveUtil::CreateCapsule(Vector(30.0f, 30.0f, -80.0f), 40.0f, 10.0f, 20, Vector(1.0f), Vector4(1.0f, 1.0f, 0.0f, 1.0f));
 	capsule->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
-		thisObject->RenderObject->Rot.x -= 0.01f;
+		auto Rot = thisObject->RenderObject->GetRot();
+		Rot.x -= 0.01f;
+		thisObject->RenderObject->SetRot(Rot);
 	};
 	jObject::AddObject(capsule);
 	SpawnedObjects.push_back(capsule);
@@ -473,7 +479,9 @@ void jGame::SpawnTestPrimitives()
 	auto cone = jPrimitiveUtil::CreateCone(Vector(0.0f, 50.0f, 60.0f), 40.0f, 20.0f, 15, Vector::OneVector, Vector4(1.0f, 1.0f, 0.0f, 1.0f));
 	cone->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
-		thisObject->RenderObject->Rot.y += 0.03f;
+		auto Rot = thisObject->RenderObject->GetRot();
+		Rot.y += 0.03f;
+		thisObject->RenderObject->SetRot(Rot);
 	};
 	jObject::AddObject(cone);
 	SpawnedObjects.push_back(cone);
@@ -481,7 +489,9 @@ void jGame::SpawnTestPrimitives()
 	auto cylinder = jPrimitiveUtil::CreateCylinder(Vector(-30.0f, 60.0f, -60.0f), 20.0f, 10.0f, 20, Vector::OneVector, Vector4(0.0f, 0.0f, 1.0f, 1.0f));
 	cylinder->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
-		thisObject->RenderObject->Rot.x += 0.05f;
+		auto Rot = thisObject->RenderObject->GetRot();
+		Rot.x += 0.05f;
+		thisObject->RenderObject->SetRot(Rot);
 	};
 	jObject::AddObject(cylinder);
 	SpawnedObjects.push_back(cylinder);
@@ -489,7 +499,9 @@ void jGame::SpawnTestPrimitives()
 	auto quad2 = jPrimitiveUtil::CreateQuad(Vector(-20.0f, 80.0f, 40.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(0.0f, 0.0f, 1.0f, 1.0f));
 	quad2->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
-		thisObject->RenderObject->Rot.z += 0.08f;
+		auto Rot = thisObject->RenderObject->GetRot();
+		Rot.z += 0.08f;
+		thisObject->RenderObject->SetRot(Rot);
 	};
 	jObject::AddObject(quad2);
 	SpawnedObjects.push_back(quad2);
@@ -497,8 +509,9 @@ void jGame::SpawnTestPrimitives()
 	auto sphere = jPrimitiveUtil::CreateSphere(Vector(65.0f, 35.0f, 10.0f), 1.0, 16, Vector(30.0f), Vector4(0.8f, 0.0f, 0.0f, 1.0f));
 	sphere->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 	{
-		//thisObject->RenderObject->Rot.z += 0.01f;
-		thisObject->RenderObject->Rot.z = DegreeToRadian(180.0f);
+		auto Rot = thisObject->RenderObject->GetRot();
+		Rot.z = DegreeToRadian(180.0f);
+		thisObject->RenderObject->SetRot(Rot);
 	};
 	Sphere = sphere;
 
@@ -512,12 +525,14 @@ void jGame::SpawnTestPrimitives()
 		const float endY = 100;
 		const float speed = 1.5f;
 		static bool dir = true;
-		thisObject->RenderObject->Pos.y += dir ? speed : -speed;
-		if (thisObject->RenderObject->Pos.y < startY || thisObject->RenderObject->Pos.y > endY)
+		auto Pos = thisObject->RenderObject->GetPos();
+		Pos.y += dir ? speed : -speed;
+		if (Pos.y < startY || Pos.y > endY)
 		{
 			dir = !dir;
-			thisObject->RenderObject->Pos.y += dir ? speed : -speed;
+			Pos.y += dir ? speed : -speed;
 		}
+		thisObject->RenderObject->SetPos(Pos);
 	};
 	Sphere = sphere2;
 	jObject::AddObject(sphere2);

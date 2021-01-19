@@ -69,10 +69,6 @@ public:
 	jTexture* tex_object_array = nullptr;
 	jSamplerState* samplerStateTexArray = nullptr;
 
-	Vector Pos = Vector::ZeroVector;
-	Vector Rot = Vector::ZeroVector;
-	Vector Scale = Vector::OneVector;
-
 	// todo 정리 필요.
 	int UseUniformColor = 0;
 	Vector4 Color = Vector4::OneVector;
@@ -83,5 +79,38 @@ public:
 
 	bool Collided = false;
 	bool IsTwoSided = false;
+
+	FORCEINLINE void SetPos(const Vector& InPos) { Pos = InPos; SetDirtyFlags(EDirty::POS); }
+	FORCEINLINE void SetRot(const Vector& InRot) { Rot = InRot; SetDirtyFlags(EDirty::ROT); }
+	FORCEINLINE void SetScale(const Vector& InScale) { Scale = InScale; SetDirtyFlags(EDirty::SCALE); }
+	FORCEINLINE const Vector& GetPos() const { return Pos; }
+	FORCEINLINE const Vector& GetRot() const { return Rot; }
+	FORCEINLINE const Vector& GetScale() const { return Scale; }
+
+private:
+	enum EDirty : int8
+	{
+		NONE	= 0,
+		POS		= 1,
+		ROT		= 1 << 1,
+		SCALE	= 1 << 2,
+		POS_ROT_SCALE = POS | ROT | SCALE,
+	};
+	EDirty DirtyFlags = EDirty::POS_ROT_SCALE;
+	void SetDirtyFlags(EDirty InEnum)
+	{
+		using T = std::underlying_type<EDirty>::type;
+		DirtyFlags = static_cast<EDirty>(static_cast<T>(InEnum) | static_cast<T>(DirtyFlags));
+	}
+	void ClearDirtyFlags(EDirty InEnum)
+	{
+		using T = std::underlying_type<EDirty>::type;
+		DirtyFlags = static_cast<EDirty>(static_cast<T>(InEnum) & (!static_cast<T>(DirtyFlags)));
+	}
+	FORCEINLINE void ClearDirtyFlags() { DirtyFlags = EDirty::NONE; }
+
+	Vector Pos = Vector::ZeroVector;
+	Vector Rot = Vector::ZeroVector;
+	Vector Scale = Vector::OneVector;
 };
 

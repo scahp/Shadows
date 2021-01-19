@@ -386,12 +386,6 @@ public:
 	virtual void EndQueryTimeElapsed(const jQueryTime* queryTimeElpased) const {}
 };
 
-// Not thred safe
-#define SET_UNIFORM_BUFFER_STATIC(Type, Name, CurrentData, Shader) \
-{\
-	g_rhi->SetUniformbuffer(Name, CurrentData, Shader);\
-}
-
 struct jScopeDebugEvent final
 {
 	jScopeDebugEvent(const jRHI* rhi, const char* name)

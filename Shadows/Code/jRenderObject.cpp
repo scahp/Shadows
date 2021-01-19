@@ -204,23 +204,28 @@ void jRenderObject::SetCameraProperty(const jShader* shader, const jCamera* came
 	if (!camera)
 		return;
 
-	auto posMatrix = Matrix::MakeTranslate(Pos);
-	auto rotMatrix = Matrix::MakeRotate(Rot);
-	auto scaleMatrix = Matrix::MakeScale(Scale);
+	if (static_cast<int32>(DirtyFlags) & static_cast<int32>(EDirty::POS_ROT_SCALE))
+	{
+		auto posMatrix = Matrix::MakeTranslate(Pos);
+		auto rotMatrix = Matrix::MakeRotate(Rot);
+		auto scaleMatrix = Matrix::MakeScale(Scale);
+		World = posMatrix * rotMatrix * scaleMatrix;
 
-	World = posMatrix * rotMatrix * scaleMatrix;
+		ClearDirtyFlags(EDirty::POS_ROT_SCALE);
+	}
+
 	auto MV = camera->View * World;
 	auto MVP = camera->Projection * MV;
 
-	SET_UNIFORM_BUFFER_STATIC(Matrix, "MVP", MVP, shader);
-	SET_UNIFORM_BUFFER_STATIC(Matrix, "MV", MV, shader);
-	SET_UNIFORM_BUFFER_STATIC(Matrix, "M", World, shader);
-	SET_UNIFORM_BUFFER_STATIC(int, "Collided", Collided, shader);
-	SET_UNIFORM_BUFFER_STATIC(int, "UseUniformColor", UseUniformColor, shader);
-	SET_UNIFORM_BUFFER_STATIC(Vector4, "Color", Color, shader);
-	SET_UNIFORM_BUFFER_STATIC(int, "UseMaterial", UseMaterial, shader);
-	SET_UNIFORM_BUFFER_STATIC(int, "ShadingModel", static_cast<int>(ShadingModel), shader);
-	SET_UNIFORM_BUFFER_STATIC(int, "IsTwoSided", IsTwoSided, shader);
+	g_rhi->SetUniformbuffer("MVP", MVP, shader);
+	g_rhi->SetUniformbuffer("MV", MV, shader);
+	g_rhi->SetUniformbuffer("M", World, shader);
+	g_rhi->SetUniformbuffer("Collided", Collided, shader);
+	g_rhi->SetUniformbuffer("UseUniformColor", UseUniformColor, shader);
+	g_rhi->SetUniformbuffer("Color", Color, shader);
+	g_rhi->SetUniformbuffer("UseMaterial", UseMaterial, shader);
+	g_rhi->SetUniformbuffer("ShadingModel", static_cast<int>(ShadingModel), shader);
+	g_rhi->SetUniformbuffer("IsTwoSided", IsTwoSided, shader);
 }
 
 void jRenderObject::SetLightProperty(const jShader* shader, const jCamera* camera, const std::list<const jLight*>& lights, jMaterialData* materialData)
@@ -310,7 +315,7 @@ void jRenderObject::SetTextureProperty(const jShader* shader, jMaterialData* mat
 		//		break;
 		//	}
 		//}
-		//SET_UNIFORM_BUFFER_STATIC(int, "UseTexture", useTexture, shader);
+		//g_rhi->SetUniformbuffer("UseTexture", useTexture, shader);
 		//static jUniformBuffer<int> temp("UseTexture", useTexture);
 		//g_rhi->SetUniformbuffer(&temp, shader);
 

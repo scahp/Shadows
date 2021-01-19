@@ -25,7 +25,7 @@ void jDeferredRenderer::Culling(jRenderContext* InContext) const
 		const jObject* obj = InContext->AllObjects[i];
 		JASSERT(obj);
 
-		const bool IsInFrustum = CurCamera->Frustum.IsInFrustum(obj->RenderObject->Pos, obj->BoundSphere.Radius);
+		const bool IsInFrustum = CurCamera->Frustum.IsInFrustum(obj->RenderObject->GetPos(), obj->BoundSphere.Radius);
 		if (IsInFrustum)
 			InContext->Visibles[i] = 1;
 	}

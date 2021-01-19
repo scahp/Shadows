@@ -190,10 +190,10 @@ void jLight::BindLights(const std::list<const jLight*>& lights, const jShader* s
 		}
 	}
 
-	SET_UNIFORM_BUFFER_STATIC(int, "UseAmbientLight", ambient, shader);
-	SET_UNIFORM_BUFFER_STATIC(int, "NumOfDirectionalLight", directional, shader);
-	SET_UNIFORM_BUFFER_STATIC(int, "NumOfPointLight", point, shader);
-	SET_UNIFORM_BUFFER_STATIC(int, "NumOfSpotLight", spot, shader);
+	g_rhi->SetUniformbuffer("UseAmbientLight", ambient, shader);
+	g_rhi->SetUniformbuffer("NumOfDirectionalLight", directional, shader);
+	g_rhi->SetUniformbuffer("NumOfPointLight", point, shader);
+	g_rhi->SetUniformbuffer("NumOfSpotLight", spot, shader);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -701,6 +701,6 @@ void jAmbientLight::BindLight(const jShader* shader) const
 {
 	//const std::string structName = "AmbientLight";
 
-	SET_UNIFORM_BUFFER_STATIC(Vector, "AmbientLight.Color", Data.Color, shader);
-	SET_UNIFORM_BUFFER_STATIC(Vector, "AmbientLight.Intensity", Data.Intensity, shader);
+	g_rhi->SetUniformbuffer("AmbientLight.Color", Data.Color, shader);
+	g_rhi->SetUniformbuffer("AmbientLight.Intensity", Data.Intensity, shader);
 }

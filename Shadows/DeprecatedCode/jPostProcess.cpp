@@ -201,8 +201,8 @@ bool jPostProcess_Blur::Do(const jCamera* camera) const
 	BindInputs(fullscreenQuad);
 
 	g_rhi->SetShader(shader);
-	SET_UNIFORM_BUFFER_STATIC(float, "IsVertical", IsVertical, shader);
-	SET_UNIFORM_BUFFER_STATIC(float, "MaxDist", MaxDist, shader);
+	g_rhi->SetUniformbuffer("IsVertical", IsVertical, shader);
+	g_rhi->SetUniformbuffer("MaxDist", MaxDist, shader);
 
 	fullscreenQuad->Draw(camera, shader, {});
 	
@@ -231,9 +231,9 @@ bool jPostProcess_Tonemap::Do(const jCamera* camera) const
 	camera->BindCamera(Shader);
 	
 	g_rhi->SetShader(Shader);
-	SET_UNIFORM_BUFFER_STATIC(int, "UseTonemap", jShadowAppSettingProperties::GetInstance().UseTonemap, Shader);
-	SET_UNIFORM_BUFFER_STATIC(float, "AutoExposureKeyValue", jShadowAppSettingProperties::GetInstance().AutoExposureKeyValue, Shader);
-	SET_UNIFORM_BUFFER_STATIC(float, "BloomMagnitude", jShadowAppSettingProperties::GetInstance().BloomMagnitude, Shader);
+	g_rhi->SetUniformbuffer("UseTonemap", jShadowAppSettingProperties::GetInstance().UseTonemap, Shader);
+	g_rhi->SetUniformbuffer("AutoExposureKeyValue", jShadowAppSettingProperties::GetInstance().AutoExposureKeyValue, Shader);
+	g_rhi->SetUniformbuffer("BloomMagnitude", jShadowAppSettingProperties::GetInstance().BloomMagnitude, Shader);
 
 	fullscreenQuad->Draw(camera, Shader, {});
 	UnbindInputs(fullscreenQuad);
@@ -333,8 +333,8 @@ bool jPostProcess_AdaptiveLuminance::Do(const jCamera* camera) const
 	BindInputs(fullscreenQuad);
 	camera->BindCamera(Shader);
 	g_rhi->SetShader(Shader);
-	SET_UNIFORM_BUFFER_STATIC(float, "TimeDeltaSecond", g_timeDeltaSecond, Shader);
-	SET_UNIFORM_BUFFER_STATIC(float, "AdaptationRate", jShadowAppSettingProperties::GetInstance().AdaptationRate, Shader);
+	g_rhi->SetUniformbuffer("TimeDeltaSecond", g_timeDeltaSecond, Shader);
+	g_rhi->SetUniformbuffer("AdaptationRate", jShadowAppSettingProperties::GetInstance().AdaptationRate, Shader);
 	fullscreenQuad->Draw(camera, Shader, {});
 	UnbindInputs(fullscreenQuad);
 	return true;
@@ -385,8 +385,8 @@ bool jPostProcess_BloomThreshold::Do(const jCamera* camera) const
 	camera->BindCamera(Shader);
 
 	g_rhi->SetShader(Shader);
-	SET_UNIFORM_BUFFER_STATIC(float, "BloomThreshold", jShadowAppSettingProperties::GetInstance().BloomThreshold, Shader);
-	SET_UNIFORM_BUFFER_STATIC(float, "AutoExposureKeyValue", jShadowAppSettingProperties::GetInstance().AutoExposureKeyValue, Shader);
+	g_rhi->SetUniformbuffer("BloomThreshold", jShadowAppSettingProperties::GetInstance().BloomThreshold, Shader);
+	g_rhi->SetUniformbuffer("AutoExposureKeyValue", jShadowAppSettingProperties::GetInstance().AutoExposureKeyValue, Shader);
 
 	fullscreenQuad->Draw(camera, Shader, {});
 	UnbindInputs(fullscreenQuad);
@@ -441,7 +441,7 @@ bool jPostProcess_GaussianBlurH::Do(const jCamera* camera) const
 	camera->BindCamera(Shader);
 
 	g_rhi->SetShader(Shader);
-	SET_UNIFORM_BUFFER_STATIC(float, "BloomBlurSigma", jShadowAppSettingProperties::GetInstance().BloomBlurSigma, Shader);
+	g_rhi->SetUniformbuffer("BloomBlurSigma", jShadowAppSettingProperties::GetInstance().BloomBlurSigma, Shader);
 	
 	Vector2 renderTargetSize;
 	auto pCurrentRenderTarget = (PostProcessOutput ? PostProcessOutput.get()->RenderTarget : nullptr);
@@ -449,7 +449,7 @@ bool jPostProcess_GaussianBlurH::Do(const jCamera* camera) const
 		renderTargetSize = Vector2(static_cast<float>(pCurrentRenderTarget->Info.Width), static_cast<float>(pCurrentRenderTarget->Info.Height));
 	else
 		renderTargetSize = Vector2(SCR_WIDTH, SCR_HEIGHT);
-	SET_UNIFORM_BUFFER_STATIC(Vector2, "RenderTargetSize", renderTargetSize, Shader);
+	g_rhi->SetUniformbuffer("RenderTargetSize", renderTargetSize, Shader);
 
 	fullscreenQuad->Draw(camera, Shader, {});
 	UnbindInputs(fullscreenQuad);
@@ -510,7 +510,7 @@ bool jPostProcess_GaussianBlurV::Do(const jCamera* camera) const
 	camera->BindCamera(Shader);
 
 	g_rhi->SetShader(Shader);
-	SET_UNIFORM_BUFFER_STATIC(float, "BloomBlurSigma", jShadowAppSettingProperties::GetInstance().BloomBlurSigma, Shader);
+	g_rhi->SetUniformbuffer("BloomBlurSigma", jShadowAppSettingProperties::GetInstance().BloomBlurSigma, Shader);
 
 	Vector2 renderTargetSize;
 	auto pCurrentRenderTarget = (PostProcessOutput ? PostProcessOutput.get()->RenderTarget : nullptr);
@@ -518,7 +518,7 @@ bool jPostProcess_GaussianBlurV::Do(const jCamera* camera) const
 		renderTargetSize = Vector2(static_cast<float>(pCurrentRenderTarget->Info.Width), static_cast<float>(pCurrentRenderTarget->Info.Height));
 	else
 		renderTargetSize = Vector2(SCR_WIDTH, SCR_HEIGHT);
-	SET_UNIFORM_BUFFER_STATIC(Vector2, "RenderTargetSize", renderTargetSize, Shader);
+	g_rhi->SetUniformbuffer("RenderTargetSize", renderTargetSize, Shader);
 	fullscreenQuad->Draw(camera, Shader, {});
 	UnbindInputs(fullscreenQuad);
 

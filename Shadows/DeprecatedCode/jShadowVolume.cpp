@@ -171,16 +171,16 @@ void jShadowVolumeCPU::Update(const Vector& lightPosOrDirection, bool isOmniDire
 
 	if (EdgeObject)
 	{
-		EdgeObject->RenderObject->Pos = ownerObject->RenderObject->Pos;
-		EdgeObject->RenderObject->Rot = ownerObject->RenderObject->Rot;
-		EdgeObject->RenderObject->Scale = ownerObject->RenderObject->Scale;
+		EdgeObject->RenderObject->SetPos(ownerObject->RenderObject->GetPos());
+		EdgeObject->RenderObject->SetRot(ownerObject->RenderObject->GetRot());
+		EdgeObject->RenderObject->SetScale(ownerObject->RenderObject->GetScale());
 	}
 
 	if (QuadObject)
 	{
-		QuadObject->RenderObject->Pos = ownerObject->RenderObject->Pos;
-		QuadObject->RenderObject->Rot = ownerObject->RenderObject->Rot;
-		QuadObject->RenderObject->Scale = ownerObject->RenderObject->Scale;
+		QuadObject->RenderObject->SetPos(ownerObject->RenderObject->GetPos());
+		QuadObject->RenderObject->SetRot(ownerObject->RenderObject->GetRot());
+		QuadObject->RenderObject->SetScale(ownerObject->RenderObject->GetScale());
 	}
 }
 
@@ -413,9 +413,9 @@ void jShadowVolumeGPU::Update(const Vector& lightPosOrDirection, bool isOmniDire
 	JASSERT(ownerObject->RenderObject);
 	JASSERT(ShadowVolumeObject);
 	JASSERT(ShadowVolumeObject->RenderObject);
-	ShadowVolumeObject->RenderObject->Pos = ownerObject->RenderObject->Pos;
-	ShadowVolumeObject->RenderObject->Rot = ownerObject->RenderObject->Rot;
-	ShadowVolumeObject->RenderObject->Scale = ownerObject->RenderObject->Scale;
+	ShadowVolumeObject->RenderObject->SetPos(ownerObject->RenderObject->GetPos());
+	ShadowVolumeObject->RenderObject->SetRot(ownerObject->RenderObject->GetRot());
+	ShadowVolumeObject->RenderObject->SetScale(ownerObject->RenderObject->GetScale());
 	ShadowVolumeObject->RenderObject->IsTwoSided = ownerObject->RenderObject->IsTwoSided;
 }
 
