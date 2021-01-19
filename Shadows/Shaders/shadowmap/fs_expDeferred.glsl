@@ -11,7 +11,7 @@ layout (std140) uniform DirectionalLightShadowMapBlock
 {
 	mat4 ShadowVP;
 	mat4 ShadowV;
-	vec3 LightPos;      // Directional Light Pos юс╫ц
+	vec3 LightPos;      // Directional Light Pos О©╫с╫О©╫
 	float LightZNear;
 	float LightZFar;
 };
@@ -114,7 +114,7 @@ void main()
 #if defined(USE_MATERIAL)
 	if (UseMaterial > 0)
 	{
-		diffuse *= Material.Diffuse;
+		diffuse.xyz *= Material.Diffuse;
 		diffuse.xyz += Material.Emissive;
 	}
 #endif // USE_MATERIAL

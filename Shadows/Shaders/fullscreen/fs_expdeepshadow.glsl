@@ -197,7 +197,7 @@ void main()
 		if (UseMaterial > 0)
 		{
 			light.SpecularLightIntensity = Material.Specular;
-			light.SpecularPow = Material.Shininess;
+			light.SpecularPow = Material.SpecularShiness;
 		}
 #endif // USE_MATERIAL
 

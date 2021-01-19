@@ -97,6 +97,7 @@ struct jShader : public std::enable_shared_from_this<jShader>
 
 	bool SetUniformbuffer(const char* name, const Matrix& InData) const;
 	bool SetUniformbuffer(const char* name, const bool InData) const;
+	bool SetUniformbuffer(const char* name, const float InData) const;
 	bool SetUniformbuffer(const char* name, const int32 InData) const;
 	bool SetUniformbuffer(const char* name, const Vector2& InData) const;
 	bool SetUniformbuffer(const char* name, const Vector& InData) const;

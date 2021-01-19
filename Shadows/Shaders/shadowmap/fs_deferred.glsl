@@ -109,7 +109,7 @@ void main()
 #if defined(USE_MATERIAL)
 	if (UseMaterial > 0)
 	{
-		diffuse *= Material.Diffuse;
+		diffuse.xyz *= Material.Diffuse;
 		diffuse.xyz += Material.Emissive;
 	}
 #endif // USE_MATERIAL

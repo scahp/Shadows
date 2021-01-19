@@ -89,7 +89,7 @@ void main()
         jDirectionalLight light = DirectionalLight[i];
 #if defined(USE_MATERIAL)
         light.SpecularLightIntensity = Material.Specular;
-        light.SpecularPow = Material.Shininess;
+        light.SpecularPow = Material.SpecularShiness;
 #endif // USE_MATERIAL
 
         directColor += GetDirectionalLight(light, normal, viewDir);
@@ -103,7 +103,7 @@ void main()
          jPointLight light = PointLight[i];
  #if defined(USE_MATERIAL)
          light.SpecularLightIntensity = Material.Specular;
-         light.SpecularPow = Material.Shininess;
+         light.SpecularPow = Material.SpecularShiness;
  #endif // USE_MATERIAL
         
          directColor += GetPointLight(light, normal, Pos_, viewDir);
@@ -117,7 +117,7 @@ void main()
          jSpotLight light = SpotLight[i];
  #if defined(USE_MATERIAL)
          light.SpecularLightIntensity = Material.Specular;
-         light.SpecularPow = Material.Shininess;
+         light.SpecularPow = Material.SpecularShiness;
  #endif // USE_MATERIAL
 
          directColor += GetSpotLight(light, normal, Pos_, viewDir);

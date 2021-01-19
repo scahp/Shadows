@@ -199,6 +199,11 @@ bool jShader::SetUniformbuffer(const char* name, const bool InData) const
 	return g_rhi->SetUniformbuffer(name, InData, this);
 }
 
+bool jShader::SetUniformbuffer(const char* name, const float InData) const
+{
+	return g_rhi->SetUniformbuffer(name, InData, this);
+}
+
 bool jShader::SetUniformbuffer(const char* name, const int32 InData) const
 {
 	return g_rhi->SetUniformbuffer(name, InData, this);

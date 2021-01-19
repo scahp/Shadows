@@ -41,10 +41,14 @@ struct jSpotLight
 
 struct jMaterial
 {
-    vec4 Diffuse;
-    vec3 Emissive;
+    vec3 Ambient;
+    float Opacity;
+    vec3 Diffuse;
+    float Reflectivity;
     vec3 Specular;
-    float Shininess;
+    float SpecularShiness;
+    vec3 Emissive;
+    float IndexOfRefraction;		// 1.0 means lights will not refract
 };
 
 struct jShadowData

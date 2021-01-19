@@ -3,9 +3,26 @@
 #include "jRenderObject.h"
 #include "jRHI.h"
 #include "jSamplerStatePool.h"
+#include "jShader.h"
 
 jMeshMaterial jMeshObject::NullMeshMateral;
 
+//////////////////////////////////////////////////////////////////////////
+// LightData
+void jMeshMaterial::Material::BindMaterialData(const jShader* shader) const
+{
+	shader->SetUniformbuffer("Material.Ambient", Ambient);
+	shader->SetUniformbuffer("Material.Diffuse", Diffuse);
+	shader->SetUniformbuffer("Material.Specular", Specular);
+	shader->SetUniformbuffer("Material.Emissive", Emissive);
+	shader->SetUniformbuffer("Material.SpecularShiness", SpecularShiness);
+	shader->SetUniformbuffer("Material.Opacity", Opacity);
+	shader->SetUniformbuffer("Material.Reflectivity", Reflectivity);
+	shader->SetUniformbuffer("Material.IndexOfRefraction", IndexOfRefraction);
+}
+
+//////////////////////////////////////////////////////////////////////////
+// jMeshObject
 jMeshObject::jMeshObject()
 {	
 }
@@ -19,13 +36,7 @@ void jMeshObject::Draw(const jCamera* camera, const jShader* shader, const std::
 void jMeshObject::SetMaterialUniform(const jShader* shader, const jMeshMaterial* material) const
 {
 	g_rhi->SetShader(shader);
-	SET_UNIFORM_BUFFER_STATIC(Vector4, "Material.Diffuse", material->Data.Diffuse, shader);
-
-	// todo vec4인데 일단 vec3으로 넘김.. 고민임.
-	SET_UNIFORM_BUFFER_STATIC(Vector4, "Material.Specular", material->Data.Specular, shader);
-	
-	SET_UNIFORM_BUFFER_STATIC(Vector, "Material.Emissive", material->Data.Emissive, shader);
-	SET_UNIFORM_BUFFER_STATIC(float, "Material.Shininess", material->Data.SpecularPow, shader);
+	material->Data.BindMaterialData(shader);
 }
 
 void jMeshObject::DrawNode(const jMeshNode* node, const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights) const
@@ -53,17 +64,17 @@ void jMeshObject::DrawSubMesh(int32 meshIndex, const jCamera* camera, const jSha
 			JASSERT(curMeshMaterial);
 
 			const jMeshMaterial::TextureData& DiffuseTextureData = curMeshMaterial->TexData[(int32)jMeshMaterial::EMaterialTextureType::Diffuse];
-			const bool IsValidMatTexture = DiffuseTextureData.Texture;
-			if (IsValidMatTexture)
+			const jTexture* pDiffuseTexture = DiffuseTextureData.TextureWeakPtr.lock().get();
+			if (pDiffuseTexture)
 			{
 				if (RenderObject->MaterialData.Params.empty())
 				{
-					auto param = jRenderObject::CreateMaterialParam("tex_object2", DiffuseTextureData.Texture, jSamplerStatePool::GetSamplerState("LinearWrapMipmap").get());
+					auto param = jRenderObject::CreateMaterialParam("tex_object2", pDiffuseTexture, jSamplerStatePool::GetSamplerState("LinearWrapMipmap").get());
 					RenderObject->MaterialData.Params.push_back(param);
 				}
 				else
 				{
-					RenderObject->MaterialData.Params[0]->Texture = DiffuseTextureData.Texture;
+					RenderObject->MaterialData.Params[0]->Texture = pDiffuseTexture;
 				}
 			}
 			//RenderObject->tex_object2 = it_find->second->Texture;
@@ -82,4 +93,3 @@ void jMeshObject::DrawSubMesh(int32 meshIndex, const jCamera* camera, const jSha
 	else
 		RenderObject->DrawBaseVertexIndex(camera, shader, lights, subMesh.StartVertex, subMesh.EndVertex - subMesh.StartVertex, subMesh.StartVertex);
 }
-

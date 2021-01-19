@@ -22,22 +22,33 @@ struct jMeshMaterial
 		Max
 	};
 
-	struct LightData
+	struct Material
 	{
-		Vector4 Diffuse = Vector4::OneVector;
-		Vector4 Specular = Vector4::OneVector;
+		Vector Ambient = Vector::OneVector;
+		Vector Diffuse = Vector::OneVector;
+		Vector Specular = Vector::OneVector;
 		Vector Emissive = Vector::OneVector;
-		float SpecularPow = 0.0f;
+		float SpecularShiness = 0.0f;
+		float Opacity = 1.0f;
+		float Reflectivity = 0.0f;
+		float IndexOfRefraction = 1.0f;		// 1.0 means lights will not refract
+
+		void BindMaterialData(const jShader* shader) const;
 	};
 
 	struct TextureData
 	{
-		jTexture* Texture = nullptr;
+		std::weak_ptr<jTexture> TextureWeakPtr;
 		ETextureAddressMode TextureAddressMode = ETextureAddressMode::REPEAT;
 		std::string TextureName;
+
+		const jTexture* GetTexture() const
+		{ 
+			return TextureWeakPtr.lock().get(); 
+		}
 	};
 
-	LightData Data;
+	Material Data;
 	TextureData TexData[static_cast<int32>(EMaterialTextureType::Max)];
 };
 

@@ -160,25 +160,42 @@ jMeshObject* jModelLoader::LoadFromFile(const char* filename, const char* materi
 			}
 			FilePath += str.C_Str();
 
-			curTexData.Texture = jImageFileLoader::GetInstance().LoadTextureFromFile(FilePath, true).lock().get();
+			curTexData.TextureWeakPtr = jImageFileLoader::GetInstance().LoadTextureFromFile(FilePath, true);
 			curTexData.TextureName = str.C_Str();
 		}
 
-		aiColor3D emissive;
-		if (AI_SUCCESS == material->Get(AI_MATKEY_COLOR_EMISSIVE, emissive))
-			memcpy(&newMeshMaterial->Data.Emissive, &emissive, sizeof(emissive));
+		ai_real Opacity = 1.0f;
+		material->Get(AI_MATKEY_OPACITY, Opacity);
 
-		aiColor4D diffuse;
-		if (AI_SUCCESS == material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse))
-			memcpy(&newMeshMaterial->Data.Diffuse, &diffuse, sizeof(diffuse));
+		ai_real Reflectivity = 0.0f;
+		material->Get(AI_MATKEY_REFLECTIVITY, Reflectivity);
 
-		aiColor4D specular;
-		if (AI_SUCCESS == material->Get(AI_MATKEY_COLOR_SPECULAR, specular))
-			memcpy(&newMeshMaterial->Data.Specular, &specular, sizeof(specular));
+		ai_real IndexOfRefraction = 1.0f;		// 1.0 means lights will not refract
+		material->Get(AI_MATKEY_REFRACTI, IndexOfRefraction);
 
-		float specularPow;
-		if (AI_SUCCESS == material->Get(AI_MATKEY_SHININESS, specularPow))
-			newMeshMaterial->Data.SpecularPow = specularPow;
+		aiColor3D Ambient(1.0f);
+		material->Get(AI_MATKEY_COLOR_AMBIENT, Ambient);
+
+		aiColor3D Diffuse(1.0f);
+		material->Get(AI_MATKEY_COLOR_DIFFUSE, Diffuse);
+
+		aiColor3D Specular(1.0f);
+		material->Get(AI_MATKEY_COLOR_SPECULAR, Specular);
+
+		aiColor3D Emissive(1.0f);
+		material->Get(AI_MATKEY_COLOR_EMISSIVE, Emissive);
+
+		ai_real SpecularShiness = 0.0f;
+		material->Get(AI_MATKEY_SHININESS, SpecularShiness);
+
+		newMeshMaterial->Data.Ambient = Vector(Ambient.r, Ambient.g, Ambient.b);
+		newMeshMaterial->Data.Diffuse = Vector(Diffuse.r, Diffuse.g, Diffuse.b);
+		newMeshMaterial->Data.Specular = Vector(Specular.r, Specular.g, Specular.b);
+		newMeshMaterial->Data.Emissive = Vector(Emissive.r, Emissive.g, Emissive.b);
+		newMeshMaterial->Data.SpecularShiness = SpecularShiness;
+		newMeshMaterial->Data.Opacity = Opacity;
+		newMeshMaterial->Data.Reflectivity = Reflectivity;
+		newMeshMaterial->Data.IndexOfRefraction = IndexOfRefraction;
 		
 		meshData->Materials.emplace(std::make_pair(i, newMeshMaterial));
 	}
