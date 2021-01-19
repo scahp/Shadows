@@ -16,8 +16,14 @@ jImageFileLoader::~jImageFileLoader()
 {
 }
 
-void jImageFileLoader::LoadTextureFromFile(jImageData& data, std::string const& filename, bool sRGB)
+std::weak_ptr<jImageData> jImageFileLoader::LoadImageDataFromFile(std::string const& filename, bool sRGB)
 {
+	auto it_find = CachedImageDataMap.find(filename);
+	if (CachedImageDataMap.end() != it_find)
+		return it_find->second;
+
+	std::shared_ptr<jImageData> NewImageDataPatr(new jImageData());
+
 	int32 w = 0;
 	int32 h = 0;
 	int32 NumOfComponent = -1;
@@ -26,18 +32,18 @@ void jImageFileLoader::LoadTextureFromFile(jImageData& data, std::string const& 
 		uint8* imageData = stbi_load(filename.c_str(), &w, &h, &NumOfComponent, 0);
 
 		int32 NumOfBytes = w * h * sizeof(uint8) * NumOfComponent;
-		data.ImageData.resize(NumOfBytes);
-		memcpy(&data.ImageData[0], imageData, NumOfBytes);
-		data.sRGB = sRGB;
+		NewImageDataPatr->ImageData.resize(NumOfBytes);
+		memcpy(&NewImageDataPatr->ImageData[0], imageData, NumOfBytes);
+		NewImageDataPatr->sRGB = sRGB;
 
 		stbi_image_free(imageData);
 	}
 	else if (std::string::npos != filename.find(".png"))
 	{
-		data.Filename = filename;
+		NewImageDataPatr->Filename = filename;
 		unsigned w, h;
-		LodePNG::decode(data.ImageData, w, h, filename.c_str());
-		data.sRGB = sRGB;
+		LodePNG::decode(NewImageDataPatr->ImageData, w, h, filename.c_str());
+		NewImageDataPatr->sRGB = sRGB;
 
 		w = static_cast<int32>(w);
 		h = static_cast<int32>(h);
@@ -49,30 +55,55 @@ void jImageFileLoader::LoadTextureFromFile(jImageData& data, std::string const& 
 		float* imageData = stbi_loadf(filename.c_str(), &w, &h, &nrComponents, 0);
 
 		int32 NumOfBytes = w * h * sizeof(float) * nrComponents;
-		data.ImageData.resize(NumOfBytes);
-		memcpy(&data.ImageData[0], imageData, NumOfBytes);
-		data.sRGB = sRGB;
-		data.FormatType = EFormatType::FLOAT;
+		NewImageDataPatr->ImageData.resize(NumOfBytes);
+		memcpy(&NewImageDataPatr->ImageData[0], imageData, NumOfBytes);
+		NewImageDataPatr->sRGB = sRGB;
+		NewImageDataPatr->FormatType = EFormatType::FLOAT;
 
 		stbi_image_free(imageData);
 	}
 
-	data.Width = w;
-	data.Height = h;
+	NewImageDataPatr->Width = w;
+	NewImageDataPatr->Height = h;
 
 	switch (NumOfComponent)
 	{
 	case 1:
-		data.Format = ETextureFormat::R;
+		NewImageDataPatr->Format = ETextureFormat::R;
 		break;
 	case 2:
-		data.Format = ETextureFormat::RG;
+		NewImageDataPatr->Format = ETextureFormat::RG;
 		break;
 	case 3:
-		data.Format = ETextureFormat::RGB;
+		NewImageDataPatr->Format = ETextureFormat::RGB;
 		break;
 	case 4:
-		data.Format = ETextureFormat::RGBA;
+		NewImageDataPatr->Format = ETextureFormat::RGBA;
 		break;
 	}
+
+	CachedImageDataMap[filename] = NewImageDataPatr;
+	return NewImageDataPatr;
+}
+
+std::weak_ptr<jTexture> jImageFileLoader::LoadTextureFromFile(std::string const& filename, bool sRGB /*= false*/)
+{
+	auto it_find = CachedTextureMap.find(filename);
+	if (CachedTextureMap.end() != it_find)
+		return it_find->second;
+
+	std::shared_ptr<jTexture> NewTexture;
+
+	std::weak_ptr<jImageData> imageDataWeakPtr = LoadImageDataFromFile(filename, sRGB);
+	jImageData* pImageData = imageDataWeakPtr.lock().get();
+	JASSERT(pImageData);
+	if (pImageData)
+	{
+		jTexture* pCreatedTexture = g_rhi->CreateTextureFromData(&pImageData->ImageData[0], pImageData->Width
+			, pImageData->Height, pImageData->sRGB, EFormatType::UNSIGNED_BYTE, pImageData->Format, true);
+		NewTexture = std::shared_ptr<jTexture>(pCreatedTexture);
+	}
+
+	CachedTextureMap[filename] = NewTexture;
+	return NewTexture;
 }

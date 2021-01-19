@@ -16,9 +16,19 @@ class jImageFileLoader
 public:
 	~jImageFileLoader();
 
-	static jImageFileLoader& GetInstance() { return *_instance; }
+	static jImageFileLoader& GetInstance()
+	{
+		if (!_instance)
+			_instance = new jImageFileLoader();
+		return *_instance; 
+	}
 
-	void LoadTextureFromFile(jImageData& data, std::string const& filename, bool sRGB = false);
+	std::weak_ptr<jImageData> LoadImageDataFromFile(std::string const& filename, bool sRGB = false);
+	std::weak_ptr<jTexture> LoadTextureFromFile(std::string const& filename, bool sRGB = false);
+
+private:
+	std::map<std::string, std::shared_ptr<jImageData> > CachedImageDataMap;
+	std::map<std::string, std::shared_ptr<jTexture> > CachedTextureMap;
 
 private:
 	jImageFileLoader();

@@ -1593,16 +1593,11 @@ jArrowSegmentPrimitive* CreateArrowSegment(const Vector& start, const Vector& en
 jDirectionalLightPrimitive* CreateDirectionalLightDebug(const Vector& pos, const Vector& scale, float length, jCamera* targetCamera, jDirectionalLight* light, const char* textureFilename)
 {
 	jDirectionalLightPrimitive* object = new jDirectionalLightPrimitive();
-
-	jImageData data;
-	jImageFileLoader::GetInstance().LoadTextureFromFile(data, textureFilename, true);
 	object->BillboardObject = jPrimitiveUtil::CreateBillobardQuad(pos, Vector::OneVector, scale, Vector4(1.0f), targetCamera);
-	if (data.ImageData.size() > 0)
-	{
-		auto texture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
-		object->BillboardObject->RenderObject->MaterialData.Params.push_back(jRenderObject::CreateMaterialParam("tex_object2", texture));
-		//object->BillboardObject->RenderObject->tex_object2 = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
-	}
+	
+	auto texture = jImageFileLoader::GetInstance().LoadTextureFromFile(textureFilename, true).lock().get();
+	object->BillboardObject->RenderObject->MaterialData.Params.push_back(jRenderObject::CreateMaterialParam("tex_object2", texture));
+	
 	object->ArrowSegementObject = jPrimitiveUtil::CreateArrowSegment(Vector::ZeroVector, light->Data.Direction * length, 1.0f, scale.x, scale.x / 2, Vector4(0.8f, 0.2f, 0.3f, 1.0f));
 	object->Pos = pos;
 	object->Light = light;
@@ -1622,16 +1617,11 @@ jDirectionalLightPrimitive* CreateDirectionalLightDebug(const Vector& pos, const
 jPointLightPrimitive* CreatePointLightDebug(const Vector& scale, jCamera* targetCamera, jPointLight* light, const char* textureFilename)
 {
 	jPointLightPrimitive* object = new jPointLightPrimitive();
-
-	jImageData data;
-	jImageFileLoader::GetInstance().LoadTextureFromFile(data, textureFilename, true);
 	object->BillboardObject = jPrimitiveUtil::CreateBillobardQuad(light->Data.Position, Vector::OneVector, scale, Vector4(1.0f), targetCamera);
-	if (data.ImageData.size() > 0)
-	{
-		auto texture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
-		object->BillboardObject->RenderObject->MaterialData.Params.push_back(jRenderObject::CreateMaterialParam("tex_object2", texture));
-		// object->BillboardObject->RenderObject->tex_object2 = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
-	}
+
+	auto texture = jImageFileLoader::GetInstance().LoadTextureFromFile(textureFilename, true).lock().get();
+	object->BillboardObject->RenderObject->MaterialData.Params.push_back(jRenderObject::CreateMaterialParam("tex_object2", texture));
+	
 	object->SphereObject = CreateSphere(light->Data.Position, light->Data.MaxDistance, 20, Vector::OneVector, Vector4(light->Data.Color, 1.0f), true, false, false);
 	object->Light = light;
 	object->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
@@ -1650,16 +1640,10 @@ jPointLightPrimitive* CreatePointLightDebug(const Vector& scale, jCamera* target
 jSpotLightPrimitive* CreateSpotLightDebug(const Vector& scale, jCamera* targetCamera, jSpotLight* light, const char* textureFilename)
 {
 	jSpotLightPrimitive* object = new jSpotLightPrimitive();
-
-	jImageData data;
-	jImageFileLoader::GetInstance().LoadTextureFromFile(data, textureFilename, true);
 	object->BillboardObject = jPrimitiveUtil::CreateBillobardQuad(light->Data.Position, Vector::OneVector, scale, Vector4(1.0f), targetCamera);
-	if (data.ImageData.size() > 0)
-	{
-		auto texture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
-		object->BillboardObject->RenderObject->MaterialData.Params.push_back(jRenderObject::CreateMaterialParam("tex_object2", texture));
-		//object->BillboardObject->RenderObject->tex_object2 = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB);
-	}
+
+	auto texture = jImageFileLoader::GetInstance().LoadTextureFromFile(textureFilename, true).lock().get();
+	object->BillboardObject->RenderObject->MaterialData.Params.push_back(jRenderObject::CreateMaterialParam("tex_object2", texture));
 
 	object->UmbraConeObject = jPrimitiveUtil::CreateCone(light->Data.Position, 1.0, 1.0, 20, Vector::OneVector, Vector4(light->Data.Color.x, light->Data.Color.y, light->Data.Color.z, 1.0f), true, false, false);
 	object->PenumbraConeObject = jPrimitiveUtil::CreateCone(light->Data.Position, 1.0, 1.0, 20, Vector::OneVector, Vector4(light->Data.Color.x, light->Data.Color.y, light->Data.Color.z, 0.5f), true, false, false);

@@ -160,10 +160,7 @@ jMeshObject* jModelLoader::LoadFromFile(const char* filename, const char* materi
 			}
 			FilePath += str.C_Str();
 
-			jImageData data;
-			jImageFileLoader::GetInstance().LoadTextureFromFile(data, FilePath, true);
-			curTexData.Texture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB
-				, EFormatType::UNSIGNED_BYTE, data.Format, true);
+			curTexData.Texture = jImageFileLoader::GetInstance().LoadTextureFromFile(FilePath, true).lock().get();
 			curTexData.TextureName = str.C_Str();
 		}
 
