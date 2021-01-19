@@ -76,18 +76,22 @@ void jRenderObject::Draw(const jCamera* camera, const jShader* shader, const std
 		return;
 
 	g_rhi->SetShader(shader);
-	g_rhi->EnableCullFace(camera->IsEnableCullMode && !IsTwoSided);
-
-	jMaterialData materialData;
+	if (camera)
+		g_rhi->EnableCullFace(camera->IsEnableCullMode && !IsTwoSided);
+	else
+		g_rhi->EnableCullFace(!IsTwoSided);
 
 	std::vector<const jMaterialData*> DynamicMaterialData;
 
 	SetRenderProperty(shader);
 	SetCameraProperty(shader, camera);
-	SetLightProperty(shader, camera, lights, &materialData);
-	SetTextureProperty(shader, &materialData);
-	SetMaterialProperty(shader, &materialData, DynamicMaterialData);
-	
+	//SetLightProperty(shader, camera, lights, &DynamicMaterialData);
+	for (auto iter : lights)
+		DynamicMaterialData.push_back(iter->GetMaterialData());
+	SetTextureProperty(shader, nullptr);
+	SetMaterialProperty(shader, &MaterialData, DynamicMaterialData);
+
+
 	startIndex = startIndex != -1 ? startIndex : 0;
 
 	auto vertexStreamData = VertexBuffer->VertexStreamData.lock();
@@ -197,6 +201,9 @@ void jRenderObject::SetRenderProperty(const jShader* shader)
 
 void jRenderObject::SetCameraProperty(const jShader* shader, const jCamera* camera)
 {
+	if (!camera)
+		return;
+
 	auto posMatrix = Matrix::MakeTranslate(Pos);
 	auto rotMatrix = Matrix::MakeRotate(Rot);
 	auto scaleMatrix = Matrix::MakeScale(Scale);

@@ -1,6 +1,8 @@
 ﻿#pragma once
 
 class jRenderContext;
+class jFullscreenQuadPrimitive;
+class jUIQuadPrimitive;
 
 class jDeferredRenderer
 {
@@ -17,8 +19,15 @@ public:
 
 	void Init();
 	void Render(jRenderContext* InContext);
+	void Release();
 
 private:
+	std::shared_ptr<jRenderTarget> ShadowRTPtr;
 	std::shared_ptr<jRenderTarget> DepthRTPtr;
 	std::shared_ptr<jRenderTarget> GBufferRTPtr;
+	jMaterialData GBufferMaterialData;
+	jMaterialData ShadowMaterialData;
+
+	jFullscreenQuadPrimitive* FullscreenQuad = nullptr;	
+	jUIQuadPrimitive* DebugQuad = nullptr;
 };

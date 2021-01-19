@@ -131,8 +131,9 @@ enum class ETextureType
 
 enum class ETextureFormat
 {
-	RGB = 0,
-	RGBA = 1,
+	NONE = 0,
+	RGB,
+	RGBA,
 	RG,
 	R,
 	R32F,

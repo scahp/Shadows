@@ -594,5 +594,17 @@
     <None Include="Shaders\NewShaders\empty_fs.glsl">
       <Filter>Shaders\NewShaders</Filter>
     </None>
+    <None Include="Shaders\NewShaders\deferred_lighting_fs.glsl">
+      <Filter>Shaders\NewShaders</Filter>
+    </None>
+    <None Include="Shaders\NewShaders\deferred_lighting_vs.glsl">
+      <Filter>Shaders\NewShaders</Filter>
+    </None>
+    <None Include="Shaders\NewShaders\SSM_fs.glsl">
+      <Filter>Shaders\NewShaders</Filter>
+    </None>
+    <None Include="Shaders\NewShaders\SSM_vs.glsl">
+      <Filter>Shaders\NewShaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

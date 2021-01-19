@@ -1465,7 +1465,8 @@ jUIQuadPrimitive* CreateUIQuad(const Vector2& pos, const Vector2& size, jTexture
 	renderObject->CreateRenderObject(vertexStreamData, nullptr);
 	object->RenderObject = renderObject;
 	//object->RenderObject->tex_object = texture;
-	object->RenderObject->MaterialData.Params.push_back(jRenderObject::CreateMaterialParam("tex_object", texture));
+	if (texture)
+		object->RenderObject->MaterialData.Params.push_back(jRenderObject::CreateMaterialParam("tex_object", texture));
 	object->Pos = pos;
 	object->Size = size;
 
@@ -1501,7 +1502,8 @@ jFullscreenQuadPrimitive* CreateFullscreenQuad(jTexture* texture)
 	renderObject->CreateRenderObject(vertexStreamData, nullptr);
 	object->RenderObject = renderObject;
 	//object->RenderObject->tex_object = texture;
-	object->RenderObject->MaterialData.Params.push_back(jRenderObject::CreateMaterialParam("tex_object", texture));
+	if (texture)
+		object->RenderObject->MaterialData.Params.push_back(jRenderObject::CreateMaterialParam("tex_object", texture));
 	return object;
 }
 

@@ -53,9 +53,9 @@ void jSamplerStatePool::CreateDefaultSamplerState()
 		jSamplerStateInfo info;
 		info.Minification = ETextureFilter::LINEAR;
 		info.Magnification = ETextureFilter::LINEAR;
-		info.AddressU = ETextureAddressMode::CLAMP_TO_EDGE;
-		info.AddressV = ETextureAddressMode::CLAMP_TO_EDGE;
-		info.AddressW = ETextureAddressMode::CLAMP_TO_EDGE;
+		info.AddressU = ETextureAddressMode::CLAMP_TO_BORDER;
+		info.AddressV = ETextureAddressMode::CLAMP_TO_BORDER;
+		info.AddressW = ETextureAddressMode::CLAMP_TO_BORDER;
 		info.TextureComparisonMode = ETextureComparisonMode::COMPARE_REF_TO_TEXTURE;
 		info.ComparisonFunc = EComparisonFunc::LESS;
 		CreateSamplerState("LinearClampShadow", info);

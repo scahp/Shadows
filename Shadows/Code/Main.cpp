@@ -6,7 +6,6 @@
 #include "jEngine.h"
 #include "jRHI.h"
 
-#include <AntTweakBar.h>
 #include "jAppSettings.h"
 #include "jSamplerStatePool.h"
 
@@ -125,11 +124,13 @@ int main()
 		g_Engine.Update(g_timeDeltaSecond);
 		jPerformanceProfile::GetInstance().Update(g_timeDeltaSecond);
 
+#if USE_TW
 		{
 			SCOPE_DEBUG_EVENT(g_rhi, "TwDraw");
 			g_rhi->BindSamplerState(0, jSamplerStatePool::GetSamplerState("LinearClamp").get());
 			TwDraw();
 		}
+#endif // USE_TW
 
 		{
 			SCOPE_DEBUG_EVENT(g_rhi, "IMGUI");
@@ -228,8 +229,10 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+#if USE_TW
 	if (TwEventKeyGLFW(GLFW_KEY_9, action))
 		return;
+#endif // USE_TW
 
 	const char* key_name = glfwGetKeyName(key, 0);
 	if (!key_name)
@@ -249,13 +252,17 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 void char_callback(GLFWwindow* window, uint32 codepoint)
 {
+#if USE_TW
 	TwEventCharGLFW(codepoint, GLFW_PRESS);
+#endif // USE_TW
 }
 
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
+#if USE_TW
 	if (TwEventMousePosGLFW(static_cast<int>(xpos), static_cast<int>(ypos)))
 		return;
+#endif // USE_TW
 
 	static double xOld = -1.0;
 	static double yOld = -1.0;
@@ -274,8 +281,10 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
+#if USE_TW
 	if (TwEventMouseButtonGLFW(button, action))
 		return;
+#endif // USE_TW
 
 	EMouseButtonType buttonType;
 	if (GLFW_MOUSE_BUTTON_RIGHT == button)
@@ -307,8 +316,10 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
+#if USE_TW
 	if (TwEventMouseWheelGLFW(static_cast<int>(yoffset)))
 		return;
+#endif // USE_TW
 }
 
 // https://stackoverflow.com/questions/18412120/displaying-fps-in-glfw-window-title

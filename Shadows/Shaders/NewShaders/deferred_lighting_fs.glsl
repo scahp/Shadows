@@ -1,0 +1,80 @@
+#version 330 core
+
+#preprocessor
+
+#include "common.glsl"
+
+precision mediump float;
+
+#define MAX_NUM_OF_DIRECTIONAL_LIGHT 1
+layout(std140) uniform DirectionalLightBlock
+{
+	jDirectionalLight DirectionalLight[MAX_NUM_OF_DIRECTIONAL_LIGHT];
+};
+
+layout(std140) uniform DirectionalLightShadowMapBlock
+{
+	mat4 ShadowVP;
+	mat4 ShadowV;
+	vec3 LightPos;
+	float LightZNear;
+	float LightZFar;
+	vec2 ShadowMapSize;
+};
+
+#define SHADOW_BIAS_DIRECTIONAL 0.01
+
+// SSM + Directional
+float IsShadowing(vec3 lightClipPos, sampler2DShadow shadowSampler)
+{
+	// for sampler2DShadow
+	return texture(shadowSampler, vec3(lightClipPos.xy, lightClipPos.z - SHADOW_BIAS_DIRECTIONAL));
+
+	// for sampler2D
+	//float currentDepth = lightClipPos.z - SHADOW_BIAS_DIRECTIONAL;
+	//float closestDepth = texture(shadowSampler, lightClipPos.xy).r;
+	//float shadow = currentDepth < closestDepth ? 1.0 : 0.0;
+	//return shadow;
+}
+
+uniform int NumOfDirectionalLight;
+
+#if defined(USE_MATERIAL)
+uniform int UseMaterial;
+uniform jMaterial Material;
+#endif // USE_MATERIAL
+
+uniform sampler2D ColorSampler;
+uniform sampler2D NormalSampler;
+uniform sampler2D PosInWorldSampler;
+
+uniform sampler2DShadow DirectionalShadowSampler;
+
+uniform vec3 Eye;
+
+in vec2 TexCoord_;
+out vec4 FinalColor;
+
+void main()
+{
+	vec4 DiffuseColor = texture(ColorSampler, TexCoord_);
+	vec3 Normal = texture(NormalSampler, TexCoord_).xyz;
+	vec3 Pos = texture(PosInWorldSampler, TexCoord_).xyz;
+
+	vec3 viewDir = normalize(Eye - Pos);
+	vec3 directColor = vec3(1.0);
+	if (NumOfDirectionalLight > 0)
+	{
+		jDirectionalLight light = DirectionalLight[0];
+		directColor = GetDirectionalLight(light, Normal, viewDir);
+	}
+
+	vec4 tempShadowPos = (ShadowVP * vec4(Pos, 1.0));
+	tempShadowPos /= tempShadowPos.w;
+	vec3 ShadowPos;
+	ShadowPos.xyz = tempShadowPos.xyz * 0.5 + 0.5;        // Transform NDC space coordinate from [-1.0 ~ 1.0] into [0.0 ~ 1.0].
+	float IsShadowing = IsShadowing(ShadowPos, DirectionalShadowSampler);
+	
+	FinalColor = vec4(DiffuseColor.xyz * directColor * IsShadowing, DiffuseColor.w);
+	//FinalColor = vec4(IsShadowing, IsShadowing, IsShadowing, DiffuseColor.w);
+}

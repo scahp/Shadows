@@ -10,17 +10,16 @@
 
 namespace jLightUtil
 {
+	constexpr float width = 5000.0f;
+	constexpr float height = 5000.0f;
+	constexpr float nearDist = 10.0f;
+	constexpr float farDist = 5000.0f;
+
 	void MakeDirectionalLightViewInfo(Vector& outPos, Vector& outTarget, Vector& outUp, const Vector& direction)
 	{
-		outPos = Vector(-200.0f) * direction;
+		outPos = Vector(-farDist * 0.5f) * direction;
 		outTarget = Vector::ZeroVector;
 		outUp = outPos + Vector(0.0f, 1.0f, 0.0f);
-	}
-
-	void MakeDirectionalLightViewInfoWithPos(Vector& outTarget, Vector& outUp, const Vector& pos, const Vector& direction)
-	{
-		outTarget = pos + direction;
-		outUp = pos + Vector(0.0f, 1.0f, 0.0f);
 	}
 
 	jShadowMapData* CreateShadowMap(const Vector& direction, const Vector&)
@@ -33,12 +32,6 @@ namespace jLightUtil
 
 		// todo remove constant variable
 		auto shadowMapData = new jShadowMapData("DirectionalLight");
-		//shadowMapData->ShadowMapCamera = jCamera::CreateCamera(tempPos, target, up, 3.14f / 4.0f, 300.0f, 900.0f, SM_WIDTH, SM_HEIGHT, true);		// todo for deep shadow map. it should be replaced
-		//shadowMapData->ShadowMapCamera = jCamera::CreateCamera(tempPos, target, up, DegreeToRadian(90.0f), 10.0f, 900.0f, SM_WIDTH, SM_HEIGHT, false);
-		float width = SM_WIDTH;
-		float height = SM_HEIGHT;
-		float nearDist = 10.0f;
-		float farDist = 500.0f;
 		shadowMapData->ShadowMapCamera = jOrthographicCamera::CreateCamera(pos, target, up, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
 		
 		shadowMapData->ShadowMapRenderTarget = jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RG32F, ETextureFormat::RG, EFormatType::FLOAT, EDepthBufferType::DEPTH32, SM_WIDTH, SM_HEIGHT, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR });
@@ -59,10 +52,6 @@ namespace jLightUtil
 		auto shadowMapData = new jShadowMapData("DirectionalLight");
 		//shadowMapData->ShadowMapCamera = jCamera::CreateCamera(tempPos, target, up, 3.14f / 4.0f, 300.0f, 900.0f, SM_WIDTH, SM_HEIGHT, true);		// todo for deep shadow map. it should be replaced
 		//shadowMapData->ShadowMapCamera = jCamera::CreateCamera(tempPos, target, up, DegreeToRadian(90.0f), 10.0f, 900.0f, SM_WIDTH, SM_HEIGHT, false);
-		float width = SM_WIDTH;
-		float height = SM_HEIGHT;
-		float nearDist = 10.0f;
-		float farDist = 1000.0f;
 		shadowMapData->ShadowMapCamera = jOrthographicCamera::CreateCamera(pos, target, up, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
 
 		shadowMapData->ShadowMapRenderTarget = jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RG32F, ETextureFormat::RG, EFormatType::FLOAT, EDepthBufferType::DEPTH32, SM_WIDTH, SM_HEIGHT * NUM_CASCADES, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR });
@@ -322,7 +311,7 @@ void jDirectionalLight::Update(float deltaTime)
 	if (ShadowMapData && ShadowMapData->ShadowMapCamera)
 	{
 		auto camera = ShadowMapData->ShadowMapCamera;
-		jLightUtil::MakeDirectionalLightViewInfoWithPos(camera->Target, camera->Up, camera->Pos, Data.Direction);
+		jLightUtil::MakeDirectionalLightViewInfo(camera->Pos, camera->Target, camera->Up, Data.Direction);
 		camera->UpdateCamera();
 
 		UpdateMaterialData();

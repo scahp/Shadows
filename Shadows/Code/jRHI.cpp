@@ -19,3 +19,17 @@ void jRHI::MapBufferdata(IBuffer* buffer) const
 {
 
 }
+
+jMaterialParam* jMaterialData::CreateMaterialParam(const char* name, jTexture* texture, jSamplerState* samplerstate)
+{
+	auto param = new jMaterialParam();
+	param->Name = name;
+	param->Texture = texture;
+	param->SamplerState = samplerstate;
+	return param;
+}
+
+void jMaterialData::AddMaterialParam(const char* name, jTexture* texture, jSamplerState* samplerstate)
+{
+	Params.push_back(CreateMaterialParam(name, texture, samplerstate));
+}

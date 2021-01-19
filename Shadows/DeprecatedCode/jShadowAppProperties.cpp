@@ -200,3 +200,4 @@ void jShadowAppSettingProperties::SwitchShadowMapType(jAppSettingBase* appSettin
 		break;
 	}
 }
+

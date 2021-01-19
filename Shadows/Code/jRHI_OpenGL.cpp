@@ -946,14 +946,15 @@ void jRHI_OpenGL::ReleaseShader(jShader* shader) const
 
 jTexture* jRHI_OpenGL::CreateNullTexture() const
 {
-	auto texure = new jTexture_OpenGL();
-	texure->sRGB = false;
-	glGenTextures(1, &texure->TextureID);
-	glBindTexture(GL_TEXTURE_2D, texure->TextureID);
+	auto texture = new jTexture_OpenGL();
+	texture->sRGB = false;
+	texture->ColorBufferType = ETextureFormat::RGB;
+	glGenTextures(1, &texture->TextureID);
+	glBindTexture(GL_TEXTURE_2D, texture->TextureID);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	return texure;
+	return texture;
 }
 
 jTexture* jRHI_OpenGL::CreateTextureFromData(void* data, int32 width, int32 height, bool sRGB
@@ -983,6 +984,7 @@ jTexture* jRHI_OpenGL::CreateTextureFromData(void* data, int32 width, int32 heig
 
 	auto texture = new jTexture_OpenGL();
 	texture->sRGB = sRGB;
+	texture->ColorBufferType = textureFormat;
 	glGenTextures(1, &texture->TextureID);
 	glBindTexture(GL_TEXTURE_2D, texture->TextureID);
 	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, simpleFormat, formatType, data);
@@ -1293,6 +1295,7 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 
 			auto tex_gl = new jTexture_OpenGL();
 			tex_gl->TextureType = info.TextureType;
+			tex_gl->ColorBufferType = info.InternalFormat;
 			tex_gl->Magnification = info.Magnification;
 			tex_gl->Minification = info.Minification;
 			tex_gl->TextureID = tbo;
@@ -1309,6 +1312,7 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 
 			auto tex_gl = new jTexture_OpenGL();
 			tex_gl->TextureType = info.TextureType;
+			tex_gl->DepthBufferType = info.DepthBufferType;
 			tex_gl->TextureID = tbo;
 			tex_gl->DepthBufferType = info.DepthBufferType;
 			rt_gl->TextureDepth = std::shared_ptr<jTexture>(tex_gl);
@@ -1330,6 +1334,7 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 		auto tex_gl = new jTexture_OpenGL();
 		tex_gl->Magnification = info.Magnification;
 		tex_gl->Minification = info.Minification;
+		tex_gl->ColorBufferType = info.InternalFormat;
 
 		uint32 tbo = 0;
 		glGenTextures(1, &tbo);
@@ -1406,6 +1411,7 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 			tex_gl->Magnification = info.Magnification;
 			tex_gl->Minification = info.Minification;
 			tex_gl->TextureID = tbo;
+			tex_gl->ColorBufferType = info.InternalFormat;
 			rt_gl->Textures[i] = std::shared_ptr<jTexture>(tex_gl);
 		}
 
@@ -1456,6 +1462,7 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 		tex_gl->TextureID = tbo;
 		tex_gl->Magnification = info.Magnification;
 		tex_gl->Minification = info.Minification;
+		tex_gl->ColorBufferType = info.InternalFormat;
 		rt_gl->Textures.push_back(std::shared_ptr<jTexture>(tex_gl));
 
 		for (int i = 0; i < 6; ++i)

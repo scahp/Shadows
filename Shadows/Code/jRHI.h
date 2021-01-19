@@ -33,11 +33,10 @@ struct jIndexBuffer : public IBuffer
 struct jTexture
 {
 	bool sRGB = false;
-	union
-	{
-		ETextureType TextureType;
-		EDepthBufferType DepthBufferType;
-	};
+	ETextureType TextureType;
+
+	ETextureFormat ColorBufferType = ETextureFormat::NONE;
+	EDepthBufferType DepthBufferType = EDepthBufferType::NONE;
 
 	ETextureFilter Minification = ETextureFilter::NEAREST;
 	ETextureFilter Magnification = ETextureFilter::NEAREST;
@@ -192,6 +191,10 @@ struct jMaterialData
 			delete iter;
 		Params.clear();
 	}
+
+	static jMaterialParam* CreateMaterialParam(const char* name, jTexture* texture, jSamplerState* samplerstate = nullptr);
+	void AddMaterialParam(const char* name, jTexture* texture, jSamplerState* samplerstate = nullptr);
+
 	std::vector<jMaterialParam*> Params;
 };
 

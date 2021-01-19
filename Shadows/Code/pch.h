@@ -111,4 +111,6 @@ inline void hash_combine(std::size_t& seed, const T& v)
 //#define DEBUG_OUTPUT_LEVEL 1	// show mid priority
 #define DEBUG_OUTPUT_LEVEL 2	// show high priority
 
+#define USE_TW 1
+
 #endif //PCH_H

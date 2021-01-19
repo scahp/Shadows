@@ -27,7 +27,6 @@ class jLight;
 namespace jLightUtil
 {
 	void MakeDirectionalLightViewInfo(Vector& outPos, Vector& outTarget, Vector& outUp, const Vector& direction);
-	void MakeDirectionalLightViewInfoWithPos(Vector& outTarget, Vector& outUp, const Vector& pos, const Vector& direction);
 
 	//////////////////////////////////////////////////////////////////////////
 	struct jShadowMapArrayData
