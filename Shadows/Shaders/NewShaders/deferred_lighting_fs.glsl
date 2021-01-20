@@ -39,11 +39,6 @@ float IsShadowing(vec3 lightClipPos, sampler2DShadow shadowSampler)
 
 uniform int NumOfDirectionalLight;
 
-#if defined(USE_MATERIAL)
-uniform int UseMaterial;
-uniform jMaterial Material;
-#endif // USE_MATERIAL
-
 uniform sampler2D ColorSampler;
 uniform sampler2D NormalSampler;
 uniform sampler2D PosInWorldSampler;
@@ -57,16 +52,16 @@ out vec4 FinalColor;
 
 void main()
 {
-	vec4 DiffuseColor = texture(ColorSampler, TexCoord_);
+	vec4 DiffuseAndOpacity = texture(ColorSampler, TexCoord_);
 	vec3 Normal = texture(NormalSampler, TexCoord_).xyz;
 	vec3 Pos = texture(PosInWorldSampler, TexCoord_).xyz;
 
 	vec3 viewDir = normalize(Eye - Pos);
-	vec3 directColor = vec3(1.0);
+	vec3 directLight = vec3(1.0);
 	if (NumOfDirectionalLight > 0)
 	{
 		jDirectionalLight light = DirectionalLight[0];
-		directColor = GetDirectionalLight(light, Normal, viewDir);
+		directLight = GetDirectionalLight(light, Normal, viewDir);
 	}
 
 	vec4 tempShadowPos = (ShadowVP * vec4(Pos, 1.0));
@@ -75,6 +70,8 @@ void main()
 	ShadowPos.xyz = tempShadowPos.xyz * 0.5 + 0.5;        // Transform NDC space coordinate from [-1.0 ~ 1.0] into [0.0 ~ 1.0].
 	float IsShadowing = IsShadowing(ShadowPos, DirectionalShadowSampler);
 	
-	FinalColor = vec4(DiffuseColor.xyz * directColor * IsShadowing, DiffuseColor.w);
-	//FinalColor = vec4(IsShadowing, IsShadowing, IsShadowing, DiffuseColor.w);
+	vec3 ConstantAmbient = DiffuseAndOpacity.xyz * 0.3;
+	FinalColor = vec4(ConstantAmbient + DiffuseAndOpacity.xyz * directLight * IsShadowing, DiffuseAndOpacity.w);
+	//FinalColor = vec4(directLight, DiffuseAndOpacity.w);
+	//FinalColor = DiffuseAndOpacity;
 }

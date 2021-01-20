@@ -8,19 +8,21 @@ struct jMeshMaterial
 {
 	enum class EMaterialTextureType : int8
 	{
-		Diffuse = 0,
-		Specular,
-		Ambient,
-		Emissive,
-		Height,				// Height or Bump map
-		Normals,
-		Shininess,
-		Opacity,
-		Displacement,
-		Lightmap,
-		Reflection,
+		DiffuseSampler = 0,
+		SpecularSampler,
+		AmbientSampler,
+		EmissiveSampler,
+		HeightSampler,				// Height or Bump map
+		NormalSampler,
+		ShininessSampler,
+		OpacitySampler,
+		DisplacementSampler,
+		LightmapSampler,
+		ReflectionSampler,
 		Max
 	};
+
+	static const char* MaterialTextureTypeString[(int32)EMaterialTextureType::Max + 1];
 
 	struct Material
 	{
@@ -44,6 +46,8 @@ struct jMeshMaterial
 
 		const jTexture* GetTexture() const
 		{ 
+			if (TextureWeakPtr.expired())
+				return nullptr;
 			return TextureWeakPtr.lock().get(); 
 		}
 	};
@@ -56,6 +60,8 @@ struct jMeshData
 {
 	std::vector<Vector> Vertices;
 	std::vector<Vector> Normals;
+	std::vector<Vector> Tangents;
+	std::vector<Vector> Bitangents;
 	std::vector<Vector2> TexCoord;
 	std::map<int32, jMeshMaterial*> Materials;
 	std::vector<uint32> Faces;
@@ -68,6 +74,8 @@ struct jSubMesh
 	int32 StartFace = -1;
 	int32 EndFace = -1;
 	int32 MaterialIndex = -1;
+
+	jMaterialData MaterialData;
 };
 
 struct jMeshNode
@@ -87,7 +95,7 @@ public:
 	jMeshObject();
 	
 	jMeshData* MeshData = nullptr;
-	std::vector<jSubMesh> SubMeshes;
+	mutable std::vector<jSubMesh> SubMeshes;
 	jMeshNode* RootNode = nullptr;
 
 	virtual void Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount = 0 ) const override;

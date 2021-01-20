@@ -37,7 +37,8 @@ jGame::~jGame()
 
 void jGame::ProcessInput()
 {
-	static float speed = 1.0f;
+	static float maxSpeed = 16.0f;
+	static float speed = 8.0f;
 
 	// Process Key Event
 	if (g_KeyState['a'] || g_KeyState['A']) MainCamera->MoveShift(-speed);
@@ -50,7 +51,7 @@ void jGame::ProcessInput()
 	//if (g_KeyState['6']) MainCamera->RotateRightAxis(0.1f);
 	if (g_KeyState['w'] || g_KeyState['W']) MainCamera->MoveForward(speed);
 	if (g_KeyState['s'] || g_KeyState['S']) MainCamera->MoveForward(-speed);
-	if (g_KeyState['+']) speed = Max(speed + 0.1f, 0.0f);
+	if (g_KeyState['+']) speed = Min(speed + 0.1f, maxSpeed);
 	if (g_KeyState['-']) speed = Max(speed - 0.1f, 0.0f);
 }
 
@@ -58,10 +59,7 @@ void jGame::Setup()
 {
 	//////////////////////////////////////////////////////////////////////////
 	const Vector mainCameraPos(172.66f, 160.0f, -180.63f);
-	//const Vector mainCameraTarget(171.96f, 166.02f, -180.05f);
-	//const Vector mainCameraPos(165.0f, 125.0f, -136.0f);
-	//const Vector mainCameraPos(300.0f, 100.0f, 300.0f);
-	const Vector mainCameraTarget(0.0f, 0.0f, 0.0f);
+	const Vector mainCameraTarget(171.73f, 159.78f, -180.30f);
 	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(60.0f), 10.0f, 5000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
 

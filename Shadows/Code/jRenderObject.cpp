@@ -115,7 +115,7 @@ void jRenderObject::Draw(const jCamera* camera, const jShader* shader, const std
 	}
 }
 
-void jRenderObject::DrawBaseVertexIndex(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 startIndex, int32 count, int32 baseVertexIndex, int32 instanceCount)
+void jRenderObject::DrawBaseVertexIndex(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, const jMaterialData& materialData, int32 startIndex, int32 count, int32 baseVertexIndex, int32 instanceCount /*= 1*/)
 {
 	if (VertexBuffer->VertexStreamData.expired())
 		return;
@@ -133,7 +133,7 @@ void jRenderObject::DrawBaseVertexIndex(const jCamera* camera, const jShader* sh
 		for (auto iter : lights)
 			DynamicMaterialData.push_back(iter->GetMaterialData());
 		SetTextureProperty(shader, nullptr);
-		SetMaterialProperty(shader, &MaterialData, DynamicMaterialData);
+		SetMaterialProperty(shader, &materialData, DynamicMaterialData);
 	}
 
 	{
@@ -330,7 +330,7 @@ void jRenderObject::SetTextureProperty(const jShader* shader, jMaterialData* mat
 	}
 }
 
-void jRenderObject::SetMaterialProperty(const jShader* shader, jMaterialData* materialData, const std::vector<const jMaterialData*>& dynamicMaterialData)
+void jRenderObject::SetMaterialProperty(const jShader* shader, const jMaterialData* materialData, const std::vector<const jMaterialData*>& dynamicMaterialData)
 {
 	int32 lastIndex = 0;
 	if (materialData)

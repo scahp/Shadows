@@ -606,5 +606,11 @@
     <None Include="Shaders\NewShaders\SSM_vs.glsl">
       <Filter>Shaders\NewShaders</Filter>
     </None>
+    <None Include="Shaders\NewShaders\depthonly_alphatest_fs.glsl">
+      <Filter>Shaders\NewShaders</Filter>
+    </None>
+    <None Include="Shaders\NewShaders\depthonly_alphatest_vs.glsl">
+      <Filter>Shaders\NewShaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

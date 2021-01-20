@@ -24,17 +24,18 @@ std::weak_ptr<jImageData> jImageFileLoader::LoadImageDataFromFile(std::string co
 
 	std::shared_ptr<jImageData> NewImageDataPatr(new jImageData());
 
-	int32 w = 0;
-	int32 h = 0;
+	int32 width = 0;
+	int32 height = 0;
 	int32 NumOfComponent = -1;
 	if (std::string::npos != filename.find(".tga"))
 	{
-		uint8* imageData = stbi_load(filename.c_str(), &w, &h, &NumOfComponent, 0);
+		uint8* imageData = stbi_load(filename.c_str(), &width, &height, &NumOfComponent, 0);
 
-		int32 NumOfBytes = w * h * sizeof(uint8) * NumOfComponent;
+		int32 NumOfBytes = width * height * sizeof(uint8) * NumOfComponent;
 		NewImageDataPatr->ImageData.resize(NumOfBytes);
 		memcpy(&NewImageDataPatr->ImageData[0], imageData, NumOfBytes);
 		NewImageDataPatr->sRGB = sRGB;
+		NewImageDataPatr->FormatType = EFormatType::UNSIGNED_BYTE;
 
 		stbi_image_free(imageData);
 	}
@@ -44,9 +45,10 @@ std::weak_ptr<jImageData> jImageFileLoader::LoadImageDataFromFile(std::string co
 		unsigned w, h;
 		LodePNG::decode(NewImageDataPatr->ImageData, w, h, filename.c_str());
 		NewImageDataPatr->sRGB = sRGB;
+		NewImageDataPatr->FormatType = EFormatType::UNSIGNED_BYTE;
 
-		w = static_cast<int32>(w);
-		h = static_cast<int32>(h);
+		width = static_cast<int32>(w);
+		height = static_cast<int32>(h);
 		NumOfComponent = 4;
 	}
 	else if (std::string::npos != filename.find(".hdr"))
@@ -63,8 +65,8 @@ std::weak_ptr<jImageData> jImageFileLoader::LoadImageDataFromFile(std::string co
 		stbi_image_free(imageData);
 	}
 
-	NewImageDataPatr->Width = w;
-	NewImageDataPatr->Height = h;
+	NewImageDataPatr->Width = width;
+	NewImageDataPatr->Height = height;
 
 	switch (NumOfComponent)
 	{
@@ -100,7 +102,7 @@ std::weak_ptr<jTexture> jImageFileLoader::LoadTextureFromFile(std::string const&
 	if (pImageData)
 	{
 		jTexture* pCreatedTexture = g_rhi->CreateTextureFromData(&pImageData->ImageData[0], pImageData->Width
-			, pImageData->Height, pImageData->sRGB, EFormatType::UNSIGNED_BYTE, pImageData->Format, true);
+			, pImageData->Height, pImageData->sRGB, pImageData->FormatType, pImageData->Format, true);
 		NewTexture = std::shared_ptr<jTexture>(pCreatedTexture);
 	}
 

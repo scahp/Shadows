@@ -41,7 +41,7 @@ void jDeferredRenderer::DepthPrepass(jRenderContext* InContext) const
 		g_rhi->EnableDepthTest(true);
 		g_rhi->SetDepthFunc(EComparisonFunc::LESS);
 
-		jShader* shader = jShader::GetShader("NewDepthOnly");
+		jShader* shader = jShader::GetShader("NewDepthOnlyWithAlphaTest");
 		g_rhi->SetShader(shader);
 
 		const jCamera* CurCamera = InContext->Camera;

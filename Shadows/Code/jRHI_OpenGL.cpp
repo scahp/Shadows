@@ -1159,6 +1159,9 @@ int32 jRHI_OpenGL::SetMatetrial(const jMaterialData* materialData, const jShader
 	for (int32 i = 0; i < NumOfParams; ++i)
 	{
 		auto matParam = materialData->Params[i];
+		if (!matParam)
+			continue;
+
 		auto tex_gl = static_cast<const jTexture_OpenGL*>(matParam->Texture);
 		if (!tex_gl)
 			continue;

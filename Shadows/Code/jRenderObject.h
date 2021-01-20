@@ -33,11 +33,11 @@ public:
 
 	// todo 함수를 줄일까? 아니면 이렇게 쓸까? 고민
 	//void Draw(const jCamera* camera, const jShader* shader, int32 startIndex, int32 count, int32 baseVertexIndex);
-	void DrawBaseVertexIndex(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 startIndex, int32 count, int32 baseVertexIndex, int32 instanceCount = 1);
+	void DrawBaseVertexIndex(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, const jMaterialData& materialData, int32 startIndex, int32 count, int32 baseVertexIndex, int32 instanceCount = 1);
 	
 	void SetRenderProperty(const jShader* shader);
 	void SetCameraProperty(const jShader* shader, const jCamera* camera);
-	void SetMaterialProperty(const jShader* shader, jMaterialData* materialData, const std::vector<const jMaterialData*>& dynamicMaterialData);
+	void SetMaterialProperty(const jShader* shader, const jMaterialData* materialData, const std::vector<const jMaterialData*>& dynamicMaterialData);
 	void SetLightProperty(const jShader* shader, const jCamera* camera, const std::list<const jLight*>& lights, jMaterialData* materialData);
 	//void SetLightProperty(const jShader* shader, const jLight* light, jMaterialData* materialData);
 	void SetTextureProperty(const jShader* shader, jMaterialData* materialData);

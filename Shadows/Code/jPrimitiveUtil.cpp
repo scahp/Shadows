@@ -68,9 +68,6 @@ void jFullscreenQuadPrimitive::SetUniformBuffer(const jShader* shader) const
 void jFullscreenQuadPrimitive::SetTexture(const jTexture* texture, const jSamplerState* samplerState)
 {
 	RenderObject->MaterialData.Params.push_back(jRenderObject::CreateMaterialParam("tex_object", texture, samplerState));
-
-	//RenderObject->tex_object = texture;
-	//RenderObject->samplerState = samplerState;
 }
 
 void jFullscreenQuadPrimitive::SetTexture(int index, const jTexture* texture, const jSamplerState* samplerState)
@@ -79,21 +76,12 @@ void jFullscreenQuadPrimitive::SetTexture(int index, const jTexture* texture, co
 	{
 	case 0:
 		RenderObject->MaterialData.Params.push_back(jRenderObject::CreateMaterialParam("tex_object", texture, samplerState));
-
-		//RenderObject->tex_object = texture;
-		//RenderObject->samplerState = samplerState;
 		break;
 	case 1:
 		RenderObject->MaterialData.Params.push_back(jRenderObject::CreateMaterialParam("tex_object2", texture, samplerState));
-
-		//RenderObject->tex_object2 = texture;
-		//RenderObject->samplerState2 = samplerState;
 		break;
 	case 2:
 		RenderObject->MaterialData.Params.push_back(jRenderObject::CreateMaterialParam("tex_object3", texture, samplerState));
-
-		//RenderObject->tex_object3 = texture;
-		//RenderObject->samplerState3 = samplerState;
 		break;
 	default:
 		JASSERT(0);
@@ -104,15 +92,11 @@ void jFullscreenQuadPrimitive::SetTexture(int index, const jTexture* texture, co
 void jFullscreenQuadPrimitive::SetTexture2(const jTexture* texture, const jSamplerState* samplerState)
 {
 	RenderObject->MaterialData.Params.push_back(jRenderObject::CreateMaterialParam("tex_object2", texture, samplerState));
-	//RenderObject->tex_object2 = texture;
-	//RenderObject->samplerState2 = samplerState;
 }
 
 void jFullscreenQuadPrimitive::SetTexture3(const jTexture* texture, const jSamplerState* samplerState)
 {
 	RenderObject->MaterialData.Params.push_back(jRenderObject::CreateMaterialParam("tex_object3", texture, samplerState));
-	//RenderObject->tex_object3 = texture;
-	//RenderObject->samplerState3 = samplerState;
 }
 
 void jBoundBoxObject::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount /*= 1 */) const

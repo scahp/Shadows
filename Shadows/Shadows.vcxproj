@@ -368,6 +368,8 @@
     <None Include="Shaders\NewShaders\deferred_lighting_fs.glsl" />
     <None Include="Shaders\NewShaders\deferred_lighting_vs.glsl" />
     <None Include="Shaders\NewShaders\deferred_vs.glsl" />
+    <None Include="Shaders\NewShaders\depthonly_alphatest_fs.glsl" />
+    <None Include="Shaders\NewShaders\depthonly_alphatest_vs.glsl" />
     <None Include="Shaders\NewShaders\depthonly_vs.glsl" />
     <None Include="Shaders\NewShaders\empty_fs.glsl" />
     <None Include="Shaders\NewShaders\SSM_fs.glsl" />

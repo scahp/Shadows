@@ -41,12 +41,12 @@ void jGBuffer::BindGeometryBuffer(const jShader* shader) const
 		materialData.Params.push_back(param);
 	}
 
-	{
-		auto param = new jMaterialParam();
-		param->Name = "PosInLightSampler";
-		param->Texture = GeometryBuffer->Textures[3].get();
-		materialData.Params.push_back(param);
-	}
+	//{
+	//	auto param = new jMaterialParam();
+	//	param->Name = "PosInLightSampler";
+	//	param->Texture = GeometryBuffer->Textures[3].get();
+	//	materialData.Params.push_back(param);
+	//}
 
 	g_rhi->SetMatetrial(&materialData, shader, 20);
 }

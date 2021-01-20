@@ -46,7 +46,7 @@ jModelLoader::~jModelLoader()
 jMeshObject* jModelLoader::LoadFromFile(const char* filename, const char* materialRootDir)
 {
 	Assimp::Importer importer;
-	const aiScene *scene = importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_FlipUVs);
+	const aiScene *scene = importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
 
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
@@ -70,6 +70,16 @@ jMeshObject* jModelLoader::LoadFromFile(const char* filename, const char* materi
 		subMesh.EndVertex = static_cast<int32>(meshData->Vertices.size());
 
 		memcpy(&meshData->Vertices[subMesh.StartVertex], &assimpMesh->mVertices[0], assimpMesh->mNumVertices * sizeof(Vector));
+
+		const bool HasTangentBitangent = assimpMesh->HasTangentsAndBitangents();
+		if (HasTangentBitangent)
+		{
+			meshData->Tangents.resize(meshData->Tangents.size() + assimpMesh->mNumVertices);
+			memcpy(&meshData->Tangents[subMesh.StartVertex], &assimpMesh->mTangents[0], assimpMesh->mNumVertices * sizeof(Vector));
+
+			meshData->Bitangents.resize(meshData->Bitangents.size() + assimpMesh->mNumVertices);
+			memcpy(&meshData->Bitangents[subMesh.StartVertex], &assimpMesh->mBitangents[0], assimpMesh->mNumVertices * sizeof(Vector));
+		}
 
 		if (assimpMesh->HasNormals())
 		{
@@ -248,7 +258,10 @@ jMeshObject* jModelLoader::LoadFromFile(const char* filename, const char* materi
 		vertexStreamData->Params.push_back(streamParam);
 	}
 
+	if (!meshData->Normals.empty())
 	{
+		JASSERT(meshData->Vertices.size() == meshData->Normals.size());
+
 		auto streamParam = new jStreamParam<float>();
 		streamParam->BufferType = EBufferType::STATIC;
 		streamParam->ElementType = EBufferElementType::FLOAT;
@@ -257,6 +270,36 @@ jMeshObject* jModelLoader::LoadFromFile(const char* filename, const char* materi
 		streamParam->Name = "Normal";
 		streamParam->Data.resize(elementCount * 3);
 		memcpy(&streamParam->Data[0], &meshData->Normals[0], meshData->Normals.size() * sizeof(Vector));
+		vertexStreamData->Params.push_back(streamParam);
+	}
+
+	if (!meshData->Tangents.empty())
+	{
+		JASSERT(meshData->Vertices.size() == meshData->Tangents.size());
+
+		auto streamParam = new jStreamParam<float>();
+		streamParam->BufferType = EBufferType::STATIC;
+		streamParam->ElementType = EBufferElementType::FLOAT;
+		streamParam->ElementTypeSize = sizeof(float);
+		streamParam->Stride = sizeof(float) * 3;
+		streamParam->Name = "Tangent";
+		streamParam->Data.resize(elementCount * 3);
+		memcpy(&streamParam->Data[0], &meshData->Tangents[0], meshData->Tangents.size() * sizeof(Vector));
+		vertexStreamData->Params.push_back(streamParam);
+	}
+
+	if (!meshData->Bitangents.empty())
+	{
+		JASSERT(meshData->Vertices.size() == meshData->Bitangents.size());
+
+		auto streamParam = new jStreamParam<float>();
+		streamParam->BufferType = EBufferType::STATIC;
+		streamParam->ElementType = EBufferElementType::FLOAT;
+		streamParam->ElementTypeSize = sizeof(float);
+		streamParam->Stride = sizeof(float) * 3;
+		streamParam->Name = "Bitangent";
+		streamParam->Data.resize(elementCount * 3);
+		memcpy(&streamParam->Data[0], &meshData->Bitangents[0], meshData->Bitangents.size() * sizeof(Vector));
 		vertexStreamData->Params.push_back(streamParam);
 	}
 
