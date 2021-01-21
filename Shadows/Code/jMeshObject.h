@@ -41,7 +41,8 @@ struct jMeshMaterial
 	struct TextureData
 	{
 		std::weak_ptr<jTexture> TextureWeakPtr;
-		ETextureAddressMode TextureAddressMode = ETextureAddressMode::REPEAT;
+		ETextureAddressMode TextureAddressModeU = ETextureAddressMode::REPEAT;
+		ETextureAddressMode TextureAddressModeV = ETextureAddressMode::REPEAT;
 		std::string TextureName;
 
 		const jTexture* GetTexture() const

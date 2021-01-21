@@ -37,8 +37,8 @@ jGame::~jGame()
 
 void jGame::ProcessInput()
 {
-	static float maxSpeed = 16.0f;
-	static float speed = 8.0f;
+	static float maxSpeed = 4.0f;
+	static float speed = 1.0f;
 
 	// Process Key Event
 	if (g_KeyState['a'] || g_KeyState['A']) MainCamera->MoveShift(-speed);
@@ -58,9 +58,9 @@ void jGame::ProcessInput()
 void jGame::Setup()
 {
 	//////////////////////////////////////////////////////////////////////////
-	const Vector mainCameraPos(172.66f, 160.0f, -180.63f);
-	const Vector mainCameraTarget(171.73f, 159.78f, -180.30f);
-	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(60.0f), 10.0f, 5000.0f, SCR_WIDTH, SCR_HEIGHT, true);
+	const Vector mainCameraPos(48.10f, 10.46f, -0.22f);
+	const Vector mainCameraTarget(47.11f, 10.62f, -0.17f);
+	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(60.0f), 1.0f, 1000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
 
 	// Light creation step
@@ -195,7 +195,7 @@ void jGame::Update(float deltaTime)
 
 		DeferredRenderer.Init();
 
-		static jMeshObject* s_Sponza = jModelLoader::GetInstance().LoadFromFile("Scene/sponza/sponza.obj", "Scene/sponza");
+		static jMeshObject* s_Sponza = jModelLoader::GetInstance().LoadFromFile("Scene/sponza2/sponza.dae", "Scene/sponza2");
 		RenderContext.AllObjects.push_back(s_Sponza);
 		RenderContext.Camera = MainCamera;
 		RenderContext.Lights = { MainCamera->GetLight(ELightType::DIRECTIONAL) };

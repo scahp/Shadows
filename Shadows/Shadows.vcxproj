@@ -183,6 +183,7 @@
     <ClInclude Include="Code\External\IMGUI\imstb_textedit.h" />
     <ClInclude Include="Code\External\IMGUI\imstb_truetype.h" />
     <ClInclude Include="Code\External\lodepng.h" />
+    <ClInclude Include="Code\External\SOIL_STBI\stbi_DDS_aug_c.h" />
     <ClInclude Include="Code\External\stb_image.h" />
     <ClInclude Include="Code\Generic\TemplateUtility.h" />
     <ClInclude Include="Code\jAppSettings.h" />

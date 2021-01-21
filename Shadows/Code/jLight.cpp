@@ -10,10 +10,10 @@
 
 namespace jLightUtil
 {
-	constexpr float width = 5000.0f;
-	constexpr float height = 5000.0f;
-	constexpr float nearDist = 10.0f;
-	constexpr float farDist = 5000.0f;
+	constexpr float width = 400.0f;
+	constexpr float height = 400.0f;
+	constexpr float nearDist = 1.0f;
+	constexpr float farDist = 1000.0f;
 
 	void MakeDirectionalLightViewInfo(Vector& outPos, Vector& outTarget, Vector& outUp, const Vector& direction)
 	{

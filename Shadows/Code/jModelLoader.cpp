@@ -99,16 +99,19 @@ jMeshObject* jModelLoader::LoadFromFile(const char* filename, const char* materi
 			}
 		}
 
-		subMesh.StartFace = static_cast<int32>(meshData->Faces.size());
-		meshData->Faces.resize(meshData->Faces.size() + assimpMesh->mNumFaces * 3);
-		subMesh.EndFace = static_cast<int32>(meshData->Faces.size());
-		for (unsigned int k = 0; k < assimpMesh->mNumFaces; ++k)
+		if (assimpMesh->HasFaces())
 		{
-			aiFace& face = assimpMesh->mFaces[k];
-			memcpy(&meshData->Faces[subMesh.StartFace + k * 3], &face.mIndices[0], sizeof(uint32) * 3);
+			subMesh.StartFace = static_cast<int32>(meshData->Faces.size());
+			meshData->Faces.resize(meshData->Faces.size() + assimpMesh->mNumFaces * 3);
+			subMesh.EndFace = static_cast<int32>(meshData->Faces.size());
+			for (unsigned int k = 0; k < assimpMesh->mNumFaces; ++k)
+			{
+				aiFace& face = assimpMesh->mFaces[k];
+				memcpy(&meshData->Faces[subMesh.StartFace + k * 3], &face.mIndices[0], sizeof(uint32) * 3);
+			}
 		}
-		subMesh.MaterialIndex = assimpMesh->mMaterialIndex;
-		object->SubMeshes.emplace_back(subMesh);
+			subMesh.MaterialIndex = assimpMesh->mMaterialIndex;
+			object->SubMeshes.emplace_back(subMesh);
 	}
 
 	for (uint32 i = 0; i < scene->mNumMaterials; ++i)
@@ -116,11 +119,6 @@ jMeshObject* jModelLoader::LoadFromFile(const char* filename, const char* materi
 		aiMaterial* material = scene->mMaterials[i];
 
 		std::string name = material->GetName().C_Str();
-
-		for (uint32 k = 0; k < material->mNumProperties; ++k)
-		{
-			aiMaterialProperty* Property = material->mProperties[k];
-		}
 
 		auto newMeshMaterial = new jMeshMaterial();
 		for (uint32 k = aiTextureType_DIFFUSE; k <= aiTextureType_REFLECTION; ++k)
@@ -133,27 +131,25 @@ jMeshObject* jModelLoader::LoadFromFile(const char* filename, const char* materi
 
 			aiString str;
 			aiTextureMapping mapping;
-			aiTextureMapMode mode;
+			aiTextureMapMode mode[2];
 			aiTextureOp op;
-			material->GetTexture(curTexType, 0, &str, &mapping, nullptr, nullptr, &op, &mode);
+			material->GetTexture(curTexType, 0, &str, &mapping, nullptr, nullptr, &op, &mode[0]);
 
-			switch (mode)
+			auto FuncTextureAddressMode = [](aiTextureMapMode InMode)
 			{
-			case aiTextureMapMode_Wrap:
-				curTexData.TextureAddressMode = ETextureAddressMode::REPEAT;
-				break;
-			case aiTextureMapMode_Clamp:
-				curTexData.TextureAddressMode = ETextureAddressMode::CLAMP_TO_EDGE;
-				break;
-			case aiTextureMapMode_Decal:
-				curTexData.TextureAddressMode = ETextureAddressMode::CLAMP_TO_BORDER;
-				break;
-			case aiTextureMapMode_Mirror:
-				curTexData.TextureAddressMode = ETextureAddressMode::MIRRORED_REPEAT;
-				break;
-			default:
-				break;
-			}
+				switch (InMode)
+				{
+				case aiTextureMapMode_Wrap:		return ETextureAddressMode::REPEAT;
+				case aiTextureMapMode_Clamp:	return ETextureAddressMode::CLAMP_TO_EDGE;
+				case aiTextureMapMode_Decal:	return ETextureAddressMode::CLAMP_TO_BORDER;
+				case aiTextureMapMode_Mirror:	return ETextureAddressMode::MIRRORED_REPEAT;
+				default:
+					break;
+				}
+				return ETextureAddressMode::REPEAT;
+			};
+			curTexData.TextureAddressModeU = FuncTextureAddressMode(mode[0]);
+			curTexData.TextureAddressModeV = FuncTextureAddressMode(mode[1]);
 
 			std::string FilePath;
 			if (materialRootDir)

@@ -126,6 +126,7 @@ void jRenderObject::DrawBaseVertexIndex(const jCamera* camera, const jShader* sh
 	{
 		//SCOPE_PROFILE(jRenderObject_UpdateMaterialData);
 		std::vector<const jMaterialData*> DynamicMaterialData;
+		DynamicMaterialData.reserve(lights.size());
 
 		SetRenderProperty(shader);
 		SetCameraProperty(shader, camera);

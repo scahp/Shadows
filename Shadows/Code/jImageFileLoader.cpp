@@ -5,6 +5,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include "SOIL_STBI/stbi_DDS_aug_c.h"
+
 jImageFileLoader* jImageFileLoader::_instance = nullptr;
 
 jImageFileLoader::jImageFileLoader()
@@ -30,6 +32,18 @@ std::weak_ptr<jImageData> jImageFileLoader::LoadImageDataFromFile(std::string co
 	if (std::string::npos != filename.find(".tga"))
 	{
 		uint8* imageData = stbi_load(filename.c_str(), &width, &height, &NumOfComponent, 0);
+
+		int32 NumOfBytes = width * height * sizeof(uint8) * NumOfComponent;
+		NewImageDataPatr->ImageData.resize(NumOfBytes);
+		memcpy(&NewImageDataPatr->ImageData[0], imageData, NumOfBytes);
+		NewImageDataPatr->sRGB = sRGB;
+		NewImageDataPatr->FormatType = EFormatType::UNSIGNED_BYTE;
+
+		stbi_image_free(imageData);
+	}
+	else if (std::string::npos != filename.find(".dds"))
+	{
+		uint8* imageData = stbi_dds_load(filename.c_str(), &width, &height, &NumOfComponent, 0);
 
 		int32 NumOfBytes = width * height * sizeof(uint8) * NumOfComponent;
 		NewImageDataPatr->ImageData.resize(NumOfBytes);

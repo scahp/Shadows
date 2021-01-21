@@ -42,6 +42,9 @@
     <Filter Include="Shaders\NewShaders">
       <UniqueIdentifier>{eb56a836-03b1-47e4-bba8-7237d70077f0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\External\SOIL_STBI">
+      <UniqueIdentifier>{d9c7b0ba-79bc-445d-a327-7559c6c051ac}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DeprecatedCode\jPipeline.h">
@@ -220,6 +223,9 @@
     </ClInclude>
     <ClInclude Include="Code\Renderer\jRenderContext.h">
       <Filter>Code\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\External\SOIL_STBI\stbi_DDS_aug_c.h">
+      <Filter>Code\External\SOIL_STBI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
