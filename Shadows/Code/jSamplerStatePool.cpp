@@ -84,4 +84,16 @@ void jSamplerStatePool::CreateDefaultSamplerState()
 		info.Minification = ETextureFilter::NEAREST_MIPMAP_NEAREST;
 		CreateSamplerState("PointMipmap", info);
 	}
+	{
+		jSamplerStateInfo info;
+		info.Minification = ETextureFilter::NEAREST;
+		info.Magnification = ETextureFilter::NEAREST;
+		info.AddressU = ETextureAddressMode::REPEAT;
+		info.AddressV = ETextureAddressMode::REPEAT;
+		info.AddressW = ETextureAddressMode::REPEAT;
+		CreateSamplerState("PointWrap", info);
+
+		info.Minification = ETextureFilter::NEAREST_MIPMAP_NEAREST;
+		CreateSamplerState("PointWrapMipmap", info);
+	}
 }

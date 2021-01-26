@@ -25,6 +25,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <limits>
+#include <random>
 
 #define JASSERT(x) assert(x)
 #define JMESSAGE(x) MessageBoxA(0, x, "", MB_OK)

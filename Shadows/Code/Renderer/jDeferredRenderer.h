@@ -21,6 +21,8 @@ public:
 	void Render(jRenderContext* InContext);
 	void Release();
 
+	void InitSSAO();
+
 private:
 	std::shared_ptr<jRenderTarget> ShadowRTPtr;
 	std::shared_ptr<jRenderTarget> DepthRTPtr;
@@ -30,4 +32,13 @@ private:
 
 	jFullscreenQuadPrimitive* FullscreenQuad = nullptr;	
 	jUIQuadPrimitive* DebugQuad = nullptr;
+
+	std::shared_ptr<jTexture> SSAONoiseTex;
+	std::shared_ptr<jRenderTarget> SSAORTPtr;
+	std::shared_ptr<jRenderTarget> SSAORTBlurredPtr;
+	std::vector<Vector> ssaoKernel;
+	jMaterialData SSAOMaterialData;
+	jMaterialData SSAOBlurMaterialData;
+
+	jMaterialData SSAOApplyMaterialData;
 };

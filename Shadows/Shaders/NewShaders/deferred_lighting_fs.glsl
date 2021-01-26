@@ -42,6 +42,7 @@ uniform int NumOfDirectionalLight;
 uniform sampler2D ColorSampler;
 uniform sampler2D NormalSampler;
 uniform sampler2D PosInWorldSampler;
+uniform sampler2D SSAOSampler;
 
 uniform sampler2DShadow DirectionalShadowSampler;
 
@@ -55,6 +56,7 @@ void main()
 	vec4 DiffuseAndOpacity = texture(ColorSampler, TexCoord_);
 	vec3 Normal = texture(NormalSampler, TexCoord_).xyz;
 	vec3 Pos = texture(PosInWorldSampler, TexCoord_).xyz;
+	float SSAO = texture(SSAOSampler, TexCoord_).x;
 
 	vec3 viewDir = normalize(Eye - Pos);
 	vec3 directLight = vec3(1.0);
@@ -71,7 +73,8 @@ void main()
 	float IsShadowing = IsShadowing(ShadowPos, DirectionalShadowSampler);
 	
 	vec3 ConstantAmbient = DiffuseAndOpacity.xyz * 0.3;
-	FinalColor = vec4(ConstantAmbient + DiffuseAndOpacity.xyz * directLight * IsShadowing, DiffuseAndOpacity.w);
+	vec3 ColorResult = (ConstantAmbient + DiffuseAndOpacity.xyz * directLight * IsShadowing) * SSAO;
+	FinalColor = vec4(ColorResult, DiffuseAndOpacity.w);
 	//FinalColor = vec4(directLight, DiffuseAndOpacity.w);
 	//FinalColor = DiffuseAndOpacity;
 }

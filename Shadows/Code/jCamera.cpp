@@ -35,8 +35,8 @@ Matrix jCamera::CreateProjection() const
 void jCamera::BindCamera(const jShader* shader) const
 {
 	auto VP = Projection * View;
-	auto P = Projection;
-	g_rhi->SetUniformbuffer("P", P, shader);
+	g_rhi->SetUniformbuffer("P", Projection, shader);
+	g_rhi->SetUniformbuffer("V", View, shader);
 	g_rhi->SetUniformbuffer("VP", VP, shader);
 	g_rhi->SetUniformbuffer("Eye", Pos, shader);
 	g_rhi->SetUniformbuffer("PCF_Size_Directional", PCF_SIZE_DIRECTIONAL, shader);

@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "jMeshObject.h"
 #include "jRenderObject.h"
 #include "jRHI.h"
@@ -13,7 +13,7 @@ const char* jMeshMaterial::MaterialTextureTypeString[(int32)jMeshMaterial::EMate
 	"AmbientSampler",
 	"EmissiveSampler",
 	"HeightSampler",
-	"NormalsSampler",
+	"NormalSampler",
 	"ShininessSampler",
 	"OpacitySampler",
 	"DisplacementSampler",
@@ -110,6 +110,9 @@ void jMeshObject::DrawSubMesh(int32 meshIndex, const jCamera* camera, const jSha
 
 		const bool UseAmbientSampler = (nullptr != subMesh.MaterialData.Params[(int32)jMeshMaterial::EMaterialTextureType::AmbientSampler]);
 		shader->SetUniformbuffer("UseAmbientSampler", UseAmbientSampler);
+
+		const bool UseNormalSampler = (nullptr != subMesh.MaterialData.Params[(int32)jMeshMaterial::EMaterialTextureType::NormalSampler]);
+		shader->SetUniformbuffer("UseNormalSampler", UseNormalSampler);
 	}
 
 	if (subMesh.EndFace > 0)

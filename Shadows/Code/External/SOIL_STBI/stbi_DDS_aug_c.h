@@ -496,9 +496,9 @@ static stbi_uc *dds_load(stbi *s, int *x, int *y, int *comp, int req_comp)
 			for( i = 0; i < num_blocks; ++i )
 			{
 				//	where are we?
-				int bx, by, bw=4, bh=4;
-				int ref_x = 4 * (i % block_pitch);
-				int ref_y = 4 * (i / block_pitch);
+				uint32 bx, by, bw=4, bh=4;
+				uint32 ref_x = 4 * (i % block_pitch);
+				uint32 ref_y = 4 * (i / block_pitch);
 				//	get the next block's worth of compressed data, and decompress it
 				if( DXT_family == 1 )
 				{
@@ -549,7 +549,7 @@ static stbi_uc *dds_load(stbi *s, int *x, int *y, int *comp, int req_comp)
 				{
 					block_size = 8;
 				}
-				for( i = 1; i < header.dwMipMapCount; ++i )
+				for( i = 1; i < (int32)header.dwMipMapCount; ++i )
 				{
 					int mx = s->img_x >> (i + 2);
 					int my = s->img_y >> (i + 2);
@@ -586,7 +586,7 @@ static stbi_uc *dds_load(stbi *s, int *x, int *y, int *comp, int req_comp)
 				skip MIPmaps if present	*/
 			if( has_mipmap )
 			{
-				for( i = 1; i < header.dwMipMapCount; ++i )
+				for( i = 1; i < (int32)header.dwMipMapCount; ++i )
 				{
 					int mx = s->img_x >> i;
 					int my = s->img_y >> i;

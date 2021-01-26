@@ -36,7 +36,7 @@ void jGBuffer::BindGeometryBuffer(const jShader* shader) const
 
 	{
 		auto param = new jMaterialParam();
-		param->Name = "PosInWorldSampler";
+		param->Name = "PosSampler";
 		param->Texture = GeometryBuffer->Textures[2].get();
 		materialData.Params.push_back(param);
 	}

@@ -618,5 +618,17 @@
     <None Include="Shaders\NewShaders\depthonly_alphatest_vs.glsl">
       <Filter>Shaders\NewShaders</Filter>
     </None>
+    <None Include="Shaders\NewShaders\ssao_fs.glsl">
+      <Filter>Shaders\NewShaders</Filter>
+    </None>
+    <None Include="Shaders\NewShaders\ssao_vs.glsl">
+      <Filter>Shaders\NewShaders</Filter>
+    </None>
+    <None Include="Shaders\NewShaders\ssao_blur_fs.glsl">
+      <Filter>Shaders\NewShaders</Filter>
+    </None>
+    <None Include="Shaders\NewShaders\ssao_blur_vs.glsl">
+      <Filter>Shaders\NewShaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

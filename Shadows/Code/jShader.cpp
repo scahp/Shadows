@@ -97,6 +97,8 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS_WITH_OPTION_MORE("NewDeferred", "Shaders/NewShaders/deferred_vs.glsl", "Shaders/NewShaders/deferred_fs.glsl", true, true, );
 		DECLARE_SHADER_VS_FS_WITH_OPTION_MORE("NewDeferredLighting", "Shaders/NewShaders/deferred_lighting_vs.glsl", "Shaders/NewShaders/deferred_lighting_fs.glsl", true, false, );
 		DECLARE_SHADER_VS_FS("NewSSM", "Shaders/NewShaders/SSM_vs.glsl", "Shaders/NewShaders/SSM_fs.glsl");
+		DECLARE_SHADER_VS_FS("NewSSAO", "Shaders/NewShaders/ssao_vs.glsl", "Shaders/NewShaders/ssao_fs.glsl");
+		DECLARE_SHADER_VS_FS("NewSSAOBlur", "Shaders/NewShaders/ssao_blur_vs.glsl", "Shaders/NewShaders/ssao_blur_fs.glsl");
 	}
 } s_shaderInfoCreation;
 
