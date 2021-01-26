@@ -41,7 +41,7 @@ uniform int NumOfDirectionalLight;
 
 uniform sampler2D ColorSampler;
 uniform sampler2D NormalSampler;
-uniform sampler2D PosInWorldSampler;
+uniform sampler2D PosSampler;
 uniform sampler2D SSAOSampler;
 
 uniform sampler2DShadow DirectionalShadowSampler;
@@ -55,7 +55,7 @@ void main()
 {
 	vec4 DiffuseAndOpacity = texture(ColorSampler, TexCoord_);
 	vec3 Normal = texture(NormalSampler, TexCoord_).xyz;
-	vec3 Pos = texture(PosInWorldSampler, TexCoord_).xyz;
+	vec3 Pos = texture(PosSampler, TexCoord_).xyz;
 	float SSAO = texture(SSAOSampler, TexCoord_).x;
 
 	vec3 viewDir = normalize(Eye - Pos);
