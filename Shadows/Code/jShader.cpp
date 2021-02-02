@@ -99,6 +99,7 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("NewSSM", "Shaders/NewShaders/SSM_vs.glsl", "Shaders/NewShaders/SSM_fs.glsl");
 		DECLARE_SHADER_VS_FS("NewSSAO", "Shaders/NewShaders/ssao_vs.glsl", "Shaders/NewShaders/ssao_fs.glsl");
 		DECLARE_SHADER_VS_FS("NewSSAOBlur", "Shaders/NewShaders/ssao_blur_vs.glsl", "Shaders/NewShaders/ssao_blur_fs.glsl");
+		DECLARE_SHADER_VS_FS("NewSSR", "Shaders/NewShaders/SSR_vs.glsl", "Shaders/NewShaders/SSR_fs.glsl");
 	}
 } s_shaderInfoCreation;
 

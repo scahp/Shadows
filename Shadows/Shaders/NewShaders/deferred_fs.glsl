@@ -72,6 +72,7 @@ void main()
 	{
 		out_normal.xyz = normal;
 	}
+	out_normal.w = Material.Reflectivity;
 	
 	out_pos.xyz = Pos_;
 }

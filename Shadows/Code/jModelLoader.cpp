@@ -64,6 +64,8 @@ jMeshObject* jModelLoader::LoadFromFile(const char* filename, const char* materi
 		const aiMesh* assimpMesh = scene->mMeshes[i];
 
 		jSubMesh subMesh;
+		if (assimpMesh->mName.length > 0)
+			subMesh.Name = assimpMesh->mName.C_Str();
 
 		subMesh.StartVertex = static_cast<int32>(meshData->Vertices.size());
 		meshData->Vertices.resize(meshData->Vertices.size() + assimpMesh->mNumVertices);
@@ -110,9 +112,9 @@ jMeshObject* jModelLoader::LoadFromFile(const char* filename, const char* materi
 				memcpy(&meshData->Faces[subMesh.StartFace + k * 3], &face.mIndices[0], sizeof(uint32) * 3);
 			}
 		}
-			subMesh.MaterialIndex = assimpMesh->mMaterialIndex;
-			object->SubMeshes.emplace_back(subMesh);
-	}
+		subMesh.MaterialIndex = assimpMesh->mMaterialIndex;
+		object->SubMeshes.emplace_back(subMesh);
+}
 
 	for (uint32 i = 0; i < scene->mNumMaterials; ++i)
 	{

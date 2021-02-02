@@ -204,25 +204,30 @@ void jDeferredRenderer::LightingPass(jRenderContext* InContext) const
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "jDeferredRenderer::LightingPass");
 
-	g_rhi->SetClearColor(Vector4(0.0f, 0.0f, 0.0f, 1.0f));
-	g_rhi->SetClear(ERenderBufferType::COLOR);				// Depth is attached from DepthPrepass, so skip this.
-	g_rhi->EnableDepthTest(false);
+	if (SceneColorRTPtr->Begin())
+	{
+		g_rhi->SetClearColor(Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+		g_rhi->SetClear(ERenderBufferType::COLOR);				// Depth is attached from DepthPrepass, so skip this.
+		g_rhi->EnableDepthTest(false);
 
-	jShader* shader = jShader::GetShader("NewDeferredLighting");
-	g_rhi->SetShader(shader);
+		jShader* shader = jShader::GetShader("NewDeferredLighting");
+		g_rhi->SetShader(shader);
 
-	int32 baseBindingIndex = g_rhi->SetMatetrial(&GBufferMaterialData, shader);
-	baseBindingIndex = g_rhi->SetMatetrial(&ShadowMaterialData, shader, baseBindingIndex);
-	baseBindingIndex = g_rhi->SetMatetrial(&SSAOApplyMaterialData, shader, baseBindingIndex);
+		int32 baseBindingIndex = g_rhi->SetMatetrial(&GBufferMaterialData, shader);
+		baseBindingIndex = g_rhi->SetMatetrial(&ShadowMaterialData, shader, baseBindingIndex);
+		baseBindingIndex = g_rhi->SetMatetrial(&SSAOApplyMaterialData, shader, baseBindingIndex);
 
-	const std::list<const jLight*>& Lights = InContext->Lights;
+		const std::list<const jLight*>& Lights = InContext->Lights;
 
-	jLight::BindLights(Lights, shader);
+		jLight::BindLights(Lights, shader);
 
-	g_rhi->SetUniformbuffer("Eye", InContext->Camera->Pos, shader);
+		g_rhi->SetUniformbuffer("Eye", InContext->Camera->Pos, shader);
 
-	JASSERT(FullscreenQuad);
-	FullscreenQuad->Draw(nullptr, shader, Lights);
+		JASSERT(FullscreenQuad);
+		FullscreenQuad->Draw(nullptr, shader, Lights);
+
+		SceneColorRTPtr->End();
+	}
 }
 
 void jDeferredRenderer::Tonemap(jRenderContext* InContext) const
@@ -233,6 +238,42 @@ void jDeferredRenderer::Tonemap(jRenderContext* InContext) const
 void jDeferredRenderer::SSR(jRenderContext* InContext) const
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "jDeferredRenderer::SSR");
+
+	g_rhi->SetClearColor(Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+	g_rhi->SetClear(ERenderBufferType::COLOR);				// Depth is attached from DepthPrepass, so skip this.
+	g_rhi->EnableDepthTest(false);
+
+	jShader* shader = jShader::GetShader("NewSSR");
+	g_rhi->SetShader(shader);
+
+	int32 baseBindingIndex = g_rhi->SetMatetrial(&GBufferMaterialData, shader);
+	baseBindingIndex = g_rhi->SetMatetrial(&SSRMaterialData, shader, baseBindingIndex);
+
+	const std::list<const jLight*>& Lights = InContext->Lights;
+	jLight::BindLights(Lights, shader);
+
+	InContext->Camera->BindCamera(shader);
+
+	Matrix InvProjection = InContext->Camera->Projection.GetInverse();
+
+	//Vector4 Tmp = InvProjection.Transform(Vector4(0.75f, 0.75f, 0.75f, 1.0f));
+	//Vector4 TmpDivZ = Tmp / Tmp.w;
+
+	//Vector4 Tmp2 = InContext->Camera->Projection.Transform(Vector4(0.75f, 0.75f, 0.75f, 1.0f));
+	//Vector4 Tmp2DivZ = Tmp2 / Tmp2.w;
+
+	//Vector4 Tmp3 = InContext->Camera->View.Transform(Vector4(0.75f, 0.75f, 0.75f, 1.0f));
+	//Vector4 Tmp3DivZ = Tmp3 / Tmp3.w;
+
+	Vector2 ScreenSize(SCR_WIDTH, SCR_HEIGHT);
+	g_rhi->SetUniformbuffer("InvP", InvProjection, shader);
+	g_rhi->SetUniformbuffer("ScreenSize", ScreenSize, shader);
+
+	g_rhi->SetUniformbuffer("Near", InContext->Camera->Near, shader);
+	g_rhi->SetUniformbuffer("Far", InContext->Camera->Far, shader);
+
+	JASSERT(FullscreenQuad);
+	FullscreenQuad->Draw(nullptr, shader, Lights);
 }
 
 void jDeferredRenderer::AA(jRenderContext* InContext) const
@@ -296,7 +337,9 @@ void jDeferredRenderer::Init()
 	// Debug quad
 	DebugQuad = jPrimitiveUtil::CreateUIQuad(Vector2(100.0f, 100.0f), Vector2(100.0f, 100.0f)
 		//, ShadowRTPtr->GetTextureDepth());
-		, SSAORTBlurredPtr->GetTexture());
+		//, SSAORTBlurredPtr->GetTexture());
+		//, DepthRTPtr->GetTextureDepth());
+		, SceneColorRTPtr->GetTexture());
 }
 
 void jDeferredRenderer::Render(jRenderContext* InContext)
@@ -400,4 +443,20 @@ void jDeferredRenderer::InitSSAO()
 	SSAOBlurMaterialData.AddMaterialParam("SSAO_Input", SSAORTPtr->GetTexture(), pLinearClamp);
 
 	SSAOApplyMaterialData.AddMaterialParam("SSAOSampler", SSAORTBlurredPtr->GetTexture(), pLinearClamp);
+
+	jRenderTargetInfo SceneColorRTInfo;
+	SceneColorRTInfo.TextureCount = 1;
+	SceneColorRTInfo.TextureType = ETextureType::TEXTURE_2D;
+	SceneColorRTInfo.InternalFormat = ETextureFormat::RGBA32F;
+	SceneColorRTInfo.Format = ETextureFormat::RGBA;
+	SceneColorRTInfo.FormatType = EFormatType::FLOAT;
+	SceneColorRTInfo.DepthBufferType = EDepthBufferType::NONE;
+	SceneColorRTInfo.Width = SCR_WIDTH;
+	SceneColorRTInfo.Height = SCR_HEIGHT;
+	SceneColorRTInfo.Magnification = ETextureFilter::NEAREST;
+	SceneColorRTInfo.Minification = ETextureFilter::NEAREST;
+	SceneColorRTPtr = jRenderTargetPool::GetRenderTarget(SceneColorRTInfo);
+	
+	SSRMaterialData.AddMaterialParam("DepthSampler", DepthRTPtr->GetTextureDepth(), pPointSamplerState);
+	SSRMaterialData.AddMaterialParam("SceneColorSampler", SceneColorRTPtr->GetTexture(), pPointSamplerState);
 }

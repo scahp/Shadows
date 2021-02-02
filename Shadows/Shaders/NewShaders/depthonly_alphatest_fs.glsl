@@ -2,6 +2,8 @@
 
 uniform sampler2D DiffuseSampler;
 uniform int UseOpacitySampler;
+uniform float Far;
+uniform float Near;
 
 in vec2 TexCoord_;
 

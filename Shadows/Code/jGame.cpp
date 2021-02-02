@@ -60,7 +60,7 @@ void jGame::Setup()
 	//////////////////////////////////////////////////////////////////////////
 	const Vector mainCameraPos(48.10f, 10.46f, -0.22f);
 	const Vector mainCameraTarget(47.11f, 10.62f, -0.17f);
-	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(60.0f), 1.0f, 1000.0f, SCR_WIDTH, SCR_HEIGHT, true);
+	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(60.0f), 1.0f, 300.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
 
 	// Light creation step
@@ -196,6 +196,12 @@ void jGame::Update(float deltaTime)
 		DeferredRenderer.Init();
 
 		static jMeshObject* s_Sponza = jModelLoader::GetInstance().LoadFromFile("Scene/sponza2/sponza.dae", "Scene/sponza2");
+
+		// todo : Should this property read from texture.
+		// Set floor reflectivity for using SSR
+		if (s_Sponza && s_Sponza->MeshData && s_Sponza->MeshData->Materials.size() > 10)
+			s_Sponza->MeshData->Materials[10]->Data.Reflectivity = 1.0;
+
 		RenderContext.AllObjects.push_back(s_Sponza);
 		RenderContext.Camera = MainCamera;
 		RenderContext.Lights = { MainCamera->GetLight(ELightType::DIRECTIONAL) };

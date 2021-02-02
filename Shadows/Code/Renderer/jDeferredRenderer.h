@@ -39,6 +39,8 @@ private:
 	std::vector<Vector> ssaoKernel;
 	jMaterialData SSAOMaterialData;
 	jMaterialData SSAOBlurMaterialData;
-
 	jMaterialData SSAOApplyMaterialData;
+
+	std::shared_ptr<jRenderTarget> SceneColorRTPtr;
+	jMaterialData SSRMaterialData;
 };

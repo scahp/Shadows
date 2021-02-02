@@ -1,4 +1,6 @@
 
+#pragma warning (disable: 4996)
+
 ///	DDS file support, does decoding, _not_ direct uploading
 ///	(use SOIL for that ;-)
 

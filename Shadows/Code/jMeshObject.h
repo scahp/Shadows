@@ -77,6 +77,7 @@ struct jSubMesh
 	int32 MaterialIndex = -1;
 
 	jMaterialData MaterialData;
+	std::string Name;
 };
 
 struct jMeshNode
