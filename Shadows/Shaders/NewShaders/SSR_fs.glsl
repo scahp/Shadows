@@ -1,6 +1,6 @@
 #version 330 core
 
-precision mediump float;
+precision highp float;
 
 uniform sampler2D SceneColorSampler;
 uniform sampler2D NormalSampler;
@@ -17,7 +17,7 @@ in vec2 TexCoord_;
 out vec4 color;
 
 #define MAX_ITERATION 3000
-#define MAX_THICKNESS 300
+#define MAX_THICKNESS 0.001
 
 float GetDepthSample(vec2 uv)
 {
@@ -33,7 +33,7 @@ vec4 GetViewSpaceNormal(vec2 uv)
 	return result;
 }
 
-void ComputePosAndReflection(ivec2 tid, vec3 normalInVS, out vec3 outSamplePosInTS, out vec3 outReflDirInTS, out float outMaxDistance)
+void ComputePosAndReflection(vec3 normalInVS, out vec3 outSamplePosInTS, out vec3 outReflDirInTS, out float outMaxDistance)
 {
 	float sampleDepth = GetDepthSample(TexCoord_);
 	vec4 samplePosInCS = vec4((TexCoord_ + vec2(0.5) / ScreenSize) * 2.0 - 1.0, sampleDepth * 2.0 - 1.0, 1.0);
@@ -145,7 +145,6 @@ vec4 ComputeReflectedColor(float intensity, vec3 intersection, vec4 skyColor)
 
 void main()
 {
-	ivec2 tid = ivec2(gl_FragCoord.xy);
 	vec4 DiffuseColor = texture(SceneColorSampler, TexCoord_);
 	vec4 normalInVS = GetViewSpaceNormal(TexCoord_);
 	float reflectionMask = normalInVS.w;	// should be fetched from texture 
@@ -160,7 +159,7 @@ void main()
 		vec3 ReflDirInTS = vec3(0);
 		float maxTraceDistance = 0;
 
-		ComputePosAndReflection(tid, normalInVS.xyz, samplePosInTS, ReflDirInTS, maxTraceDistance);
+		ComputePosAndReflection(normalInVS.xyz, samplePosInTS, ReflDirInTS, maxTraceDistance);
 
 		vec3 intersection = vec3(0.0);
 		if (ReflDirInTS.z > 0.0)
