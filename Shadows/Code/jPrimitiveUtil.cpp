@@ -53,6 +53,14 @@ void jUIQuadPrimitive::SetUniformParams(const jShader* shader) const
 	g_rhi->SetUniformbuffer("Size", Size, shader);
 }
 
+const jTexture* jUIQuadPrimitive::GetTexture() const
+{
+	if (RenderObject && (RenderObject->MaterialData.Params.size() > 0))
+		return RenderObject->MaterialData.Params[0]->Texture;
+
+	return nullptr;
+}
+
 void jFullscreenQuadPrimitive::Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount) const
 {
 	SetUniformBuffer(shader);
@@ -2060,7 +2068,7 @@ void jGraph2D::UpdateBuffer()
 		}
 		else
 		{
-			ResultMatrices.empty();
+			ResultMatrices.clear();
 		}
 	}
 }

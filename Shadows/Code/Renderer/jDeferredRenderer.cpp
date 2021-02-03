@@ -339,7 +339,8 @@ void jDeferredRenderer::Init()
 		//, ShadowRTPtr->GetTextureDepth());
 		//, SSAORTBlurredPtr->GetTexture());
 		//, DepthRTPtr->GetTextureDepth());
-		, SceneColorRTPtr->GetTexture());
+		//, SceneColorRTPtr->GetTexture());
+		, nullptr);
 }
 
 void jDeferredRenderer::Render(jRenderContext* InContext)
@@ -356,11 +357,14 @@ void jDeferredRenderer::Render(jRenderContext* InContext)
 	SSR(InContext);
 	AA(InContext);
 
-	jShader* shader = jShader::GetShader("UIShader");
-	g_rhi->SetShader(shader);
-	DebugQuad->Size = Vector2(400.0f, 400.0f);
-	DebugQuad->Pos = Vector2(SCR_WIDTH, SCR_HEIGHT) - DebugQuad->Size - Vector2(10.0f, 10.0f);
-	DebugQuad->Draw(InContext->Camera, shader, {});
+	if (DebugQuad->GetTexture())
+	{
+		jShader* shader = jShader::GetShader("UIShader");
+		g_rhi->SetShader(shader);
+		DebugQuad->Size = Vector2(400.0f, 400.0f);
+		DebugQuad->Pos = Vector2(SCR_WIDTH, SCR_HEIGHT) - DebugQuad->Size - Vector2(10.0f, 10.0f);
+		DebugQuad->Draw(InContext->Camera, shader, {});
+	}
 }
 
 void jDeferredRenderer::Release()

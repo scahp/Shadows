@@ -43,4 +43,6 @@ private:
 
 	std::shared_ptr<jRenderTarget> SceneColorRTPtr;
 	jMaterialData SSRMaterialData;
+
+	std::shared_ptr<jRenderTarget> DebugRTPtr;
 };

@@ -28,7 +28,6 @@ vec4 GetViewSpaceNormal(vec2 uv)
 {
 	vec4 normal = texture(NormalSampler, uv);
 	vec4 result = (V * vec4(normal.xyz, 0.0));
-	result.z = -result.z;		// ViewMatrix make Z to be negative Z, so this code is inserted.
 	result.w = normal.w;
 	return result;
 }
@@ -36,20 +35,22 @@ vec4 GetViewSpaceNormal(vec2 uv)
 void ComputePosAndReflection(vec3 normalInVS, out vec3 outSamplePosInTS, out vec3 outReflDirInTS, out float outMaxDistance)
 {
 	float sampleDepth = GetDepthSample(TexCoord_);
+
+	// OpenGL uv is same direction with clip space, so We don't need to reverse Y for converting from uv to clip space coordinate.
 	vec4 samplePosInCS = vec4((TexCoord_ + vec2(0.5) / ScreenSize) * 2.0 - 1.0, sampleDepth * 2.0 - 1.0, 1.0);
 
 	vec4 samplePosInVS = InvP * samplePosInCS;
 	samplePosInVS /= vec4(samplePosInVS.w);
-	samplePosInVS.z = -samplePosInVS.z;	// InverseProjectionMatrix make Z to be negative Z, so this code is inserted.
 
 	vec3 CameraToSampleInVS = normalize(samplePosInVS.xyz);
 	vec4 ReflectionInVS = vec4(reflect(CameraToSampleInVS.xyz, normalInVS.xyz), 0.0);
 
 	vec4 ReflectionEndPosInVS = samplePosInVS + ReflectionInVS * 1000.0;
-	float temp = (ReflectionEndPosInVS.z < 0) ? ReflectionEndPosInVS.z : 1.0;
-	ReflectionEndPosInVS /= vec4(temp);
 
-	ReflectionEndPosInVS.xyz = vec3(ReflectionEndPosInVS.xy, -ReflectionEndPosInVS.z);
+	// OpenGL Viewspace Forward Z is [1 ~ -1], it is reversed direction compared to DX or Vulkan. so I replaced below code direction.
+	//float temp = (ReflectionEndPosInVS.z < 0) ? ReflectionEndPosInVS.z : 1.0;
+	float temp = (ReflectionEndPosInVS.z > 0) ? -ReflectionEndPosInVS.z : 1.0;
+	ReflectionEndPosInVS /= vec4(temp);
 
 	vec4 RelfectionEndPosInCS = P * vec4(ReflectionEndPosInVS.xyz, 1.0);
 	RelfectionEndPosInCS /= vec4(RelfectionEndPosInCS.w);

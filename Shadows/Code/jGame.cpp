@@ -202,6 +202,10 @@ void jGame::Update(float deltaTime)
 		if (s_Sponza && s_Sponza->MeshData && s_Sponza->MeshData->Materials.size() > 10)
 			s_Sponza->MeshData->Materials[10]->Data.Reflectivity = 1.0;
 
+		// Set all mesh to be reflectivity for using SSR
+		//for (int32 i = 0; i < s_Sponza->MeshData->Materials.size(); ++i)
+		//	s_Sponza->MeshData->Materials[i]->Data.Reflectivity = 1.0;
+
 		RenderContext.AllObjects.push_back(s_Sponza);
 		RenderContext.Camera = MainCamera;
 		RenderContext.Lights = { MainCamera->GetLight(ELightType::DIRECTIONAL) };

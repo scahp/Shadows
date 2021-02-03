@@ -51,7 +51,7 @@ public:
 	virtual void Draw(const jCamera* camera, const jShader* shader, const std::list<const jLight*>& lights, int32 instanceCount = 0) const override;
 	void SetTexture(const jTexture* texture);
 	void SetUniformParams(const jShader* shader) const;
-
+	const jTexture* GetTexture() const;
 };
 
 class jFullscreenQuadPrimitive : public jObject
