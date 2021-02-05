@@ -11,7 +11,7 @@
 
 void jDeferredRenderer::Culling(jRenderContext* InContext) const
 {
-	SCOPE_DEBUG_EVENT(g_rhi, "jDeferredRenderer::Culling");
+	SCOPE_DEBUG_EVENT(g_rhi, "Culling");
 	JASSERT(InContext);
 
 	InContext->ResetVisibleArray();
@@ -34,7 +34,7 @@ void jDeferredRenderer::Culling(jRenderContext* InContext) const
 
 void jDeferredRenderer::DepthPrepass(jRenderContext* InContext) const
 {
-	SCOPE_DEBUG_EVENT(g_rhi, "jDeferredRenderer::DepthPrepass");
+	SCOPE_DEBUG_EVENT(g_rhi, "DepthPrepass");
 	if (DepthRTPtr->Begin())
 	{
 		g_rhi->SetClearColor(Vector4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -61,11 +61,68 @@ void jDeferredRenderer::DepthPrepass(jRenderContext* InContext) const
 
 		DepthRTPtr->End();
 	}
+
+	{
+		SCOPE_DEBUG_EVENT(g_rhi, "DepthPrepass_HiZ");
+		g_rhi->SetDepthFunc(EComparisonFunc::ALWAYS);
+
+		if (HiZRTPtr->Begin())
+		{
+			jMaterialData HiZCopyFromDepthMaterialData;
+			HiZCopyFromDepthMaterialData.AddMaterialParam("TextureSampler", DepthRTPtr->GetTextureDepth(), jSamplerStatePool::GetSamplerState("Point").get());
+
+			jShader* shader = jShader::GetShader("NewDepthCopy");
+			g_rhi->SetShader(shader);
+
+			int32 baseBindingIndex = g_rhi->SetMatetrial(&HiZCopyFromDepthMaterialData, shader);
+
+			JASSERT(FullscreenQuad);
+			FullscreenQuad->Draw(nullptr, shader, {});
+
+			HiZRTPtr->End();
+		}
+
+		if (HiZRTPtr->Begin())
+		{
+			jMaterialData HiZMaterialData;
+			HiZMaterialData.AddMaterialParam("DepthSampler", HiZRTPtr->GetTextureDepth(), jSamplerStatePool::GetSamplerState("Point").get());
+
+			jShader* shader = jShader::GetShader("NewCreateHiZ");
+			g_rhi->SetShader(shader);
+			
+			int32 baseBindingIndex = g_rhi->SetMatetrial(&HiZMaterialData, shader);
+
+			Vector2 LastDepthSampleSize = Vector2(SCR_WIDTH, SCR_HEIGHT);
+			Vector2 DepthSampleSize = Vector2(SCR_WIDTH / 2.0f, SCR_HEIGHT / 2.0f);
+			const int32 numLevels = jTexture::GetMipLevels(HiZRTPtr->Info.Width, HiZRTPtr->Info.Height);
+			for (int i = 1; i < numLevels; i++)
+			{
+				g_rhi->SetUniformbuffer("PrevMipLevel", i - 1, shader);
+
+				Vector2 DepthRadio = LastDepthSampleSize / DepthSampleSize;
+				g_rhi->SetUniformbuffer("DepthRadio", DepthRadio, shader);
+				g_rhi->SetUniformbuffer("ScreenSize", LastDepthSampleSize, shader);
+
+				HiZRTPtr->SetDepthMipLevel(i);		// Change Current Rendertarget's MipLevel
+
+				JASSERT(FullscreenQuad);
+				FullscreenQuad->Draw(nullptr, shader, {});
+
+				LastDepthSampleSize = DepthSampleSize;
+				DepthSampleSize.x = Max(1.0f, floor(DepthSampleSize.x / 2.0f));
+				DepthSampleSize.y = Max(1.0f, floor(DepthSampleSize.y / 2.0f));
+			}
+
+			HiZRTPtr->SetDepthMipLevel(0);			
+			HiZRTPtr->End();
+		}
+		g_rhi->SetDepthFunc(EComparisonFunc::LESS);
+	}
 }
 
 void jDeferredRenderer::ShowdowMap(jRenderContext* InContext) const
 {
-	SCOPE_DEBUG_EVENT(g_rhi, "jDeferredRenderer::ShowdowMap");
+	SCOPE_DEBUG_EVENT(g_rhi, "ShowdowMap");
 
 	if (ShadowRTPtr->Begin())
 	{
@@ -103,7 +160,7 @@ void jDeferredRenderer::ShowdowMap(jRenderContext* InContext) const
 
 void jDeferredRenderer::GBuffer(jRenderContext* InContext) const
 {
-	SCOPE_DEBUG_EVENT(g_rhi, "jDeferredRenderer::GBuffer");
+	SCOPE_DEBUG_EVENT(g_rhi, "GBuffer");
 	if (GBufferRTPtr->Begin())
 	{
 		g_rhi->SetClearColor(Vector4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -135,7 +192,7 @@ void jDeferredRenderer::GBuffer(jRenderContext* InContext) const
 void jDeferredRenderer::SSAO(jRenderContext* InContext) const
 {
 	{
-		SCOPE_DEBUG_EVENT(g_rhi, "jDeferredRenderer::SSAO");
+		SCOPE_DEBUG_EVENT(g_rhi, "SSAO");
 
 		if (SSAORTPtr->Begin())
 		{
@@ -175,7 +232,7 @@ void jDeferredRenderer::SSAO(jRenderContext* InContext) const
 	}
 
 	{
-		SCOPE_DEBUG_EVENT(g_rhi, "jDeferredRenderer::SSAOBlurred");
+		SCOPE_DEBUG_EVENT(g_rhi, "SSAOBlurred");
 
 		if (SSAORTBlurredPtr->Begin())
 		{
@@ -202,7 +259,7 @@ void jDeferredRenderer::SSAO(jRenderContext* InContext) const
 
 void jDeferredRenderer::LightingPass(jRenderContext* InContext) const
 {
-	SCOPE_DEBUG_EVENT(g_rhi, "jDeferredRenderer::LightingPass");
+	SCOPE_DEBUG_EVENT(g_rhi, "LightingPass");
 
 	if (SceneColorRTPtr->Begin())
 	{
@@ -232,12 +289,12 @@ void jDeferredRenderer::LightingPass(jRenderContext* InContext) const
 
 void jDeferredRenderer::Tonemap(jRenderContext* InContext) const
 {
-	SCOPE_DEBUG_EVENT(g_rhi, "jDeferredRenderer::Tonemap");
+	SCOPE_DEBUG_EVENT(g_rhi, "Tonemap");
 }
 
 void jDeferredRenderer::SSR(jRenderContext* InContext) const
 {
-	SCOPE_DEBUG_EVENT(g_rhi, "jDeferredRenderer::SSR");
+	SCOPE_DEBUG_EVENT(g_rhi, "SSR");
 
 	g_rhi->SetClearColor(Vector4(0.0f, 0.0f, 0.0f, 1.0f));
 	g_rhi->SetClear(ERenderBufferType::COLOR);				// Depth is attached from DepthPrepass, so skip this.
@@ -278,7 +335,7 @@ void jDeferredRenderer::SSR(jRenderContext* InContext) const
 
 void jDeferredRenderer::AA(jRenderContext* InContext) const
 {
-	SCOPE_DEBUG_EVENT(g_rhi, "jDeferredRenderer::AA");
+	SCOPE_DEBUG_EVENT(g_rhi, "AA");
 }
 
 void jDeferredRenderer::Init()
@@ -293,6 +350,10 @@ void jDeferredRenderer::Init()
 	DepthRTInfo.Magnification = ETextureFilter::NEAREST;
 	DepthRTInfo.Minification = ETextureFilter::NEAREST;
 	DepthRTPtr = jRenderTargetPool::GetRenderTarget(DepthRTInfo);
+
+	jRenderTargetInfo HiZRTInfo = DepthRTInfo;
+	HiZRTInfo.IsGenerateMipmapDepth = true;
+	HiZRTPtr = jRenderTargetPool::GetRenderTarget(HiZRTInfo);
 
 	// GBuffer RenderTarget
 	jRenderTargetInfo GBufferRTInfo;
@@ -339,13 +400,14 @@ void jDeferredRenderer::Init()
 		//, ShadowRTPtr->GetTextureDepth());
 		//, SSAORTBlurredPtr->GetTexture());
 		//, DepthRTPtr->GetTextureDepth());
+		, HiZRTPtr->GetTextureDepth());
 		//, SceneColorRTPtr->GetTexture());
-		, nullptr);
+		//, nullptr);
 }
 
 void jDeferredRenderer::Render(jRenderContext* InContext)
 {
-	SCOPE_DEBUG_EVENT(g_rhi, "jDeferredRenderer::Render");
+	SCOPE_DEBUG_EVENT(g_rhi, "Render");
 
 	Culling(InContext);
 	DepthPrepass(InContext);
@@ -463,4 +525,27 @@ void jDeferredRenderer::InitSSAO()
 	
 	SSRMaterialData.AddMaterialParam("DepthSampler", DepthRTPtr->GetTextureDepth(), pPointSamplerState);
 	SSRMaterialData.AddMaterialParam("SceneColorSampler", SceneColorRTPtr->GetTexture(), pPointSamplerState);
+}
+
+std::shared_ptr<jRenderTarget> jDeferredRenderer::GetDebugRTPtr() const
+{
+	static std::shared_ptr<jRenderTarget> DebugRTPtr;
+	static bool IsInit = false;
+	if (!IsInit)
+	{
+		jRenderTargetInfo DebugRTInfo;
+		DebugRTInfo.TextureCount = 1;
+		DebugRTInfo.TextureType = ETextureType::TEXTURE_2D;
+		DebugRTInfo.InternalFormat = ETextureFormat::RGBA32F;
+		DebugRTInfo.Format = ETextureFormat::RGBA;
+		DebugRTInfo.FormatType = EFormatType::FLOAT;
+		DebugRTInfo.DepthBufferType = EDepthBufferType::NONE;
+		DebugRTInfo.Width = SCR_WIDTH;
+		DebugRTInfo.Height = SCR_HEIGHT;
+		DebugRTInfo.Magnification = ETextureFilter::NEAREST;
+		DebugRTInfo.Minification = ETextureFilter::NEAREST;
+		DebugRTPtr = jRenderTargetPool::GetRenderTarget(DebugRTInfo);
+		IsInit = true;
+	}
+	return DebugRTPtr;
 }

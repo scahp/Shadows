@@ -100,6 +100,8 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("NewSSAO", "Shaders/NewShaders/ssao_vs.glsl", "Shaders/NewShaders/ssao_fs.glsl");
 		DECLARE_SHADER_VS_FS("NewSSAOBlur", "Shaders/NewShaders/ssao_blur_vs.glsl", "Shaders/NewShaders/ssao_blur_fs.glsl");
 		DECLARE_SHADER_VS_FS("NewSSR", "Shaders/NewShaders/SSR_vs.glsl", "Shaders/NewShaders/SSR_fs.glsl");
+		DECLARE_SHADER_VS_FS("NewCreateHiZ", "Shaders/NewShaders/CreateHiZ_vs.glsl", "Shaders/NewShaders/CreateHiZ_fs.glsl");
+		DECLARE_SHADER_VS_FS("NewDepthCopy", "shaders/NewShaders/depthcopy_vs.glsl", "shaders/NewShaders/depthcopy_fs.glsl");
 	}
 } s_shaderInfoCreation;
 

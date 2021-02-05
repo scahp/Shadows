@@ -1276,6 +1276,8 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 	auto rt_gl = new jRenderTarget_OpenGL();
 	rt_gl->Info = info;
 	
+	const int32 MipLevels = (info.IsGenerateMipmapDepth ? jTexture::GetMipLevels(info.Width, info.Height) : 1);
+
 	if (info.TextureType == ETextureType::TEXTURE_2D)
 	{
 		uint32 fbo = 0;
@@ -1293,6 +1295,8 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magnification);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			if (info.IsGenerateMipmap)
+				glGenerateMipmap(GL_TEXTURE_2D);
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, tbo, 0);
 			rt_gl->drawBuffers.push_back(GL_COLOR_ATTACHMENT0 + i);
 
@@ -1308,9 +1312,10 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 		if (hasDepthAttachment)
 		{
 			uint32 tbo = 0;
+			const int32 MipLevels = (info.IsGenerateMipmapDepth ? jTexture::GetMipLevels(info.Width, info.Height) : 1);
 			glGenTextures(1, &tbo);
 			glBindTexture(GL_TEXTURE_2D, tbo);
-			glTexStorage2D(GL_TEXTURE_2D, 1, depthBufferFormat, info.Width, info.Height);
+			glTexStorage2D(GL_TEXTURE_2D, MipLevels, depthBufferFormat, info.Width, info.Height);
 			glFramebufferTexture2D(GL_FRAMEBUFFER, depthBufferType, GL_TEXTURE_2D, tbo, 0);
 
 			auto tex_gl = new jTexture_OpenGL();
@@ -1345,6 +1350,8 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, minification);
 		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, magnification);
 		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, internalFormat, info.Width, info.Height, info.TextureCount, 0, format, formatType, nullptr);
+		if (info.IsGenerateMipmap)
+			glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
 
 		uint32 fbo = 0;
 		glGenFramebuffers(1, &fbo);
@@ -1360,7 +1367,7 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 			uint32 tbo = 0;
 			glGenTextures(1, &tbo);
 			glBindTexture(GL_TEXTURE_2D, tbo);
-			glTexStorage2D(GL_TEXTURE_2D, 1, depthBufferFormat, info.Width, info.Height);
+			glTexStorage2D(GL_TEXTURE_2D, MipLevels, depthBufferFormat, info.Width, info.Height);
 			glFramebufferTexture2D(GL_FRAMEBUFFER, depthBufferType, GL_TEXTURE_2D, tbo, 0);
 
 			auto tex_gl = new jTexture_OpenGL();
@@ -1406,6 +1413,8 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magnification);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			if (info.IsGenerateMipmap)
+				glGenerateMipmap(GL_TEXTURE_2D);
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, tbo, 0);
 			rt_gl->drawBuffers.push_back(GL_COLOR_ATTACHMENT0 + i);
 
@@ -1423,7 +1432,7 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 			uint32 tbo = 0;
 			glGenTextures(1, &tbo);
 			glBindTexture(GL_TEXTURE_2D, tbo);
-			glTexStorage2D(GL_TEXTURE_2D, 1, depthBufferFormat, info.Width, info.Height);
+			glTexStorage2D(GL_TEXTURE_2D, MipLevels, depthBufferFormat, info.Width, info.Height);
 			glFramebufferTexture2D(GL_FRAMEBUFFER, depthBufferType, GL_TEXTURE_2D, tbo, 0);
 
 			auto tex_gl = new jTexture_OpenGL();
@@ -1456,9 +1465,11 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-
 		for (int i = 0; i < 6; ++i)
 			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, info.Width, info.Height, 0, format, formatType, nullptr);
+
+		if (info.IsGenerateMipmap)
+			glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
 		auto tex_gl = new jTexture_OpenGL();
 		tex_gl->TextureType = info.TextureType;
@@ -1900,6 +1911,18 @@ bool jRenderTarget_OpenGL::SetDepthAttachment(const std::shared_ptr<jTexture>& I
 	}
 
 	return true;
+}
+
+void jRenderTarget_OpenGL::SetDepthMipLevel(int32 InLevel)
+{
+	const jTexture_OpenGL* tex_gl = static_cast<jTexture_OpenGL*>(TextureDepth.get());
+	JASSERT(tex_gl);
+
+	uint32 depthBufferFormat = 0;
+	uint32 depthBufferType = 0;
+	const bool hasDepthAttachment = GetDepthBufferFormatAndType(depthBufferFormat, depthBufferType, tex_gl->DepthBufferType);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, depthBufferType, GetOpenGLTextureType(tex_gl->TextureType), tex_gl->TextureID, InLevel);
 }
 
 //////////////////////////////////////////////////////////////////////////

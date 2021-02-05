@@ -32,6 +32,11 @@ struct jIndexBuffer : public IBuffer
 
 struct jTexture
 {
+	static int32 GetMipLevels(int32 InWidth, int32 InHeight)
+	{
+		return 1 + (int32)floorf(log2f(fmaxf(InWidth, InHeight)));
+	}
+
 	bool sRGB = false;
 	ETextureType TextureType;
 
@@ -220,6 +225,8 @@ struct jRenderTargetInfo
 		hash_combine(result, Height);
 		hash_combine(result, Height);
 		hash_combine(result, TextureCount);
+		hash_combine(result, IsGenerateMipmap);
+		hash_combine(result, IsGenerateMipmapDepth);
 		return result;
 	}
 
@@ -233,6 +240,8 @@ struct jRenderTargetInfo
 	int32 TextureCount = 1;
 	ETextureFilter Magnification;
 	ETextureFilter Minification;
+	bool IsGenerateMipmap = false;
+	bool IsGenerateMipmapDepth = false;
 };
 
 struct jRenderTarget : public std::enable_shared_from_this<jRenderTarget>
@@ -243,6 +252,7 @@ struct jRenderTarget : public std::enable_shared_from_this<jRenderTarget>
 	virtual jTexture* GetTextureDepth(int32 index = 0) const { return TextureDepth.get(); }
 	virtual ETextureType GetTextureType() const { return Info.TextureType; }
 	virtual bool SetDepthAttachment(const std::shared_ptr<jTexture>& InDepth) { TextureDepth = InDepth; return true; }
+	virtual void SetDepthMipLevel(int32 InLevel) {}
 
 	virtual bool Begin(int index = 0, bool mrt = false) const { return true; };
 	virtual void End() const {}

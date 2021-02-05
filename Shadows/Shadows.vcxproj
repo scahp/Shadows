@@ -365,6 +365,10 @@
     <None Include="Shaders\fullscreen\fs_scale.glsl" />
     <None Include="Shaders\fullscreen\fs_tonemap.glsl" />
     <None Include="Shaders\fullscreen\vs_fullscreen_common.glsl" />
+    <None Include="Shaders\NewShaders\depthcopy_fs.glsl" />
+    <None Include="Shaders\NewShaders\depthcopy_vs.glsl" />
+    <None Include="Shaders\NewShaders\CreateHiZ_fs.glsl" />
+    <None Include="Shaders\NewShaders\CreateHiZ_vs.glsl" />
     <None Include="Shaders\NewShaders\deferred_fs.glsl" />
     <None Include="Shaders\NewShaders\deferred_lighting_fs.glsl" />
     <None Include="Shaders\NewShaders\deferred_lighting_vs.glsl" />

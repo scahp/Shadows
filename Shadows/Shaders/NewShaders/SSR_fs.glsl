@@ -107,22 +107,22 @@ float FindIntersection_Linear(vec3 samplePosInTS, vec3 ReflDirInTS, float maxTra
 		depth0 = GetDepthSample(rayPosInTS0.xy);
 
 		{
-			float thickness = rayPosInTS3.z - depth3;
+			float thickness = (rayPosInTS3.z - depth3);
 			hitIndex = (thickness >= 0 && thickness < MAX_THICKNESS) ? (i + 3) : hitIndex;
 		}
 
 		{
-			float thickness = rayPosInTS2.z - depth2;
+			float thickness = (rayPosInTS2.z - depth2);
 			hitIndex = (thickness >= 0 && thickness < MAX_THICKNESS) ? (i + 2) : hitIndex;
 		}
 
 		{
-			float thickness = rayPosInTS1.z - depth1;
+			float thickness = (rayPosInTS1.z - depth1);
 			hitIndex = (thickness >= 0 && thickness < MAX_THICKNESS) ? (i + 1) : hitIndex;
 		}
 
 		{
-			float thickness = rayPosInTS0.z - depth0;
+			float thickness = (rayPosInTS0.z - depth0);
 			hitIndex = (thickness >= 0 && thickness < MAX_THICKNESS) ? (i + 0) : hitIndex;
 		}
 

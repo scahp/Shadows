@@ -465,6 +465,23 @@ struct Vector2
 		return Vector2(x / fValue, y / fValue);
 	}
 
+	FORCEINLINE Vector2 operator/(Vector2 const& vector) const
+	{
+		JASSERT(vector.x != 0);
+		JASSERT(vector.y != 0);
+		return Vector2(x / vector.x, y / vector.y);
+	}
+
+	FORCEINLINE Vector2& operator/=(float fValue)
+	{
+		JASSERT(!IsNearlyZero(fValue));
+		if (IsNearlyZero(fValue))
+			x = 0.0f, y = 0.0f;
+		else
+			x /= fValue, y /= fValue;
+		return *this;
+	}
+
 	FORCEINLINE Vector2 operator-() const
 	{
 		return Vector2(-x, -y);

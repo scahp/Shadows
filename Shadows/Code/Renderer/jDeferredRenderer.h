@@ -26,6 +26,7 @@ public:
 private:
 	std::shared_ptr<jRenderTarget> ShadowRTPtr;
 	std::shared_ptr<jRenderTarget> DepthRTPtr;
+	std::shared_ptr<jRenderTarget> HiZRTPtr;
 	std::shared_ptr<jRenderTarget> GBufferRTPtr;
 	jMaterialData GBufferMaterialData;
 	jMaterialData ShadowMaterialData;
@@ -44,5 +45,5 @@ private:
 	std::shared_ptr<jRenderTarget> SceneColorRTPtr;
 	jMaterialData SSRMaterialData;
 
-	std::shared_ptr<jRenderTarget> DebugRTPtr;
+	std::shared_ptr<jRenderTarget> GetDebugRTPtr() const;
 };
