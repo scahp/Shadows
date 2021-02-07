@@ -113,7 +113,7 @@ void jDeferredRenderer::DepthPrepass(jRenderContext* InContext) const
 				DepthSampleSize.y = Max(1.0f, floor(DepthSampleSize.y / 2.0f));
 			}
 
-			HiZRTPtr->SetDepthMipLevel(0);			
+			HiZRTPtr->SetDepthMipLevel(0);
 			HiZRTPtr->End();
 		}
 		g_rhi->SetDepthFunc(EComparisonFunc::LESS);
@@ -300,7 +300,8 @@ void jDeferredRenderer::SSR(jRenderContext* InContext) const
 	g_rhi->SetClear(ERenderBufferType::COLOR);				// Depth is attached from DepthPrepass, so skip this.
 	g_rhi->EnableDepthTest(false);
 
-	jShader* shader = jShader::GetShader("NewSSR");
+	//jShader* shader = jShader::GetShader("NewSSR_Linear");
+	jShader* shader = jShader::GetShader("NewSSR_HiZ");
 	g_rhi->SetShader(shader);
 
 	int32 baseBindingIndex = g_rhi->SetMatetrial(&GBufferMaterialData, shader);
@@ -524,6 +525,7 @@ void jDeferredRenderer::InitSSAO()
 	SceneColorRTPtr = jRenderTargetPool::GetRenderTarget(SceneColorRTInfo);
 	
 	SSRMaterialData.AddMaterialParam("DepthSampler", DepthRTPtr->GetTextureDepth(), pPointSamplerState);
+	SSRMaterialData.AddMaterialParam("HiZSampler", HiZRTPtr->GetTextureDepth(), pPointSamplerState);
 	SSRMaterialData.AddMaterialParam("SceneColorSampler", SceneColorRTPtr->GetTexture(), pPointSamplerState);
 }
 

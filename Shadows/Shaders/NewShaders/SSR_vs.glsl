@@ -1,4 +1,6 @@
 #version 330 core
+#preprocessor
+
 precision mediump float;
 
 layout(location = 0) in float VertID;

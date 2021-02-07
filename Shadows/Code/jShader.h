@@ -49,6 +49,16 @@ info.fsPreProcessor += IsUseMaterial ? "\r\n#define USE_MATERIAL 1" : "";\
 jShaderInfo::AddShaderInfo(info); \
 }
 
+#define DECLARE_SHADER_VS_FS_WITH_DEFINE(Name, VS, FS, AdditionalDifine) \
+{ \
+jShaderInfo info; \
+info.name = Name; \
+info.vs = VS; \
+info.fs = FS; \
+info.vsPreProcessor += "\r\n"AdditionalDifine;\
+info.fsPreProcessor += "\r\n"AdditionalDifine;\
+jShaderInfo::AddShaderInfo(info); \
+}
 
 #define DECLARE_SHADER_VS_FS(Name, VS, FS) DECLARE_SHADER_VS_FS_WITH_OPTION(Name, VS, FS, false, false)
 
