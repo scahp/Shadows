@@ -79,6 +79,8 @@ void ComputePosAndReflection(vec3 normalInVS, out vec3 outSamplePosInTS, out vec
 }
 
 #if USE_HIZ
+
+// Make texel(or Cell) count at which MipLevel
 vec2 getHiZCellCount(int mipLevel)
 {
 	int level = 1 << mipLevel;
@@ -87,6 +89,7 @@ vec2 getHiZCellCount(int mipLevel)
 	return result;
 }
 
+// Make texel(or Cell) position from uv and texel count.
 vec2 getCell(vec2 pos, vec2 cell_count)
 {
 	return vec2(floor(pos * cell_count));
@@ -97,6 +100,7 @@ vec3 intersectDepthPlane(vec3 origin, vec3 dest, float t)
 	return origin + dest * t;
 }
 
+// Move to next texel(Cell) in current miplevel.
 vec3 intersectCellBoundary(vec3 origin, vec3 dest, vec2 cell, vec2 cell_count, vec2 crossStep, vec2 crossOffset)
 {
 	vec3 intersection = vec3(0.0);
@@ -113,11 +117,13 @@ vec3 intersectCellBoundary(vec3 origin, vec3 dest, vec2 cell, vec2 cell_count, v
 	return intersection;
 }
 
+// Sampling HiZ with MipLevel
 float getMinimumDepthPlane(vec2 p, int mipLevel)
 {
 	return textureLod(HiZSampler, p, mipLevel).x;		// with PointSampler
 }
 
+// Check weather Cell is changed
 bool crossedCellBoundary(vec2 oldCellIndex, vec2 newCellIndex)
 {
 	return (oldCellIndex.x != newCellIndex.x) || (oldCellIndex.y != newCellIndex.y);
@@ -126,21 +132,29 @@ bool crossedCellBoundary(vec2 oldCellIndex, vec2 newCellIndex)
 float FindIntersection_HiZ(vec3 samplePosInTS, vec3 ReflDirInTS, float maxTraceDistance, out vec3 outIntersection)
 {
 	vec2 crossStep = vec2(((ReflDirInTS.x >= 0) ? 1 : -1), ((ReflDirInTS.y >= 0) ? 1 : -1));
-	vec2 crossOffset = crossStep / ScreenSize / vec2(128.0);
+	vec2 crossOffset = crossStep / ScreenSize / vec2(128.0);		// '1 / vec2(128.0)' makes ray would be in next texel(or Cell) not on boundary. it is heuristics value.
 	crossStep = clamp(crossStep, vec2(0.0, 0.0), vec2(1.0, 1.0));
 
+	// Calculate distance of depth between origin and maxTracingDistance.
 	vec3 ray = samplePosInTS;
 	float minZ = ray.z;
 	float maxZ = ray.z + ReflDirInTS.z * maxTraceDistance;
 	float deltaZ = (maxZ - minZ);
 
+	// Set origin and max destination of ray.
 	vec3 origin = ray;
 	vec3 dest = ReflDirInTS * maxTraceDistance;
 
 	int startLevel = 2;
 	int stopLevel = 0;
-	vec2 startCellCount = getHiZCellCount(startLevel);
-	vec2 rayCell = getCell(ray.xy, startCellCount);
+	vec2 startCellCount = getHiZCellCount(startLevel);			// Get start miplevel's texel count.
+	vec2 rayCell = getCell(ray.xy, startCellCount);				// Get start position cell index.
+
+	// Go to next texel(cell) to avoid self-intersection.
+	// Power of 2 texel texture has a property that crossing boundary of texel(Cell) makes crossing higher level miplevel(more detail miplevel) texel boundary too.
+	// But not power of 2 has not this property. so we need to move half texel size of higher level miplevel more.
+	//  - Not power of 2 texture will cover 0.5 texel more. so half texel size more is reasonable.
+	//  - (crossOffset * 64.0) is same with (crossStep / ScreenSize / vec2(2.0)). This mean that 'crossOffset * 64.0' is half texel size.
 	ray = intersectCellBoundary(origin, dest, rayCell, startCellCount, crossStep, crossOffset * 64.0);
 
 	int level = startLevel;
@@ -150,22 +164,36 @@ float FindIntersection_HiZ(vec3 samplePosInTS, vec3 ReflDirInTS, float maxTraceD
 
 	while (level >= stopLevel && ray.z * rayDir <= maxZ * rayDir && iter < MAX_ITERATION)
 	{
-		vec2 cellCount = getHiZCellCount(level);
-		vec2 oldCellIdx = getCell(ray.xy, cellCount);
+		vec2 cellCount = getHiZCellCount(level);			// Get old miplevel texel count.
+		vec2 oldCellIdx = getCell(ray.xy, cellCount);		// Get old texel position of ray.
 
-		float cell_minZ = getMinimumDepthPlane((oldCellIdx + 0.5) / cellCount, level);
+		float cell_minZ = getMinimumDepthPlane((oldCellIdx + 0.5) / cellCount, level);		// sampling HiZ Sampler with miplevel
+
+		// Move to next step, when ray is not intersection with HiZ sample.
 		vec3 tmpRay = ((cell_minZ > ray.z) && !isBackwardRay) ? intersectDepthPlane(origin, dest, (cell_minZ - minZ) / deltaZ) : ray;
 
-		vec2 newCellIdx = getCell(tmpRay.xy, cellCount);
+		vec2 newCellIdx = getCell(tmpRay.xy, cellCount);	// Get new texel position of ray.
 
+		// Thickness will use only at miplevel 0, thickness will be used to determine weather ray passed an object completely by using MAX_THICKNESS or not.
 		float thickness = (level == 0) ? (ray.z - cell_minZ) : 0;
+		
+		// Crossed?
+		// 1. Backward and Ray is not intersecting with HiZ Depth.
+		// 2. Check weather ray passed an object completely or not.
+		// 3. Moved to next texel(or Cell)
 		bool crossed = (isBackwardRay && (cell_minZ > ray.z)) || (thickness > (MAX_THICKNESS)) || crossedCellBoundary(oldCellIdx, newCellIdx);
+
+		// if it is crossed, go to next Cell boundary because we need adjust position to cellboundary to avoid skipping a texel(or Cell).
+		// and MipLevel will increse because there is no intersection with HiZ depth, so we don't need more detail in depth.
+		//
+		// if it is not crossed, Ray will stay new texel position. and MipLevel will decrease to determine intersection in more detail HiZ MipLevels.
 		ray = crossed ? intersectCellBoundary(origin, dest, oldCellIdx, cellCount, crossStep, crossOffset) : tmpRay;
 		level = crossed ? min(MaxMipLevel, level + 1) : level - 1;
 
 		++iter;
 	}
 
+	// If intersection happened, level 0 also confirm there is not crossing. so level will be -1.
 	bool intersected = (level < stopLevel);
 	outIntersection = ray;
 
