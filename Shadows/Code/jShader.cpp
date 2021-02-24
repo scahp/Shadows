@@ -103,6 +103,7 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS_WITH_DEFINE("NewSSR_HiZ", "Shaders/NewShaders/SSR_vs.glsl", "Shaders/NewShaders/SSR_fs.glsl", "#define USE_HIZ 1");
 		DECLARE_SHADER_VS_FS("NewCreateHiZ", "Shaders/NewShaders/CreateHiZ_vs.glsl", "Shaders/NewShaders/CreateHiZ_fs.glsl");
 		DECLARE_SHADER_VS_FS("NewDepthCopy", "shaders/NewShaders/depthcopy_vs.glsl", "shaders/NewShaders/depthcopy_fs.glsl");
+		DECLARE_SHADER_VS_FS("NewFXAA", "shaders/NewShaders/FXAA_vs.glsl", "shaders/NewShaders/FXAA_fs.glsl");
 	}
 } s_shaderInfoCreation;
 

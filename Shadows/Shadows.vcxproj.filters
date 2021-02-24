@@ -648,5 +648,11 @@
     <None Include="Shaders\NewShaders\depthcopy_fs.glsl">
       <Filter>Shaders\NewShaders</Filter>
     </None>
+    <None Include="Shaders\NewShaders\FXAA_fs.glsl">
+      <Filter>Shaders\NewShaders</Filter>
+    </None>
+    <None Include="Shaders\NewShaders\FXAA_vs.glsl">
+      <Filter>Shaders\NewShaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

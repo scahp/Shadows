@@ -377,6 +377,8 @@
     <None Include="Shaders\NewShaders\depthonly_alphatest_vs.glsl" />
     <None Include="Shaders\NewShaders\depthonly_vs.glsl" />
     <None Include="Shaders\NewShaders\empty_fs.glsl" />
+    <None Include="Shaders\NewShaders\FXAA_fs.glsl" />
+    <None Include="Shaders\NewShaders\FXAA_vs.glsl" />
     <None Include="Shaders\NewShaders\ssao_blur_fs.glsl" />
     <None Include="Shaders\NewShaders\ssao_blur_vs.glsl" />
     <None Include="Shaders\NewShaders\ssao_fs.glsl" />
