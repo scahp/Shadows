@@ -41,6 +41,7 @@ void jUIQuadPrimitive::Draw(const jCamera* camera, const jShader* shader, const 
 
 void jUIQuadPrimitive::SetTexture(const jTexture* texture)
 {
+	RenderObject->MaterialData.Params.clear();
 	RenderObject->MaterialData.Params.push_back(jRenderObject::CreateMaterialParam("tex_object", texture));
 	//RenderObject->tex_object = texture;
 }

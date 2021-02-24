@@ -12,6 +12,8 @@ public:
 		return *_instance;
 	}
 
+	EDeferredRenderPassDebugRT DeferredRenderPassDebugRT = EDeferredRenderPassDebugRT::None;
+
 	bool ShadowOn = true;
 	EShadowType ShadowType = EShadowType::ShadowMap;
 	bool ShowSilhouette_DirectionalLight = false;

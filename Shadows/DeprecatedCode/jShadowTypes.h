@@ -50,3 +50,58 @@ static const char* EShadowMapTypeString[] = {
 	"DeepShadowMap_DirectionalLight",
 	"CSM_SSM",
 };
+
+enum class EDeferredRendererPass
+{
+	DepthPrepass = 0,
+	ShowdowMap,
+	GBuffer,
+	SSAO,
+	LightingPass,
+	Tonemap,
+	SSR,
+	AA,
+	MAX
+};
+
+static const char* EDeferredRendererPassString[] = {
+	"DepthPrepass",
+	"ShowdowMap",
+	"GBuffer",
+	"SSAO",
+	"LightingPass",
+	"Tonemap",
+	"SSR",
+	"AA"
+};
+
+enum class EDeferredRenderPassDebugRT
+{
+	None = 0,
+	DepthPrepass,
+	ShowdowMap,
+	GBuffer_Color,
+	GBuffer_Normal,
+	GBuffer_Pos,
+	SSAO,
+	LightingPass,
+	Tonemap,
+	SSR,
+	AA,
+	MAX
+};
+
+static const char* EDeferredRenderPassDebugRTString[] = {
+	"None",
+	"DepthPrepass",
+	"ShowdowMap",
+	"GBuffer_Color",
+	"GBuffer_Normal",
+	"GBuffer_Pos",
+	"SSAO",
+	"LightingPass",
+	"Tonemap",
+	"SSR",
+	"AA",
+	"MAX"
+};

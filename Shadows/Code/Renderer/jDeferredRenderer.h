@@ -46,7 +46,10 @@ private:
 	jMaterialData SSRMaterialData;
 
 	std::shared_ptr<jRenderTarget> SSRRTPtr;
-	jMaterialData FXAAMaterialData;
+	jMaterialData AAMaterialData;
+
+	std::shared_ptr<jRenderTarget> AARTPtr;
+	jMaterialData FinalMaterialData;
 
 	std::shared_ptr<jRenderTarget> GetDebugRTPtr() const;
 };

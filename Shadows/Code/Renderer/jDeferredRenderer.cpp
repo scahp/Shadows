@@ -343,18 +343,23 @@ void jDeferredRenderer::AA(jRenderContext* InContext) const
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "AA");
 
-	g_rhi->SetClearColor(Vector4(0.0f, 0.0f, 0.0f, 1.0f));
-	g_rhi->SetClear(ERenderBufferType::COLOR);				// Depth is attached from DepthPrepass, so skip this.
-	g_rhi->EnableDepthTest(false);
+	if (AARTPtr->Begin())
+	{
+		g_rhi->SetClearColor(Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+		g_rhi->SetClear(ERenderBufferType::COLOR);				// Depth is attached from DepthPrepass, so skip this.
+		g_rhi->EnableDepthTest(false);
 
-	jShader* shader = jShader::GetShader("NewFXAA");
-	g_rhi->SetShader(shader);
+		jShader* shader = jShader::GetShader("NewFXAA");
+		g_rhi->SetShader(shader);
 
-	int32 baseBindingIndex = g_rhi->SetMatetrial(&FXAAMaterialData, shader);
-	InContext->Camera->BindCamera(shader);
+		int32 baseBindingIndex = g_rhi->SetMatetrial(&AAMaterialData, shader);
+		InContext->Camera->BindCamera(shader);
 
-	JASSERT(FullscreenQuad);
-	FullscreenQuad->Draw(nullptr, shader, {});
+		JASSERT(FullscreenQuad);
+		FullscreenQuad->Draw(nullptr, shader, {});
+
+		AARTPtr->End();
+	}
 }
 
 void jDeferredRenderer::Init()
@@ -421,8 +426,8 @@ void jDeferredRenderer::Init()
 		//, DepthRTPtr->GetTextureDepth());
 		//, HiZRTPtr->GetTextureDepth());
 		//, SceneColorRTPtr->GetTexture());
-		, SSRRTPtr->GetTexture());
-		//, nullptr);
+		//, SSRRTPtr->GetTexture());
+		, nullptr);
 }
 
 void jDeferredRenderer::Render(jRenderContext* InContext)
@@ -439,14 +444,74 @@ void jDeferredRenderer::Render(jRenderContext* InContext)
 	SSR(InContext);
 	AA(InContext);
 
-	//if (DebugQuad->GetTexture())
-	//{
-	//	jShader* shader = jShader::GetShader("UIShader");
-	//	g_rhi->SetShader(shader);
-	//	DebugQuad->Size = Vector2(400.0f, 400.0f);
-	//	DebugQuad->Pos = Vector2(SCR_WIDTH, SCR_HEIGHT) - DebugQuad->Size - Vector2(10.0f, 10.0f);
-	//	DebugQuad->Draw(InContext->Camera, shader, {});
-	//}
+	// Render final image to backbuffer
+	{
+		g_rhi->SetClearColor(Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+		g_rhi->SetClear(ERenderBufferType::COLOR);				// Depth is attached from DepthPrepass, so skip this.
+		g_rhi->EnableDepthTest(false);
+
+		jShader* shader = jShader::GetShader("NewCopy");
+		g_rhi->SetShader(shader);
+
+		int32 baseBindingIndex = g_rhi->SetMatetrial(&FinalMaterialData, shader);
+		InContext->Camera->BindCamera(shader);
+
+		JASSERT(FullscreenQuad);
+		FullscreenQuad->Draw(nullptr, shader, {});
+	}
+
+	const jShadowAppSettingProperties& Properties = jShadowAppSettingProperties::GetInstance();
+	
+	if (Properties.DeferredRenderPassDebugRT != EDeferredRenderPassDebugRT::MAX)
+	{
+		jTexture* DebugTexture = nullptr;
+		switch (Properties.DeferredRenderPassDebugRT)
+		{
+		case EDeferredRenderPassDebugRT::DepthPrepass:
+			DebugTexture = DepthRTPtr->GetTextureDepth();
+			break;
+		case EDeferredRenderPassDebugRT::ShowdowMap:
+			DebugTexture = ShadowRTPtr->GetTextureDepth();
+			break;
+		case EDeferredRenderPassDebugRT::GBuffer_Color:
+			DebugTexture = GBufferRTPtr->GetTexture(0);
+			break;
+		case EDeferredRenderPassDebugRT::GBuffer_Normal:
+			DebugTexture = GBufferRTPtr->GetTexture(1);
+			break;
+		case EDeferredRenderPassDebugRT::GBuffer_Pos:
+			DebugTexture = GBufferRTPtr->GetTexture(2);
+			break;
+		case EDeferredRenderPassDebugRT::SSAO:
+			DebugTexture = SSAORTBlurredPtr->GetTexture();
+			break;
+		case EDeferredRenderPassDebugRT::LightingPass:
+			DebugTexture = SceneColorRTPtr->GetTexture();
+			break;
+		case EDeferredRenderPassDebugRT::Tonemap:
+			break;
+		case EDeferredRenderPassDebugRT::SSR:
+			DebugTexture = SSRRTPtr->GetTexture();
+			break;
+		case EDeferredRenderPassDebugRT::AA:
+			DebugTexture = AARTPtr->GetTexture();
+			break;
+		default:
+			break;
+		}
+
+		if (DebugTexture != DebugQuad->GetTexture())
+			DebugQuad->SetTexture(DebugTexture);
+
+		if (DebugQuad->GetTexture())
+		{
+			jShader* shader = jShader::GetShader("UIShader");
+			g_rhi->SetShader(shader);
+			DebugQuad->Size = Vector2(400.0f, 400.0f);
+			DebugQuad->Pos = Vector2(SCR_WIDTH, SCR_HEIGHT) - DebugQuad->Size - Vector2(10.0f, 10.0f);
+			DebugQuad->Draw(InContext->Camera, shader, {});
+		}
+	}
 }
 
 void jDeferredRenderer::Release()
@@ -560,7 +625,22 @@ void jDeferredRenderer::InitSSAO()
 	SSRRTInfo.Minification = ETextureFilter::NEAREST;
 	SSRRTPtr = jRenderTargetPool::GetRenderTarget(SSRRTInfo);
 
-	FXAAMaterialData.AddMaterialParam("InputSampler", SSRRTPtr->GetTexture(), pLinearClamp);
+	AAMaterialData.AddMaterialParam("InputSampler", SSRRTPtr->GetTexture(), pLinearClamp);
+
+	jRenderTargetInfo AARTInfo;
+	AARTInfo.TextureCount = 1;
+	AARTInfo.TextureType = ETextureType::TEXTURE_2D;
+	AARTInfo.InternalFormat = ETextureFormat::RGBA32F;
+	AARTInfo.Format = ETextureFormat::RGBA;
+	AARTInfo.FormatType = EFormatType::FLOAT;
+	AARTInfo.DepthBufferType = EDepthBufferType::NONE;
+	AARTInfo.Width = SCR_WIDTH;
+	AARTInfo.Height = SCR_HEIGHT;
+	AARTInfo.Magnification = ETextureFilter::NEAREST;
+	AARTInfo.Minification = ETextureFilter::NEAREST;
+	AARTPtr = jRenderTargetPool::GetRenderTarget(AARTInfo);
+
+	FinalMaterialData.AddMaterialParam("TextureSampler", AARTPtr->GetTexture(), pPointSamplerState);
 }
 
 std::shared_ptr<jRenderTarget> jDeferredRenderer::GetDebugRTPtr() const

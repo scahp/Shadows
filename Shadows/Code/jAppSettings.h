@@ -89,6 +89,7 @@ public:
 	void SetSizeBar(int sizeX, int sizeY);
 	void SetPositionBar(int ix, int iy);
 	void SetValueSizeFit();
+	void SetValueSize(int32 valueWidth);
 
 private:
 	TwBar* Bar = nullptr;

@@ -654,5 +654,11 @@
     <None Include="Shaders\NewShaders\FXAA_vs.glsl">
       <Filter>Shaders\NewShaders</Filter>
     </None>
+    <None Include="Shaders\NewShaders\copy_fs.glsl">
+      <Filter>Shaders\NewShaders</Filter>
+    </None>
+    <None Include="Shaders\NewShaders\copy_vs.glsl">
+      <Filter>Shaders\NewShaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
