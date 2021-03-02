@@ -34,13 +34,15 @@ struct jTexture
 {
 	static int32 GetMipLevels(int32 InWidth, int32 InHeight)
 	{
-		return 1 + (int32)floorf(log2f(fmaxf(InWidth, InHeight)));
+		return 1 + (int32)floorf(log2f(fmaxf((float)InWidth, (float)InHeight)));
 	}
 
 	bool sRGB = false;
 	ETextureType TextureType;
 
 	ETextureFormat ColorBufferType = ETextureFormat::NONE;
+	EFormatType ColorFormatType = EFormatType::BYTE;
+
 	EDepthBufferType DepthBufferType = EDepthBufferType::NONE;
 
 	ETextureFilter Minification = ETextureFilter::NEAREST;
@@ -357,8 +359,8 @@ public:
 	virtual void SetViewportIndexedArray(int32 startIndex, int32 count, const jViewport* viewports) const {}
 	virtual bool SetUniformbuffer(const char* name, const Matrix& InData, const jShader* InShader) const { return false; }
 	virtual bool SetUniformbuffer(const char* name, const int InData, const jShader* InShader) const { return false; }
+	virtual bool SetUniformbuffer(const char* name, const uint32 InData, const jShader* InShader) const { return false; }
 	FORCEINLINE virtual bool SetUniformbuffer(const char* name, const bool InData, const jShader* InShader) const { return SetUniformbuffer(name, (int32)InData, InShader); }
-	FORCEINLINE virtual bool SetUniformbuffer(const char* name, const uint32 InData, const jShader* InShader) const { return SetUniformbuffer(name, (int32)InData, InShader); }
 	virtual bool SetUniformbuffer(const char* name, const float InData, const jShader* InShader) const { return false; }
 	virtual bool SetUniformbuffer(const char* name, const Vector2& InData, const jShader* InShader) const { return false; }
 	virtual bool SetUniformbuffer(const char* name, const Vector& InData, const jShader* InShader) const { return false; }
@@ -394,6 +396,7 @@ public:
 	virtual void GetQueryTimeStampResult(jQueryTime* queryTimeStamp) const {}
 	virtual void BeginQueryTimeElapsed(const jQueryTime* queryTimeElpased) const {}
 	virtual void EndQueryTimeElapsed(const jQueryTime* queryTimeElpased) const {}
+	virtual void SetImageTexture(int32 index, const jTexture* texture, EImageTextureAccessType type) const {}
 };
 
 struct jScopeDebugEvent final

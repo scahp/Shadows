@@ -15,6 +15,7 @@ public:
 	void LightingPass(jRenderContext* InContext) const;
 	void Tonemap(jRenderContext* InContext) const;
 	void SSR(jRenderContext* InContext) const;
+	void PPR(jRenderContext* InContext) const;
 	void AA(jRenderContext* InContext) const;
 
 	void Init();
@@ -52,4 +53,7 @@ private:
 	jMaterialData FinalMaterialData;
 
 	std::shared_ptr<jRenderTarget> GetDebugRTPtr() const;
+
+	std::shared_ptr<jRenderTarget> ImmediateBufferPtr;
+	std::shared_ptr<jRenderTarget> PPRResultPtr;
 };

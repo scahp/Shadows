@@ -105,8 +105,11 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("NewDepthCopy", "shaders/NewShaders/depthcopy_vs.glsl", "shaders/NewShaders/depthcopy_fs.glsl");
 		DECLARE_SHADER_VS_FS("NewCopy", "shaders/NewShaders/copy_vs.glsl", "shaders/NewShaders/copy_fs.glsl");
 		DECLARE_SHADER_VS_FS("NewFXAA", "shaders/NewShaders/FXAA_vs.glsl", "shaders/NewShaders/FXAA_fs.glsl");
-		DECLARE_SHADER_VS_FS("NewPPR_ProjectionPass", "shaders/NewShaders/PPR_ProjectionPass_vs.glsl", "shaders/NewShaders/PPR_ProjectionPass_fs.glsl");
-		DECLARE_SHADER_VS_FS("NewPPR_ReflectionPass", "shaders/NewShaders/PPR_ReflectionPass_vs.glsl", "shaders/NewShaders/PPR_ReflectionPass_fs.glsl");
+		//DECLARE_SHADER_VS_FS("NewPPR_ProjectionPass", "shaders/NewShaders/PPR_ProjectionPass_vs.glsl", "shaders/NewShaders/PPR_ProjectionPass_fs.glsl");
+		//DECLARE_SHADER_VS_FS("NewPPR_ReflectionPass", "shaders/NewShaders/PPR_ReflectionPass_vs.glsl", "shaders/NewShaders/PPR_ReflectionPass_fs.glsl");
+		DECLARE_SHADER_CS("NewPPR_ProjectionPass", "Shaders/NewShaders/PPR_ProjectionPass_cs.glsl");
+		DECLARE_SHADER_CS("NewPPR_ReflectionPass", "Shaders/NewShaders/PPR_ReflectionPass_cs.glsl");
+		DECLARE_SHADER_CS("NewPPR_ClearImmediateBuffer", "Shaders/NewShaders/PPR_ClearImmediateBuffer_cs.glsl");
 	}
 } s_shaderInfoCreation;
 

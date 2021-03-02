@@ -164,6 +164,7 @@ public:
 		, EFormatType dataType = EFormatType::UNSIGNED_BYTE, ETextureFormat textureFormat = ETextureFormat::RGBA, bool createMipmap = false) const override;
 	virtual bool SetUniformbuffer(const char* name, const Matrix& InData, const jShader* InShader) const override;
 	virtual bool SetUniformbuffer(const char* name, const int InData, const jShader* InShader) const override;
+	virtual bool SetUniformbuffer(const char* name, const uint32 InData, const jShader* InShader) const override;
 	virtual bool SetUniformbuffer(const char* name, const float InData, const jShader* InShader) const override;
 	virtual bool SetUniformbuffer(const char* name, const Vector2& InData, const jShader* InShader) const override;
 	virtual bool SetUniformbuffer(const char* name, const Vector& InData, const jShader* InShader) const override;
@@ -207,6 +208,7 @@ public:
 	virtual void GetQueryTimeStampResult(jQueryTime* queryTimeStamp) const override;
 	virtual void BeginQueryTimeElapsed(const jQueryTime* queryTimeElpased) const override;
 	virtual void EndQueryTimeElapsed(const jQueryTime* queryTimeElpased) const override;
+	virtual void SetImageTexture(int32 index, const jTexture* texture, EImageTextureAccessType type) const override;
 
 	//////////////////////////////////////////////////////////////////////////
 	uint32 GetUniformLocation(uint32 InProgram, const char* name) const;

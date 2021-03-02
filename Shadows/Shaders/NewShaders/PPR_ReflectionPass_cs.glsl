@@ -1,7 +1,14 @@
-#version 330 core
-#preprocessor
+#version 430 core
+
+layout(local_size_x = 1, local_size_y = 1) in;
+
+layout(binding = 0, rgba32f) readonly uniform image2D SceneColorImage;
+layout(binding = 1, r32ui) readonly uniform uimage2D ImmediateBufferImage;
+layout(binding = 2, rgba32f) uniform image2D ResultImage;
 
 precision mediump float;
+
+uniform vec2 ScreenSize;
 
 // Constants for 'intermediate buffer' values encoding.
 // Lowest two bits reserved for coordinate system index.
@@ -117,132 +124,28 @@ vec3 YCoCg_to_RGB(vec3 InYCoCg)
 	return YCoCgToRGBMatrix * InYCoCg;
 }
 
-// Write projection to 'intermediate buffer'.
-// Pixel projected from 'originalPixelVpos' to 'mirroredWorldPos'.
-// Function called in 'projectio pass' after ensuring that pixel projected into given
-// place of the shape is not occluded by any other shape.
-void PPR_ProjectionPassWrite(
-	//SSharedConstants globalConstants, RWStructuredBuffer<uint> uavIntermediateBuffer, 
-	ivec2 originalPixelVpos, vec3 mirroredWorldPos)
-{
-	mat4 WorldToScreen;	// 프로젝션 매트릭스 일듯
-	vec2 ScreenSize;
-
-	//const vec4 projPosOrig = mul(vec4(mirroredWorldPos, 1), globalConstants.worldToScreen);
-	vec4 projPosOrig = WorldToScreen * vec4(mirroredWorldPos, 1);
-	vec4 projPos = projPosOrig / projPosOrig.w;
-	//if (all(abs(projPos.xy) < 1))
-	bool AllComponentLessThanOne = (abs(projPos.x) < 1.0) && (abs(projPos.y) < 1.0);
-	if (AllComponentLessThanOne)
-	{
-		//vec2 targetCrd = (projPos.xy * vec2(0.5, -0.5) + 0.5) * globalConstants.resolution.xy;
-		vec2 targetCrd = (projPos.xy * vec2(0.5, -0.5) + 0.5) * ScreenSize;
-		vec2 offset = targetCrd - (originalPixelVpos + 0.5);
-		//uint writeOffset = uint(targetCrd.x) + uint(targetCrd.y) * uint(globalConstants.resolution.x);
-		uint writeOffset = uint(targetCrd.x) + uint(targetCrd.y) * uint(ScreenSize.x);
-		uint originalValue = uint(0);
-		uint valueToWrite = PPR_EncodeIntermediateBufferValue(offset);
-		//InterlockedMin(uavIntermediateBuffer[writeOffset], valueToWrite, originalValue);
-	}
-}
-
-
-// Combine filtered and non-filtered color sample to prevent color-bleeding.
-// Current implementation is rather naive and may result in distortion artifacts
-// (created by holes-filling) to become visible again at some extent.
-// Anti-bleeding solution might use some further research to reduce artifacts.
-// Note that for high resolution reflections, filtering might be skipped, making
-// anti-bleeding solution unneeded.
-vec3 PPR_FixColorBleeding(const vec3 colorFiltered, const vec3 colorUnfiltered)
-{
-	vec3 temp = vec3(0.0);
-
-	// transform color to YCoCg, normalize chrominance
-	vec3 ycocgFiltered = RGB_to_YCoCg(temp) * colorFiltered;
-	vec3 ycocgUnfiltered = RGB_to_YCoCg(temp) * colorUnfiltered;
-	ycocgFiltered.yz /= max(0.0001, ycocgFiltered.x);
-	ycocgUnfiltered.yz /= max(0.0001, ycocgUnfiltered.x);
-	// calculate pixel sampling factors for luma/chroma separately
-	float lumaPixelSamplingFactor = clamp(3.0 * abs(ycocgFiltered.x - ycocgUnfiltered.x), 0.0, 1.0);
-	float chromaPixelSamplingFactor = clamp(1.4 * length(ycocgFiltered.yz - ycocgUnfiltered.yz), 0.0, 1.0);
-	// build result color YCoCg space
-	// interpolate between filtered and nonFiltered colors (luma/chroma separately)
-	float resultY = mix(ycocgFiltered.x, ycocgUnfiltered.x, lumaPixelSamplingFactor);
-	vec2 resultCoCg = mix(ycocgFiltered.yz, ycocgUnfiltered.yz, chromaPixelSamplingFactor);
-	vec3 ycocgResult = vec3(resultY, resultCoCg * resultY);
-	// transform color back to RGB space
-	return YCoCg_to_RGB(temp) * ycocgResult;
-}
-
 // 'Reflection pass' implementation.
 vec4 PPR_ReflectionPass(
-	//SSharedConstants globalConstants, 
-	const ivec2 vpos, 
+	const ivec2 vpos
 	//StructuredBuffer<uint> srvIntermediateBuffer, 
-	//Texture2D srvColor, SamplerState smpLinear,
-	//SamplerState smpPoint, 
-	const bool enableHolesFilling, const bool enableFiltering, const bool enableFilterBleedingReduction)
+	//Texture2D srvColor,
+	//const bool enableHolesFilling, const bool enableFiltering, const bool enableFilterBleedingReduction
+)
 {
-	vec2 ScreenSize;
-	uint srvIntermediateBuffer[100];
-
 	ivec2 vposread = vpos;
 	// perform holes filling.
 	// If we're dealing with a hole then find a closeby pixel that will be used
 	// to fill the hole. In order to do this simply manipulate variable so that
 	// compute shader result would be similar to the neighbor result.
 	vec2 holesOffset = vec2(0.0);
-	if (enableHolesFilling)
-	{
-		uint v0 = srvIntermediateBuffer[vpos.x + vpos.y * int(ScreenSize.x)];
-		{
-			// read neighbors 'intermediate buffer' data
-			const ivec2 holeOffset1 = ivec2(1, 0);
-			const ivec2 holeOffset2 = ivec2(0, 1);
-			const ivec2 holeOffset3 = ivec2(1, 1);
-			const ivec2 holeOffset4 = ivec2(-1, 0);
-			uint v1 = srvIntermediateBuffer[(vpos.x + holeOffset1.x) + (vpos.y + holeOffset1.y) * int(ScreenSize.x)];
-			uint v2 = srvIntermediateBuffer[(vpos.x + holeOffset2.x) + (vpos.y + holeOffset2.y) * int(ScreenSize.x)];
-			uint v3 = srvIntermediateBuffer[(vpos.x + holeOffset3.x) + (vpos.y + holeOffset3.y) * int(ScreenSize.x)];
-			uint v4 = srvIntermediateBuffer[(vpos.x + holeOffset4.x) + (vpos.y + holeOffset4.y) * int(ScreenSize.x)];
-			// get neighbor closest reflection distance
-			uint minv = min(min(min(v0, v1), min(v2, v3)), v4);
 
-			// allow hole fill if we don't have any 'intermediate buffer' data for current pixel,
-			// or any neighbor has reflecion significantly closer than current pixel's reflection
-			bool allowHoleFill = true;
-			if (uint(PPR_CLEAR_VALUE) != v0)
-			{
-				vec2 d0_filtered_whole;
-				vec2 d0_filtered_fract;
-				mat2 d0_packingBasis;
-				vec2 dmin_filtered_whole;
-				vec2 dmin_filtered_fract;
-				mat2 dmin_packingBasis;
-				PPR_DecodeIntermediateBufferValue(v0, d0_filtered_whole, d0_filtered_fract, d0_packingBasis);
-				PPR_DecodeIntermediateBufferValue(minv, dmin_filtered_whole, dmin_filtered_fract, dmin_packingBasis);
-				vec2 d0_offset = d0_packingBasis * (d0_filtered_whole + d0_filtered_fract);
-				vec2 dmin_offset = dmin_packingBasis * (dmin_filtered_whole + dmin_filtered_fract);
-				vec2 diff = d0_offset - dmin_offset;
-				const float minDist = 6;
-				allowHoleFill = dot(diff, diff) > minDist * minDist;
-			}
-			// hole fill allowed, so apply selected neighbor's parameters
-			if (allowHoleFill)
-			{
-				if (minv == v1) vposread = vpos + holeOffset1;
-				if (minv == v2) vposread = vpos + holeOffset2;
-				if (minv == v3) vposread = vpos + holeOffset3;
-				if (minv == v4) vposread = vpos + holeOffset4;
-				holesOffset = vposread - vpos;
-			}
-		}
-	}
 	// obtain offsets for filtered and non-filtered samples
 	vec2 predictedDist = vec2(0.0);
 	vec2 predictedDistUnfiltered = vec2(0.0);
 	{
-		uint v0 = srvIntermediateBuffer[vposread.x + vposread.y * int(ScreenSize.x)];
+		//uint v0 = srvIntermediateBuffer[vposread.x + vposread.y * int(ScreenSize.x)];
+		uint v0 = imageLoad(ImmediateBufferImage, vposread).x;
+
 		// decode offsets
 		vec2 decodedWhole;
 		vec2 decodedFract;
@@ -267,30 +170,17 @@ vec4 PPR_ReflectionPass(
 	bool AllComponentZero = (predictedDist.x == 0.0) && (predictedDist.y == 0.0);
 	if (AllComponentZero)
 	{
-		return vec4(0.0);
+		return vec4(0.0, 1.0, 0.0, 1.0);
 	}
 	// sample filtered and non-filtered color
 	vec2 targetCrd = vpos + 0.5 - predictedDist;
 	vec2 targetCrdUnfiltered = vpos + 0.5 - predictedDistUnfiltered;
 	//vec3 colorFiltered = srvColor.SampleLevel(smpLinear, targetCrd * globalConstants.resolution.zw, 0).xyz;
 	//vec3 colorUnfiltered = srvColor.SampleLevel(smpPoint, targetCrdUnfiltered * globalConstants.resolution.zw, 0).xyz;
-	vec3 colorFiltered;// = srvColor.SampleLevel(smpLinear, targetCrd * ScreenSize.zw, 0).xyz;
-	vec3 colorUnfiltered;// = srvColor.SampleLevel(smpPoint, targetCrdUnfiltered * ScreenSize.zw, 0).xyz;
+	vec3 colorUnfiltered = imageLoad(SceneColorImage, ivec2(targetCrdUnfiltered)).xyz;
 
 	// combine filtered and non-filtered colors
 	vec3 colorResult;
-	if (enableFiltering)
-	{
-		if (enableFilterBleedingReduction)
-		{
-			colorResult = PPR_FixColorBleeding(colorFiltered, colorUnfiltered);
-		}
-		else
-		{
-			colorResult = colorFiltered;
-		}
-	}
-	else
 	{
 		colorResult = colorUnfiltered;
 	}
@@ -300,5 +190,7 @@ vec4 PPR_ReflectionPass(
 
 void main()
 {
-
+	ivec2 VPos = ivec2(gl_GlobalInvocationID.xy);		// Position in screen space
+	vec4 result = PPR_ReflectionPass(VPos);
+	imageStore(ResultImage, VPos, result);	
 }

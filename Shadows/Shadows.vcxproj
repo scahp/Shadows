@@ -381,8 +381,11 @@
     <None Include="Shaders\NewShaders\empty_fs.glsl" />
     <None Include="Shaders\NewShaders\FXAA_fs.glsl" />
     <None Include="Shaders\NewShaders\FXAA_vs.glsl" />
+    <None Include="Shaders\NewShaders\PPR_ClearImmediateBuffer_cs.glsl" />
+    <None Include="Shaders\NewShaders\PPR_ProjectionPass_cs.glsl" />
     <None Include="Shaders\NewShaders\PPR_ProjectionPass_fs.glsl" />
     <None Include="Shaders\NewShaders\PPR_ProjectionPass_vs.glsl" />
+    <None Include="Shaders\NewShaders\PPR_ReflectionPass_cs.glsl" />
     <None Include="Shaders\NewShaders\PPR_ReflectionPass_fs.glsl" />
     <None Include="Shaders\NewShaders\PPR_ReflectionPass_vs.glsl" />
     <None Include="Shaders\NewShaders\ssao_blur_fs.glsl" />

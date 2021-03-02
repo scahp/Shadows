@@ -77,6 +77,12 @@ uint32 GetOpenGLTextureFormat(ETextureFormat format)
 	case ETextureFormat::R:
 		result = GL_RED;
 		break;
+	case ETextureFormat::R_INTEGER:
+		result = GL_RED_INTEGER;
+		break;
+	case ETextureFormat::R32UI:
+		result = GL_R32UI;
+		break;
 	case ETextureFormat::R32F:
 		result = GL_R32F;
 		break;
@@ -134,6 +140,33 @@ uint32 GetOpenGLTextureFormatSimple(ETextureFormat format)
 	default:
 		break;
 	}
+	return result;
+}
+
+uint32 GetOpenGLFormatType(EFormatType format)
+{
+	uint32 result = 0;
+	switch (format)
+	{
+	case EFormatType::BYTE:
+		result = GL_BYTE;
+		break;
+	case EFormatType::UNSIGNED_BYTE:
+		result = GL_UNSIGNED_BYTE;
+		break;
+	case EFormatType::INT:
+		result = GL_INT;
+		break;
+	case EFormatType::UNSIGNED_INT:
+		result = GL_UNSIGNED_INT;
+		break;
+	case EFormatType::FLOAT:
+		result = GL_FLOAT;
+		break;
+	default:
+		break;
+	}
+
 	return result;
 }
 
@@ -232,6 +265,26 @@ uint32 GetOpenGLTextureComparisonMode(ETextureComparisonMode mode)
 		break;
 	case ETextureComparisonMode::COMPARE_REF_TO_TEXTURE:		// to use PCF filtering by using samplerXXShadow series.
 		result = GL_COMPARE_REF_TO_TEXTURE;
+		break;
+	default:
+		break;
+	}
+	return result;
+}
+
+uint32 GetOpenGLImageTextureAccessType(EImageTextureAccessType type)
+{
+	uint32 result = 0;
+	switch (type)
+	{
+	case EImageTextureAccessType::READ_ONLY:
+		result = GL_READ_ONLY;
+		break;
+	case EImageTextureAccessType::WRITE_ONLY:
+		result = GL_WRITE_ONLY;
+		break;
+	case EImageTextureAccessType::READ_WRITE:
+		result = GL_READ_WRITE;
 		break;
 	default:
 		break;
@@ -657,6 +710,14 @@ void jRHI_OpenGL::EndQueryTimeElapsed(const jQueryTime* queryTimeElpased) const
 	glEndQuery(GL_TIME_ELAPSED);
 }
 
+void jRHI_OpenGL::SetImageTexture(int32 index, const jTexture* texture, EImageTextureAccessType type) const
+{
+	const auto texture_gl = static_cast<const jTexture_OpenGL*>(texture);
+	const auto textureType = GetOpenGLTextureFormat(texture_gl->ColorBufferType);
+	const auto accesstype_gl = GetOpenGLImageTextureAccessType(type);
+	glBindImageTexture(index, texture_gl->TextureID, 0, GL_FALSE, 0, accesstype_gl, textureType);
+}
+
 uint32 jRHI_OpenGL::GetUniformLocation(uint32 InProgram, const char* name) const
 {
 	return glGetUniformLocation(InProgram, name);
@@ -949,6 +1010,7 @@ jTexture* jRHI_OpenGL::CreateNullTexture() const
 	auto texture = new jTexture_OpenGL();
 	texture->sRGB = false;
 	texture->ColorBufferType = ETextureFormat::RGB;
+	texture->ColorFormatType = EFormatType::UNSIGNED_BYTE;
 	glGenTextures(1, &texture->TextureID);
 	glBindTexture(GL_TEXTURE_2D, texture->TextureID);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
@@ -962,29 +1024,12 @@ jTexture* jRHI_OpenGL::CreateTextureFromData(void* data, int32 width, int32 heig
 {
 	const uint32 internalFormat = GetOpenGLTextureFormat(textureFormat);
 	const uint32 simpleFormat = GetOpenGLTextureFormatSimple(textureFormat);
-
-	uint32 formatType = 0;
-	switch (dataType)
-	{
-	case EFormatType::BYTE:
-		formatType = GL_BYTE;
-		break;
-	case EFormatType::UNSIGNED_BYTE:
-		formatType = GL_UNSIGNED_BYTE;
-		break;
-	case EFormatType::INT:
-		formatType = GL_INT;
-		break;
-	case EFormatType::FLOAT:
-		formatType = GL_FLOAT;
-		break;
-	default:
-		break;
-	}
+	const uint32 formatType = GetOpenGLFormatType(dataType);
 
 	auto texture = new jTexture_OpenGL();
 	texture->sRGB = sRGB;
 	texture->ColorBufferType = textureFormat;
+	texture->ColorFormatType = dataType;
 	glGenTextures(1, &texture->TextureID);
 	glBindTexture(GL_TEXTURE_2D, texture->TextureID);
 	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, simpleFormat, formatType, data);
@@ -1017,6 +1062,18 @@ bool jRHI_OpenGL::SetUniformbuffer(const char* name, const int InData, const jSh
 	if (loc == -1)
 		return false;
 	glUniform1i(loc, InData);
+	return true;
+}
+
+bool jRHI_OpenGL::SetUniformbuffer(const char* name, const uint32 InData, const jShader* InShader) const
+{
+	JASSERT(name);
+
+	auto shader_gl = static_cast<const jShader_OpenGL*>(InShader);
+	auto loc = shader_gl->TryGetUniformLocation(name);
+	if (loc == -1)
+		return false;
+	glUniform1ui(loc, InData);
 	return true;
 }
 
@@ -1249,22 +1306,7 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 {
 	const uint32 internalFormat = GetOpenGLTextureFormat(info.InternalFormat);
 	const uint32 format = GetOpenGLTextureFormat(info.Format);
-
-	uint32 formatType = 0;
-	switch (info.FormatType)
-	{
-	case EFormatType::BYTE:
-		formatType = GL_BYTE;
-		break;
-	case EFormatType::INT:
-		formatType = GL_INT;
-		break;
-	case EFormatType::FLOAT:
-		formatType = GL_FLOAT;
-		break;
-	default:
-		break;
-	}
+	const uint32 formatType = GetOpenGLFormatType(info.FormatType);
 
 	uint32 depthBufferFormat = 0;
 	uint32 depthBufferType = 0;
@@ -1303,6 +1345,7 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 			auto tex_gl = new jTexture_OpenGL();
 			tex_gl->TextureType = info.TextureType;
 			tex_gl->ColorBufferType = info.InternalFormat;
+			tex_gl->ColorFormatType = info.FormatType;
 			tex_gl->Magnification = info.Magnification;
 			tex_gl->Minification = info.Minification;
 			tex_gl->TextureID = tbo;
@@ -1343,6 +1386,7 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 		tex_gl->Magnification = info.Magnification;
 		tex_gl->Minification = info.Minification;
 		tex_gl->ColorBufferType = info.InternalFormat;
+		tex_gl->ColorFormatType = info.FormatType;
 
 		uint32 tbo = 0;
 		glGenTextures(1, &tbo);
@@ -1424,6 +1468,7 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 			tex_gl->Minification = info.Minification;
 			tex_gl->TextureID = tbo;
 			tex_gl->ColorBufferType = info.InternalFormat;
+			tex_gl->ColorFormatType = info.FormatType;
 			rt_gl->Textures[i] = std::shared_ptr<jTexture>(tex_gl);
 		}
 
@@ -1477,6 +1522,7 @@ jRenderTarget* jRHI_OpenGL::CreateRenderTarget(const jRenderTargetInfo& info) co
 		tex_gl->Magnification = info.Magnification;
 		tex_gl->Minification = info.Minification;
 		tex_gl->ColorBufferType = info.InternalFormat;
+		tex_gl->ColorFormatType = info.FormatType;
 		rt_gl->Textures.push_back(std::shared_ptr<jTexture>(tex_gl));
 
 		for (int i = 0; i < 6; ++i)

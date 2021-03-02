@@ -339,6 +339,50 @@ void jDeferredRenderer::SSR(jRenderContext* InContext) const
 	}
 }
 
+void jDeferredRenderer::PPR(jRenderContext* InContext) const
+{
+	SCOPE_DEBUG_EVENT(g_rhi, "PPR");
+
+	{
+		jShader* shader = jShader::GetShader("NewPPR_ClearImmediateBuffer");
+		g_rhi->SetShader(shader);
+
+		g_rhi->SetImageTexture(0, ImmediateBufferPtr->GetTexture(), EImageTextureAccessType::WRITE_ONLY);
+		g_rhi->SetUniformbuffer("ClearValue", 0xffffffff, shader);
+
+		g_rhi->DispatchCompute(SCR_WIDTH, SCR_HEIGHT, 1);
+	}
+
+	{
+		jShader* shader = jShader::GetShader("NewPPR_ProjectionPass");
+		g_rhi->SetShader(shader);
+
+		Vector2 ScreenSize(SCR_WIDTH, SCR_HEIGHT);
+		g_rhi->SetUniformbuffer("WorldToScreen", InContext->Camera->Projection * InContext->Camera->View, shader);
+		g_rhi->SetUniformbuffer("ScreenSize", ScreenSize, shader);
+
+		g_rhi->SetImageTexture(0, GBufferRTPtr->GetTexture(2), EImageTextureAccessType::READ_ONLY);
+		g_rhi->SetImageTexture(1, ImmediateBufferPtr->GetTexture(), EImageTextureAccessType::READ_WRITE);
+
+		g_rhi->DispatchCompute(ScreenSize.x, ScreenSize.y, 1);
+	}
+
+	{
+		jShader* shader = jShader::GetShader("NewPPR_ReflectionPass");
+		g_rhi->SetShader(shader);
+
+		Vector2 ScreenSize(SCR_WIDTH, SCR_HEIGHT);
+		//g_rhi->SetUniformbuffer("ProjectionMatrix", InContext->Camera->Projection, shader);
+		g_rhi->SetUniformbuffer("ScreenSize", ScreenSize, shader);
+
+		g_rhi->SetImageTexture(0, GBufferRTPtr->GetTexture(0), EImageTextureAccessType::READ_ONLY);
+		g_rhi->SetImageTexture(1, ImmediateBufferPtr->GetTexture(), EImageTextureAccessType::READ_ONLY);
+		g_rhi->SetImageTexture(2, PPRResultPtr->GetTexture(), EImageTextureAccessType::READ_WRITE);
+
+		g_rhi->DispatchCompute(ScreenSize.x, ScreenSize.y, 1);
+	}
+}
+
 void jDeferredRenderer::AA(jRenderContext* InContext) const
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "AA");
@@ -442,6 +486,7 @@ void jDeferredRenderer::Render(jRenderContext* InContext)
 	LightingPass(InContext);
 	Tonemap(InContext);
 	SSR(InContext);
+	PPR(InContext);
 	AA(InContext);
 
 	// Render final image to backbuffer
@@ -502,6 +547,9 @@ void jDeferredRenderer::Render(jRenderContext* InContext)
 
 		if (DebugTexture != DebugQuad->GetTexture())
 			DebugQuad->SetTexture(DebugTexture);
+
+		// Test
+		DebugQuad->SetTexture(PPRResultPtr->GetTexture());
 
 		if (DebugQuad->GetTexture())
 		{
@@ -641,6 +689,32 @@ void jDeferredRenderer::InitSSAO()
 	AARTPtr = jRenderTargetPool::GetRenderTarget(AARTInfo);
 
 	FinalMaterialData.AddMaterialParam("TextureSampler", AARTPtr->GetTexture(), pPointSamplerState);
+
+	jRenderTargetInfo ImmediateBufferInfo;
+	ImmediateBufferInfo.TextureCount = 1;
+	ImmediateBufferInfo.TextureType = ETextureType::TEXTURE_2D;
+	ImmediateBufferInfo.InternalFormat = ETextureFormat::R32UI;
+	ImmediateBufferInfo.Format = ETextureFormat::R_INTEGER;
+	ImmediateBufferInfo.FormatType = EFormatType::UNSIGNED_INT;
+	ImmediateBufferInfo.DepthBufferType = EDepthBufferType::NONE;
+	ImmediateBufferInfo.Width = SCR_WIDTH;
+	ImmediateBufferInfo.Height = SCR_HEIGHT;
+	ImmediateBufferInfo.Magnification = ETextureFilter::NEAREST;
+	ImmediateBufferInfo.Minification = ETextureFilter::NEAREST;
+	ImmediateBufferPtr = jRenderTargetPool::GetRenderTarget(ImmediateBufferInfo);
+
+	jRenderTargetInfo PPRResultInfo;
+	PPRResultInfo.TextureCount = 1;
+	PPRResultInfo.TextureType = ETextureType::TEXTURE_2D;
+	PPRResultInfo.InternalFormat = ETextureFormat::RGBA32F;
+	PPRResultInfo.Format = ETextureFormat::RGBA;
+	PPRResultInfo.FormatType = EFormatType::FLOAT;
+	PPRResultInfo.DepthBufferType = EDepthBufferType::NONE;
+	PPRResultInfo.Width = SCR_WIDTH;
+	PPRResultInfo.Height = SCR_HEIGHT;
+	PPRResultInfo.Magnification = ETextureFilter::NEAREST;
+	PPRResultInfo.Minification = ETextureFilter::NEAREST;
+	PPRResultPtr = jRenderTargetPool::GetRenderTarget(PPRResultInfo);
 }
 
 std::shared_ptr<jRenderTarget> jDeferredRenderer::GetDebugRTPtr() const
