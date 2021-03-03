@@ -109,7 +109,7 @@ struct jShaderInfoCreation
 		//DECLARE_SHADER_VS_FS("NewPPR_ReflectionPass", "shaders/NewShaders/PPR_ReflectionPass_vs.glsl", "shaders/NewShaders/PPR_ReflectionPass_fs.glsl");
 		DECLARE_SHADER_CS("NewPPR_ProjectionPass", "Shaders/NewShaders/PPR_ProjectionPass_cs.glsl");
 		DECLARE_SHADER_CS("NewPPR_ReflectionPass", "Shaders/NewShaders/PPR_ReflectionPass_cs.glsl");
-		DECLARE_SHADER_CS("NewPPR_ClearImmediateBuffer", "Shaders/NewShaders/PPR_ClearImmediateBuffer_cs.glsl");
+		DECLARE_SHADER_CS("NewPPR_ClearIntermediateBuffer", "Shaders/NewShaders/PPR_ClearIntermediateBuffer_cs.glsl");
 	}
 } s_shaderInfoCreation;
 

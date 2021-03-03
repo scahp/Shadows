@@ -2,12 +2,16 @@
 
 layout(local_size_x = 1, local_size_y = 1) in;
 
-layout(binding = 0, rgba32f) readonly uniform image2D SceneColorImage;
-layout(binding = 1, r32ui) readonly uniform uimage2D ImmediateBufferImage;
-layout(binding = 2, rgba32f) uniform image2D ResultImage;
-
 precision mediump float;
 
+layout(binding = 0, r32ui) readonly uniform uimage2D ImmediateBufferImage;
+layout(binding = 1, rgba32f) uniform image2D ResultImage;
+
+uniform sampler2D SceneColorPointSampler;
+uniform sampler2D SceneColorLinearSampler;
+uniform sampler2D NormalSampler;
+
+uniform mat4 V;
 uniform vec2 ScreenSize;
 
 // Constants for 'intermediate buffer' values encoding.
@@ -124,12 +128,40 @@ vec3 YCoCg_to_RGB(vec3 InYCoCg)
 	return YCoCgToRGBMatrix * InYCoCg;
 }
 
+// Combine filtered and non-filtered color sample to prevent color-bleeding.
+// Current implementation is rather naive and may result in distortion artifacts
+// (created by holes-filling) to become visible again at some extent.
+// Anti-bleeding solution might use some further research to reduce artifacts.
+// Note that for high resolution reflections, filtering might be skipped, making
+// anti-bleeding solution unneeded.
+vec3 PPR_FixColorBleeding(const vec3 colorFiltered, const vec3 colorUnfiltered)
+{
+	// transform color to YCoCg, normalize chrominance
+	//vec3 ycocgFiltered = mul(RGB_to_YCoCg(), colorFiltered);
+	//vec3 ycocgUnfiltered = mul(RGB_to_YCoCg(), colorUnfiltered);
+	vec3 ycocgFiltered = RGB_to_YCoCg(colorFiltered);
+	vec3 ycocgUnfiltered = RGB_to_YCoCg(colorUnfiltered);
+	ycocgFiltered.yz /= max(0.0001, ycocgFiltered.x);
+	ycocgUnfiltered.yz /= max(0.0001, ycocgUnfiltered.x);
+	// calculate pixel sampling factors for luma/chroma separately
+	float lumaPixelSamplingFactor = clamp(3.0 * abs(ycocgFiltered.x - ycocgUnfiltered.x), 0.0, 1.0);
+	float chromaPixelSamplingFactor = clamp(1.4 * length(ycocgFiltered.yz - ycocgUnfiltered.yz), 0.0, 1.0);
+	// build result color YCoCg space
+	// interpolate between filtered and nonFiltered colors (luma/chroma separately)
+	float resultY = mix(ycocgFiltered.x, ycocgUnfiltered.x, lumaPixelSamplingFactor);
+	vec2 resultCoCg = mix(ycocgFiltered.yz, ycocgUnfiltered.yz, chromaPixelSamplingFactor);
+	vec3 ycocgResult = vec3(resultY, resultCoCg * resultY);
+	// transform color back to RGB space
+	// return mul( YCoCg_to_RGB(), ycocgResult );
+	return YCoCg_to_RGB(ycocgResult);
+}
+
 // 'Reflection pass' implementation.
 vec4 PPR_ReflectionPass(
-	const ivec2 vpos
+	const ivec2 vpos,
 	//StructuredBuffer<uint> srvIntermediateBuffer, 
 	//Texture2D srvColor,
-	//const bool enableHolesFilling, const bool enableFiltering, const bool enableFilterBleedingReduction
+	const bool enableHolesFilling, const bool enableFiltering, const bool enableFilterBleedingReduction
 )
 {
 	ivec2 vposread = vpos;
@@ -138,6 +170,52 @@ vec4 PPR_ReflectionPass(
 	// to fill the hole. In order to do this simply manipulate variable so that
 	// compute shader result would be similar to the neighbor result.
 	vec2 holesOffset = vec2(0.0);
+	if (enableHolesFilling)
+	{
+		uint v0 = imageLoad(ImmediateBufferImage, vpos).x;
+		{
+			// read neighbors 'intermediate buffer' data
+			const ivec2 holeOffset1 = ivec2(1, 0);
+			const ivec2 holeOffset2 = ivec2(0, 1);
+			const ivec2 holeOffset3 = ivec2(1, 1);
+			const ivec2 holeOffset4 = ivec2(-1, 0);
+			uint v1 = imageLoad(ImmediateBufferImage, ivec2(vpos.x + holeOffset1.x, vpos.y + holeOffset1.y)).x;
+			uint v2 = imageLoad(ImmediateBufferImage, ivec2(vpos.x + holeOffset2.x, vpos.y + holeOffset2.y)).x;
+			uint v3 = imageLoad(ImmediateBufferImage, ivec2(vpos.x + holeOffset3.x, vpos.y + holeOffset3.y)).x;
+			uint v4 = imageLoad(ImmediateBufferImage, ivec2(vpos.x + holeOffset4.x, vpos.y + holeOffset4.y)).x;
+			// get neighbor closest reflection distance
+			uint minv = min(min(min(v0, v1), min(v2, v3)), v4);
+
+			// allow hole fill if we don't have any 'intermediate buffer' data for current pixel,
+			// or any neighbor has reflecion significantly closer than current pixel's reflection
+			bool allowHoleFill = true;
+			if (uint(PPR_CLEAR_VALUE) != v0)
+			{
+				vec2 d0_filtered_whole;
+				vec2 d0_filtered_fract;
+				mat2 d0_packingBasis;
+				vec2 dmin_filtered_whole;
+				vec2 dmin_filtered_fract;
+				mat2 dmin_packingBasis;
+				PPR_DecodeIntermediateBufferValue(v0, d0_filtered_whole, d0_filtered_fract, d0_packingBasis);
+				PPR_DecodeIntermediateBufferValue(minv, dmin_filtered_whole, dmin_filtered_fract, dmin_packingBasis);
+				vec2 d0_offset = d0_packingBasis * (d0_filtered_whole + d0_filtered_fract);
+				vec2 dmin_offset = dmin_packingBasis * (dmin_filtered_whole + dmin_filtered_fract);
+				vec2 diff = d0_offset - dmin_offset;
+				const float minDist = 6;
+				allowHoleFill = dot(diff, diff) > minDist * minDist;
+			}
+			// hole fill allowed, so apply selected neighbor's parameters
+			if (allowHoleFill)
+			{
+				if (minv == v1) vposread = vpos + holeOffset1;
+				if (minv == v2) vposread = vpos + holeOffset2;
+				if (minv == v3) vposread = vpos + holeOffset3;
+				if (minv == v4) vposread = vpos + holeOffset4;
+				holesOffset = vposread - vpos;
+			}
+		}
+	}
 
 	// obtain offsets for filtered and non-filtered samples
 	vec2 predictedDist = vec2(0.0);
@@ -170,27 +248,59 @@ vec4 PPR_ReflectionPass(
 	bool AllComponentZero = (predictedDist.x == 0.0) && (predictedDist.y == 0.0);
 	if (AllComponentZero)
 	{
-		return vec4(0.0, 1.0, 0.0, 1.0);
+		return vec4(0.0);
 	}
 	// sample filtered and non-filtered color
 	vec2 targetCrd = vpos + 0.5 - predictedDist;
 	vec2 targetCrdUnfiltered = vpos + 0.5 - predictedDistUnfiltered;
 	//vec3 colorFiltered = srvColor.SampleLevel(smpLinear, targetCrd * globalConstants.resolution.zw, 0).xyz;
 	//vec3 colorUnfiltered = srvColor.SampleLevel(smpPoint, targetCrdUnfiltered * globalConstants.resolution.zw, 0).xyz;
-	vec3 colorUnfiltered = imageLoad(SceneColorImage, ivec2(targetCrdUnfiltered)).xyz;
+	vec3 colorFiltered = texture(SceneColorLinearSampler, targetCrd * (1.0 / ScreenSize)).xyz;
+	vec3 colorUnfiltered = texture(SceneColorPointSampler, targetCrdUnfiltered * (1.0 / ScreenSize)).xyz;
 
 	// combine filtered and non-filtered colors
 	vec3 colorResult;
+	if (enableFiltering)
+	{
+		if (enableFilterBleedingReduction)
+		{
+			colorResult = PPR_FixColorBleeding(colorFiltered, colorUnfiltered);
+		}
+		else
+		{
+			colorResult = colorFiltered;
+		}
+	}
+	else
 	{
 		colorResult = colorUnfiltered;
 	}
-	//
+	
 	return vec4(colorResult, 1);
+}
+
+vec4 GetViewSpaceNormal(vec2 uv)
+{
+	vec4 normal = texture(NormalSampler, uv);
+	vec4 result = (V * vec4(normal.xyz, 0.0));
+	result.w = normal.w;
+	return result;
 }
 
 void main()
 {
 	ivec2 VPos = ivec2(gl_GlobalInvocationID.xy);		// Position in screen space
-	vec4 result = PPR_ReflectionPass(VPos);
+	vec2 UV = vec2(VPos) * (1.0 / ScreenSize);
+
+	vec4 normalInVS = GetViewSpaceNormal(UV);
+	float reflectionMask = normalInVS.w;	// should be fetched from texture 
+
+	vec4 result = vec4(0.0);
+	if (reflectionMask != 0.0)
+		result = PPR_ReflectionPass(VPos, true, true, true);
+
+	// Add SceneColor to result
+	result += texture(SceneColorPointSampler, UV);
+
 	imageStore(ResultImage, VPos, result);	
 }

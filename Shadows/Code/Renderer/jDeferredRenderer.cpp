@@ -344,10 +344,10 @@ void jDeferredRenderer::PPR(jRenderContext* InContext) const
 	SCOPE_DEBUG_EVENT(g_rhi, "PPR");
 
 	{
-		jShader* shader = jShader::GetShader("NewPPR_ClearImmediateBuffer");
+		jShader* shader = jShader::GetShader("NewPPR_ClearIntermediateBuffer");
 		g_rhi->SetShader(shader);
 
-		g_rhi->SetImageTexture(0, ImmediateBufferPtr->GetTexture(), EImageTextureAccessType::WRITE_ONLY);
+		g_rhi->SetImageTexture(0, IntermediateBufferPtr->GetTexture(), EImageTextureAccessType::WRITE_ONLY);
 		g_rhi->SetUniformbuffer("ClearValue", 0xffffffff, shader);
 
 		g_rhi->DispatchCompute(SCR_WIDTH, SCR_HEIGHT, 1);
@@ -362,7 +362,7 @@ void jDeferredRenderer::PPR(jRenderContext* InContext) const
 		g_rhi->SetUniformbuffer("ScreenSize", ScreenSize, shader);
 
 		g_rhi->SetImageTexture(0, GBufferRTPtr->GetTexture(2), EImageTextureAccessType::READ_ONLY);
-		g_rhi->SetImageTexture(1, ImmediateBufferPtr->GetTexture(), EImageTextureAccessType::READ_WRITE);
+		g_rhi->SetImageTexture(1, IntermediateBufferPtr->GetTexture(), EImageTextureAccessType::READ_WRITE);
 
 		g_rhi->DispatchCompute(ScreenSize.x, ScreenSize.y, 1);
 	}
@@ -375,9 +375,10 @@ void jDeferredRenderer::PPR(jRenderContext* InContext) const
 		//g_rhi->SetUniformbuffer("ProjectionMatrix", InContext->Camera->Projection, shader);
 		g_rhi->SetUniformbuffer("ScreenSize", ScreenSize, shader);
 
-		g_rhi->SetImageTexture(0, GBufferRTPtr->GetTexture(0), EImageTextureAccessType::READ_ONLY);
-		g_rhi->SetImageTexture(1, ImmediateBufferPtr->GetTexture(), EImageTextureAccessType::READ_ONLY);
-		g_rhi->SetImageTexture(2, PPRResultPtr->GetTexture(), EImageTextureAccessType::READ_WRITE);
+		g_rhi->SetImageTexture(0, IntermediateBufferPtr->GetTexture(), EImageTextureAccessType::READ_ONLY);
+		g_rhi->SetImageTexture(1, PPRResultPtr->GetTexture(), EImageTextureAccessType::READ_WRITE);
+
+		g_rhi->SetMatetrial(&PPRMaterialData, shader);
 
 		g_rhi->DispatchCompute(ScreenSize.x, ScreenSize.y, 1);
 	}
@@ -690,18 +691,18 @@ void jDeferredRenderer::InitSSAO()
 
 	FinalMaterialData.AddMaterialParam("TextureSampler", AARTPtr->GetTexture(), pPointSamplerState);
 
-	jRenderTargetInfo ImmediateBufferInfo;
-	ImmediateBufferInfo.TextureCount = 1;
-	ImmediateBufferInfo.TextureType = ETextureType::TEXTURE_2D;
-	ImmediateBufferInfo.InternalFormat = ETextureFormat::R32UI;
-	ImmediateBufferInfo.Format = ETextureFormat::R_INTEGER;
-	ImmediateBufferInfo.FormatType = EFormatType::UNSIGNED_INT;
-	ImmediateBufferInfo.DepthBufferType = EDepthBufferType::NONE;
-	ImmediateBufferInfo.Width = SCR_WIDTH;
-	ImmediateBufferInfo.Height = SCR_HEIGHT;
-	ImmediateBufferInfo.Magnification = ETextureFilter::NEAREST;
-	ImmediateBufferInfo.Minification = ETextureFilter::NEAREST;
-	ImmediateBufferPtr = jRenderTargetPool::GetRenderTarget(ImmediateBufferInfo);
+	jRenderTargetInfo IntermediateBufferInfo;
+	IntermediateBufferInfo.TextureCount = 1;
+	IntermediateBufferInfo.TextureType = ETextureType::TEXTURE_2D;
+	IntermediateBufferInfo.InternalFormat = ETextureFormat::R32UI;
+	IntermediateBufferInfo.Format = ETextureFormat::R_INTEGER;
+	IntermediateBufferInfo.FormatType = EFormatType::UNSIGNED_INT;
+	IntermediateBufferInfo.DepthBufferType = EDepthBufferType::NONE;
+	IntermediateBufferInfo.Width = SCR_WIDTH;
+	IntermediateBufferInfo.Height = SCR_HEIGHT;
+	IntermediateBufferInfo.Magnification = ETextureFilter::NEAREST;
+	IntermediateBufferInfo.Minification = ETextureFilter::NEAREST;
+	IntermediateBufferPtr = jRenderTargetPool::GetRenderTarget(IntermediateBufferInfo);
 
 	jRenderTargetInfo PPRResultInfo;
 	PPRResultInfo.TextureCount = 1;
@@ -715,6 +716,10 @@ void jDeferredRenderer::InitSSAO()
 	PPRResultInfo.Magnification = ETextureFilter::NEAREST;
 	PPRResultInfo.Minification = ETextureFilter::NEAREST;
 	PPRResultPtr = jRenderTargetPool::GetRenderTarget(PPRResultInfo);
+
+	PPRMaterialData.AddMaterialParam("SceneColorPointSampler", GBufferRTPtr->GetTexture(0), pPointSamplerState);
+	PPRMaterialData.AddMaterialParam("SceneColorLinearSampler", GBufferRTPtr->GetTexture(0), pLinearClamp);
+	PPRMaterialData.AddMaterialParam("NormalSampler", GBufferRTPtr->Textures[1].get(), pPointSamplerState);
 }
 
 std::shared_ptr<jRenderTarget> jDeferredRenderer::GetDebugRTPtr() const

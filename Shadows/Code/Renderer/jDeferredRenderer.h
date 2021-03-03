@@ -54,6 +54,7 @@ private:
 
 	std::shared_ptr<jRenderTarget> GetDebugRTPtr() const;
 
-	std::shared_ptr<jRenderTarget> ImmediateBufferPtr;
+	std::shared_ptr<jRenderTarget> IntermediateBufferPtr;
 	std::shared_ptr<jRenderTarget> PPRResultPtr;
+	jMaterialData PPRMaterialData;
 };
