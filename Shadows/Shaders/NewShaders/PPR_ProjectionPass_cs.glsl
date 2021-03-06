@@ -11,21 +11,24 @@ uniform vec2 ScreenSize;
 uniform mat4 WorldToScreen;
 uniform vec4 Plane;
 
-// Constants for 'intermediate buffer' values encoding.
-// Lowest two bits reserved for coordinate system index.
+// 'intermediate buffer'를 인코딩하기 위한 상수
+// 하위 2비트는 좌표계 인덱스를 위해 할당
 #define PPR_CLEAR_VALUE (0xffffffff)
 #define PPR_PREDICTED_DIST_MULTIPLIER (8)
 #define PPR_PREDICTED_OFFSET_RANGE_X (2048)
 #define PPR_PREDICTED_DIST_OFFSET_X (PPR_PREDICTED_OFFSET_RANGE_X)
 #define PPR_PREDICTED_DIST_OFFSET_Y (0)
-// Calculate coordinate system index based on offset
+
+// offset을 기반으로 좌표계 인덱스 계산
+// -> 더 긴쪽이 y 가 되도록 결정하며 총 4개의 좌표계가 있음.
 uint PPR_GetPackingBasisIndexTwoBits(const vec2 offset)
 {
 	if (abs(offset.x) >= abs(offset.y))
 		return uint(offset.x >= 0 ? 0 : 1);
 	return uint(offset.y >= 0 ? 2 : 3);
 }
-// Decode coordinate system based on encoded coordSystem index
+
+// 인코딩된 좌표계 인덱스를 기반으로 좌표계를 디코딩함
 mat2 PPR_DecodePackingBasisIndexTwoBits(uint packingBasisIndex)
 {
 	vec2 basis = vec2(0.0);
@@ -37,118 +40,69 @@ mat2 PPR_DecodePackingBasisIndexTwoBits(uint packingBasisIndex)
 	return mat2(vec2(basis.y, -basis.x), basis.xy);
 }
 
-// Pack integer and fract offset value
+// Offset의 정수와 소수를 패킹(Packing)함.
 uint PPR_PackValue(const float _whole, float _fract, const bool isY)
 {
 	uint result = uint(0);
-	// pack whole part
+	// 정부 부분 패킹
 	result += uint(_whole + (isY ? PPR_PREDICTED_DIST_OFFSET_Y : PPR_PREDICTED_DIST_OFFSET_X));
 	result *= PPR_PREDICTED_DIST_MULTIPLIER;
-	// pack fract part
+	
+	// 소수 부분 패킹
 	_fract *= PPR_PREDICTED_DIST_MULTIPLIER;
 	result += uint(min(floor(_fract + 0.5), PPR_PREDICTED_DIST_MULTIPLIER - 1));
-	//
 	return result;
-}
-// Unpack integer and fract offset value
-vec2 PPR_UnpackValue(uint v, const bool isY)
-{
-	// unpack fract part
-	float _fract = (float(v % uint(PPR_PREDICTED_DIST_MULTIPLIER)) + 0.5) / float(PPR_PREDICTED_DIST_MULTIPLIER) - 0.5;
-	v /= PPR_PREDICTED_DIST_MULTIPLIER;
-	// unpack whole part
-	float _whole = int(v) - (isY ? PPR_PREDICTED_DIST_OFFSET_Y : PPR_PREDICTED_DIST_OFFSET_X);
-	//
-	return vec2(_whole, _fract);
 }
 
 // Encode offset for 'intermediate buffer' storage
+// 'intermediate buffer' 저장소를 위해 Offset을 인코딩 함
 uint PPR_EncodeIntermediateBufferValue(const vec2 offset)
 {
-	// build snapped basis
+	// Offset의 y축이 더 긴 좌표계의 인덱스 선택
 	uint packingBasisIndex = PPR_GetPackingBasisIndexTwoBits(offset);
 	mat2 packingBasisSnappedMatrix = PPR_DecodePackingBasisIndexTwoBits(packingBasisIndex);
-	// decompose offset to _whole and _fract parts
+	
+	// Offset을 정수부와 소수부로 분리함
 	vec2 _whole = floor(offset + 0.5);
 	vec2 _fract = offset - _whole;
-	// mirror _fract part to avoid filtered result 'swimming' under motion
+
+	// 필터링된 결과가 움직이는 동안 'swimming'을 만드는 것을 피하기 위해서 소수 부분을 미러링 함.
 	vec2 dir = normalize(offset);
 	_fract -= 2 * dir * dot(dir, _fract);
-	// transform both parts to snapped basis
+
+	// 두 부분을 변환하여 좌표계 기저(basis)에 맞춤
 	_whole = packingBasisSnappedMatrix * _whole;
 	_fract = packingBasisSnappedMatrix * _fract;
-	// put _fract part in 0..1 range
+	
+	// 소수부를 0..1 범위로 둠
 	_fract *= 0.707;
 	_fract += 0.5;
-	// encode result
+
+	// 결과 인코딩
 	uint result = uint(0);
 	result += PPR_PackValue(_whole.y, _fract.y, true);
 	result *= 2 * PPR_PREDICTED_OFFSET_RANGE_X * PPR_PREDICTED_DIST_MULTIPLIER;
 	result += PPR_PackValue(_whole.x, _fract.x, false);
 	result *= 4;
 	result += packingBasisIndex;
-	//
 	return result;
 }
 
-// Decode value read from 'intermediate buffer'
-void PPR_DecodeIntermediateBufferValue(uint value, out vec2 distFilteredWhole, out vec2 distFilteredFract, out mat2 packingBasis)
+// 'intermediate buffer'로 프로젝션된 결과를 기록합니다.
+// 'originalPixelVpos' 로 부터 'mirroredWorldPos'로 픽셀을 프로젝션 시킴.
+// Shape의 주어진 위치에 프로젝션된 픽셀이 다른 Shape에 의해 가려지지 않는 것을 보장한 뒤에 'projection pass'에서 이 함수가 호출됩니다.
+void PPR_ProjectionPassWrite(ivec2 originalPixelVpos, vec3 mirroredWorldPos)
 {
-	distFilteredWhole = vec2(0.0);
-	distFilteredFract = vec2(0.0);
-	packingBasis = mat2(1, 0, 0, 1);
-	if (value != uint(PPR_CLEAR_VALUE))
-	{
-		uint settFullValueRange = uint(2 * PPR_PREDICTED_OFFSET_RANGE_X * PPR_PREDICTED_DIST_MULTIPLIER);
-		// decode packing basis
-		packingBasis = PPR_DecodePackingBasisIndexTwoBits(value);
-		value /= 4;
-		// decode offsets along (y) and perpendicular (x) to snapped basis
-		vec2 x = PPR_UnpackValue(value & (settFullValueRange - uint(1)), false);
-		vec2 y = PPR_UnpackValue(value / settFullValueRange, true);
-		// output result
-		distFilteredWhole = vec2(x.x, y.x);
-		distFilteredFract = vec2(x.y, y.y);
-		distFilteredFract /= 0.707;
-	}
-}
-
-// https://www.shadertoy.com/view/ltjBWG
-const mat3 RGBToYCoCgMatrix = mat3(0.25, 0.5, -0.25, 0.5, 0.0, 0.5, 0.25, -0.5, -0.25);
-const mat3 YCoCgToRGBMatrix = mat3(1.0, 1.0, 1.0, 1.0, 0.0, -1.0, -1.0, 1.0, -1.0);
-vec3 RGB_to_YCoCg(vec3 InRGB)
-{
-	return RGBToYCoCgMatrix * InRGB;
-}
-vec3 YCoCg_to_RGB(vec3 InYCoCg)
-{
-	return YCoCgToRGBMatrix * InYCoCg;
-}
-
-// Write projection to 'intermediate buffer'.
-// Pixel projected from 'originalPixelVpos' to 'mirroredWorldPos'.
-// Function called in 'projectio pass' after ensuring that pixel projected into given
-// place of the shape is not occluded by any other shape.
-void PPR_ProjectionPassWrite(
-	//SSharedConstants globalConstants, RWStructuredBuffer<uint> uavIntermediateBuffer, 
-	ivec2 originalPixelVpos, vec3 mirroredWorldPos)
-{
-	//const vec4 projPosOrig = mul(vec4(mirroredWorldPos, 1), globalConstants.worldToScreen);
 	vec4 projPosOrig = WorldToScreen * vec4(mirroredWorldPos, 1);
 	vec4 projPos = projPosOrig / projPosOrig.w;
 
-	//if (all(abs(projPos.xy) < 1))
 	bool AllComponentLessThanOne = (abs(projPos.x) < 1.0) && (abs(projPos.y) < 1.0);
 	if (AllComponentLessThanOne)
 	{
-		//vec2 targetCrd = (projPos.xy * vec2(0.5, -0.5) + 0.5) * globalConstants.resolution.xy;
 		vec2 targetCrd = (projPos.xy * vec2(0.5, 0.5) + 0.5) * ScreenSize;
 		vec2 offset = targetCrd - (originalPixelVpos + 0.5);
-		//uint writeOffset = uint(targetCrd.x) + uint(targetCrd.y) * uint(globalConstants.resolution.x);
-		//uint writeOffset = uint(targetCrd.x) + uint(targetCrd.y) * uint(ScreenSize.x);
 		uint originalValue = uint(0);
 		uint valueToWrite = PPR_EncodeIntermediateBufferValue(offset);
-		//InterlockedMin(uavIntermediateBuffer[writeOffset], valueToWrite, originalValue);
 		imageAtomicMin(ImmediateBufferImage, ivec2(int(targetCrd.x), int(targetCrd.y)), valueToWrite);
 	}
 }
