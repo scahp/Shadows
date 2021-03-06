@@ -9,7 +9,7 @@ precision mediump float;
 
 uniform vec2 ScreenSize;
 uniform mat4 WorldToScreen;
-
+uniform vec4 Plane;
 
 // Constants for 'intermediate buffer' values encoding.
 // Lowest two bits reserved for coordinate system index.
@@ -158,14 +158,12 @@ void main()
 	ivec2 VPos = ivec2(gl_GlobalInvocationID.xy);		// Position in screen space
 	vec3 WorldPos = imageLoad(WorldPosImage, VPos).xyz;
 
-	vec3 PlaneNormal = vec3(0.0, 1.0, 0.0);
-	float PlaneDist = 0.0;
-	float dist = dot(PlaneNormal, WorldPos) - PlaneDist;
+	float dist = dot(Plane.xyz, WorldPos) - Plane.w;
 
 	// Upper-side of the plane is skip
 	if (dist < 0.0)
 		return;
 
-	vec3 MirroredWorldPos = WorldPos + 2.0 * dist * (-PlaneNormal);
+	vec3 MirroredWorldPos = WorldPos + 2.0 * dist * (-Plane.xyz);
 	PPR_ProjectionPassWrite(VPos, MirroredWorldPos);
 }

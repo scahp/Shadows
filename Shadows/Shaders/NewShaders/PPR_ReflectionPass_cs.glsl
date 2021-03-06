@@ -1,4 +1,4 @@
-#version 430 core
+﻿#version 430 core
 
 layout(local_size_x = 1, local_size_y = 1) in;
 
@@ -10,9 +10,62 @@ layout(binding = 1, rgba32f) uniform image2D ResultImage;
 uniform sampler2D SceneColorPointSampler;
 uniform sampler2D SceneColorLinearSampler;
 uniform sampler2D NormalSampler;
+uniform sampler2D PosSampler;
 
-uniform mat4 V;
 uniform vec2 ScreenSize;
+uniform vec3 CameraWorldPos;
+uniform mat4 WorldToScreen;
+uniform vec4 Plane;
+
+bool IntersectionPlaneAndRay(out vec3 OutIntersectPoint, vec4 InPlane, vec3 InRayOrigin, vec3 InRayDir)
+{
+	vec3 normal = InPlane.xyz;
+	float dist = InPlane.w;
+
+	float t = 0.0;
+	vec3 IntersectPoint = vec3(0.0, 0.0, 0.0);
+	float temp = dot(normal, InRayDir);
+	if (abs(temp) > 0.0001)
+	{
+		t = (dist - dot(normal, InRayOrigin)) / temp;
+		if ((0.0 <= t) && (1.0 >= t))
+		{
+			OutIntersectPoint = InRayOrigin + InRayDir * t;
+			return true;
+		}
+	}
+	return false;
+}
+
+vec2 GetAppliedNormalMap(vec2 InScreenCoord)
+{
+	ivec2 vpos = ivec2(gl_GlobalInvocationID.xy);		// Position in screen space
+
+	vec3 WorldPos = texture(PosSampler, vec2(vpos.x, vpos.y) / (ScreenSize)).xyz;
+
+	vec3 Origin = CameraWorldPos;
+	vec3 Dir = (WorldPos - CameraWorldPos);
+
+	vec3 IntersectPoint = vec3(0.0, 0.0, 0.0);
+	if (IntersectionPlaneAndRay(IntersectPoint, Plane, Origin, Dir))
+	{
+		vec3 ReflectedWorldPos = texture(PosSampler, vec2(InScreenCoord.x, InScreenCoord.y) / (ScreenSize)).xyz;
+		vec3 normal = normalize(texture(NormalSampler, vec2(vpos.x, vpos.y) / (ScreenSize)).xyz);
+		float reflectedDistance = distance(ReflectedWorldPos, IntersectPoint);
+
+		vec3 NewRelfectVector = Dir + 2 * dot(normal, -Dir) * normal;
+		NewRelfectVector = normalize(NewRelfectVector);
+
+		vec4 ProjectedNewReflectingPos = WorldToScreen * vec4(WorldPos + NewRelfectVector * reflectedDistance, 1.0);
+		ProjectedNewReflectingPos /= ProjectedNewReflectingPos.w;
+		vec2 ProjectedUV = (ProjectedNewReflectingPos.xy + vec2(1.0)) * 0.5;
+
+		ProjectedUV = clamp(ProjectedUV, vec2(0.0), vec2(1.0));
+		return (ProjectedUV * ScreenSize);
+	}
+
+	return InScreenCoord;
+}
 
 // Constants for 'intermediate buffer' values encoding.
 // Lowest two bits reserved for coordinate system index.
@@ -161,7 +214,7 @@ vec4 PPR_ReflectionPass(
 	const ivec2 vpos,
 	//StructuredBuffer<uint> srvIntermediateBuffer, 
 	//Texture2D srvColor,
-	const bool enableHolesFilling, const bool enableFiltering, const bool enableFilterBleedingReduction
+	const bool enableHolesFilling, const bool enableFiltering, const bool applyNormalMap, const bool enableFilterBleedingReduction
 )
 {
 	ivec2 vposread = vpos;
@@ -250,9 +303,18 @@ vec4 PPR_ReflectionPass(
 	{
 		return vec4(0.0);
 	}
+
 	// sample filtered and non-filtered color
 	vec2 targetCrd = vpos + 0.5 - predictedDist;
 	vec2 targetCrdUnfiltered = vpos + 0.5 - predictedDistUnfiltered;
+
+	// Apply NormalMap
+	if (applyNormalMap)
+	{
+		targetCrd = GetAppliedNormalMap(targetCrd);
+		targetCrdUnfiltered = GetAppliedNormalMap(targetCrdUnfiltered);
+	}
+
 	//vec3 colorFiltered = srvColor.SampleLevel(smpLinear, targetCrd * globalConstants.resolution.zw, 0).xyz;
 	//vec3 colorUnfiltered = srvColor.SampleLevel(smpPoint, targetCrdUnfiltered * globalConstants.resolution.zw, 0).xyz;
 	vec3 colorFiltered = texture(SceneColorLinearSampler, targetCrd * (1.0 / ScreenSize)).xyz;
@@ -263,13 +325,9 @@ vec4 PPR_ReflectionPass(
 	if (enableFiltering)
 	{
 		if (enableFilterBleedingReduction)
-		{
 			colorResult = PPR_FixColorBleeding(colorFiltered, colorUnfiltered);
-		}
 		else
-		{
 			colorResult = colorFiltered;
-		}
 	}
 	else
 	{
@@ -279,12 +337,9 @@ vec4 PPR_ReflectionPass(
 	return vec4(colorResult, 1);
 }
 
-vec4 GetViewSpaceNormal(vec2 uv)
+float GetReflectionMask(vec2 uv)
 {
-	vec4 normal = texture(NormalSampler, uv);
-	vec4 result = (V * vec4(normal.xyz, 0.0));
-	result.w = normal.w;
-	return result;
+	return texture(NormalSampler, uv).w;
 }
 
 void main()
@@ -292,15 +347,14 @@ void main()
 	ivec2 VPos = ivec2(gl_GlobalInvocationID.xy);		// Position in screen space
 	vec2 UV = vec2(VPos) * (1.0 / ScreenSize);
 
-	vec4 normalInVS = GetViewSpaceNormal(UV);
-	float reflectionMask = normalInVS.w;	// should be fetched from texture 
+	float reflectionMask = GetReflectionMask(UV);	// should be fetched from texture 
 
 	vec4 result = vec4(0.0);
 	if (reflectionMask != 0.0)
-		result = PPR_ReflectionPass(VPos, true, true, true);
+		result = PPR_ReflectionPass(VPos, true, true, true, false);
 
 	// Add SceneColor to result
 	result += texture(SceneColorPointSampler, UV);
 
-	imageStore(ResultImage, VPos, result);	
+	imageStore(ResultImage, VPos, result);
 }

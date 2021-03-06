@@ -353,6 +353,8 @@ void jDeferredRenderer::PPR(jRenderContext* InContext) const
 		g_rhi->DispatchCompute(SCR_WIDTH, SCR_HEIGHT, 1);
 	}
 
+	const Vector4 Plane(0.0f, 1.0f, 0.0f, 0.0f);
+
 	{
 		jShader* shader = jShader::GetShader("NewPPR_ProjectionPass");
 		g_rhi->SetShader(shader);
@@ -360,6 +362,7 @@ void jDeferredRenderer::PPR(jRenderContext* InContext) const
 		Vector2 ScreenSize(SCR_WIDTH, SCR_HEIGHT);
 		g_rhi->SetUniformbuffer("WorldToScreen", InContext->Camera->Projection * InContext->Camera->View, shader);
 		g_rhi->SetUniformbuffer("ScreenSize", ScreenSize, shader);
+		g_rhi->SetUniformbuffer("Plane", Plane, shader);
 
 		g_rhi->SetImageTexture(0, GBufferRTPtr->GetTexture(2), EImageTextureAccessType::READ_ONLY);
 		g_rhi->SetImageTexture(1, IntermediateBufferPtr->GetTexture(), EImageTextureAccessType::READ_WRITE);
@@ -372,8 +375,10 @@ void jDeferredRenderer::PPR(jRenderContext* InContext) const
 		g_rhi->SetShader(shader);
 
 		Vector2 ScreenSize(SCR_WIDTH, SCR_HEIGHT);
-		//g_rhi->SetUniformbuffer("ProjectionMatrix", InContext->Camera->Projection, shader);
+		g_rhi->SetUniformbuffer("WorldToScreen", InContext->Camera->Projection * InContext->Camera->View, shader);
 		g_rhi->SetUniformbuffer("ScreenSize", ScreenSize, shader);
+		g_rhi->SetUniformbuffer("CameraWorldPos", InContext->Camera->Pos, shader);
+		g_rhi->SetUniformbuffer("Plane", Plane, shader);
 
 		g_rhi->SetImageTexture(0, IntermediateBufferPtr->GetTexture(), EImageTextureAccessType::READ_ONLY);
 		g_rhi->SetImageTexture(1, PPRResultPtr->GetTexture(), EImageTextureAccessType::READ_WRITE);
@@ -556,7 +561,7 @@ void jDeferredRenderer::Render(jRenderContext* InContext)
 		{
 			jShader* shader = jShader::GetShader("UIShader");
 			g_rhi->SetShader(shader);
-			DebugQuad->Size = Vector2(400.0f, 400.0f);
+			DebugQuad->Size = Vector2(SCR_WIDTH / 1.5, SCR_HEIGHT / 1.5);
 			DebugQuad->Pos = Vector2(SCR_WIDTH, SCR_HEIGHT) - DebugQuad->Size - Vector2(10.0f, 10.0f);
 			DebugQuad->Draw(InContext->Camera, shader, {});
 		}
@@ -717,9 +722,10 @@ void jDeferredRenderer::InitSSAO()
 	PPRResultInfo.Minification = ETextureFilter::NEAREST;
 	PPRResultPtr = jRenderTargetPool::GetRenderTarget(PPRResultInfo);
 
-	PPRMaterialData.AddMaterialParam("SceneColorPointSampler", GBufferRTPtr->GetTexture(0), pPointSamplerState);
-	PPRMaterialData.AddMaterialParam("SceneColorLinearSampler", GBufferRTPtr->GetTexture(0), pLinearClamp);
+	PPRMaterialData.AddMaterialParam("SceneColorPointSampler", SceneColorRTPtr->GetTexture(), pPointSamplerState);
+	PPRMaterialData.AddMaterialParam("SceneColorLinearSampler", SceneColorRTPtr->GetTexture(), pLinearClamp);
 	PPRMaterialData.AddMaterialParam("NormalSampler", GBufferRTPtr->Textures[1].get(), pPointSamplerState);
+	PPRMaterialData.AddMaterialParam("PosSampler", GBufferRTPtr->Textures[2].get(), pPointSamplerState);
 }
 
 std::shared_ptr<jRenderTarget> jDeferredRenderer::GetDebugRTPtr() const
