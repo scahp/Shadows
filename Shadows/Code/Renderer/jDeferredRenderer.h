@@ -13,10 +13,10 @@ public:
 	void GBuffer(jRenderContext* InContext) const;
 	void SSAO(jRenderContext* InContext) const;
 	void LightingPass(jRenderContext* InContext) const;
-	void Tonemap(jRenderContext* InContext) const;
 	void SSR(jRenderContext* InContext) const;
 	void PPR(jRenderContext* InContext) const;
 	void AA(jRenderContext* InContext) const;
+	void Tonemap(jRenderContext* InContext) const;
 
 	void Init();
 	void Render(jRenderContext* InContext);
@@ -55,6 +55,9 @@ private:
 	std::shared_ptr<jRenderTarget> GetDebugRTPtr() const;
 
 	std::shared_ptr<jRenderTarget> IntermediateBufferPtr;
-	std::shared_ptr<jRenderTarget> PPRResultPtr;
+	std::shared_ptr<jRenderTarget> PPRRTPtr;
 	jMaterialData PPRMaterialData;
+
+	std::shared_ptr<jRenderTarget> TonemapRTPtr;
+	jMaterialData TonemapMaterialData;
 };

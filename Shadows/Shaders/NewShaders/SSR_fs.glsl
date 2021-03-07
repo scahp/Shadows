@@ -14,6 +14,7 @@ uniform mat4 InvP;
 uniform vec2 ScreenSize;
 uniform float Near;
 uniform float Far;
+uniform int DebugReflectionOnly;
 
 #if USE_HIZ
 uniform int MaxMipLevel;
@@ -276,7 +277,10 @@ vec4 ComputeReflectedColor(float intensity, vec3 intersection, vec4 skyColor)
 
 void main()
 {
-	vec4 DiffuseColor = texture(SceneColorSampler, TexCoord_);
+	vec4 DiffuseColor = vec4(0.0); 
+	if (DebugReflectionOnly == 0)
+		DiffuseColor = texture(SceneColorSampler, TexCoord_);
+
 	vec4 normalInVS = GetViewSpaceNormal(TexCoord_);
 	float reflectionMask = normalInVS.w;	// should be fetched from texture 
 

@@ -13,6 +13,9 @@ public:
 	}
 
 	EDeferredRenderPassDebugRT DeferredRenderPassDebugRT = EDeferredRenderPassDebugRT::None;
+	ESSRType SSRType = ESSRType::PPR;
+	bool WithNormalMap = true;
+	bool ReflectionOnly = false;
 
 	bool ShadowOn = true;
 	EShadowType ShadowType = EShadowType::ShadowMap;

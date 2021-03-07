@@ -17,6 +17,9 @@ uniform vec3 CameraWorldPos;
 uniform mat4 WorldToScreen;
 uniform vec4 Plane;
 
+uniform int DebugWithNormalMap;
+uniform int DebugReflectionOnly;
+
 bool IntersectionPlaneAndRay(out vec3 OutIntersectPoint, vec4 InPlane, vec3 InRayOrigin, vec3 InRayDir)
 {
 	vec3 normal = InPlane.xyz;
@@ -325,10 +328,11 @@ void main()
 
 	vec4 result = vec4(0.0);
 	if (reflectionMask != 0.0)
-		result = PPR_ReflectionPass(VPos, true, true, true, false);
+		result = PPR_ReflectionPass(VPos, true, true, (DebugWithNormalMap != 0), false);
 
 	// Add SceneColor to result
-	result += texture(SceneColorPointSampler, UV);
+	if (DebugReflectionOnly == 0)
+		result += texture(SceneColorPointSampler, UV);
 
 	imageStore(ResultImage, VPos, result);
 }

@@ -105,3 +105,16 @@ static const char* EDeferredRenderPassDebugRTString[] = {
 	"AA",
 	"MAX"
 };
+
+enum class ESSRType
+{
+	SSR = 0,
+	PPR,
+	MAX
+};
+
+static const char* ESSRTypeString[] = {
+	"SSR",
+	"PPR",
+	"MAX"
+};

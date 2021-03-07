@@ -18,6 +18,8 @@ uniform int TextureSRGB[1];
 
 uniform sampler2D NormalSampler;
 uniform int UseNormalSampler;
+
+uniform int DebugWithNormalMap;
 #endif // USE_TEXTURE
 
 in vec3 Pos_;
@@ -61,7 +63,7 @@ void main()
 	out_color = diffuse;
 	out_color.xyz *= Material.Diffuse;
 
-	if (UseNormalSampler > 0)
+	if (UseNormalSampler > 0 && DebugWithNormalMap > 0)
 	{
 		// skip to transform normal because WorldMatrix is identity now.
 		out_normal.xyz = texture(NormalSampler, TexCoord_).xyz;

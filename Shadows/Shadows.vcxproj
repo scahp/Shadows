@@ -392,6 +392,8 @@
     <None Include="Shaders\NewShaders\SSM_vs.glsl" />
     <None Include="Shaders\NewShaders\SSR_fs.glsl" />
     <None Include="Shaders\NewShaders\SSR_vs.glsl" />
+    <None Include="Shaders\NewShaders\tonemap_fs.glsl" />
+    <None Include="Shaders\NewShaders\tonemap_vs.glsl" />
     <None Include="Shaders\shadow.glsl" />
     <None Include="Shaders\shadowmap\fs.glsl" />
     <None Include="Shaders\shadowmap\fs_deepShadowMap.glsl" />

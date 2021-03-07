@@ -171,6 +171,9 @@ void jDeferredRenderer::GBuffer(jRenderContext* InContext) const
 		jShader* shader = jShader::GetShader("NewDeferred");
 		g_rhi->SetShader(shader);
 
+		const jShadowAppSettingProperties& Properties = jShadowAppSettingProperties::GetInstance();
+		g_rhi->SetUniformbuffer("DebugWithNormalMap", Properties.WithNormalMap, shader);
+
 		const jCamera* CurCamera = InContext->Camera;
 		JASSERT(CurCamera);
 
@@ -287,11 +290,6 @@ void jDeferredRenderer::LightingPass(jRenderContext* InContext) const
 	}
 }
 
-void jDeferredRenderer::Tonemap(jRenderContext* InContext) const
-{
-	SCOPE_DEBUG_EVENT(g_rhi, "Tonemap");
-}
-
 void jDeferredRenderer::SSR(jRenderContext* InContext) const
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "SSR");
@@ -328,9 +326,11 @@ void jDeferredRenderer::SSR(jRenderContext* InContext) const
 		Vector2 ScreenSize(SCR_WIDTH, SCR_HEIGHT);
 		g_rhi->SetUniformbuffer("InvP", InvProjection, shader);
 		g_rhi->SetUniformbuffer("ScreenSize", ScreenSize, shader);
-
 		g_rhi->SetUniformbuffer("Near", InContext->Camera->Near, shader);
 		g_rhi->SetUniformbuffer("Far", InContext->Camera->Far, shader);
+
+		const jShadowAppSettingProperties& Properties = jShadowAppSettingProperties::GetInstance();
+		g_rhi->SetUniformbuffer("DebugReflectionOnly", Properties.ReflectionOnly, shader);
 
 		JASSERT(FullscreenQuad);
 		FullscreenQuad->Draw(nullptr, shader, Lights);
@@ -380,8 +380,12 @@ void jDeferredRenderer::PPR(jRenderContext* InContext) const
 		g_rhi->SetUniformbuffer("CameraWorldPos", InContext->Camera->Pos, shader);
 		g_rhi->SetUniformbuffer("Plane", Plane, shader);
 
+		const jShadowAppSettingProperties& Properties = jShadowAppSettingProperties::GetInstance();
+		g_rhi->SetUniformbuffer("DebugWithNormalMap", Properties.WithNormalMap, shader);
+		g_rhi->SetUniformbuffer("DebugReflectionOnly", Properties.ReflectionOnly, shader);		
+
 		g_rhi->SetImageTexture(0, IntermediateBufferPtr->GetTexture(), EImageTextureAccessType::READ_ONLY);
-		g_rhi->SetImageTexture(1, PPRResultPtr->GetTexture(), EImageTextureAccessType::READ_WRITE);
+		g_rhi->SetImageTexture(1, PPRRTPtr->GetTexture(), EImageTextureAccessType::READ_WRITE);
 
 		g_rhi->SetMatetrial(&PPRMaterialData, shader);
 
@@ -409,6 +413,29 @@ void jDeferredRenderer::AA(jRenderContext* InContext) const
 		FullscreenQuad->Draw(nullptr, shader, {});
 
 		AARTPtr->End();
+	}
+}
+
+void jDeferredRenderer::Tonemap(jRenderContext* InContext) const
+{
+	SCOPE_DEBUG_EVENT(g_rhi, "Tonemap");
+
+	if (TonemapRTPtr->Begin())
+	{
+		g_rhi->SetClearColor(Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+		g_rhi->SetClear(ERenderBufferType::COLOR);				// Depth is attached from DepthPrepass, so skip this.
+		g_rhi->EnableDepthTest(false);
+
+		jShader* shader = jShader::GetShader("NewTonemap");
+		g_rhi->SetShader(shader);
+
+		int32 baseBindingIndex = g_rhi->SetMatetrial(&TonemapMaterialData, shader);
+		InContext->Camera->BindCamera(shader);
+
+		JASSERT(FullscreenQuad);
+		FullscreenQuad->Draw(nullptr, shader, {});
+
+		TonemapRTPtr->End();
 	}
 }
 
@@ -484,16 +511,30 @@ void jDeferredRenderer::Render(jRenderContext* InContext)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "Render");
 
+	const jShadowAppSettingProperties& Properties = jShadowAppSettingProperties::GetInstance();
+
 	Culling(InContext);
 	DepthPrepass(InContext);
 	ShowdowMap(InContext);
 	GBuffer(InContext);
 	SSAO(InContext);
 	LightingPass(InContext);
-	Tonemap(InContext);
-	SSR(InContext);
-	PPR(InContext);
+
+	if (Properties.SSRType == ESSRType::SSR)
+	{
+		SSR(InContext);
+		if (AAMaterialData.Params.size() > 0)
+			AAMaterialData.Params[0]->Texture = SSRRTPtr->GetTexture();
+	}
+	else if (Properties.SSRType == ESSRType::PPR)
+	{
+		PPR(InContext);
+		if (AAMaterialData.Params.size() > 0)
+			AAMaterialData.Params[0]->Texture = PPRRTPtr->GetTexture();
+	}
+
 	AA(InContext);
+	Tonemap(InContext);
 
 	// Render final image to backbuffer
 	{
@@ -511,8 +552,6 @@ void jDeferredRenderer::Render(jRenderContext* InContext)
 		FullscreenQuad->Draw(nullptr, shader, {});
 	}
 
-	const jShadowAppSettingProperties& Properties = jShadowAppSettingProperties::GetInstance();
-	
 	if (Properties.DeferredRenderPassDebugRT != EDeferredRenderPassDebugRT::MAX)
 	{
 		jTexture* DebugTexture = nullptr;
@@ -553,9 +592,6 @@ void jDeferredRenderer::Render(jRenderContext* InContext)
 
 		if (DebugTexture != DebugQuad->GetTexture())
 			DebugQuad->SetTexture(DebugTexture);
-
-		// Test
-		DebugQuad->SetTexture(PPRResultPtr->GetTexture());
 
 		if (DebugQuad->GetTexture())
 		{
@@ -694,7 +730,22 @@ void jDeferredRenderer::InitSSAO()
 	AARTInfo.Minification = ETextureFilter::NEAREST;
 	AARTPtr = jRenderTargetPool::GetRenderTarget(AARTInfo);
 
-	FinalMaterialData.AddMaterialParam("TextureSampler", AARTPtr->GetTexture(), pPointSamplerState);
+	jRenderTargetInfo TonemapRTInfo;
+	TonemapRTInfo.TextureCount = 1;
+	TonemapRTInfo.TextureType = ETextureType::TEXTURE_2D;
+	TonemapRTInfo.InternalFormat = ETextureFormat::RGBA32F;
+	TonemapRTInfo.Format = ETextureFormat::RGBA;
+	TonemapRTInfo.FormatType = EFormatType::FLOAT;
+	TonemapRTInfo.DepthBufferType = EDepthBufferType::NONE;
+	TonemapRTInfo.Width = SCR_WIDTH;
+	TonemapRTInfo.Height = SCR_HEIGHT;
+	TonemapRTInfo.Magnification = ETextureFilter::NEAREST;
+	TonemapRTInfo.Minification = ETextureFilter::NEAREST;
+	TonemapRTPtr = jRenderTargetPool::GetRenderTarget(TonemapRTInfo);
+	
+	TonemapMaterialData.AddMaterialParam("ColorSampler", AARTPtr->GetTexture(), pPointSamplerState);
+
+	FinalMaterialData.AddMaterialParam("TextureSampler", TonemapRTPtr->GetTexture(), pPointSamplerState);
 
 	jRenderTargetInfo IntermediateBufferInfo;
 	IntermediateBufferInfo.TextureCount = 1;
@@ -720,7 +771,7 @@ void jDeferredRenderer::InitSSAO()
 	PPRResultInfo.Height = SCR_HEIGHT;
 	PPRResultInfo.Magnification = ETextureFilter::NEAREST;
 	PPRResultInfo.Minification = ETextureFilter::NEAREST;
-	PPRResultPtr = jRenderTargetPool::GetRenderTarget(PPRResultInfo);
+	PPRRTPtr = jRenderTargetPool::GetRenderTarget(PPRResultInfo);
 
 	PPRMaterialData.AddMaterialParam("SceneColorPointSampler", SceneColorRTPtr->GetTexture(), pPointSamplerState);
 	PPRMaterialData.AddMaterialParam("SceneColorLinearSampler", SceneColorRTPtr->GetTexture(), pLinearClamp);

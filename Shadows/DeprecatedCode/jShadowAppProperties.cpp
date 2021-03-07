@@ -6,6 +6,9 @@ jShadowAppSettingProperties* jShadowAppSettingProperties::_instance = nullptr;
 void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 {
 	appSetting->AddEnumVariable("DebugRT", DeferredRenderPassDebugRT, "EDeferredRenderPassDebugRT", EDeferredRenderPassDebugRTString);
+	appSetting->AddEnumVariable("SSR", SSRType, "ESSRType", ESSRTypeString);
+	appSetting->AddVariable("WithNormalMap", WithNormalMap);
+	appSetting->AddVariable("ReflectionOnly", ReflectionOnly);
 
 	//appSetting->AddVariable("ShadowOn", ShadowOn);
 
@@ -132,6 +135,9 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 {
 	appSetting->RemoveVariable("DeferredRenderPassDebugRT");
+	appSetting->RemoveVariable("SSRType");
+	appSetting->RemoveVariable("WithNormalMap");
+	appSetting->RemoveVariable("ReflectionOnly");
 
 	//appSetting->RemoveVariable("ShadowOn");
 	//appSetting->RemoveVariable("EShadowType");

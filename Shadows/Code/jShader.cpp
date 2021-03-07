@@ -110,6 +110,7 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_CS("NewPPR_ProjectionPass", "Shaders/NewShaders/PPR_ProjectionPass_cs.glsl");
 		DECLARE_SHADER_CS("NewPPR_ReflectionPass", "Shaders/NewShaders/PPR_ReflectionPass_cs.glsl");
 		DECLARE_SHADER_CS("NewPPR_ClearIntermediateBuffer", "Shaders/NewShaders/PPR_ClearIntermediateBuffer_cs.glsl");
+		DECLARE_SHADER_VS_FS("NewTonemap", "shaders/NewShaders/tonemap_vs.glsl", "shaders/NewShaders/tonemap_fs.glsl");
 	}
 } s_shaderInfoCreation;
 
