@@ -365,6 +365,8 @@
     <None Include="Shaders\fullscreen\fs_scale.glsl" />
     <None Include="Shaders\fullscreen\fs_tonemap.glsl" />
     <None Include="Shaders\fullscreen\vs_fullscreen_common.glsl" />
+    <None Include="Shaders\NewShaders\AtmosphericShadowing_fs.glsl" />
+    <None Include="Shaders\NewShaders\AtmosphericShadowing_vs.glsl" />
     <None Include="Shaders\NewShaders\copy_fs.glsl" />
     <None Include="Shaders\NewShaders\copy_vs.glsl" />
     <None Include="Shaders\NewShaders\depthcopy_fs.glsl" />

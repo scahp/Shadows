@@ -393,6 +393,29 @@ void jDeferredRenderer::PPR(jRenderContext* InContext) const
 	}
 }
 
+void jDeferredRenderer::AtmosphericShadowing(jRenderContext* InContext) const
+{
+	SCOPE_DEBUG_EVENT(g_rhi, "AA");
+
+	if (AtmosphericShadowingBufferPtr->Begin())
+	{
+		g_rhi->SetClearColor(Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+		g_rhi->SetClear(ERenderBufferType::COLOR);				// Depth is attached from DepthPrepass, so skip this.
+		g_rhi->EnableDepthTest(false);
+
+		jShader* shader = jShader::GetShader("NewAtmosphericShadowing");
+		g_rhi->SetShader(shader);
+
+		int32 baseBindingIndex = g_rhi->SetMatetrial(&AAMaterialData, shader);
+		InContext->Camera->BindCamera(shader);
+
+		JASSERT(FullscreenQuad);
+		FullscreenQuad->Draw(nullptr, shader, {});
+
+		AtmosphericShadowingBufferPtr->End();
+	}
+}
+
 void jDeferredRenderer::AA(jRenderContext* InContext) const
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "AA");
@@ -497,14 +520,7 @@ void jDeferredRenderer::Init()
 	InitSSAO();
 
 	// Debug quad
-	DebugQuad = jPrimitiveUtil::CreateUIQuad(Vector2(100.0f, 100.0f), Vector2(100.0f, 100.0f)
-		//, ShadowRTPtr->GetTextureDepth());
-		//, SSAORTBlurredPtr->GetTexture());
-		//, DepthRTPtr->GetTextureDepth());
-		//, HiZRTPtr->GetTextureDepth());
-		//, SceneColorRTPtr->GetTexture());
-		//, SSRRTPtr->GetTexture());
-		, nullptr);
+	DebugQuad = jPrimitiveUtil::CreateUIQuad(Vector2(100.0f, 100.0f), Vector2(100.0f, 100.0f), nullptr);
 }
 
 void jDeferredRenderer::Render(jRenderContext* InContext)
@@ -532,6 +548,8 @@ void jDeferredRenderer::Render(jRenderContext* InContext)
 		if (AAMaterialData.Params.size() > 0)
 			AAMaterialData.Params[0]->Texture = PPRRTPtr->GetTexture();
 	}
+
+	AtmosphericShadowing(InContext);
 
 	AA(InContext);
 	Tonemap(InContext);
@@ -582,6 +600,9 @@ void jDeferredRenderer::Render(jRenderContext* InContext)
 			break;
 		case EDeferredRenderPassDebugRT::SSR:
 			DebugTexture = SSRRTPtr->GetTexture();
+			break;
+		case EDeferredRenderPassDebugRT::AtmosphericShadowing:
+			DebugTexture = AtmosphericShadowingBufferPtr->GetTexture();
 			break;
 		case EDeferredRenderPassDebugRT::AA:
 			DebugTexture = AARTPtr->GetTexture();
@@ -777,6 +798,21 @@ void jDeferredRenderer::InitSSAO()
 	PPRMaterialData.AddMaterialParam("SceneColorLinearSampler", SceneColorRTPtr->GetTexture(), pLinearClamp);
 	PPRMaterialData.AddMaterialParam("NormalSampler", GBufferRTPtr->Textures[1].get(), pPointSamplerState);
 	PPRMaterialData.AddMaterialParam("PosSampler", GBufferRTPtr->Textures[2].get(), pPointSamplerState);
+
+	jRenderTargetInfo AtmosphericShadowingBuffer;
+	AtmosphericShadowingBuffer.TextureCount = 1;
+	AtmosphericShadowingBuffer.TextureType = ETextureType::TEXTURE_2D;
+	AtmosphericShadowingBuffer.InternalFormat = ETextureFormat::R16F;
+	AtmosphericShadowingBuffer.Format = ETextureFormat::R;
+	AtmosphericShadowingBuffer.FormatType = EFormatType::FLOAT;
+	AtmosphericShadowingBuffer.DepthBufferType = EDepthBufferType::NONE;
+	AtmosphericShadowingBuffer.Width = SCR_WIDTH;
+	AtmosphericShadowingBuffer.Height = SCR_HEIGHT;
+	AtmosphericShadowingBuffer.Magnification = ETextureFilter::NEAREST;
+	AtmosphericShadowingBuffer.Minification = ETextureFilter::NEAREST;
+	AtmosphericShadowingBufferPtr = jRenderTargetPool::GetRenderTarget(AtmosphericShadowingBuffer);
+
+	AtmosphericShadowingMaterialData.AddMaterialParam("PosSampler", GBufferRTPtr->Textures[2].get(), pPointSamplerState);
 }
 
 std::shared_ptr<jRenderTarget> jDeferredRenderer::GetDebugRTPtr() const

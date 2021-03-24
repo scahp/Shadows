@@ -87,6 +87,7 @@ enum class EDeferredRenderPassDebugRT
 	LightingPass,
 	Tonemap,
 	SSR,
+	AtmosphericShadowing,
 	AA,
 	MAX
 };
@@ -102,6 +103,7 @@ static const char* EDeferredRenderPassDebugRTString[] = {
 	"LightingPass",
 	"Tonemap",
 	"SSR",
+	"AtmosphericShadowing",
 	"AA",
 	"MAX"
 };

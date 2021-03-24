@@ -15,6 +15,7 @@ public:
 	void LightingPass(jRenderContext* InContext) const;
 	void SSR(jRenderContext* InContext) const;
 	void PPR(jRenderContext* InContext) const;
+	void AtmosphericShadowing(jRenderContext* InContext) const;
 	void AA(jRenderContext* InContext) const;
 	void Tonemap(jRenderContext* InContext) const;
 
@@ -60,4 +61,7 @@ private:
 
 	std::shared_ptr<jRenderTarget> TonemapRTPtr;
 	jMaterialData TonemapMaterialData;
+
+	jMaterialData AtmosphericShadowingMaterialData;
+	std::shared_ptr<jRenderTarget> AtmosphericShadowingBufferPtr;
 };

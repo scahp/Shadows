@@ -80,6 +80,12 @@ uint32 GetOpenGLTextureFormat(ETextureFormat format)
 	case ETextureFormat::R_INTEGER:
 		result = GL_RED_INTEGER;
 		break;
+	case ETextureFormat::R16UI:
+		result = GL_R16UI;
+		break;
+	case ETextureFormat::R16F:
+		result = GL_R16F;
+		break;
 	case ETextureFormat::R32UI:
 		result = GL_R32UI;
 		break;
@@ -135,6 +141,9 @@ uint32 GetOpenGLTextureFormatSimple(ETextureFormat format)
 		break;
 	case ETextureFormat::R:
 	case ETextureFormat::R32F:
+	case ETextureFormat::R32UI:
+	case ETextureFormat::R16UI:
+	case ETextureFormat::R16F:
 		result = GL_RED;
 		break;
 	default:

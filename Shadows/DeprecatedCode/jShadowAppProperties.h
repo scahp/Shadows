@@ -12,7 +12,7 @@ public:
 		return *_instance;
 	}
 
-	EDeferredRenderPassDebugRT DeferredRenderPassDebugRT = EDeferredRenderPassDebugRT::None;
+	EDeferredRenderPassDebugRT DeferredRenderPassDebugRT = EDeferredRenderPassDebugRT::AtmosphericShadowing;
 	ESSRType SSRType = ESSRType::PPR;
 	bool WithNormalMap = true;
 	bool ReflectionOnly = false;
