@@ -406,7 +406,21 @@ void jDeferredRenderer::AtmosphericShadowing(jRenderContext* InContext) const
 		jShader* shader = jShader::GetShader("NewAtmosphericShadowing");
 		g_rhi->SetShader(shader);
 
-		int32 baseBindingIndex = g_rhi->SetMatetrial(&AAMaterialData, shader);
+
+		const jLight* light = *InContext->Lights.begin();
+		JASSERT(light->Type == ELightType::DIRECTIONAL);
+
+		const jCamera* LightCamera = light->GetLightCamra();
+		JASSERT(LightCamera);
+		
+		Matrix ShadowVPMat = LightCamera->Projection * LightCamera->View;
+		Matrix VP = InContext->Camera->Projection * InContext->Camera->View;
+		
+		shader->SetUniformbuffer("ShadowVPMat", ShadowVPMat);
+		shader->SetUniformbuffer("VP", VP);
+		shader->SetUniformbuffer("CameraPos", InContext->Camera->Pos);
+
+		int32 baseBindingIndex = g_rhi->SetMatetrial(&AtmosphericShadowingMaterialData, shader);
 		InContext->Camera->BindCamera(shader);
 
 		JASSERT(FullscreenQuad);
@@ -813,6 +827,9 @@ void jDeferredRenderer::InitSSAO()
 	AtmosphericShadowingBufferPtr = jRenderTargetPool::GetRenderTarget(AtmosphericShadowingBuffer);
 
 	AtmosphericShadowingMaterialData.AddMaterialParam("PosSampler", GBufferRTPtr->Textures[2].get(), pPointSamplerState);
+	AtmosphericShadowingMaterialData.AddMaterialParam("ShadowMapSampler", ShadowRTPtr->GetTexture(), pPointSamplerState);
+	AtmosphericShadowingMaterialData.AddMaterialParam("DepthSampler", DepthRTPtr->GetTextureDepth(), pPointSamplerState);
+
 }
 
 std::shared_ptr<jRenderTarget> jDeferredRenderer::GetDebugRTPtr() const
