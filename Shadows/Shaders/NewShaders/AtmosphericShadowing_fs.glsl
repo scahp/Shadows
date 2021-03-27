@@ -26,21 +26,6 @@ vec3 TransformShdowMapTextureSpace(vec3 InWorldPos)
 
 void main()
 {
-	vec3 anisotropConst; // (1 − g, 1 + g * g, 2 * g)
-	float g = 0.5;
-	anisotropyConst.x = 1.0 - g;
-	anisotropyConst.y = 1.0 + g * g;
-	anisotropyConst.z = 2.0 * g;
-	float dmin = 1.0;
-	float dmax = 10.0;
-	float invlength = 1.0 / (dmax - dmin);
-
-	float h = anisotropyConst.x * 1.0 / (anisotropyConst.y − anisotropyConst.z *
-		dot(vec3(normalize(CameraDirection.xyz), dmin), cameraLightDirection) * invlength);
-
-	float atmosphereBrightness;
-	float intensity = h * h * h * atmosphereBrightness;
-
 	vec3 WorldPos = texture(PosSampler, TexCoord_).xyz;
 	float Depth = texture(DepthSampler, TexCoord_).x;
 
@@ -72,6 +57,5 @@ void main()
 			AccmulatedValue += (1.0 / TRAVEL_COUNT);
 	}
 
-	AccmulatedValue *= intensity;
 	color = vec4(AccmulatedValue, AccmulatedValue, AccmulatedValue, 1.0);
 }
