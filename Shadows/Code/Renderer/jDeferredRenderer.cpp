@@ -89,7 +89,7 @@ void jDeferredRenderer::DepthPrepass(jRenderContext* InContext) const
 
 			jShader* shader = jShader::GetShader("NewCreateHiZ");
 			g_rhi->SetShader(shader);
-			
+
 			int32 baseBindingIndex = g_rhi->SetMatetrial(&HiZMaterialData, shader);
 
 			Vector2 LastDepthSampleSize = Vector2(SCR_WIDTH, SCR_HEIGHT);
@@ -382,7 +382,7 @@ void jDeferredRenderer::PPR(jRenderContext* InContext) const
 
 		const jShadowAppSettingProperties& Properties = jShadowAppSettingProperties::GetInstance();
 		g_rhi->SetUniformbuffer("DebugWithNormalMap", Properties.WithNormalMap, shader);
-		g_rhi->SetUniformbuffer("DebugReflectionOnly", Properties.ReflectionOnly, shader);		
+		g_rhi->SetUniformbuffer("DebugReflectionOnly", Properties.ReflectionOnly, shader);
 
 		g_rhi->SetImageTexture(0, IntermediateBufferPtr->GetTexture(), EImageTextureAccessType::READ_ONLY);
 		g_rhi->SetImageTexture(1, PPRRTPtr->GetTexture(), EImageTextureAccessType::READ_WRITE);
@@ -412,13 +412,16 @@ void jDeferredRenderer::AtmosphericShadowing(jRenderContext* InContext) const
 
 		const jCamera* LightCamera = light->GetLightCamra();
 		JASSERT(LightCamera);
-		
+
 		Matrix ShadowVPMat = LightCamera->Projection * LightCamera->View;
 		Matrix VP = InContext->Camera->Projection * InContext->Camera->View;
-		
+
 		shader->SetUniformbuffer("ShadowVPMat", ShadowVPMat);
 		shader->SetUniformbuffer("VP", VP);
 		shader->SetUniformbuffer("CameraPos", InContext->Camera->Pos);
+		shader->SetUniformbuffer("LightCameraDirection", LightCamera->GetForwardVector());
+		shader->SetUniformbuffer("CameraDirection", InContext->Camera->GetForwardVector());
+
 
 		int32 baseBindingIndex = g_rhi->SetMatetrial(&AtmosphericShadowingMaterialData, shader);
 		InContext->Camera->BindCamera(shader);
@@ -525,16 +528,40 @@ void jDeferredRenderer::Init()
 
 	const auto& pPointClampToEdgeSamplerState = jSamplerStatePool::GetSamplerState("Point").get();
 	GBufferMaterialData.AddMaterialParam("ColorSampler", GBufferRTPtr->Textures[0].get(), pPointClampToEdgeSamplerState);
-	GBufferMaterialData.AddMaterialParam("NormalSampler", GBufferRTPtr->Textures[1].get(), pPointClampToEdgeSamplerState);	
+	GBufferMaterialData.AddMaterialParam("NormalSampler", GBufferRTPtr->Textures[1].get(), pPointClampToEdgeSamplerState);
 	GBufferMaterialData.AddMaterialParam("PosSampler", GBufferRTPtr->Textures[2].get(), pPointClampToEdgeSamplerState);
 
 	const auto& pShadowLinearSamplerState = jSamplerStatePool::GetSamplerState("LinearClampShadow").get();
 	ShadowMaterialData.AddMaterialParam("DirectionalShadowSampler", ShadowRTPtr->GetTextureDepth(), pShadowLinearSamplerState);
 
+	InitAtmosphericShadowing();
+
 	InitSSAO();
 
 	// Debug quad
 	DebugQuad = jPrimitiveUtil::CreateUIQuad(Vector2(100.0f, 100.0f), Vector2(100.0f, 100.0f), nullptr);
+}
+
+void jDeferredRenderer::InitAtmosphericShadowing()
+{
+	const auto& pPointSamplerState = jSamplerStatePool::GetSamplerState("Point").get();
+
+	jRenderTargetInfo AtmosphericShadowingBuffer;
+	AtmosphericShadowingBuffer.TextureCount = 1;
+	AtmosphericShadowingBuffer.TextureType = ETextureType::TEXTURE_2D;
+	AtmosphericShadowingBuffer.InternalFormat = ETextureFormat::R16F;
+	AtmosphericShadowingBuffer.Format = ETextureFormat::R;
+	AtmosphericShadowingBuffer.FormatType = EFormatType::FLOAT;
+	AtmosphericShadowingBuffer.DepthBufferType = EDepthBufferType::NONE;
+	AtmosphericShadowingBuffer.Width = SCR_WIDTH;
+	AtmosphericShadowingBuffer.Height = SCR_HEIGHT;
+	AtmosphericShadowingBuffer.Magnification = ETextureFilter::NEAREST;
+	AtmosphericShadowingBuffer.Minification = ETextureFilter::NEAREST;
+	AtmosphericShadowingBufferPtr = jRenderTargetPool::GetRenderTarget(AtmosphericShadowingBuffer);
+
+	AtmosphericShadowingMaterialData.AddMaterialParam("PosSampler", GBufferRTPtr->Textures[2].get(), pPointSamplerState);
+	AtmosphericShadowingMaterialData.AddMaterialParam("ShadowMapSampler", ShadowRTPtr->GetTextureDepth(), pPointSamplerState);
+	AtmosphericShadowingMaterialData.AddMaterialParam("DepthSampler", DepthRTPtr->GetTextureDepth(), pPointSamplerState);
 }
 
 void jDeferredRenderer::Render(jRenderContext* InContext)
@@ -651,17 +678,17 @@ void jDeferredRenderer::InitSSAO()
 {
 	std::uniform_real_distribution<float> randomFloats(0.0, 1.0); // random floats between 0.0 - 1.0
 	std::default_random_engine generator;
-	
+
 	auto lerp = [](float a, float b, float f) { return a + f * (b - a); };
 
 	for (uint32 i = 0; i < 64; ++i)
 	{
 		Vector sample(
-			randomFloats(generator) * 2.0f - 1.0f, 
-			randomFloats(generator) * 2.0f - 1.0f, 
-			randomFloats(generator) ); 
+			randomFloats(generator) * 2.0f - 1.0f,
+			randomFloats(generator) * 2.0f - 1.0f,
+			randomFloats(generator));
 		sample.SetNormalize();
-		sample *= randomFloats(generator); 
+		sample *= randomFloats(generator);
 		float scale = (float)i / 64.0f;
 
 		// To make closer to origin position of hemisphere. we use x^2.
@@ -673,12 +700,12 @@ void jDeferredRenderer::InitSSAO()
 
 	std::vector<Vector> ssaoNoise;
 	for (uint32 i = 0; i < 16; i++)
-	{ 
+	{
 		Vector noise(
-			randomFloats(generator) * 2.0f - 1.0f, 
-			randomFloats(generator) * 2.0f - 1.0f, 
-			0.0f); 
-		ssaoNoise.push_back(noise); 
+			randomFloats(generator) * 2.0f - 1.0f,
+			randomFloats(generator) * 2.0f - 1.0f,
+			0.0f);
+		ssaoNoise.push_back(noise);
 	}
 
 	jImageData imageData;
@@ -732,7 +759,7 @@ void jDeferredRenderer::InitSSAO()
 	SceneColorRTInfo.Magnification = ETextureFilter::NEAREST;
 	SceneColorRTInfo.Minification = ETextureFilter::NEAREST;
 	SceneColorRTPtr = jRenderTargetPool::GetRenderTarget(SceneColorRTInfo);
-	
+
 	SSRMaterialData.AddMaterialParam("DepthSampler", DepthRTPtr->GetTextureDepth(), pPointSamplerState);
 	SSRMaterialData.AddMaterialParam("HiZSampler", HiZRTPtr->GetTextureDepth(), pPointSamplerState);
 	SSRMaterialData.AddMaterialParam("SceneColorSampler", SceneColorRTPtr->GetTexture(), pPointSamplerState);
@@ -777,7 +804,7 @@ void jDeferredRenderer::InitSSAO()
 	TonemapRTInfo.Magnification = ETextureFilter::NEAREST;
 	TonemapRTInfo.Minification = ETextureFilter::NEAREST;
 	TonemapRTPtr = jRenderTargetPool::GetRenderTarget(TonemapRTInfo);
-	
+
 	TonemapMaterialData.AddMaterialParam("ColorSampler", AARTPtr->GetTexture(), pPointSamplerState);
 
 	FinalMaterialData.AddMaterialParam("TextureSampler", TonemapRTPtr->GetTexture(), pPointSamplerState);
@@ -812,24 +839,6 @@ void jDeferredRenderer::InitSSAO()
 	PPRMaterialData.AddMaterialParam("SceneColorLinearSampler", SceneColorRTPtr->GetTexture(), pLinearClamp);
 	PPRMaterialData.AddMaterialParam("NormalSampler", GBufferRTPtr->Textures[1].get(), pPointSamplerState);
 	PPRMaterialData.AddMaterialParam("PosSampler", GBufferRTPtr->Textures[2].get(), pPointSamplerState);
-
-	jRenderTargetInfo AtmosphericShadowingBuffer;
-	AtmosphericShadowingBuffer.TextureCount = 1;
-	AtmosphericShadowingBuffer.TextureType = ETextureType::TEXTURE_2D;
-	AtmosphericShadowingBuffer.InternalFormat = ETextureFormat::R16F;
-	AtmosphericShadowingBuffer.Format = ETextureFormat::R;
-	AtmosphericShadowingBuffer.FormatType = EFormatType::FLOAT;
-	AtmosphericShadowingBuffer.DepthBufferType = EDepthBufferType::NONE;
-	AtmosphericShadowingBuffer.Width = SCR_WIDTH;
-	AtmosphericShadowingBuffer.Height = SCR_HEIGHT;
-	AtmosphericShadowingBuffer.Magnification = ETextureFilter::NEAREST;
-	AtmosphericShadowingBuffer.Minification = ETextureFilter::NEAREST;
-	AtmosphericShadowingBufferPtr = jRenderTargetPool::GetRenderTarget(AtmosphericShadowingBuffer);
-
-	AtmosphericShadowingMaterialData.AddMaterialParam("PosSampler", GBufferRTPtr->Textures[2].get(), pPointSamplerState);
-	AtmosphericShadowingMaterialData.AddMaterialParam("ShadowMapSampler", ShadowRTPtr->GetTexture(), pPointSamplerState);
-	AtmosphericShadowingMaterialData.AddMaterialParam("DepthSampler", DepthRTPtr->GetTextureDepth(), pPointSamplerState);
-
 }
 
 std::shared_ptr<jRenderTarget> jDeferredRenderer::GetDebugRTPtr() const

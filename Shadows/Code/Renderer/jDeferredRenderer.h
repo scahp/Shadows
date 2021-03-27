@@ -20,10 +20,11 @@ public:
 	void Tonemap(jRenderContext* InContext) const;
 
 	void Init();
+	void InitAtmosphericShadowing();
+	void InitSSAO();
+
 	void Render(jRenderContext* InContext);
 	void Release();
-
-	void InitSSAO();
 
 private:
 	std::shared_ptr<jRenderTarget> ShadowRTPtr;
@@ -33,7 +34,7 @@ private:
 	jMaterialData GBufferMaterialData;
 	jMaterialData ShadowMaterialData;
 
-	jFullscreenQuadPrimitive* FullscreenQuad = nullptr;	
+	jFullscreenQuadPrimitive* FullscreenQuad = nullptr;
 	jUIQuadPrimitive* DebugQuad = nullptr;
 
 	std::shared_ptr<jTexture> SSAONoiseTex;
