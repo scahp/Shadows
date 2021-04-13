@@ -65,7 +65,7 @@ float GetAccumulatedInscatteringValue(float InTravelDist, vec3 InToPixelNormaliz
 
 	float t = dt;
 	if (UseNoise != 0)
-		t += dt * rand(vec2(gl_FragCoord.x * gl_FragCoord.y));
+		t += dt * rand(vec2(gl_FragCoord.x * gl_FragCoord.y / CameraFar)) * 3.0;
 	float tmax = t + 1.0;
 
 	// Start and end Depth to march ray in NDC
