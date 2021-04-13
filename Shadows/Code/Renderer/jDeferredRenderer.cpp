@@ -395,7 +395,7 @@ void jDeferredRenderer::PPR(jRenderContext* InContext) const
 
 void jDeferredRenderer::AtmosphericShadowing(jRenderContext* InContext) const
 {
-	SCOPE_DEBUG_EVENT(g_rhi, "AA");
+	SCOPE_DEBUG_EVENT(g_rhi, "AtmosphericShadowing");
 
 	if (AtmosphericShadowingBufferPtr->Begin())
 	{
@@ -416,12 +416,25 @@ void jDeferredRenderer::AtmosphericShadowing(jRenderContext* InContext) const
 		Matrix ShadowVPMat = LightCamera->Projection * LightCamera->View;
 		Matrix VP = InContext->Camera->Projection * InContext->Camera->View;
 
+		Vector CameraPosInShadowMap = ShadowVPMat.Transform(LightCamera->Pos);
+		CameraPosInShadowMap = CameraPosInShadowMap * 0.5f + 0.5f;
+		CameraPosInShadowMap.z = -CameraPosInShadowMap.z;
+		shader->SetUniformbuffer("CameraPosInShadowMap", CameraPosInShadowMap);
+		shader->SetUniformbuffer("InvMainCameraShadowVPMat", ShadowVPMat * InContext->Camera->View.GetInverse());
 		shader->SetUniformbuffer("ShadowVPMat", ShadowVPMat);
 		shader->SetUniformbuffer("VP", VP);
+		shader->SetUniformbuffer("V", InContext->Camera->View);
+		shader->SetUniformbuffer("P", InContext->Camera->Projection);
 		shader->SetUniformbuffer("CameraPos", InContext->Camera->Pos);
 		shader->SetUniformbuffer("LightCameraDirection", LightCamera->GetForwardVector());
 		shader->SetUniformbuffer("CameraDirection", InContext->Camera->GetForwardVector());
 
+		const jShadowAppSettingProperties& Properties = jShadowAppSettingProperties::GetInstance();
+		shader->SetUniformbuffer("AnisoG", Properties.AnisoG_AS);
+		shader->SetUniformbuffer("UseNoise", Properties.Noise_AS);
+
+		shader->SetUniformbuffer("g", InContext->Camera->Near);	// projection distance
+		shader->SetUniformbuffer("s", InContext->Camera->Height / InContext->Camera->Width);	// asepct ratio
 
 		int32 baseBindingIndex = g_rhi->SetMatetrial(&AtmosphericShadowingMaterialData, shader);
 		InContext->Camera->BindCamera(shader);
@@ -549,8 +562,8 @@ void jDeferredRenderer::InitAtmosphericShadowing()
 	jRenderTargetInfo AtmosphericShadowingBuffer;
 	AtmosphericShadowingBuffer.TextureCount = 1;
 	AtmosphericShadowingBuffer.TextureType = ETextureType::TEXTURE_2D;
-	AtmosphericShadowingBuffer.InternalFormat = ETextureFormat::R16F;
-	AtmosphericShadowingBuffer.Format = ETextureFormat::R;
+	AtmosphericShadowingBuffer.InternalFormat = ETextureFormat::RGBA16F;
+	AtmosphericShadowingBuffer.Format = ETextureFormat::RGBA;
 	AtmosphericShadowingBuffer.FormatType = EFormatType::FLOAT;
 	AtmosphericShadowingBuffer.DepthBufferType = EDepthBufferType::NONE;
 	AtmosphericShadowingBuffer.Width = SCR_WIDTH;
@@ -806,6 +819,7 @@ void jDeferredRenderer::InitSSAO()
 	TonemapRTPtr = jRenderTargetPool::GetRenderTarget(TonemapRTInfo);
 
 	TonemapMaterialData.AddMaterialParam("ColorSampler", AARTPtr->GetTexture(), pPointSamplerState);
+	TonemapMaterialData.AddMaterialParam("AtmosphericShadowingSampler", AtmosphericShadowingBufferPtr->GetTexture(), pLinearClamp);
 
 	FinalMaterialData.AddMaterialParam("TextureSampler", TonemapRTPtr->GetTexture(), pPointSamplerState);
 

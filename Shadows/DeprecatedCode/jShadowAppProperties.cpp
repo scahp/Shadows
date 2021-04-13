@@ -10,6 +10,14 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->AddVariable("WithNormalMap", WithNormalMap);
 	appSetting->AddVariable("ReflectionOnly", ReflectionOnly);
 
+	appSetting->AddVariable("UseNoise", Noise_AS);
+	appSetting->SetGroup("UseNoise", "AtmosphericShadowing");
+	appSetting->AddVariable("AnisoG", AnisoG_AS);
+	appSetting->SetGroup("AnisoG", "AtmosphericShadowing");
+	appSetting->SetStep("AnisoG", 0.01f);
+	appSetting->SetMinMax("AnisoG", 0.0f, 1.0f);
+
+
 	//appSetting->AddVariable("ShadowOn", ShadowOn);
 
 	//appSetting->AddEnumVariable("ShadowType", ShadowType, "EShadowType", EShadowTypeString);
@@ -64,11 +72,11 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	//appSetting->AddVariable("SpotLight_Info", ShowSpotLightInfo);
 	//appSetting->SetGroup("SpotLight_Info", "LightInfo");
 	//appSetting->SetLabel("SpotLight_Info", "SpotLightInfo");
-	////////////////////////////////////////////////////////////////////////////
-	//// Light Setting
-	//appSetting->AddDirectionVariable("DirecionalLight_Direction", DirecionalLightDirection);
-	//appSetting->SetGroup("DirecionalLight_Direction", "DirectionalLight");
-	//appSetting->SetLabel("DirecionalLight_Direction", "Direction");
+	//////////////////////////////////////////////////////////////////////////
+	// Light Setting
+	appSetting->AddDirectionVariable("DirecionalLight_Direction", DirecionalLightDirection);
+	appSetting->SetGroup("DirecionalLight_Direction", "DirectionalLight");
+	appSetting->SetLabel("DirecionalLight_Direction", "Direction");
 
 	//appSetting->AddVariable("PointLight_PositionX", PointLightPosition.x);
 	//appSetting->SetGroup("PointLight_PositionX", "PointLight");
@@ -139,6 +147,9 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 	appSetting->RemoveVariable("WithNormalMap");
 	appSetting->RemoveVariable("ReflectionOnly");
 
+	appSetting->RemoveVariable("UseNoise");
+	appSetting->RemoveVariable("AnisoG");
+
 	//appSetting->RemoveVariable("ShadowOn");
 	//appSetting->RemoveVariable("EShadowType");
 	//appSetting->RemoveVariable("DirectionalLightSilhouette");
@@ -152,7 +163,7 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 	//appSetting->RemoveVariable("DirectionalLight_Info");
 	//appSetting->RemoveVariable("PointLight_Info");
 	//appSetting->RemoveVariable("SpotLight_Info");
-	//appSetting->RemoveVariable("DirecionalLight_Direction");
+	appSetting->RemoveVariable("DirecionalLight_Direction");
 	//appSetting->RemoveVariable("PointLight_PositionX");
 	//appSetting->RemoveVariable("PointLight_PositionY");
 	//appSetting->RemoveVariable("PointLight_PositionZ");

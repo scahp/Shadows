@@ -2,6 +2,7 @@
 precision mediump float;
 
 uniform sampler2D ColorSampler;
+uniform sampler2D AtmosphericShadowingSampler;
 
 in vec2 TexCoord_;
 out vec4 color;
@@ -20,6 +21,7 @@ vec3 ACESFilmTonemap(vec3 x)
 void main()
 {
 	color = vec4(texture(ColorSampler, TexCoord_).xyz, 1.0);
+	color += vec4(texture(AtmosphericShadowingSampler, TexCoord_).x);
 	color.xyz = ACESFilmTonemap(color.xyz);
 
 	color.xyz = pow(color.xyz, vec3(1.0 / 2.2));		// from Linear color to sRGB

@@ -209,6 +209,22 @@ void jGame::Update(float deltaTime)
 		RenderContext.AllObjects.push_back(s_Sponza);
 		RenderContext.Camera = MainCamera;
 		RenderContext.Lights = { MainCamera->GetLight(ELightType::DIRECTIONAL) };
+
+		auto cube = jPrimitiveUtil::CreateCube(Vector(0.0f, 20.0f, 0.0f), Vector::OneVector, Vector(5.0f, 5.0f, 5.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
+		cube->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
+		{
+			auto Rot = thisObject->RenderObject->GetRot();
+			Rot.z += 0.05f;
+			Rot.x += 0.05f;
+			thisObject->RenderObject->SetRot(Rot);
+		};
+		RenderContext.AllObjects.push_back(cube);
+		jObject::AddObject(cube);
+	}
+
+	for (auto& obj : jObject::GetStaticObject())
+	{
+		obj->Update(deltaTime);
 	}
 
 	DeferredRenderer.Render(&RenderContext);

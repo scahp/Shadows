@@ -16,6 +16,9 @@ public:
 	ESSRType SSRType = ESSRType::PPR;
 	bool WithNormalMap = true;
 	bool ReflectionOnly = false;
+	
+	bool Noise_AS = true;
+	float AnisoG_AS = 0.0f;
 
 	bool ShadowOn = true;
 	EShadowType ShadowType = EShadowType::ShadowMap;
