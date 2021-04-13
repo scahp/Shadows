@@ -19,6 +19,9 @@ public:
 	
 	bool Noise_AS = true;
 	float AnisoG_AS = 0.0f;
+	float SlopeOfDist_AS = 0.25f;
+	int TravelCount_AS = 64;
+	float InScatteringLambda_AS = 0.001f;
 
 	bool ShadowOn = true;
 	EShadowType ShadowType = EShadowType::ShadowMap;

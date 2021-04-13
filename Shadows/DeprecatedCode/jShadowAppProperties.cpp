@@ -12,11 +12,26 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 
 	appSetting->AddVariable("UseNoise", Noise_AS);
 	appSetting->SetGroup("UseNoise", "AtmosphericShadowing");
+
 	appSetting->AddVariable("AnisoG", AnisoG_AS);
 	appSetting->SetGroup("AnisoG", "AtmosphericShadowing");
 	appSetting->SetStep("AnisoG", 0.01f);
 	appSetting->SetMinMax("AnisoG", 0.0f, 1.0f);
 
+	appSetting->AddVariable("SlopeOfDist", SlopeOfDist_AS);
+	appSetting->SetGroup("SlopeOfDist", "AtmosphericShadowing");
+	appSetting->SetStep("SlopeOfDist", 0.01f);
+	appSetting->SetMinMax("SlopeOfDist", 0.0f, 1.0f);
+
+	appSetting->AddVariable("TravelCount", TravelCount_AS);
+	appSetting->SetGroup("TravelCount", "AtmosphericShadowing");
+	appSetting->SetStep("TravelCount", 1);
+	appSetting->SetMinMax("TravelCount", 1, 100);
+
+	appSetting->AddVariable("InScatteringLambda", InScatteringLambda_AS);
+	appSetting->SetGroup("InScatteringLambda", "AtmosphericShadowing");
+	appSetting->SetStep("InScatteringLambda", 0.0001f);
+	appSetting->SetMinMax("InScatteringLambda", 0.0f, 1.0f);
 
 	//appSetting->AddVariable("ShadowOn", ShadowOn);
 

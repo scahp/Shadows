@@ -406,35 +406,28 @@ void jDeferredRenderer::AtmosphericShadowing(jRenderContext* InContext) const
 		jShader* shader = jShader::GetShader("NewAtmosphericShadowing");
 		g_rhi->SetShader(shader);
 
-
 		const jLight* light = *InContext->Lights.begin();
 		JASSERT(light->Type == ELightType::DIRECTIONAL);
 
 		const jCamera* LightCamera = light->GetLightCamra();
 		JASSERT(LightCamera);
 
-		Matrix ShadowVPMat = LightCamera->Projection * LightCamera->View;
-		Matrix VP = InContext->Camera->Projection * InContext->Camera->View;
+		const Matrix ShadowVPMat = LightCamera->Projection * LightCamera->View;
+		const Matrix VP = InContext->Camera->Projection * InContext->Camera->View;
 
-		Vector CameraPosInShadowMap = ShadowVPMat.Transform(LightCamera->Pos);
-		CameraPosInShadowMap = CameraPosInShadowMap * 0.5f + 0.5f;
-		CameraPosInShadowMap.z = -CameraPosInShadowMap.z;
-		shader->SetUniformbuffer("CameraPosInShadowMap", CameraPosInShadowMap);
-		shader->SetUniformbuffer("InvMainCameraShadowVPMat", ShadowVPMat * InContext->Camera->View.GetInverse());
 		shader->SetUniformbuffer("ShadowVPMat", ShadowVPMat);
 		shader->SetUniformbuffer("VP", VP);
-		shader->SetUniformbuffer("V", InContext->Camera->View);
-		shader->SetUniformbuffer("P", InContext->Camera->Projection);
 		shader->SetUniformbuffer("CameraPos", InContext->Camera->Pos);
 		shader->SetUniformbuffer("LightCameraDirection", LightCamera->GetForwardVector());
-		shader->SetUniformbuffer("CameraDirection", InContext->Camera->GetForwardVector());
 
 		const jShadowAppSettingProperties& Properties = jShadowAppSettingProperties::GetInstance();
 		shader->SetUniformbuffer("AnisoG", Properties.AnisoG_AS);
 		shader->SetUniformbuffer("UseNoise", Properties.Noise_AS);
-
-		shader->SetUniformbuffer("g", InContext->Camera->Near);	// projection distance
-		shader->SetUniformbuffer("s", InContext->Camera->Height / InContext->Camera->Width);	// asepct ratio
+		shader->SetUniformbuffer("CameraNear", InContext->Camera->Near);
+		shader->SetUniformbuffer("CameraFar", InContext->Camera->Far);
+		shader->SetUniformbuffer("SlopeOfDist", Properties.SlopeOfDist_AS);
+		shader->SetUniformbuffer("TravelCount", Properties.TravelCount_AS);
+		shader->SetUniformbuffer("InScatteringLambda", Properties.InScatteringLambda_AS);
 
 		int32 baseBindingIndex = g_rhi->SetMatetrial(&AtmosphericShadowingMaterialData, shader);
 		InContext->Camera->BindCamera(shader);
@@ -562,8 +555,8 @@ void jDeferredRenderer::InitAtmosphericShadowing()
 	jRenderTargetInfo AtmosphericShadowingBuffer;
 	AtmosphericShadowingBuffer.TextureCount = 1;
 	AtmosphericShadowingBuffer.TextureType = ETextureType::TEXTURE_2D;
-	AtmosphericShadowingBuffer.InternalFormat = ETextureFormat::RGBA16F;
-	AtmosphericShadowingBuffer.Format = ETextureFormat::RGBA;
+	AtmosphericShadowingBuffer.InternalFormat = ETextureFormat::R16F;
+	AtmosphericShadowingBuffer.Format = ETextureFormat::R;
 	AtmosphericShadowingBuffer.FormatType = EFormatType::FLOAT;
 	AtmosphericShadowingBuffer.DepthBufferType = EDepthBufferType::NONE;
 	AtmosphericShadowingBuffer.Width = SCR_WIDTH;
