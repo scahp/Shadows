@@ -13,7 +13,7 @@ public:
 	}
 
 	EDeferredRenderPassDebugRT DeferredRenderPassDebugRT = EDeferredRenderPassDebugRT::AtmosphericShadowing;
-	ESSRType SSRType = ESSRType::PPR;
+	ESSRType SSRType = ESSRType::SSR;
 	bool WithNormalMap = true;
 	bool ReflectionOnly = false;
 	

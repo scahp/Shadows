@@ -58,8 +58,8 @@ void jGame::ProcessInput()
 void jGame::Setup()
 {
 	//////////////////////////////////////////////////////////////////////////
-	const Vector mainCameraPos(48.10f, 10.46f, -0.22f);
-	const Vector mainCameraTarget(47.11f, 10.62f, -0.17f);
+	const Vector mainCameraPos(-117.782974f, 11.0554867f, 27.6833897);
+	const Vector mainCameraTarget(-117.008659, 10.9855690, 27.0544491);
 	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(60.0f), 1.0f, 300.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
 

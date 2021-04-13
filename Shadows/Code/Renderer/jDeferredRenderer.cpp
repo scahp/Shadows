@@ -665,7 +665,7 @@ void jDeferredRenderer::Render(jRenderContext* InContext)
 		{
 			jShader* shader = jShader::GetShader("UIShader");
 			g_rhi->SetShader(shader);
-			DebugQuad->Size = Vector2(SCR_WIDTH / 1.5, SCR_HEIGHT / 1.5);
+			DebugQuad->Size = Vector2(SCR_WIDTH / 2.0f, SCR_HEIGHT / 2.0f);
 			DebugQuad->Pos = Vector2(SCR_WIDTH, SCR_HEIGHT) - DebugQuad->Size - Vector2(10.0f, 10.0f);
 			DebugQuad->Draw(InContext->Camera, shader, {});
 		}
