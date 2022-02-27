@@ -50,3 +50,17 @@ static const char* EShadowMapTypeString[] = {
 	"DeepShadowMap_DirectionalLight",
 	"CSM_SSM",
 };
+
+enum class ETextureMappingType
+{
+	No = 0,
+	NormalMapping,
+	ParallaxMapping,
+	MAX,
+};
+
+static const char* ETextureMappingTypeString[] = {
+	"No",
+	"NormalMapping",
+	"ParallaxMapping",
+};

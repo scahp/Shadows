@@ -21,6 +21,7 @@
 #include "jForwardRenderer.h"
 #include "jPipeline.h"
 #include "jVertexAdjacency.h"
+#include "jSamplerStatePool.h"
 
 jRHI* g_rhi = nullptr;
 
@@ -55,7 +56,7 @@ void jGame::ProcessInput()
 void jGame::Setup()
 {
 	//////////////////////////////////////////////////////////////////////////
-	const Vector mainCameraPos(172.66f, 160.0f, -180.63f);
+	const Vector mainCameraPos(0.0f, 160.0f, 100.0f);
 	//const Vector mainCameraTarget(171.96f, 166.02f, -180.05f);
 	//const Vector mainCameraPos(165.0f, 125.0f, -136.0f);
 	//const Vector mainCameraPos(300.0f, 100.0f, 300.0f);
@@ -79,7 +80,7 @@ void jGame::Setup()
 	PointLight = jLight::CreatePointLight(jShadowAppSettingProperties::GetInstance().PointLightPosition, Vector4(2.0f, 0.7f, 0.7f, 1.0f), 500.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
 	SpotLight = jLight::CreateSpotLight(jShadowAppSettingProperties::GetInstance().SpotLightPosition, jShadowAppSettingProperties::GetInstance().SpotLightDirection, Vector4(0.0f, 1.0f, 0.0f, 1.0f), 500.0f, 0.7f, 1.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
 
-	DirectionalLightInfo = jPrimitiveUtil::CreateDirectionalLightDebug(Vector(250, 260, 0)*0.5f, Vector::OneVector * 10.0f, 10.0f, MainCamera, DirectionalLight, "Image/sun.png");
+	DirectionalLightInfo = jPrimitiveUtil::CreateDirectionalLightDebug(Vector(250, 260, 0)*0.3f, Vector::OneVector * 10.0f, 10.0f, MainCamera, DirectionalLight, "Image/sun.png");
 	jObject::AddDebugObject(DirectionalLightInfo);
 
 	DirectionalLightShadowMapUIDebug = jPrimitiveUtil::CreateUIQuad({ 0.0f, 0.0f }, { 150, 150 }, DirectionalLight->GetShadowMap());
@@ -243,7 +244,126 @@ void jGame::Update(float deltaTime)
 
 	jObject::FlushDirtyState();
 
-	Renderer->Render(MainCamera);
+	// Renderer->Render(MainCamera);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+
+	g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	g_rhi->SetClear(ERenderBufferType::COLOR | ERenderBufferType::DEPTH);
+
+	auto ContructNormalMap = [](Vector* pOutNormalMap, const float* pHeightmap, int32 InWidth, int32 InHeight){
+		for(int32 y=0;y<InHeight;++y)
+		{
+			int32 ym1 = (y - 1) & (InHeight - 1);
+			int32 yp1 = (y + 1) & (InHeight - 1);
+
+			const float* centerRow = pHeightmap + y * InWidth;
+			const float* upperRow = pHeightmap + ym1 * InWidth;
+			const float* lowerRow = pHeightmap + yp1 * InWidth;
+
+			for(int32 x=0;x<InWidth;++x)
+			{
+				int32 xm1 = (x - 1) & (InWidth - 1);
+				int32 xp1 = (x + 1) & (InWidth - 1);
+
+				// Calculate slopes.
+				float dx = (centerRow[xp1] - centerRow[xm1]) * 0.5f;
+				float dy = (lowerRow[x] - upperRow[x]) * 0.5f;
+
+				// Normalize and clamp.
+				float nz = 1.0f / sqrt(dx * dx + dy * dy + 1.0f);
+				float nx = Min(Max(-dx * nz, -1.0f), 1.0f);
+				float ny = Min(Max(-dy * nz, -1.0f), 1.0f);
+				pOutNormalMap[x] = Vector(nx, ny, nz);
+			}
+
+			pOutNormalMap += InWidth;
+		}
+	};
+
+	static jTexture* DiffuseTexture = nullptr;
+	static jTexture* BumpTexture = nullptr;
+	static jTexture* DispTexture = nullptr;
+	static Vector2 TextureWH = Vector2(1024.0f, 1024.0f);
+	static bool sInitialized = false;
+	if (!sInitialized)
+	{
+		{
+			jImageData data;
+			jImageFileLoader::GetInstance().LoadTextureFromFile(data, "Image/diffuse.png", false);
+			DiffuseTexture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGBA);
+		}
+		{
+			jImageData data;
+			jImageFileLoader::GetInstance().LoadTextureFromFile(data, "Image/normal.png", false);
+			BumpTexture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGBA);
+		}
+		{
+			jImageData data;
+			jImageFileLoader::GetInstance().LoadTextureFromFile(data, "Image/displacement.png", false);
+			DispTexture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGBA);
+			TextureWH = Vector2(data.Width, data.Height);
+		}
+
+		sInitialized = true;
+	}
+
+	static auto Plane = jPrimitiveUtil::CreateQuad(Vector::ZeroVector, Vector::OneVector, Vector(100.0f, 100.0f, 100.0f), Vector4::ColorWhite);
+	{
+		auto EnableClear = false;
+		auto EnableDepthTest = false;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = false;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("ParallaxMapping");
+		g_rhi->EnableDepthTest(true);
+		g_rhi->EnableBlend(EnableBlend);
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+		g_rhi->SetShader(Shader);
+		
+		MainCamera->BindCamera(Shader);
+		
+		Plane->RenderObject->tex_object = DiffuseTexture;
+		Plane->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearWrap").get();
+		Plane->RenderObject->tex_object2 = BumpTexture;
+		Plane->RenderObject->samplerState2 = jSamplerStatePool::GetSamplerState("LinearWrap").get();
+		Plane->RenderObject->tex_object3 = DispTexture;
+		Plane->RenderObject->samplerState3 = jSamplerStatePool::GetSamplerState("LinearWrap").get();
+		
+		SET_UNIFORM_BUFFER_STATIC(float, "NumOfSteps", jShadowAppSettingProperties::GetInstance().NumOfSteps, Shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector2, "TextureSize", TextureWH, Shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "HeightScale", jShadowAppSettingProperties::GetInstance().HeightScale, Shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "EyeWorldPos", MainCamera->Pos, Shader);
+		SET_UNIFORM_BUFFER_STATIC(Vector, "LightDirection", DirectionalLight->Data.Direction, Shader);
+		SET_UNIFORM_BUFFER_STATIC(int32, "TexturemappingType", (int32)jShadowAppSettingProperties::GetInstance().TextureMappingType, Shader);
+		SET_UNIFORM_BUFFER_STATIC(int32, "FlipedYNormalMap", (int32)1, Shader);		
+
+		Plane->Update(deltaTime);
+		Plane->Draw(MainCamera, Shader, {});
+	}
+
+	//static auto gizmo = jPrimitiveUtil::CreateGizmo(Vector::ZeroVector, Vector::ZeroVector, Vector::OneVector);
+	//{
+	//	auto EnableClear = false;
+	//	auto EnableDepthTest = false;
+	//	auto DepthStencilFunc = EComparisonFunc::LESS;
+	//	auto EnableBlend = false;
+	//	auto BlendSrc = EBlendSrc::ONE;
+	//	auto BlendDest = EBlendDest::ZERO;
+	//	auto Shader = jShader::GetShader("Simple");
+	//	g_rhi->EnableDepthTest(true);
+	//	g_rhi->EnableBlend(EnableBlend);
+	//	g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+	//	g_rhi->SetShader(Shader);
+	//	MainCamera->BindCamera(Shader);
+
+	//	gizmo->Draw(MainCamera, Shader, {});
+	//}
+
+	Renderer->DebugRenderPass(MainCamera);
+
 }
 
 void jGame::UpdateAppSetting()

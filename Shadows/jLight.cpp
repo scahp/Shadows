@@ -269,10 +269,12 @@ void jDirectionalLight::BindLight(const jShader* shader) const
 		for (int32 i = 0; i < NUM_CASCADES; ++i)
 		{
 			sprintf_s(szTemp, sizeof(szTemp), "CascadeLightVP[%d]", i);
-			g_rhi->SetUniformbuffer(&jUniformBuffer<Matrix>(szTemp, ShadowMapData->CascadeLightVP[i]), shader);
+			const auto& CSM_LVP_UniformBuffer = jUniformBuffer<Matrix>(szTemp, ShadowMapData->CascadeLightVP[i]);
+			g_rhi->SetUniformbuffer(&CSM_LVP_UniformBuffer, shader);
 
 			sprintf_s(szTemp, sizeof(szTemp), "CascadeEndsW[%d]", i);
-			g_rhi->SetUniformbuffer(&jUniformBuffer<float>(szTemp, ShadowMapData->CascadeEndsW[i]), shader);
+			const auto& CSM_End_UniformBuffer = jUniformBuffer<float>(szTemp, ShadowMapData->CascadeEndsW[i]);
+			g_rhi->SetUniformbuffer(&CSM_End_UniformBuffer, shader);
 		}
 	}
 }
@@ -363,7 +365,8 @@ void jCascadeDirectionalLight::RenderToShadowMap(const RenderToShadowMapFunc& fu
 	for (int i = 0; i < NUM_CASCADES; ++i)
 	{
 		sprintf_s(szTemp, sizeof(szTemp), "CascadeLightVP[%d]", i);
-		g_rhi->SetUniformbuffer(&jUniformBuffer<Matrix>(szTemp, ShadowMapData->CascadeLightVP[i]), shader);
+		const auto& CSM_LVP_UniformBuffer = jUniformBuffer<Matrix>(szTemp, ShadowMapData->CascadeLightVP[i]);
+		g_rhi->SetUniformbuffer(&CSM_LVP_UniformBuffer, shader);
 
 		viewports.push_back({ 0.0f, static_cast<float>(height * i), static_cast<float>(width), static_cast<float>(height) });
 	}
@@ -515,7 +518,8 @@ void jPointLight::RenderToShadowMap(const RenderToShadowMapFunc& func, const jSh
 			auto camera = ShadowMapData->ShadowMapCamera[i];
 			const auto vp = (camera->Projection * camera->View);
 			sprintf_s(szTemp, sizeof(szTemp), "OmniShadowMapVP[%d]", i);
-			g_rhi->SetUniformbuffer(&jUniformBuffer<Matrix>(szTemp, vp), shader);
+			const auto& Omni_VP_UniformBuffer = jUniformBuffer<Matrix>(szTemp, vp);
+			g_rhi->SetUniformbuffer(&Omni_VP_UniformBuffer, shader);
 			viewports.push_back({ 0.0f, static_cast<float>(height * i), static_cast<float>(width), static_cast<float>(height) });
 		}
 		func(ShadowMapData->ShadowMapRenderTarget.get(), 0, ShadowMapData->ShadowMapCamera[0], viewports);
@@ -656,7 +660,8 @@ void jSpotLight::RenderToShadowMap(const RenderToShadowMapFunc& func, const jSha
 			auto camera = ShadowMapData->ShadowMapCamera[i];
 			const auto vp = (camera->Projection * camera->View);
 			sprintf_s(szTemp, sizeof(szTemp), "OmniShadowMapVP[%d]", i);
-			g_rhi->SetUniformbuffer(&jUniformBuffer<Matrix>(szTemp, vp), shader);
+			const auto& Omni_VP_UniformBuffer = jUniformBuffer<Matrix>(szTemp, vp);
+			g_rhi->SetUniformbuffer(&Omni_VP_UniformBuffer, shader);
 			viewports.push_back({ 0.0f, static_cast<float>(height * i), static_cast<float>(width), static_cast<float>(height) });
 		}
 		func(ShadowMapData->ShadowMapRenderTarget.get(), 0, ShadowMapData->ShadowMapCamera[0], viewports);

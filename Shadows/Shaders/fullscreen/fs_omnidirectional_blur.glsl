@@ -14,7 +14,7 @@ uniform float MaxDist;
 #define COUNT (FILTER_STEP_COUNT * 2.0 + 1.0)
 
 in vec2 TexCoord_;
-in int gl_Layer;
+in int glLayer;
 
 out vec4 color;
 

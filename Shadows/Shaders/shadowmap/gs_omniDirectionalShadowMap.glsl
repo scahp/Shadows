@@ -10,13 +10,13 @@ layout (triangle_strip, max_vertices=18) out;
 uniform mat4 OmniShadowMapVP[6];
 
 out vec4 fragPos_;
-out int gl_Layer;
+out int glLayer;
 
 void main()
 {
 	for(int face=0;face<6;++face)
 	{
-		gl_Layer = face;
+		glLayer = face;
 		gl_ViewportIndex = face;
 		for(int i=0;i<3;++i)
 		{

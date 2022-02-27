@@ -18,11 +18,7 @@ jImageFileLoader::~jImageFileLoader()
 
 void jImageFileLoader::LoadTextureFromFile(jImageData& data, std::string const& filename, bool sRGB)
 {
-	if (std::string::npos != filename.find(".tga"))
-	{
-		// todo 
-	}
-	else if (std::string::npos != filename.find(".png"))
+	if (std::string::npos != filename.find(".png"))
 	{
 		data.Filename = filename;
 		unsigned w, h;
@@ -37,6 +33,20 @@ void jImageFileLoader::LoadTextureFromFile(jImageData& data, std::string const& 
 		float* imageData = stbi_loadf(filename.c_str(), &w, &h, &nrComponents, 0);
 
 		int32 NumOfBytes = w * h * sizeof(float) * nrComponents;
+		data.ImageData.resize(NumOfBytes);
+		memcpy(&data.ImageData[0], imageData, NumOfBytes);
+		data.Width = w;
+		data.Height = h;
+		data.sRGB = sRGB;
+
+		stbi_image_free(imageData);
+	}
+	else
+	{
+		int w, h, nrComponents;
+		uint8* imageData = stbi_load(filename.c_str(), &w, &h, &nrComponents, 0);
+
+		int32 NumOfBytes = w * h * sizeof(uint8) * nrComponents;
 		data.ImageData.resize(NumOfBytes);
 		memcpy(&data.ImageData[0], imageData, NumOfBytes);
 		data.Width = w;
