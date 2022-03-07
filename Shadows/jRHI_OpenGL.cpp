@@ -957,6 +957,46 @@ jTexture* jRHI_OpenGL::CreateTextureFromData(void* data, int32 width, int32 heig
 	return texture;
 }
 
+jTexture* jRHI_OpenGL::CreateCubeTextureFromData(std::vector<void*> faces, int32 width, int32 height, bool sRGB
+	, EFormatType dataType, ETextureFormat textureFormat) const
+{
+	const uint32 internalFormat = GetOpenGLTextureFormat(textureFormat);
+	const uint32 simpleFormat = GetOpenGLTextureFormatSimple(textureFormat);
+
+	uint32 formatType = 0;
+	switch (dataType)
+	{
+	case EFormatType::BYTE:
+		formatType = GL_BYTE;
+		break;
+	case EFormatType::UNSIGNED_BYTE:
+		formatType = GL_UNSIGNED_BYTE;
+		break;
+	case EFormatType::INT:
+		formatType = GL_INT;
+		break;
+	case EFormatType::FLOAT:
+		formatType = GL_FLOAT;
+		break;
+	default:
+		break;
+	}
+
+	auto texture = new jTexture_OpenGL();
+	texture->sRGB = sRGB;
+	glGenTextures(1, &texture->TextureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, texture->TextureID);
+
+	for (uint32 i = 0; i < faces.size(); i++)
+	{
+		unsigned char* data = (unsigned char* )faces[i];
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+			0, internalFormat, width, height, 0, simpleFormat, formatType, data);
+	}
+
+	return texture;
+}
+
 bool jRHI_OpenGL::SetUniformbuffer(const IUniformBuffer* buffer, const jShader* shader) const
 {
 	switch (buffer->GetType())

@@ -532,5 +532,11 @@
     <None Include="Shaders\vs_graph.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\fs_parallaxmapping.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\vs_parallaxmapping.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

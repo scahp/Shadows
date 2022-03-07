@@ -5,6 +5,9 @@ precision mediump float;
 uniform sampler2D tex_object;		// diffuse
 uniform sampler2D tex_object2;		// normalmap
 uniform sampler2D tex_object3;		// height map
+uniform sampler2D tex_object4;		// horizon map layer1
+uniform sampler2D tex_object5;		// horizon map layer2
+uniform samplerCube tex_object6;	// Weight Cube map
 uniform int TextureSRGB[1];
 uniform int UseTexture;
 uniform int FlipedYNormalMap;		// to support converting normalmap type between dx and gl.
@@ -90,4 +93,8 @@ void main()
 	}
 
 	color.xyz *= vec3(LightIntensity);
+
+	color.w += texture(tex_object4, uv).x;
+	color.w += texture(tex_object5, uv).x;
+	color.w += texture(tex_object6, vec3(0, 0, 0));
 }

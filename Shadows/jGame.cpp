@@ -22,6 +22,7 @@
 #include "jPipeline.h"
 #include "jVertexAdjacency.h"
 #include "jSamplerStatePool.h"
+#include "Math\MathUtility.h"
 
 jRHI* g_rhi = nullptr;
 
@@ -166,6 +167,123 @@ void jGame::RemoveSpawnedObjects()
 	SpawnedObjects.clear();
 }
 
+void ConstructHorizonMap(Vector4* OutHorizonMap, const float* InHeightMap, float* OutAmbientMap
+	, float InAmbientPower, int32 InWidth, int32 InHeight)
+{
+	constexpr int kAngleCount = 32;
+	constexpr float kAngleIndex = float(kAngleCount) / (2 * PI);
+	constexpr int kHorizonRadius = 16;
+
+	for(int32 y = 0; y < InHeight; ++y)
+	{
+		const float* pCenterRow = InHeightMap + y * InWidth;
+		for(int32 x = 0; x < InWidth; ++x)
+		{
+			float h0 = pCenterRow[x];
+			float maxTan2[kAngleCount] = {};
+
+			for(int32 j = -kHorizonRadius + 1; j <kHorizonRadius; ++j)
+			{
+				const float* pRow = InHeightMap + ((y + j) & (InHeight - 1)) * InWidth;
+				for(int32 i = -kHorizonRadius + 1; i < kHorizonRadius; ++i)
+				{
+					int32 r2 = i * i + j * j;
+					if ((r2 < kHorizonRadius * kHorizonRadius) && (r2 != 0))
+					{
+						float dh = pRow[(x + i) & (InWidth - 1)] - h0;
+						if (dh > 0.0f)
+						{
+							float direction = atan2(float(j), float(i));
+							float delta = atan(0.7071f / sqrt(float(r2)));
+							int32 minIndex = int32(floor((direction - delta) * kAngleIndex));
+							int32 maxIndex = int32(ceil((direction + delta) * kAngleIndex));
+
+							float t = dh * dh / float(r2);
+							for(int32 n = minIndex; n <= maxIndex; ++n)
+							{
+								int32 m = n & (kAngleCount - 1);
+								maxTan2[m] = fmax(maxTan2[m], t);
+							}
+						}
+					}
+				}
+			}
+
+			Vector4* pLayerData = OutHorizonMap;
+			for(int32 layer = 0;layer<2;++layer)
+			{
+				Vector4 color(0.0f, 0.0f, 0.0f, 0.0f);
+				int32 firstIndex = kAngleCount / 16 + layer * (kAngleCount / 2);
+				int32 lastIndex = firstIndex + kAngleCount / 8;
+
+				for(int32 index = firstIndex;index <= lastIndex;++index)
+				{
+					float tr = maxTan2[(index - kAngleCount / 8) & (kAngleCount - 1)];
+					float tg = maxTan2[index];
+					float tb = maxTan2[index + kAngleCount / 8];
+					float ta = maxTan2[(index + kAngleCount / 4) & (kAngleCount - 1)];
+
+					color.x += sqrt(tr / (tr + 1.0f));
+					color.y += sqrt(tg / (tg + 1.0f));
+					color.z += sqrt(tb / (tb + 1.0f));
+					color.w += sqrt(ta / (ta + 1.0f));
+				}
+
+				pLayerData[x] = color / float(kAngleCount / 8 + 1);
+				pLayerData += InWidth * InHeight;
+			}
+
+			float sum = 0.0f;
+			for (int32 k = 0; k < kAngleCount; ++k)
+				sum += 1.0f / sqrt(maxTan2[k] + 1.0f);
+
+			OutAmbientMap[x] = pow(sum * (1.0f / float(kAngleCount)), InAmbientPower);
+		}
+
+		OutHorizonMap += InWidth;
+		OutAmbientMap += InWidth;
+	}
+}
+
+void GenerateHorizonCube(Vector4* texel)
+{
+	for (int32 face = 0; face < 6; face++)
+	{
+		for (float y = -0.9375f; y < 1.0f; y += 0.125f)
+		{
+			for (float x = -0.9375f; x < 1.0f; x += 0.125f)
+			{
+				Vector2 v;
+				float r = 1.0f / sqrt(1.0f + x * x + y * y);
+				switch (face)
+				{
+				case 0: v = Vector2(r, -y * r); break;
+				case 1: v = Vector2(-r, -y * r); break;
+				case 2: v = Vector2(x * r, r); break;
+				case 3: v = Vector2(x * r, -r); break;
+				case 4: v = Vector2(x * r, -y * r); break;
+				case 5: v = Vector2(-x * r, -y * r); break;
+				}
+				float t = atan2(v.y, v.x) / (PI / 4);
+				float red = 0.0f;
+				float green = 0.0f;
+				float blue = 0.0f;
+				float alpha = 0.0f;
+				if (t < -3.0f) { red = t + 3.0f; green = -4.0f - t; }
+				else if (t < -2.0f) { green = t + 2.0f; blue = -3.0f - t; }
+				else if (t < -1.0f) { blue = t + 1.0f; alpha = -2.0f - t; }
+				else if (t < 0.0f) { alpha = t; red = t + 1.0f; }
+				else if (t < 1.0f) { red = 1.0f - t; green = t; }
+				else if (t < 2.0f) { green = 2.0f - t; blue = t - 1.0f; }
+				else if (t < 3.0f) { blue = 3.0f - t; alpha = t - 2.0f; }
+				else { alpha = 4.0f - t; red = 3.0f - t; }
+				*texel = Vector4(red, green, blue, alpha);
+				++texel;
+			}
+		}
+	}
+}
+
 void jGame::Update(float deltaTime)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "Game::Update");
@@ -283,28 +401,107 @@ void jGame::Update(float deltaTime)
 	};
 
 	static jTexture* DiffuseTexture = nullptr;
-	static jTexture* BumpTexture = nullptr;
+	static jTexture* NormalMap = nullptr;
 	static jTexture* DispTexture = nullptr;
+	static jTexture* HorizonLayer1 = nullptr;
+	static jTexture* HorizonLayer2 = nullptr;
+	static jTexture* WeightCubeMap = nullptr;
 	static Vector2 TextureWH = Vector2(1024.0f, 1024.0f);
 	static bool sInitialized = false;
 	if (!sInitialized)
 	{
 		{
-			jImageData data;
-			jImageFileLoader::GetInstance().LoadTextureFromFile(data, "Image/diffuse.png", false);
-			DiffuseTexture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGBA);
+			jImageData DiffuseData;
+			jImageFileLoader::GetInstance().LoadTextureFromFile(DiffuseData, "Image/diffuse_256.png", false);
+			DiffuseTexture = g_rhi->CreateTextureFromData(&DiffuseData.ImageData[0], DiffuseData.Width, DiffuseData.Height, DiffuseData.sRGB, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGBA);
 		}
+
 		{
-			jImageData data;
-			jImageFileLoader::GetInstance().LoadTextureFromFile(data, "Image/normal.png", false);
-			BumpTexture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGBA);
+			jImageData NormalData;
+			jImageFileLoader::GetInstance().LoadTextureFromFile(NormalData, "Image/normal_256.png", false);
+			NormalMap = g_rhi->CreateTextureFromData(&NormalData.ImageData[0], NormalData.Width, NormalData.Height, NormalData.sRGB, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGBA);
 		}
+
+		jImageData HeightMapData;
 		{
-			jImageData data;
-			jImageFileLoader::GetInstance().LoadTextureFromFile(data, "Image/displacement.png", false);
-			DispTexture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGBA);
-			TextureWH = Vector2(data.Width, data.Height);
+			jImageFileLoader::GetInstance().LoadTextureFromFile(HeightMapData, "Image/displacement_256.png", false);
+			DispTexture = g_rhi->CreateTextureFromData(&HeightMapData.ImageData[0], HeightMapData.Width, HeightMapData.Height, HeightMapData.sRGB, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGBA);
+			TextureWH = Vector2((float)HeightMapData.Width, (float)HeightMapData.Height);
+
 		}
+
+		float* HeightMap = new float[HeightMapData.Width * HeightMapData.Height];
+		float* AmbientMap = new float[HeightMapData.Width * HeightMapData.Height];
+
+		for(int32 i=0;i<HeightMapData.Width * HeightMapData.Height;++i)
+		{
+			HeightMap[i] = (float)HeightMapData.ImageData[i * 4] / 255.0f;
+		}
+
+		constexpr int32 layerCount = 2;
+		Vector4* HorizonMap = new Vector4[HeightMapData.Width * HeightMapData.Height * layerCount];
+
+		float AmbientPower = 1.0f;
+		ConstructHorizonMap(HorizonMap, HeightMap, AmbientMap
+			, AmbientPower, HeightMapData.Width, HeightMapData.Height);
+
+		jImageData HorizonMapData[2];
+		HorizonMapData[0].Width = HeightMapData.Width;
+		HorizonMapData[0].Height = HeightMapData.Height;
+		HorizonMapData[0].sRGB = false;
+		HorizonMapData[1].Width = HeightMapData.Width;
+		HorizonMapData[1].Height = HeightMapData.Height;
+		HorizonMapData[1].sRGB = false;
+		
+		HorizonMapData[0].ImageData.resize(HeightMapData.Width * HeightMapData.Height * 4);
+		HorizonMapData[1].ImageData.resize(HeightMapData.Width * HeightMapData.Height * 4);
+
+		int32 i = 0;
+		for(;i<HeightMapData.Width * HeightMapData.Height;++i)
+		{
+			int32 Index = i * 4;
+			HorizonMapData[0].ImageData[Index] = (uint8)(HorizonMap[i].x * 255);
+			HorizonMapData[0].ImageData[Index + 1] = (uint8)(HorizonMap[i].y * 255);
+			HorizonMapData[0].ImageData[Index + 2] = (uint8)(HorizonMap[i].z * 255);
+			HorizonMapData[0].ImageData[Index + 3] = (uint8)(HorizonMap[i].w * 255);
+
+			//HorizonMapData[0].ImageData[Index] = HeightMapData.ImageData[Index];
+			//HorizonMapData[0].ImageData[Index + 1] = HeightMapData.ImageData[Index + 1];
+			//HorizonMapData[0].ImageData[Index + 2] = HeightMapData.ImageData[Index + 2];
+			//HorizonMapData[0].ImageData[Index + 3] = HeightMapData.ImageData[Index + 3];
+		}
+
+		for (; i < HeightMapData.Width * HeightMapData.Height * 2; ++i)
+		{
+			int32 Index = i * 4 - HeightMapData.Width * HeightMapData.Height * 4;
+			HorizonMapData[1].ImageData[Index] = (uint8)(HorizonMap[i].x * 255);
+			HorizonMapData[1].ImageData[Index + 1] = (uint8)(HorizonMap[i].y * 255);
+			HorizonMapData[1].ImageData[Index + 2] = (uint8)(HorizonMap[i].z * 255);
+			HorizonMapData[1].ImageData[Index + 3] = (uint8)(HorizonMap[i].w * 255);
+		}
+
+		delete[] AmbientMap;
+		delete[] HeightMap;
+		delete[] HorizonMap;
+
+		HorizonLayer1 = g_rhi->CreateTextureFromData(&HorizonMapData[0].ImageData[0]
+			, HorizonMapData[0].Width, HorizonMapData[0].Height, HorizonMapData[0].sRGB
+			, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGBA);
+		HorizonLayer2 = g_rhi->CreateTextureFromData(&HorizonMapData[1].ImageData[0]
+			, HorizonMapData[1].Width, HorizonMapData[1].Height, HorizonMapData[1].sRGB
+			, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGBA);
+
+
+		Vector4 CubePixel[16 * 16 * 6];
+		GenerateHorizonCube(&CubePixel[0]);
+
+		Vector4* pCurCubePixel = &CubePixel[0];
+		int32 CubePixelFaceStep = 16 * 16;
+		std::vector<void*> faces;
+		for(int32 i=0;i<6;++i)
+			faces.push_back(pCurCubePixel + i * CubePixelFaceStep);
+
+		WeightCubeMap = g_rhi->CreateCubeTextureFromData(faces, 16, 16, false, EFormatType::FLOAT, ETextureFormat::RGBA32F);
 
 		sInitialized = true;
 	}
@@ -327,11 +524,20 @@ void jGame::Update(float deltaTime)
 		
 		Plane->RenderObject->tex_object = DiffuseTexture;
 		Plane->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearWrap").get();
-		Plane->RenderObject->tex_object2 = BumpTexture;
+		Plane->RenderObject->tex_object2 = NormalMap;
 		Plane->RenderObject->samplerState2 = jSamplerStatePool::GetSamplerState("LinearWrap").get();
 		Plane->RenderObject->tex_object3 = DispTexture;
 		Plane->RenderObject->samplerState3 = jSamplerStatePool::GetSamplerState("LinearWrap").get();
-		
+
+		Plane->RenderObject->tex_object4 = HorizonLayer1;
+		Plane->RenderObject->samplerState4 = jSamplerStatePool::GetSamplerState("LinearWrap").get();
+
+		Plane->RenderObject->tex_object5 = HorizonLayer2;
+		Plane->RenderObject->samplerState5 = jSamplerStatePool::GetSamplerState("LinearWrap").get();
+
+		Plane->RenderObject->tex_object6 = WeightCubeMap;
+		Plane->RenderObject->samplerState6 = jSamplerStatePool::GetSamplerState("LinearWrap").get();
+
 		SET_UNIFORM_BUFFER_STATIC(float, "NumOfSteps", jShadowAppSettingProperties::GetInstance().NumOfSteps, Shader);
 		SET_UNIFORM_BUFFER_STATIC(Vector2, "TextureSize", TextureWH, Shader);
 		SET_UNIFORM_BUFFER_STATIC(float, "HeightScale", jShadowAppSettingProperties::GetInstance().HeightScale, Shader);
