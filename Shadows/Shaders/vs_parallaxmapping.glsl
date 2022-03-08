@@ -10,11 +10,13 @@ layout(location = 3) in vec3 Tangent;
 uniform mat4 M;
 uniform mat4 MVP;
 uniform vec3 EyeWorldPos;
+uniform vec3 LightDirection;		// from light to location
 
 out vec2 TexCoord_;
 out vec4 Color_;
 out mat3 TBN;
 out vec3 TangentSpaceViewDir;
+out vec3 TangentSpaceLightDirFromSurface;
 
 void main()
 {
@@ -30,6 +32,7 @@ void main()
 
 	TBN = mat3(T, B, N);
 	TangentSpaceViewDir = normalize(TBN * WorldSpaceViewDir);			// Convert To TangentSpace
+	TangentSpaceLightDirFromSurface = normalize(TBN * (-LightDirection));
 
 	TBN = transpose(mat3(T, B, N));
 }

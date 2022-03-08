@@ -983,6 +983,7 @@ jTexture* jRHI_OpenGL::CreateCubeTextureFromData(std::vector<void*> faces, int32
 	}
 
 	auto texture = new jTexture_OpenGL();
+	texture->TextureType = ETextureType::TEXTURE_CUBE;
 	texture->sRGB = sRGB;
 	glGenTextures(1, &texture->TextureID);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, texture->TextureID);

@@ -264,6 +264,7 @@ void GenerateHorizonCube(Vector4* texel)
 				case 4: v = Vector2(x * r, -y * r); break;
 				case 5: v = Vector2(-x * r, -y * r); break;
 				}
+				v = Vector2(v.y, v.x);
 				float t = atan2(v.y, v.x) / (PI / 4);
 				float red = 0.0f;
 				float green = 0.0f;

@@ -1,4 +1,4 @@
-#version 330 core
+ï»¿#version 330 core
 
 precision mediump float;
 
@@ -22,6 +22,7 @@ in vec2 TexCoord_;
 in vec4 Color_;
 in mat3 TBN;
 in vec3 TangentSpaceViewDir;
+in vec3 TangentSpaceLightDirFromSurface;
 
 out vec4 color;		// final color of fragment shader.
 
@@ -53,11 +54,30 @@ vec2 ApplyParallaxOffset(vec2 uv, vec3 vDir, vec2 scale)
 	return uv;
 }
 
+float ApplyHorizonMap(vec2 texcoord, vec3 ldir)
+{
+	const float kShadowHardness = 8.0;
+
+	// Read horizon channel factors from cube map.
+	vec4 weights = texture(tex_object6, ldir);
+
+	// Extract positive and negative weights for horizon map layers 0 and 1.
+	vec4 w0 = clamp(weights, vec4(0.0), vec4(1.0));
+	vec4 w1 = clamp(-weights, vec4(0.0), vec4(1.0));
+
+	// Sample the horizon map and multiply by the weights for each layer.
+	float s0 = dot(texture(tex_object4, texcoord), w0);
+	float s1 = dot(texture(tex_object5, texcoord), w1);
+
+	// Return lighting factor calculated with Equation (7.58).
+	return clamp(((ldir.z - (s0 + s1)) * kShadowHardness + 1.0), 0.0, 1.0);
+}
+
 void main()
 {
 	vec2 uv = TexCoord_;
 	
-	// Parallax MappingÀ» »ç¿ëÇÏ´Â °æ¿ì UV¸¦ Á¶Á¤ÇÔ.
+	// Parallax Mappingì„ ì‚¬ìš©í•˜ëŠ” ê²½ìš° UVë¥¼ ì¡°ì •í•¨.
 	if (TexturemappingType == 2)
 	{
 		vec2 scale = HeightScale / (2.0 * NumOfSteps * TextureSize);
@@ -65,11 +85,11 @@ void main()
 		uv = clamp(uv, vec2(0.0), vec2(1.0));
 	}
 
-	// NormalMapÀ¸·Î ºÎÅÍ normalÀ» ¾ò¾î¿À°í, TBN ¸ÅÆ®¸¯½º·Î º¯È¯½ÃÄÑÁÜ
+	// NormalMapìœ¼ë¡œ ë¶€í„° normalì„ ì–»ì–´ì˜¤ê³ , TBN ë§¤íŠ¸ë¦­ìŠ¤ë¡œ ë³€í™˜ì‹œì¼œì¤Œ
 	vec3 normal = GetNormal(uv);	
 	normal = normalize(TBN * normal);
 
-	// ¶óÀÌÆÃ ¿¬»ê ¼öÇà
+	// ë¼ì´íŒ… ì—°ì‚° ìˆ˜í–‰
 	float LightIntensity = 1.0f;
 	if (TexturemappingType > 0)
 	{
@@ -79,6 +99,8 @@ void main()
 	{
 		LightIntensity = clamp(dot(vec3(0.0, 1.0, 0.0), -LightDirection), 0.0, 1.0);
 	}
+
+	LightIntensity = ApplyHorizonMap(uv, TangentSpaceLightDirFromSurface);
 	
 	// Fetching Diffuse texture
 	if (UseTexture > 0)
@@ -96,5 +118,5 @@ void main()
 
 	color.w += texture(tex_object4, uv).x;
 	color.w += texture(tex_object5, uv).x;
-	color.w += texture(tex_object6, vec3(0, 0, 0));
+	color.w += texture(tex_object6, vec3(1, 0, 0)).x;
 }
