@@ -49,6 +49,7 @@ public:
 	float HeightScale = 40.0f;
 	float HorizonHeightScale = 20.0f;
 	float NumOfSteps = 4.0f;
+	bool GizmoOn = false;
 
 	virtual void Setup(jAppSettingBase* appSetting) override;
 	virtual void Teardown(jAppSettingBase* appSetting) override;

@@ -7,6 +7,7 @@ uniform sampler2D tex_object2;		// normalmap
 uniform sampler2D tex_object3;		// height map
 uniform int TextureSRGB[1];
 uniform int UseTexture;
+uniform int FlipedYNormalMap;
 
 uniform vec3 LightDirection;		// from light to location
 uniform vec2 TextureSize;
@@ -32,6 +33,10 @@ vec3 GetNormal(vec2 uv)
 vec2 ApplyParallaxOffset(vec2 uv, vec3 vDir, vec2 scale)
 {
 	vec2 pdir = vDir.xy * scale;
+
+	if (FlipedYNormalMap > 0)
+		pdir.y = -pdir.y;  // because opengl texture y is inverted
+
 	for (int i = 0; i < NumOfSteps; ++i)
 	{
 		// This code can be replaced with fetching parallax map for parallax variable(h * nz)
@@ -51,7 +56,7 @@ void main()
 	vec2 uv = TexCoord_;
 
 	mat3 transposeTBN = transpose(TBN);
-	vec3 TangentSpaceViewDir = normalize(TBN * WorldSpaceViewDir);
+	vec3 TangentSpaceViewDir = normalize(transposeTBN * WorldSpaceViewDir);
 	
 	// Parallax Mapping을 사용하는 경우 UV를 조정함.
 	vec2 scale = HeightScale / (2.0 * NumOfSteps * TextureSize);

@@ -6,6 +6,7 @@ jShadowAppSettingProperties* jShadowAppSettingProperties::_instance = nullptr;
 void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 {
 	appSetting->AddEnumVariable("TextureMapping", TextureMappingType, "ETextureMappingType", ETextureMappingTypeString);
+	appSetting->AddVariable("GizmoOn", GizmoOn);
 	appSetting->AddVariable("HeightScale", HeightScale);
 	appSetting->SetMinMax("HeightScale", 0.0f, 100.0f);
 	appSetting->AddVariable("HorizonHeightScale", HorizonHeightScale);
@@ -138,6 +139,7 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 {
 	appSetting->RemoveVariable("TextureMappingType");
+	appSetting->RemoveVariable("GizmoOn");	
 	appSetting->RemoveVariable("HeightScale");
 	appSetting->RemoveVariable("HorizonHeightScale");
 
