@@ -8,6 +8,7 @@ uniform sampler2D tex_object3;		// height map
 uniform sampler2D tex_object4;		// horizon map layer1
 uniform sampler2D tex_object5;		// horizon map layer2
 uniform samplerCube tex_object6;	// Weight Cube map
+uniform sampler2D tex_object7;		// Ambient Occlusion map
 uniform int TextureSRGB[1];
 uniform int UseTexture;
 uniform int FlipedYNormalMap;
@@ -17,6 +18,7 @@ uniform vec2 TextureSize;
 uniform float HeightScale;			// s = (max height / 1 texel with), this was using when the normalmap was generated.
 uniform float NumOfSteps;			// Num of ParallaxMap iteration steps
 uniform float HorizonHeightScale;
+uniform float AmbientOcclusionScale;
 
 in vec2 TexCoord_;
 in vec4 Color_;
@@ -75,6 +77,12 @@ float ApplyHorizonMap(vec2 texcoord, vec3 ldir)
 	return clamp(((ldir.z - sum) * kShadowHardness + 1.0), 0.0, 1.0);
 }
 
+float ApplyAmbientOcclusion(vec2 uv)
+{
+	// To adjust cos(a) in shader, AmbientMap has radian.
+	return cos(texture2D(tex_object7, uv).x * AmbientOcclusionScale);
+}
+
 void main()
 {
 	vec2 uv = TexCoord_;
@@ -111,5 +119,6 @@ void main()
 		color = Color_;
 	}
 
+	LightIntensity *= ApplyAmbientOcclusion(uv);
 	color.xyz *= vec3(LightIntensity);
 }

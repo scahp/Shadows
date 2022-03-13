@@ -166,6 +166,10 @@ void jFullscreenQuadPrimitive::SetTexture(int index, const jTexture* texture, co
 		RenderObject->tex_object6 = texture;
 		RenderObject->samplerState6 = samplerState;
 		break;
+	case 6:
+		RenderObject->tex_object7 = texture;
+		RenderObject->samplerState7 = samplerState;
+		break;
 	default:
 		JASSERT(0);
 		break;

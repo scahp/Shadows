@@ -4,10 +4,12 @@ precision mediump float;
 
 uniform sampler2D tex_object;		// diffuse
 uniform sampler2D tex_object2;		// normalmap
+uniform sampler2D tex_object7;		// Ambient Occlusion map
 uniform int TextureSRGB[1];
 uniform int UseTexture;
 
 uniform vec3 LightDirection;		// from light to location
+uniform float AmbientOcclusionScale;
 
 in vec2 TexCoord_;
 in vec4 Color_;
@@ -21,6 +23,12 @@ vec3 GetNormal(vec2 uv)
 	vec3 normal = texture(tex_object2, uv).xyz;
 	normal = normal * 2.0 - 1.0;
 	return normal;
+}
+
+float ApplyAmbientOcclusion(vec2 uv)
+{
+	// To adjust cos(a) in shader, AmbientMap has radian.
+	return cos(texture2D(tex_object7, uv).x * AmbientOcclusionScale);
 }
 
 void main()
@@ -46,5 +54,6 @@ void main()
 		color = Color_;
 	}
 
+	LightIntensity *= ApplyAmbientOcclusion(uv);
 	color.xyz *= vec3(LightIntensity);
 }

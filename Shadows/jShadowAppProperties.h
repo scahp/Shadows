@@ -48,6 +48,7 @@ public:
 	ETextureMappingType TextureMappingType = ETextureMappingType::HorizonMapping;
 	float HeightScale = 40.0f;
 	float HorizonHeightScale = 20.0f;
+	float AmbientOcclusionScale = 1.0f;
 	float NumOfSteps = 4.0f;
 	bool GizmoOn = false;
 

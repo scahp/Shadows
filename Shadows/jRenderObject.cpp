@@ -308,6 +308,15 @@ void jRenderObject::SetTextureProperty(const jShader* shader, jMaterialData* mat
 			materialData->Params.push_back(tex_object6_param);
 			useTexture = true;
 		}
+		if (tex_object7)
+		{
+			auto tex_object6_param = new jMaterialParam();
+			tex_object6_param->Name = "tex_object7";
+			tex_object6_param->Texture = tex_object7;
+			tex_object6_param->SamplerState = samplerState7;
+			materialData->Params.push_back(tex_object6_param);
+			useTexture = true;
+		}
 		SET_UNIFORM_BUFFER_STATIC(int, "UseTexture", useTexture, shader);
 
 		if (tex_object_array)

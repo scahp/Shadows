@@ -241,7 +241,10 @@ void ConstructHorizonMap(Vector4* OutHorizonMap, const float* InHeightMap, float
 			for (int32 k = 0; k < kAngleCount; ++k)
 				sum += 1.0f / sqrt(maxTan2[k] + 1.0f);
 
+			// To adjust cos(a) in shader, AmbientMap saved radian.
+			// CurrentAmbientMap[x] = pow(sum * (1.0f / float(kAngleCount)), InAmbientPower);
 			CurrentAmbientMap[x] = pow(sum * (1.0f / float(kAngleCount)), InAmbientPower);
+			CurrentAmbientMap[x] = acos(CurrentAmbientMap[x]);
 		}
 	});
 }
@@ -380,6 +383,7 @@ void jGame::Update(float deltaTime)
 	static jTexture* HorizonLayer1 = nullptr;
 	static jTexture* HorizonLayer2 = nullptr;
 	static jTexture* WeightCubeMap = nullptr;
+	static jTexture* AmbientOcclusionMap = nullptr;
 	static Vector2 TextureWH = Vector2(1024.0f, 1024.0f);
 	static bool sInitialized = false;
 	if (!sInitialized)
@@ -431,6 +435,16 @@ void jGame::Update(float deltaTime)
 			memcpy(&HorizonMapData[i].ImageData[0], &HorizonMap[i * (HeightMapData.Width * HeightMapData.Height)]
 				, HeightMapData.Width* HeightMapData.Height * sizeof(Vector4));
 		}
+
+		// Generate Ambient Occlusion Map
+		jImageData AmbientOcclusionMapData;
+		AmbientOcclusionMapData.Width = HeightMapData.Width;
+		AmbientOcclusionMapData.Height = HeightMapData.Height;
+		AmbientOcclusionMapData.sRGB = false;
+		AmbientOcclusionMapData.ImageData.resize(HeightMapData.Width * HeightMapData.Height * sizeof(float));
+		memcpy(&AmbientOcclusionMapData.ImageData[0], &AmbientMap[0], HeightMapData.Width * HeightMapData.Height * sizeof(float));
+		AmbientOcclusionMap = g_rhi->CreateTextureFromData(&AmbientOcclusionMapData.ImageData[0], AmbientOcclusionMapData.Width
+			, AmbientOcclusionMapData.Height, AmbientOcclusionMapData.sRGB, EFormatType::FLOAT, ETextureFormat::R32F);
 
 		delete[] AmbientMap;
 		delete[] HeightMap;
@@ -493,8 +507,10 @@ void jGame::Update(float deltaTime)
 		
 		Plane->RenderObject->tex_object = DiffuseTexture;
 		Plane->RenderObject->samplerState = jSamplerStatePool::GetSamplerState("LinearWrap").get();
+		
 		Plane->RenderObject->tex_object2 = NormalMap;
 		Plane->RenderObject->samplerState2 = jSamplerStatePool::GetSamplerState("LinearWrap").get();
+		
 		Plane->RenderObject->tex_object3 = DispTexture;
 		Plane->RenderObject->samplerState3 = jSamplerStatePool::GetSamplerState("LinearWrap").get();
 
@@ -506,6 +522,9 @@ void jGame::Update(float deltaTime)
 
 		Plane->RenderObject->tex_object6 = WeightCubeMap;
 		Plane->RenderObject->samplerState6 = jSamplerStatePool::GetSamplerState("LinearWrap").get();
+
+		Plane->RenderObject->tex_object7 = AmbientOcclusionMap;
+		Plane->RenderObject->samplerState7 = jSamplerStatePool::GetSamplerState("LinearWrap").get();		
 
 		if (jShadowAppSettingProperties::GetInstance().LightRotation)
 		{
@@ -519,6 +538,7 @@ void jGame::Update(float deltaTime)
 		SET_UNIFORM_BUFFER_STATIC(Vector2, "TextureSize", TextureWH, Shader);
 		SET_UNIFORM_BUFFER_STATIC(float, "HeightScale", jShadowAppSettingProperties::GetInstance().HeightScale, Shader);
 		SET_UNIFORM_BUFFER_STATIC(float, "HorizonHeightScale", jShadowAppSettingProperties::GetInstance().HorizonHeightScale, Shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "AmbientOcclusionScale", jShadowAppSettingProperties::GetInstance().AmbientOcclusionScale, Shader);
 		SET_UNIFORM_BUFFER_STATIC(Vector, "EyeWorldPos", MainCamera->Pos, Shader);
 		SET_UNIFORM_BUFFER_STATIC(Vector, "LightDirection", DirectionalLight->Data.Direction, Shader);
 		SET_UNIFORM_BUFFER_STATIC(int32, "FlipedYNormalMap", (int32)1, Shader);		

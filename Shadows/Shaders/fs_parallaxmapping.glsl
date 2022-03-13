@@ -5,6 +5,7 @@ precision mediump float;
 uniform sampler2D tex_object;		// diffuse
 uniform sampler2D tex_object2;		// normalmap
 uniform sampler2D tex_object3;		// height map
+uniform sampler2D tex_object7;		// Ambient Occlusion map
 uniform int TextureSRGB[1];
 uniform int UseTexture;
 uniform int FlipedYNormalMap;
@@ -13,6 +14,7 @@ uniform vec3 LightDirection;		// from light to location
 uniform vec2 TextureSize;
 uniform float HeightScale;			// s = (max height / 1 texel with), this was using when the normalmap was generated.
 uniform float NumOfSteps;			// Num of ParallaxMap iteration steps
+uniform float AmbientOcclusionScale;
 
 in vec2 TexCoord_;
 in vec4 Color_;
@@ -51,6 +53,12 @@ vec2 ApplyParallaxOffset(vec2 uv, vec3 vDir, vec2 scale)
 	return uv;
 }
 
+float ApplyAmbientOcclusion(vec2 uv)
+{
+	// To adjust cos(a) in shader, AmbientMap has radian.
+	return cos(texture2D(tex_object7, uv).x * AmbientOcclusionScale);
+}
+
 void main()
 {
 	vec2 uv = TexCoord_;
@@ -83,5 +91,6 @@ void main()
 		color = Color_;
 	}
 
+	LightIntensity *= ApplyAmbientOcclusion(uv);
 	color.xyz *= vec3(LightIntensity);
 }
