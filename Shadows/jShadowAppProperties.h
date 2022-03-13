@@ -43,8 +43,11 @@ public:
 	float BloomBlurSigma = 0.8f;
 	float BloomMagnitude = 0.75f;
 
-	ETextureMappingType TextureMappingType = ETextureMappingType::ParallaxMapping;
-	float HeightScale = 20.0f;
+	bool LightRotation = true;
+
+	ETextureMappingType TextureMappingType = ETextureMappingType::HorizonMapping;
+	float HeightScale = 40.0f;
+	float HorizonHeightScale = 20.0f;
 	float NumOfSteps = 4.0f;
 
 	virtual void Setup(jAppSettingBase* appSetting) override;

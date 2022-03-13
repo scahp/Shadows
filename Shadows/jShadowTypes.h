@@ -56,6 +56,7 @@ enum class ETextureMappingType
 	No = 0,
 	NormalMapping,
 	ParallaxMapping,
+	HorizonMapping,
 	MAX,
 };
 
@@ -63,4 +64,5 @@ static const char* ETextureMappingTypeString[] = {
 	"No",
 	"NormalMapping",
 	"ParallaxMapping",
+	"HorizonMapping",
 };

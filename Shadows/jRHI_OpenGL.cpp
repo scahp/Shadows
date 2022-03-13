@@ -628,6 +628,14 @@ void jRHI_OpenGL::EndQueryTimeElapsed(const jQueryTime* queryTimeElpased) const
 	glEndQuery(GL_TIME_ELAPSED);
 }
 
+void jRHI_OpenGL::SetCubeMapSeamless(bool enable) const
+{
+	if (enable)
+		glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+	else
+		glDisable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+}
+
 void jRHI_OpenGL::SetClear(ERenderBufferType typeBit) const
 {
 	uint32 clearBufferBit = 0;

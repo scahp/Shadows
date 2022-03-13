@@ -23,6 +23,7 @@
 #include "jVertexAdjacency.h"
 #include "jSamplerStatePool.h"
 #include "Math\MathUtility.h"
+#include <ppl.h>
 
 jRHI* g_rhi = nullptr;
 
@@ -50,8 +51,8 @@ void jGame::ProcessInput()
 	//if (g_KeyState['6']) MainCamera->RotateRightAxis(0.1f);
 	if (g_KeyState['w'] || g_KeyState['W']) MainCamera->MoveForward(speed);
 	if (g_KeyState['s'] || g_KeyState['S']) MainCamera->MoveForward(-speed);
-	if (g_KeyState['+']) speed = Max(speed + 0.1f, 0.0f);
-	if (g_KeyState['-']) speed = Max(speed - 0.1f, 0.0f);
+	//if (g_KeyState['+']) speed = Max(speed + 0.1f, 0.0f);
+	//if (g_KeyState['-']) speed = Max(speed - 0.1f, 0.0f);
 }
 
 void jGame::Setup()
@@ -170,13 +171,16 @@ void jGame::RemoveSpawnedObjects()
 void ConstructHorizonMap(Vector4* OutHorizonMap, const float* InHeightMap, float* OutAmbientMap
 	, float InAmbientPower, int32 InWidth, int32 InHeight)
 {
-	constexpr int kAngleCount = 32;
-	constexpr float kAngleIndex = float(kAngleCount) / (2 * PI);
-	constexpr int kHorizonRadius = 16;
-
-	for(int32 y = 0; y < InHeight; ++y)
+	concurrency::parallel_for(size_t(0), size_t(InHeight), [&](size_t y)	// parallel for [0, InHeight-1]
 	{
+		constexpr int kAngleCount = 32;
+		constexpr float kAngleIndex = float(kAngleCount) / (2 * PI);
+		constexpr int kHorizonRadius = 16;
+
+		Vector4* CurrentHorizonMap = OutHorizonMap + InWidth * y;
+		float* CurrentAmbientMap = OutAmbientMap + InWidth * y;
 		const float* pCenterRow = InHeightMap + y * InWidth;
+
 		for(int32 x = 0; x < InWidth; ++x)
 		{
 			float h0 = pCenterRow[x];
@@ -209,7 +213,7 @@ void ConstructHorizonMap(Vector4* OutHorizonMap, const float* InHeightMap, float
 				}
 			}
 
-			Vector4* pLayerData = OutHorizonMap;
+			Vector4* pLayerData = CurrentHorizonMap;
 			for(int32 layer = 0;layer<2;++layer)
 			{
 				Vector4 color(0.0f, 0.0f, 0.0f, 0.0f);
@@ -237,12 +241,9 @@ void ConstructHorizonMap(Vector4* OutHorizonMap, const float* InHeightMap, float
 			for (int32 k = 0; k < kAngleCount; ++k)
 				sum += 1.0f / sqrt(maxTan2[k] + 1.0f);
 
-			OutAmbientMap[x] = pow(sum * (1.0f / float(kAngleCount)), InAmbientPower);
+			CurrentAmbientMap[x] = pow(sum * (1.0f / float(kAngleCount)), InAmbientPower);
 		}
-
-		OutHorizonMap += InWidth;
-		OutAmbientMap += InWidth;
-	}
+	});
 }
 
 void GenerateHorizonCube(Vector4* texel)
@@ -264,7 +265,7 @@ void GenerateHorizonCube(Vector4* texel)
 				case 4: v = Vector2(x * r, -y * r); break;
 				case 5: v = Vector2(-x * r, -y * r); break;
 				}
-				v = Vector2(v.y, v.x);
+				//v = Vector2(v.y, v.x);
 				float t = atan2(v.y, v.x) / (PI / 4);
 				float red = 0.0f;
 				float green = 0.0f;
@@ -371,35 +372,7 @@ void jGame::Update(float deltaTime)
 	g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	g_rhi->SetClear(ERenderBufferType::COLOR | ERenderBufferType::DEPTH);
 
-	auto ContructNormalMap = [](Vector* pOutNormalMap, const float* pHeightmap, int32 InWidth, int32 InHeight){
-		for(int32 y=0;y<InHeight;++y)
-		{
-			int32 ym1 = (y - 1) & (InHeight - 1);
-			int32 yp1 = (y + 1) & (InHeight - 1);
-
-			const float* centerRow = pHeightmap + y * InWidth;
-			const float* upperRow = pHeightmap + ym1 * InWidth;
-			const float* lowerRow = pHeightmap + yp1 * InWidth;
-
-			for(int32 x=0;x<InWidth;++x)
-			{
-				int32 xm1 = (x - 1) & (InWidth - 1);
-				int32 xp1 = (x + 1) & (InWidth - 1);
-
-				// Calculate slopes.
-				float dx = (centerRow[xp1] - centerRow[xm1]) * 0.5f;
-				float dy = (lowerRow[x] - upperRow[x]) * 0.5f;
-
-				// Normalize and clamp.
-				float nz = 1.0f / sqrt(dx * dx + dy * dy + 1.0f);
-				float nx = Min(Max(-dx * nz, -1.0f), 1.0f);
-				float ny = Min(Max(-dy * nz, -1.0f), 1.0f);
-				pOutNormalMap[x] = Vector(nx, ny, nz);
-			}
-
-			pOutNormalMap += InWidth;
-		}
-	};
+	g_rhi->SetCubeMapSeamless(true);		// To use HorizonCubeMap for fetching weight of horizon map by using light direction.
 
 	static jTexture* DiffuseTexture = nullptr;
 	static jTexture* NormalMap = nullptr;
@@ -411,24 +384,26 @@ void jGame::Update(float deltaTime)
 	static bool sInitialized = false;
 	if (!sInitialized)
 	{
+		// Load diffuse texture
 		{
 			jImageData DiffuseData;
-			jImageFileLoader::GetInstance().LoadTextureFromFile(DiffuseData, "Image/diffuse_256.png", false);
+			jImageFileLoader::GetInstance().LoadTextureFromFile(DiffuseData, "Image/diffuse.png", false);
 			DiffuseTexture = g_rhi->CreateTextureFromData(&DiffuseData.ImageData[0], DiffuseData.Width, DiffuseData.Height, DiffuseData.sRGB, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGBA);
 		}
 
+		// Load normal texture
 		{
 			jImageData NormalData;
-			jImageFileLoader::GetInstance().LoadTextureFromFile(NormalData, "Image/normal_256.png", false);
+			jImageFileLoader::GetInstance().LoadTextureFromFile(NormalData, "Image/normal.png", false);
 			NormalMap = g_rhi->CreateTextureFromData(&NormalData.ImageData[0], NormalData.Width, NormalData.Height, NormalData.sRGB, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGBA);
 		}
 
+		// Load heightmap texture
 		jImageData HeightMapData;
 		{
-			jImageFileLoader::GetInstance().LoadTextureFromFile(HeightMapData, "Image/displacement_256.png", false);
+			jImageFileLoader::GetInstance().LoadTextureFromFile(HeightMapData, "Image/displacement.png", false);
 			DispTexture = g_rhi->CreateTextureFromData(&HeightMapData.ImageData[0], HeightMapData.Width, HeightMapData.Height, HeightMapData.sRGB, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGBA);
 			TextureWH = Vector2((float)HeightMapData.Width, (float)HeightMapData.Height);
-
 		}
 
 		float* HeightMap = new float[HeightMapData.Width * HeightMapData.Height];
@@ -439,46 +414,22 @@ void jGame::Update(float deltaTime)
 			HeightMap[i] = (float)HeightMapData.ImageData[i * 4] / 255.0f;
 		}
 
+		// Generate HorizonMap
 		constexpr int32 layerCount = 2;
 		Vector4* HorizonMap = new Vector4[HeightMapData.Width * HeightMapData.Height * layerCount];
 
 		float AmbientPower = 1.0f;
-		ConstructHorizonMap(HorizonMap, HeightMap, AmbientMap
-			, AmbientPower, HeightMapData.Width, HeightMapData.Height);
+		ConstructHorizonMap(HorizonMap, HeightMap, AmbientMap, AmbientPower, HeightMapData.Width, HeightMapData.Height);
 
 		jImageData HorizonMapData[2];
-		HorizonMapData[0].Width = HeightMapData.Width;
-		HorizonMapData[0].Height = HeightMapData.Height;
-		HorizonMapData[0].sRGB = false;
-		HorizonMapData[1].Width = HeightMapData.Width;
-		HorizonMapData[1].Height = HeightMapData.Height;
-		HorizonMapData[1].sRGB = false;
-		
-		HorizonMapData[0].ImageData.resize(HeightMapData.Width * HeightMapData.Height * 4);
-		HorizonMapData[1].ImageData.resize(HeightMapData.Width * HeightMapData.Height * 4);
-
-		int32 i = 0;
-		for(;i<HeightMapData.Width * HeightMapData.Height;++i)
+		for (int32 i = 0; i < 2; ++i)
 		{
-			int32 Index = i * 4;
-			HorizonMapData[0].ImageData[Index] = (uint8)(HorizonMap[i].x * 255);
-			HorizonMapData[0].ImageData[Index + 1] = (uint8)(HorizonMap[i].y * 255);
-			HorizonMapData[0].ImageData[Index + 2] = (uint8)(HorizonMap[i].z * 255);
-			HorizonMapData[0].ImageData[Index + 3] = (uint8)(HorizonMap[i].w * 255);
-
-			//HorizonMapData[0].ImageData[Index] = HeightMapData.ImageData[Index];
-			//HorizonMapData[0].ImageData[Index + 1] = HeightMapData.ImageData[Index + 1];
-			//HorizonMapData[0].ImageData[Index + 2] = HeightMapData.ImageData[Index + 2];
-			//HorizonMapData[0].ImageData[Index + 3] = HeightMapData.ImageData[Index + 3];
-		}
-
-		for (; i < HeightMapData.Width * HeightMapData.Height * 2; ++i)
-		{
-			int32 Index = i * 4 - HeightMapData.Width * HeightMapData.Height * 4;
-			HorizonMapData[1].ImageData[Index] = (uint8)(HorizonMap[i].x * 255);
-			HorizonMapData[1].ImageData[Index + 1] = (uint8)(HorizonMap[i].y * 255);
-			HorizonMapData[1].ImageData[Index + 2] = (uint8)(HorizonMap[i].z * 255);
-			HorizonMapData[1].ImageData[Index + 3] = (uint8)(HorizonMap[i].w * 255);
+			HorizonMapData[i].Width = HeightMapData.Width;
+			HorizonMapData[i].Height = HeightMapData.Height;
+			HorizonMapData[i].sRGB = false;
+			HorizonMapData[i].ImageData.resize(HeightMapData.Width* HeightMapData.Height * 4 * sizeof(float));
+			memcpy(&HorizonMapData[i].ImageData[0], &HorizonMap[i * (HeightMapData.Width * HeightMapData.Height)]
+				, HeightMapData.Width* HeightMapData.Height * sizeof(Vector4));
 		}
 
 		delete[] AmbientMap;
@@ -487,12 +438,12 @@ void jGame::Update(float deltaTime)
 
 		HorizonLayer1 = g_rhi->CreateTextureFromData(&HorizonMapData[0].ImageData[0]
 			, HorizonMapData[0].Width, HorizonMapData[0].Height, HorizonMapData[0].sRGB
-			, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGBA);
+			, EFormatType::FLOAT, ETextureFormat::RGBA16F);
 		HorizonLayer2 = g_rhi->CreateTextureFromData(&HorizonMapData[1].ImageData[0]
 			, HorizonMapData[1].Width, HorizonMapData[1].Height, HorizonMapData[1].sRGB
-			, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGBA);
+			, EFormatType::FLOAT, ETextureFormat::RGBA16F);
 
-
+		// Generate HorizonCube for fetching weight of horizon map by using light direction.
 		Vector4 CubePixel[16 * 16 * 6];
 		GenerateHorizonCube(&CubePixel[0]);
 
@@ -515,7 +466,24 @@ void jGame::Update(float deltaTime)
 		auto EnableBlend = false;
 		auto BlendSrc = EBlendSrc::ONE;
 		auto BlendDest = EBlendDest::ZERO;
-		auto Shader = jShader::GetShader("ParallaxMapping");
+
+		jShader* Shader = nullptr;
+		switch (jShadowAppSettingProperties::GetInstance().TextureMappingType)
+		{
+		case ETextureMappingType::NormalMapping:
+			Shader = jShader::GetShader("NormalMapping");
+			break;
+		case ETextureMappingType::ParallaxMapping:
+			Shader = jShader::GetShader("ParallaxMapping");
+			break;
+		case ETextureMappingType::HorizonMapping:
+			Shader = jShader::GetShader("HorizonMapping");
+			break;
+		default:
+			Shader = jShader::GetShader("DiffuseMapping");
+			break;
+		}
+
 		g_rhi->EnableDepthTest(true);
 		g_rhi->EnableBlend(EnableBlend);
 		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
@@ -539,35 +507,42 @@ void jGame::Update(float deltaTime)
 		Plane->RenderObject->tex_object6 = WeightCubeMap;
 		Plane->RenderObject->samplerState6 = jSamplerStatePool::GetSamplerState("LinearWrap").get();
 
+		if (jShadowAppSettingProperties::GetInstance().LightRotation)
+		{
+			static float rotSpeed = 0.01f;
+			Vector4 Rotated = Matrix::MakeRotate(Vector::UpVector, rotSpeed).Transform(
+				Vector4(jShadowAppSettingProperties::GetInstance().DirecionalLightDirection, 0.0f));
+			jShadowAppSettingProperties::GetInstance().DirecionalLightDirection = Vector(Rotated.x, Rotated.y, Rotated.z);
+		}
+
 		SET_UNIFORM_BUFFER_STATIC(float, "NumOfSteps", jShadowAppSettingProperties::GetInstance().NumOfSteps, Shader);
 		SET_UNIFORM_BUFFER_STATIC(Vector2, "TextureSize", TextureWH, Shader);
 		SET_UNIFORM_BUFFER_STATIC(float, "HeightScale", jShadowAppSettingProperties::GetInstance().HeightScale, Shader);
+		SET_UNIFORM_BUFFER_STATIC(float, "HorizonHeightScale", jShadowAppSettingProperties::GetInstance().HorizonHeightScale, Shader);
 		SET_UNIFORM_BUFFER_STATIC(Vector, "EyeWorldPos", MainCamera->Pos, Shader);
 		SET_UNIFORM_BUFFER_STATIC(Vector, "LightDirection", DirectionalLight->Data.Direction, Shader);
-		SET_UNIFORM_BUFFER_STATIC(int32, "TexturemappingType", (int32)jShadowAppSettingProperties::GetInstance().TextureMappingType, Shader);
-		SET_UNIFORM_BUFFER_STATIC(int32, "FlipedYNormalMap", (int32)1, Shader);		
 
 		Plane->Update(deltaTime);
 		Plane->Draw(MainCamera, Shader, {});
 	}
 
-	//static auto gizmo = jPrimitiveUtil::CreateGizmo(Vector::ZeroVector, Vector::ZeroVector, Vector::OneVector);
-	//{
-	//	auto EnableClear = false;
-	//	auto EnableDepthTest = false;
-	//	auto DepthStencilFunc = EComparisonFunc::LESS;
-	//	auto EnableBlend = false;
-	//	auto BlendSrc = EBlendSrc::ONE;
-	//	auto BlendDest = EBlendDest::ZERO;
-	//	auto Shader = jShader::GetShader("Simple");
-	//	g_rhi->EnableDepthTest(true);
-	//	g_rhi->EnableBlend(EnableBlend);
-	//	g_rhi->SetBlendFunc(BlendSrc, BlendDest);
-	//	g_rhi->SetShader(Shader);
-	//	MainCamera->BindCamera(Shader);
+	static auto gizmo = jPrimitiveUtil::CreateGizmo(Vector::ZeroVector, Vector::ZeroVector, Vector::OneVector);
+	{
+		auto EnableClear = false;
+		auto EnableDepthTest = false;
+		auto DepthStencilFunc = EComparisonFunc::LESS;
+		auto EnableBlend = false;
+		auto BlendSrc = EBlendSrc::ONE;
+		auto BlendDest = EBlendDest::ZERO;
+		auto Shader = jShader::GetShader("Simple");
+		g_rhi->EnableDepthTest(true);
+		g_rhi->EnableBlend(EnableBlend);
+		g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+		g_rhi->SetShader(Shader);
+		MainCamera->BindCamera(Shader);
 
-	//	gizmo->Draw(MainCamera, Shader, {});
-	//}
+		gizmo->Draw(MainCamera, Shader, {});
+	}
 
 	Renderer->DebugRenderPass(MainCamera);
 

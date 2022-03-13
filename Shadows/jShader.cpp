@@ -90,7 +90,10 @@ struct jShaderInfoCreation
 
 		DECLARE_SHADER_VS_FS("Graph2D", "shaders/vs_graph.glsl", "shaders/fs_graph.glsl");
 
+		DECLARE_SHADER_VS_FS("DiffuseMapping", "shaders/vs_diffusemapping.glsl", "shaders/fs_diffusemapping.glsl");
+		DECLARE_SHADER_VS_FS("NormalMapping", "shaders/vs_normalmapping.glsl", "shaders/fs_normalmapping.glsl");
 		DECLARE_SHADER_VS_FS("ParallaxMapping", "shaders/vs_parallaxmapping.glsl", "shaders/fs_parallaxmapping.glsl");
+		DECLARE_SHADER_VS_FS("HorizonMapping", "shaders/vs_horizonmapping.glsl", "shaders/fs_horizonmapping.glsl");
 	}
 } s_shaderInfoCreation;
 

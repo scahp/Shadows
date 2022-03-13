@@ -538,5 +538,23 @@
     <None Include="Shaders\vs_parallaxmapping.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\fs_horizonmapping.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\vs_horizonmapping.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\fs_normalmapping.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\vs_normalmapping.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\fs_diffusemapping.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\vs_diffusemapping.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

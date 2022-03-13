@@ -8,6 +8,8 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->AddEnumVariable("TextureMapping", TextureMappingType, "ETextureMappingType", ETextureMappingTypeString);
 	appSetting->AddVariable("HeightScale", HeightScale);
 	appSetting->SetMinMax("HeightScale", 0.0f, 100.0f);
+	appSetting->AddVariable("HorizonHeightScale", HorizonHeightScale);
+	appSetting->SetMinMax("HorizonHeightScale", 0.0f, 100.0f);
 
 	//appSetting->AddVariable("ShadowOn", ShadowOn);
 
@@ -68,6 +70,8 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->AddDirectionVariable("DirecionalLight_Direction", DirecionalLightDirection);
 	appSetting->SetGroup("DirecionalLight_Direction", "DirectionalLight");
 	appSetting->SetLabel("DirecionalLight_Direction", "Direction");
+
+	appSetting->AddVariable("LightRotationOn", LightRotation);
 
 	//appSetting->AddVariable("PointLight_PositionX", PointLightPosition.x);
 	//appSetting->SetGroup("PointLight_PositionX", "PointLight");
@@ -135,6 +139,7 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 {
 	appSetting->RemoveVariable("TextureMappingType");
 	appSetting->RemoveVariable("HeightScale");
+	appSetting->RemoveVariable("HorizonHeightScale");
 
 	//appSetting->RemoveVariable("ShadowOn");
 	//appSetting->RemoveVariable("EShadowType");
@@ -150,6 +155,7 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 	//appSetting->RemoveVariable("PointLight_Info");
 	//appSetting->RemoveVariable("SpotLight_Info");
 	appSetting->RemoveVariable("DirecionalLight_Direction");
+	appSetting->RemoveVariable("LightRotationOn");
 	//appSetting->RemoveVariable("PointLight_PositionX");
 	//appSetting->RemoveVariable("PointLight_PositionY");
 	//appSetting->RemoveVariable("PointLight_PositionZ");

@@ -5,6 +5,9 @@ precision mediump float;
 uniform sampler2D tex_object;		// diffuse
 uniform sampler2D tex_object2;		// normalmap
 uniform sampler2D tex_object3;		// height map
+uniform sampler2D tex_object4;		// horizon map layer1
+uniform sampler2D tex_object5;		// horizon map layer2
+uniform samplerCube tex_object6;	// Weight Cube map
 uniform int TextureSRGB[1];
 uniform int UseTexture;
 
@@ -12,6 +15,7 @@ uniform vec3 LightDirection;		// from light to location
 uniform vec2 TextureSize;
 uniform float HeightScale;			// s = (max height / 1 texel with), this was using when the normalmap was generated.
 uniform float NumOfSteps;			// Num of ParallaxMap iteration steps
+uniform float HorizonHeightScale;
 
 in vec2 TexCoord_;
 in vec4 Color_;
@@ -46,6 +50,26 @@ vec2 ApplyParallaxOffset(vec2 uv, vec3 vDir, vec2 scale)
 	return uv;
 }
 
+float ApplyHorizonMap(vec2 texcoord, vec3 ldir)
+{
+	const float kShadowHardness = 2.0;
+
+	// Read horizon channel factors from cube map.
+	vec3 dir = vec3(ldir.x, -ldir.y, ldir.z);
+	vec4 weights = texture(tex_object6, dir.xyz);
+
+	// Extract positive and negative weights for horizon map layers 0 and 1.
+	vec4 w0 = clamp(weights, vec4(0.0), vec4(1.0));
+	vec4 w1 = clamp(-weights, vec4(0.0), vec4(1.0));
+
+	// Sample the horizon map and multiply by the weights for each layer.
+	float s0 = dot(texture(tex_object4, texcoord), w0);
+	float s1 = dot(texture(tex_object5, texcoord), w1);
+
+	float sum = clamp((s0 + s1)*HorizonHeightScale, 0, 3.14*2);
+	return clamp(((ldir.z - sum) * kShadowHardness + 1.0), 0.0, 1.0);
+}
+
 void main()
 {
 	vec2 uv = TexCoord_;
@@ -53,7 +77,7 @@ void main()
 	mat3 transposeTBN = transpose(TBN);
 	vec3 TangentSpaceViewDir = normalize(TBN * WorldSpaceViewDir);
 	
-	// Parallax Mapping을 사용하는 경우 UV를 조정함.
+	// Ally Parallax Mapping : adjusting UV
 	vec2 scale = HeightScale / (2.0 * NumOfSteps * TextureSize);
 	uv = ApplyParallaxOffset(uv, TangentSpaceViewDir, scale);
 	uv = clamp(uv, vec2(0.0), vec2(1.0));
@@ -65,6 +89,10 @@ void main()
 	// 라이팅 연산 수행
 	float LightIntensity = 1.0f;
 	LightIntensity = clamp(dot(normal, -LightDirection), 0.0, 1.0);
+
+	// Apply HorizonMapping
+	vec3 TangentSpaceLightDirFromSurface = normalize(transposeTBN * (-LightDirection));
+	LightIntensity *= ApplyHorizonMap(uv, TangentSpaceLightDirFromSurface);
 
 	// Fetching Diffuse texture
 	if (UseTexture > 0)
