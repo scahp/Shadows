@@ -1,4 +1,4 @@
-#version 330 core
+ï»¿#version 330 core
 
 precision mediump float;
 
@@ -7,6 +7,7 @@ uniform sampler2D tex_object2;		// normalmap
 uniform sampler2D tex_object3;		// height map
 uniform int TextureSRGB[1];
 uniform int UseTexture;
+uniform int FlipedYNormalMap;
 
 uniform int TexturemappingType;
 uniform vec3 LightDirection;		// from light to location
@@ -21,6 +22,11 @@ in vec3 WorldSpaceViewDir;
 
 out vec4 color;		// final color of fragment shader.
 
+vec4 GetDiffuse(vec2 uv)
+{
+	return texture(tex_object, uv);
+}
+
 // Fetching normal from normal map
 vec3 GetNormal(vec2 uv)
 {
@@ -33,6 +39,10 @@ vec3 GetNormal(vec2 uv)
 vec2 ApplyParallaxOffset(vec2 uv, vec3 vDir, vec2 scale)
 {
 	vec2 pdir = vDir.xy * scale;
+
+	if (FlipedYNormalMap > 0)
+		pdir.y = -pdir.y;	// because opengl texture y is inverted
+
 	for (int i = 0; i < NumOfSteps; ++i)
 	{
 		// This code can be replaced with fetching parallax map for parallax variable(h * nz)
@@ -52,9 +62,9 @@ void main()
 	vec2 uv = TexCoord_;
 	
 	mat3 transposeTBN = transpose(TBN);
-	vec3 TangentSpaceViewDir = normalize(TBN * WorldSpaceViewDir);
+	vec3 TangentSpaceViewDir = normalize(transposeTBN * WorldSpaceViewDir);
 
-	// Parallax MappingÀ» »ç¿ëÇÏ´Â °æ¿ì UV¸¦ Á¶Á¤ÇÔ.
+	// Parallax Mappingì„ ì‚¬ìš©í•˜ëŠ” ê²½ìš° UVë¥¼ ì¡°ì •í•¨.
 	if (TexturemappingType == 2)
 	{
 		vec2 scale = HeightScale / (2.0 * NumOfSteps * TextureSize);
@@ -62,11 +72,11 @@ void main()
 		uv = clamp(uv, vec2(0.0), vec2(1.0));
 	}
 
-	// NormalMapÀ¸·Î ºÎÅÍ normalÀ» ¾ò¾î¿À°í, TBN ¸ÅÆ®¸¯½º·Î º¯È¯½ÃÄÑÁÜ
+	// NormalMapìœ¼ë¡œ ë¶€í„° normalì„ ì–»ì–´ì˜¤ê³ , TBN ë§¤íŠ¸ë¦­ìŠ¤ë¡œ ë³€í™˜ì‹œì¼œì¤Œ
 	vec3 normal = GetNormal(uv);	
 	normal = normalize(TBN * normal);
 
-	// ¶óÀÌÆÃ ¿¬»ê ¼öÇà
+	// ë¼ì´íŒ… ì—°ì‚° ìˆ˜í–‰
 	float LightIntensity = 1.0f;
 	if (TexturemappingType > 0)
 	{
@@ -80,7 +90,7 @@ void main()
 	// Fetching Diffuse texture
 	if (UseTexture > 0)
 	{
-		color = texture2D(tex_object, uv);
+		color = GetDiffuse(uv);
 		if (TextureSRGB[0] > 0)
 			color.xyz = pow(color.xyz, vec3(2.2));
 	}

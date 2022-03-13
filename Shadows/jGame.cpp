@@ -338,28 +338,32 @@ void jGame::Update(float deltaTime)
 		SET_UNIFORM_BUFFER_STATIC(Vector, "EyeWorldPos", MainCamera->Pos, Shader);
 		SET_UNIFORM_BUFFER_STATIC(Vector, "LightDirection", DirectionalLight->Data.Direction, Shader);
 		SET_UNIFORM_BUFFER_STATIC(int32, "TexturemappingType", (int32)jShadowAppSettingProperties::GetInstance().TextureMappingType, Shader);
+		SET_UNIFORM_BUFFER_STATIC(int32, "FlipedYNormalMap", (int32)1, Shader);
 
 		Plane->Update(deltaTime);
 		Plane->Draw(MainCamera, Shader, {});
 	}
 
-	//static auto gizmo = jPrimitiveUtil::CreateGizmo(Vector::ZeroVector, Vector::ZeroVector, Vector::OneVector);
-	//{
-	//	auto EnableClear = false;
-	//	auto EnableDepthTest = false;
-	//	auto DepthStencilFunc = EComparisonFunc::LESS;
-	//	auto EnableBlend = false;
-	//	auto BlendSrc = EBlendSrc::ONE;
-	//	auto BlendDest = EBlendDest::ZERO;
-	//	auto Shader = jShader::GetShader("Simple");
-	//	g_rhi->EnableDepthTest(true);
-	//	g_rhi->EnableBlend(EnableBlend);
-	//	g_rhi->SetBlendFunc(BlendSrc, BlendDest);
-	//	g_rhi->SetShader(Shader);
-	//	MainCamera->BindCamera(Shader);
+	if (jShadowAppSettingProperties::GetInstance().GizmoOn)
+	{
+		static auto gizmo = jPrimitiveUtil::CreateGizmo(Vector::ZeroVector, Vector::ZeroVector, Vector::OneVector);
+		{
+			auto EnableClear = false;
+			auto EnableDepthTest = false;
+			auto DepthStencilFunc = EComparisonFunc::LESS;
+			auto EnableBlend = false;
+			auto BlendSrc = EBlendSrc::ONE;
+			auto BlendDest = EBlendDest::ZERO;
+			auto Shader = jShader::GetShader("Simple");
+			g_rhi->EnableDepthTest(true);
+			g_rhi->EnableBlend(EnableBlend);
+			g_rhi->SetBlendFunc(BlendSrc, BlendDest);
+			g_rhi->SetShader(Shader);
+			MainCamera->BindCamera(Shader);
 
-	//	gizmo->Draw(MainCamera, Shader, {});
-	//}
+			gizmo->Draw(MainCamera, Shader, {});
+		}
+	}
 
 	Renderer->DebugRenderPass(MainCamera);
 
