@@ -303,7 +303,7 @@ void jGame::Update(float deltaTime)
 			jImageData data;
 			jImageFileLoader::GetInstance().LoadTextureFromFile(data, "Image/displacement.png", false);
 			DispTexture = g_rhi->CreateTextureFromData(&data.ImageData[0], data.Width, data.Height, data.sRGB, EFormatType::UNSIGNED_BYTE, ETextureFormat::RGBA);
-			TextureWH = Vector2(data.Width, data.Height);
+			TextureWH = Vector2((float)data.Width, (float)data.Height);
 		}
 
 		sInitialized = true;
@@ -338,7 +338,6 @@ void jGame::Update(float deltaTime)
 		SET_UNIFORM_BUFFER_STATIC(Vector, "EyeWorldPos", MainCamera->Pos, Shader);
 		SET_UNIFORM_BUFFER_STATIC(Vector, "LightDirection", DirectionalLight->Data.Direction, Shader);
 		SET_UNIFORM_BUFFER_STATIC(int32, "TexturemappingType", (int32)jShadowAppSettingProperties::GetInstance().TextureMappingType, Shader);
-		SET_UNIFORM_BUFFER_STATIC(int32, "FlipedYNormalMap", (int32)1, Shader);		
 
 		Plane->Update(deltaTime);
 		Plane->Draw(MainCamera, Shader, {});

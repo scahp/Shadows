@@ -7,7 +7,6 @@ uniform sampler2D tex_object2;		// normalmap
 uniform sampler2D tex_object3;		// height map
 uniform int TextureSRGB[1];
 uniform int UseTexture;
-uniform int FlipedYNormalMap;		// to support converting normalmap type between dx and gl.
 
 uniform int TexturemappingType;
 uniform vec3 LightDirection;		// from light to location
@@ -18,7 +17,7 @@ uniform float NumOfSteps;			// Num of ParallaxMap iteration steps
 in vec2 TexCoord_;
 in vec4 Color_;
 in mat3 TBN;
-in vec3 TangentSpaceViewDir;
+in vec3 WorldSpaceViewDir;
 
 out vec4 color;		// final color of fragment shader.
 
@@ -26,8 +25,6 @@ out vec4 color;		// final color of fragment shader.
 vec3 GetNormal(vec2 uv)
 {
 	vec3 normal = texture(tex_object2, uv).xyz;
-	if (FlipedYNormalMap > 0)
-		normal.y = 1.0 - normal.y;
 	normal = normal * 2.0 - 1.0;
 	return normal;
 }
@@ -54,6 +51,9 @@ void main()
 {
 	vec2 uv = TexCoord_;
 	
+	mat3 transposeTBN = transpose(TBN);
+	vec3 TangentSpaceViewDir = normalize(TBN * WorldSpaceViewDir);
+
 	// Parallax Mapping을 사용하는 경우 UV를 조정함.
 	if (TexturemappingType == 2)
 	{

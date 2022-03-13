@@ -14,7 +14,7 @@ uniform vec3 EyeWorldPos;
 out vec2 TexCoord_;
 out vec4 Color_;
 out mat3 TBN;
-out vec3 TangentSpaceViewDir;
+out vec3 WorldSpaceViewDir;
 
 void main()
 {
@@ -22,14 +22,11 @@ void main()
 	Color_ = Color;
 	gl_Position = MVP * vec4(Pos, 1.0);
 	vec3 WorldPos = (M * vec4(Pos, 1.0)).xyz;
-	vec3 WorldSpaceViewDir = normalize(EyeWorldPos - WorldPos);
+	WorldSpaceViewDir = normalize(EyeWorldPos - WorldPos);
 
 	vec3 T = normalize(vec3(M * vec4(Tangent, 0.0)));
-	vec3 B = normalize(vec3(M * vec4(cross(Tangent, Normal), 0.0)));
+	vec3 B = normalize(vec3(M * vec4(cross(Normal, Tangent), 0.0)));
 	vec3 N = normalize(vec3(M * vec4(Normal, 0.0)));
 
 	TBN = mat3(T, B, N);
-	TangentSpaceViewDir = normalize(TBN * WorldSpaceViewDir);			// Convert To TangentSpace
-
-	TBN = transpose(mat3(T, B, N));
 }
