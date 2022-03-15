@@ -1,3 +1,3 @@
-Explanation of Parallax Mapping here https://scahp.tistory.com/86
+Explanation of Horizon Mapping here https://scahp.tistory.com/88
 
-<img src="https://user-images.githubusercontent.com/6734453/155875236-5cd2d9f3-4b7a-44e0-acdd-1bca98b4ca2f.png" width="90%"></img>
+<img src="https://user-images.githubusercontent.com/6734453/158390906-d57d3938-8aef-4183-8560-7a2e927a5a9f.png" width="90%"></img>
