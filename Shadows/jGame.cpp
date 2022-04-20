@@ -243,7 +243,120 @@ void jGame::Update(float deltaTime)
 
 	jObject::FlushDirtyState();
 
-	Renderer->Render(MainCamera);
+	// Renderer->Render(MainCamera);
+
+	//static auto RenderTargetPtr = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget(
+	//	{ ETextureType::TEXTURE_2D, ETextureFormat::RGBA16F, ETextureFormat::RGBA, EFormatType::FLOAT
+	//	, EDepthBufferType::DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT, 1 }));
+
+	static jQuadPrimitive* pFloor = nullptr;
+	static jObject* Cube[4] = {};
+	static jFullscreenQuadPrimitive* FullScreenQuad = nullptr;
+	static jObject* JumpingSphere = nullptr;
+	static jObject* RotatingCube = nullptr;
+	static jObject* RotatingCapsule = nullptr;
+
+	static bool s_Initialized = false;
+	if (!s_Initialized)
+	{
+		s_Initialized = true;
+
+		//pFloor = jPrimitiveUtil::CreateQuad(Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), Vector(1000.0f, 1000.0f, 1000.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f) * 0.8);
+		//pFloor->SetPlane(jPlane(Vector(0.0, 1.0, 0.0), -0.1f));
+		//pFloor->SkipUpdateShadowVolume = true;
+
+		const float Width = 150.0f;
+		const float HalfWidth = Width / 2.0f;
+		const float Tickness = 5.0f;
+
+		Cube[0] = jPrimitiveUtil::CreateCube(Vector(HalfWidth, 0.0f, 0.0f), Vector::OneVector, Vector(Tickness, Width, Width), Vector4(0.0f, 0.0f, 1.0f, 0.5f)); 
+		Cube[1] = jPrimitiveUtil::CreateCube(Vector(0.0f, -HalfWidth, 0.0f), Vector::OneVector, Vector(Width, Tickness, Width), Vector4(0.7f, 0.7f, 0.7f, 0.5f));
+		Cube[2] = jPrimitiveUtil::CreateCube(Vector(-HalfWidth, 0.0f, 0.0f), Vector::OneVector, Vector(Tickness, Width, Width), Vector4(0.0f, 1.0f, 0.0f, 0.5f));
+		Cube[3] = jPrimitiveUtil::CreateCube(Vector(0.0f, 0.0f, HalfWidth), Vector::OneVector, Vector(Width, Width, Tickness), Vector4(1.0f, 0.0f, 0.0f, 0.5f));
+
+		JumpingSphere = jPrimitiveUtil::CreateSphere(Vector(0.0f, -HalfWidth, 0.0f), 1.0, 16, Vector(10.0f), Vector4(0.8f, 0.0f, 0.0f, 1.0f));
+		JumpingSphere->PostUpdateFunc = [HalfWidth](jObject* thisObject, float deltaTime)
+		{
+			const float startY = -HalfWidth;
+			const float endY = HalfWidth;
+			const float speed = 1.5f;
+			static bool dir = true;
+			thisObject->RenderObject->Pos.y += dir ? speed : -speed;
+			if (thisObject->RenderObject->Pos.y < startY || thisObject->RenderObject->Pos.y > endY)
+			{
+				dir = !dir;
+				thisObject->RenderObject->Pos.y += dir ? speed : -speed;
+			}
+		};
+
+		RotatingCube = jPrimitiveUtil::CreateCube(Vector(HalfWidth/2.0f, HalfWidth/2.0f, 0.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(0.7f, 0.7f, 0.0f, 0.8f));
+		RotatingCube->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
+		{
+			thisObject->RenderObject->Rot.z += 0.005f;
+		};
+
+		RotatingCapsule = jPrimitiveUtil::CreateCapsule(Vector(-HalfWidth / 2.0f, HalfWidth / 2.0f, 0.0f), 30.0f, 8.0f, 20, Vector(1.0f), Vector4(1.0f, 0.0f, 1.0f, 0.3f));
+		RotatingCapsule->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
+		{
+			thisObject->RenderObject->Rot.x -= 0.01f;
+		};
+
+		//FullScreenQuad = jPrimitiveUtil::CreateFullscreenQuad(RenderTargetPtr->GetTexture());
+	}
+
+	//if (RenderTargetPtr->Begin())
+	{
+		g_rhi->EnableDepthTest(true);
+		g_rhi->SetViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+
+		g_rhi->EnableBlend(true);
+		g_rhi->SetBlendFunc(EBlendSrc::SRC_ALPHA, EBlendDest::ONE_MINUS_SRC_ALPHA);
+
+		g_rhi->SetClearColor(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);
+		g_rhi->SetClear(ERenderBufferType::COLOR | ERenderBufferType::DEPTH);
+
+		jShader* pShader = jShader::GetShader("WeightedOIT");
+		if (pFloor)
+		{
+			pFloor->Update(deltaTime);
+			pFloor->Draw(MainCamera, pShader, { DirectionalLight });
+		}
+
+		for (int32 i = 0; i < _countof(Cube); ++i)
+		{
+			if (Cube[i])
+			{
+				Cube[i]->Update(deltaTime);
+				Cube[i]->Draw(MainCamera, pShader, { DirectionalLight });
+			}
+		}
+
+		if (JumpingSphere)
+		{
+			JumpingSphere->Update(deltaTime);
+			JumpingSphere->Draw(MainCamera, pShader, { DirectionalLight });
+		}
+
+		if (RotatingCube)
+		{
+			RotatingCube->Update(deltaTime);
+			RotatingCube->Draw(MainCamera, pShader, { DirectionalLight });
+		}
+
+		if (RotatingCapsule)
+		{
+			RotatingCapsule->Update(deltaTime);
+			RotatingCapsule->Draw(MainCamera, pShader, { DirectionalLight });
+		}		
+
+		//RenderTargetPtr->End();
+	}
+
+	//if (FullScreenQuad)
+	//{
+	//	jShader* pShader = jShader::GetShader("Scale");
+	//	FullScreenQuad->Draw(MainCamera, pShader, {});
+	//}
 }
 
 void jGame::UpdateAppSetting()
@@ -450,102 +563,102 @@ void jGame::SpawnTestPrimitives()
 {
 	RemoveSpawnedObjects();
 
-	auto quad = jPrimitiveUtil::CreateQuad(Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), Vector(1000.0f, 1000.0f, 1000.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
-	quad->SetPlane(jPlane(Vector(0.0, 1.0, 0.0), -0.1f));
-	//quad->SkipShadowMapGen = true;
-	quad->SkipUpdateShadowVolume = true;
-	jObject::AddObject(quad);
-	SpawnedObjects.push_back(quad);
+	//auto quad = jPrimitiveUtil::CreateQuad(Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), Vector(1000.0f, 1000.0f, 1000.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+	//quad->SetPlane(jPlane(Vector(0.0, 1.0, 0.0), -0.1f));
+	////quad->SkipShadowMapGen = true;
+	//quad->SkipUpdateShadowVolume = true;
+	//jObject::AddObject(quad);
+	//SpawnedObjects.push_back(quad);
 
-	auto gizmo = jPrimitiveUtil::CreateGizmo(Vector::ZeroVector, Vector::ZeroVector, Vector::OneVector);
-	gizmo->SkipShadowMapGen = true;
-	jObject::AddObject(gizmo);
-	SpawnedObjects.push_back(gizmo);
+	//auto gizmo = jPrimitiveUtil::CreateGizmo(Vector::ZeroVector, Vector::ZeroVector, Vector::OneVector);
+	//gizmo->SkipShadowMapGen = true;
+	//jObject::AddObject(gizmo);
+	//SpawnedObjects.push_back(gizmo);
 
-	auto triangle = jPrimitiveUtil::CreateTriangle(Vector(60.0, 100.0, 20.0), Vector::OneVector, Vector(40.0, 40.0, 40.0), Vector4(0.5f, 0.1f, 1.0f, 1.0f));
-	triangle->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
-	{
-		thisObject->RenderObject->Rot.x += 0.05f;
-	};
-	jObject::AddObject(triangle);
-	SpawnedObjects.push_back(triangle);
+	//auto triangle = jPrimitiveUtil::CreateTriangle(Vector(60.0, 100.0, 20.0), Vector::OneVector, Vector(40.0, 40.0, 40.0), Vector4(0.5f, 0.1f, 1.0f, 1.0f));
+	//triangle->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
+	//{
+	//	thisObject->RenderObject->Rot.x += 0.05f;
+	//};
+	//jObject::AddObject(triangle);
+	//SpawnedObjects.push_back(triangle);
 
-	auto cube = jPrimitiveUtil::CreateCube(Vector(-60.0f, 55.0f, -20.0f), Vector::OneVector, Vector(50.0f, 50.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
-	cube->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
-	{
-		thisObject->RenderObject->Rot.z += 0.005f;
-	};
-	jObject::AddObject(cube);
-	SpawnedObjects.push_back(cube);
+	//auto cube = jPrimitiveUtil::CreateCube(Vector(-60.0f, 55.0f, -20.0f), Vector::OneVector, Vector(50.0f, 50.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
+	//cube->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
+	//{
+	//	thisObject->RenderObject->Rot.z += 0.005f;
+	//};
+	//jObject::AddObject(cube);
+	//SpawnedObjects.push_back(cube);
 
-	auto cube2 = jPrimitiveUtil::CreateCube(Vector(-65.0f, 35.0f, 10.0f), Vector::OneVector, Vector(50.0f, 50.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
-	jObject::AddObject(cube2);
-	SpawnedObjects.push_back(cube2);
+	//auto cube2 = jPrimitiveUtil::CreateCube(Vector(-65.0f, 35.0f, 10.0f), Vector::OneVector, Vector(50.0f, 50.0f, 50.0f), Vector4(0.7f, 0.7f, 0.7f, 1.0f));
+	//jObject::AddObject(cube2);
+	//SpawnedObjects.push_back(cube2);
 
-	auto capsule = jPrimitiveUtil::CreateCapsule(Vector(30.0f, 30.0f, -80.0f), 40.0f, 10.0f, 20, Vector(1.0f), Vector4(1.0f, 1.0f, 0.0f, 1.0f));
-	capsule->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
-	{
-		thisObject->RenderObject->Rot.x -= 0.01f;
-	};
-	jObject::AddObject(capsule);
-	SpawnedObjects.push_back(capsule);
+	//auto capsule = jPrimitiveUtil::CreateCapsule(Vector(30.0f, 30.0f, -80.0f), 40.0f, 10.0f, 20, Vector(1.0f), Vector4(1.0f, 1.0f, 0.0f, 1.0f));
+	//capsule->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
+	//{
+	//	thisObject->RenderObject->Rot.x -= 0.01f;
+	//};
+	//jObject::AddObject(capsule);
+	//SpawnedObjects.push_back(capsule);
 
-	auto cone = jPrimitiveUtil::CreateCone(Vector(0.0f, 50.0f, 60.0f), 40.0f, 20.0f, 15, Vector::OneVector, Vector4(1.0f, 1.0f, 0.0f, 1.0f));
-	cone->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
-	{
-		thisObject->RenderObject->Rot.y += 0.03f;
-	};
-	jObject::AddObject(cone);
-	SpawnedObjects.push_back(cone);
+	//auto cone = jPrimitiveUtil::CreateCone(Vector(0.0f, 50.0f, 60.0f), 40.0f, 20.0f, 15, Vector::OneVector, Vector4(1.0f, 1.0f, 0.0f, 1.0f));
+	//cone->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
+	//{
+	//	thisObject->RenderObject->Rot.y += 0.03f;
+	//};
+	//jObject::AddObject(cone);
+	//SpawnedObjects.push_back(cone);
 
-	auto cylinder = jPrimitiveUtil::CreateCylinder(Vector(-30.0f, 60.0f, -60.0f), 20.0f, 10.0f, 20, Vector::OneVector, Vector4(0.0f, 0.0f, 1.0f, 1.0f));
-	cylinder->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
-	{
-		thisObject->RenderObject->Rot.x += 0.05f;
-	};
-	jObject::AddObject(cylinder);
-	SpawnedObjects.push_back(cylinder);
+	//auto cylinder = jPrimitiveUtil::CreateCylinder(Vector(-30.0f, 60.0f, -60.0f), 20.0f, 10.0f, 20, Vector::OneVector, Vector4(0.0f, 0.0f, 1.0f, 1.0f));
+	//cylinder->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
+	//{
+	//	thisObject->RenderObject->Rot.x += 0.05f;
+	//};
+	//jObject::AddObject(cylinder);
+	//SpawnedObjects.push_back(cylinder);
 
-	auto quad2 = jPrimitiveUtil::CreateQuad(Vector(-20.0f, 80.0f, 40.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(0.0f, 0.0f, 1.0f, 1.0f));
-	quad2->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
-	{
-		thisObject->RenderObject->Rot.z += 0.08f;
-	};
-	jObject::AddObject(quad2);
-	SpawnedObjects.push_back(quad2);
+	//auto quad2 = jPrimitiveUtil::CreateQuad(Vector(-20.0f, 80.0f, 40.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(0.0f, 0.0f, 1.0f, 1.0f));
+	//quad2->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
+	//{
+	//	thisObject->RenderObject->Rot.z += 0.08f;
+	//};
+	//jObject::AddObject(quad2);
+	//SpawnedObjects.push_back(quad2);
 
-	auto sphere = jPrimitiveUtil::CreateSphere(Vector(65.0f, 35.0f, 10.0f), 1.0, 16, Vector(30.0f), Vector4(0.8f, 0.0f, 0.0f, 1.0f));
-	sphere->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
-	{
-		//thisObject->RenderObject->Rot.z += 0.01f;
-		thisObject->RenderObject->Rot.z = DegreeToRadian(180.0f);
-	};
-	Sphere = sphere;
+	//auto sphere = jPrimitiveUtil::CreateSphere(Vector(65.0f, 35.0f, 10.0f), 1.0, 16, Vector(30.0f), Vector4(0.8f, 0.0f, 0.0f, 1.0f));
+	//sphere->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
+	//{
+	//	//thisObject->RenderObject->Rot.z += 0.01f;
+	//	thisObject->RenderObject->Rot.z = DegreeToRadian(180.0f);
+	//};
+	//Sphere = sphere;
 
-	jObject::AddObject(sphere);
-	SpawnedObjects.push_back(sphere);
+	//jObject::AddObject(sphere);
+	//SpawnedObjects.push_back(sphere);
 
-	auto sphere2 = jPrimitiveUtil::CreateSphere(Vector(150.0f, 5.0f, 0.0f), 1.0, 16, Vector(10.0f), Vector4(0.8f, 0.4f, 0.6f, 1.0f));
-	sphere2->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
-	{
-		const float startY = 5.0f;
-		const float endY = 100;
-		const float speed = 1.5f;
-		static bool dir = true;
-		thisObject->RenderObject->Pos.y += dir ? speed : -speed;
-		if (thisObject->RenderObject->Pos.y < startY || thisObject->RenderObject->Pos.y > endY)
-		{
-			dir = !dir;
-			thisObject->RenderObject->Pos.y += dir ? speed : -speed;
-		}
-	};
-	Sphere = sphere2;
-	jObject::AddObject(sphere2);
-	SpawnedObjects.push_back(sphere2);
+	//auto sphere2 = jPrimitiveUtil::CreateSphere(Vector(150.0f, 5.0f, 0.0f), 1.0, 16, Vector(10.0f), Vector4(0.8f, 0.4f, 0.6f, 1.0f));
+	//sphere2->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
+	//{
+	//	const float startY = 5.0f;
+	//	const float endY = 100;
+	//	const float speed = 1.5f;
+	//	static bool dir = true;
+	//	thisObject->RenderObject->Pos.y += dir ? speed : -speed;
+	//	if (thisObject->RenderObject->Pos.y < startY || thisObject->RenderObject->Pos.y > endY)
+	//	{
+	//		dir = !dir;
+	//		thisObject->RenderObject->Pos.y += dir ? speed : -speed;
+	//	}
+	//};
+	//Sphere = sphere2;
+	//jObject::AddObject(sphere2);
+	//SpawnedObjects.push_back(sphere2);
 
-	auto billboard = jPrimitiveUtil::CreateBillobardQuad(Vector(0.0f, 60.0f, 80.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(1.0f, 0.0f, 1.0f, 1.0f), MainCamera);
-	jObject::AddObject(billboard);
-	SpawnedObjects.push_back(billboard);
+	//auto billboard = jPrimitiveUtil::CreateBillobardQuad(Vector(0.0f, 60.0f, 80.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(1.0f, 0.0f, 1.0f, 1.0f), MainCamera);
+	//jObject::AddObject(billboard);
+	//SpawnedObjects.push_back(billboard);
 }
 
 void jGame::SpawnGraphTestFunc()
