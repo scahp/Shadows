@@ -61,7 +61,7 @@ void jGame::Setup()
 	//const Vector mainCameraPos(165.0f, 125.0f, -136.0f);
 	//const Vector mainCameraPos(300.0f, 100.0f, 300.0f);
 	const Vector mainCameraTarget(0.0f, 0.0f, 0.0f);
-	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(45.0f), 0.1f, 500.0f, SCR_WIDTH, SCR_HEIGHT, true);
+	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(45.0f), 10.0f, 1000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
 
 	// Light creation step
@@ -316,10 +316,18 @@ void jGame::Update(float deltaTime)
 		g_rhi->EnableBlend(true);
 		g_rhi->SetBlendFuncRT(EBlendSrc::ONE, EBlendDest::ONE, 0);
         g_rhi->SetBlendFuncRT(EBlendSrc::ZERO, EBlendDest::ONE_MINUS_SRC_ALPHA, 1);
+		g_rhi->SetBlendEquation(EBlendEquation::ADD);
 
-        //g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        g_rhi->SetClearColor(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);
-		g_rhi->SetClear(ERenderBufferType::COLOR | ERenderBufferType::DEPTH);
+		g_rhi->EnableCullFace(false);
+
+		//g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		//g_rhi->SetClearColor(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);
+		//g_rhi->SetClear(ERenderBufferType::COLOR | ERenderBufferType::DEPTH);
+
+		float ClearColorRT0[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+		float ClearColorRT1[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+		g_rhi->SetClearBuffer(ERenderBufferType::COLOR, &ClearColorRT0[0], 0);
+		g_rhi->SetClearBuffer(ERenderBufferType::COLOR, &ClearColorRT1[0], 1);
 
 		jShader* pShader = jShader::GetShader("WeightedOIT");
 		if (pFloor)
@@ -328,10 +336,20 @@ void jGame::Update(float deltaTime)
 			pFloor->Draw(MainCamera, pShader, { DirectionalLight });
 		}
 
+		auto& appSetting = jShadowAppSettingProperties::GetInstance();
+		static Vector4 Color[4];
+
+		Color[0] = Vector4(appSetting.LeftWallColor, appSetting.LeftWallAlpha);
+		Color[1] = Vector4(appSetting.FloorWallColor, appSetting.FloorWallAlpha);
+		Color[2] = Vector4(appSetting.RightWallColor, appSetting.RightWallAlpha);
+		Color[3] = Vector4(appSetting.BackWallColor, appSetting.BackWallAlpha);
+
 		for (int32 i = 0; i < _countof(Cube); ++i)
 		{
 			if (Cube[i])
 			{
+				g_rhi->SetShader(pShader);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "ColorUniform", Color[i], pShader);
 				Cube[i]->Update(deltaTime);
 				Cube[i]->Draw(MainCamera, pShader, { DirectionalLight });
 			}
@@ -339,27 +357,48 @@ void jGame::Update(float deltaTime)
 
 		if (JumpingSphere)
 		{
+			static Vector4 SphereColor;
+			SphereColor = Vector4(appSetting.SphereColor, appSetting.SphereAlpha);
+
+			g_rhi->SetShader(pShader);
+			SET_UNIFORM_BUFFER_STATIC(Vector4, "ColorUniform", SphereColor, pShader);
 			JumpingSphere->Update(deltaTime);
 			JumpingSphere->Draw(MainCamera, pShader, { DirectionalLight });
 		}
 
 		if (RotatingCube)
 		{
+			static Vector4 RotatingCubeColor;
+			RotatingCubeColor = Vector4(appSetting.CubeColor, appSetting.CubeAlpha);
+
+			g_rhi->SetShader(pShader);
+			SET_UNIFORM_BUFFER_STATIC(Vector4, "ColorUniform", RotatingCubeColor, pShader);
 			RotatingCube->Update(deltaTime);
 			RotatingCube->Draw(MainCamera, pShader, { DirectionalLight });
 		}
 
 		if (RotatingCapsule)
 		{
+			static Vector4 RotatingCapsuleColor = Vector4(1.0f, 0.0f, 1.0f, 0.4f);
+			RotatingCapsuleColor = Vector4(appSetting.CapsuleColor, appSetting.CapsuleAlpha);
+
+			g_rhi->SetShader(pShader);
+			SET_UNIFORM_BUFFER_STATIC(Vector4, "ColorUniform", RotatingCapsuleColor, pShader);
 			RotatingCapsule->Update(deltaTime);
 			RotatingCapsule->Draw(MainCamera, pShader, { DirectionalLight });
-		}		
+		}
 
 		TranslucentRTPtr->End();
 	}
 
 	if (FullScreenQuad)
 	{
+		g_rhi->EnableDepthTest(false);
+
+		//g_rhi->SetClearColor(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);
+		g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		g_rhi->SetClear(ERenderBufferType::COLOR);
+
 		FullScreenQuad->SetTexture(TranslucentRTPtr->GetTexture(0), jSamplerStatePool::GetSamplerState("Point").get());
         FullScreenQuad->SetTexture2(TranslucentRTPtr->GetTexture(1), jSamplerStatePool::GetSamplerState("Point").get());
         
@@ -368,6 +407,7 @@ void jGame::Update(float deltaTime)
 
         g_rhi->EnableBlend(true);
         g_rhi->SetBlendFunc(EBlendSrc::ONE_MINUS_SRC_ALPHA, EBlendDest::SRC_ALPHA);
+		g_rhi->SetBlendEquation(EBlendEquation::ADD);
 
 		jShader* pShader = jShader::GetShader("WeightedOIT_Finalize");
 		FullScreenQuad->Draw(MainCamera, pShader, {});

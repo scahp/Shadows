@@ -350,6 +350,47 @@ uint32 GetOpenGLBlendDest(EBlendDest dest)
 	return dest_gl;
 }
 
+uint32 GetOpenGLClearBufferBit(ERenderBufferType typeBit)
+{
+	uint32 clearBufferBit = 0;
+	if (!!(ERenderBufferType::COLOR & typeBit))
+		clearBufferBit |= GL_COLOR;
+	else if (!!(ERenderBufferType::DEPTH & typeBit) && !!(ERenderBufferType::STENCIL & typeBit))
+		clearBufferBit |= GL_DEPTH_STENCIL;
+	else if (!!(ERenderBufferType::DEPTH & typeBit))
+		clearBufferBit |= GL_DEPTH;
+	else if (!!(ERenderBufferType::STENCIL & typeBit))
+		clearBufferBit |= GL_STENCIL;
+	return clearBufferBit;
+}
+
+uint32 GetOpenGLBlendEquation(EBlendEquation equation)
+{
+	uint32 equation_gl = 0;
+	switch(equation)
+	{
+	case EBlendEquation::ADD:
+		equation_gl = GL_FUNC_ADD;
+		break;
+	case EBlendEquation::SUBTRACT:
+		equation_gl = GL_FUNC_SUBTRACT;
+		break;
+	case EBlendEquation::REVERSE_SUBTRACT:
+		equation_gl = GL_FUNC_REVERSE_SUBTRACT;
+		break;
+	case EBlendEquation::MIN_VALUE:
+		equation_gl = GL_MIN;
+		break;
+	case EBlendEquation::MAX_VALUE:
+		equation_gl = GL_MAX;
+		break;
+	default:
+		JASSERT(0);
+		break;
+	}
+	return equation_gl;
+}
+
 //////////////////////////////////////////////////////////////////////////
 // jRHI_OpenGL
 jRHI_OpenGL::jRHI_OpenGL()
@@ -760,6 +801,18 @@ void jRHI_OpenGL::SetClearColor(float r, float g, float b, float a) const
 void jRHI_OpenGL::SetClearColor(Vector4 rgba) const
 {
 	glClearColor(rgba.x, rgba.y, rgba.z, rgba.w);
+}
+
+void jRHI_OpenGL::SetClearBuffer(ERenderBufferType typeBit, const float* value, int32 bufferIndex) const
+{
+	const uint32 clearBufferBit = GetOpenGLClearBufferBit(typeBit);
+	glClearBufferfv(clearBufferBit, bufferIndex, value);
+}
+
+void jRHI_OpenGL::SetClearBuffer(ERenderBufferType typeBit, const int32* value, int32 bufferIndex) const
+{
+	const uint32 clearBufferBit = GetOpenGLClearBufferBit(typeBit);
+	glClearBufferiv(clearBufferBit, bufferIndex, value);
 }
 
 void jRHI_OpenGL::SetShader(const jShader* shader) const
@@ -1680,6 +1733,18 @@ void jRHI_OpenGL::SetBlendFuncRT(EBlendSrc src, EBlendDest dest, int32 rtIndex /
     const uint32 dest_gl = GetOpenGLBlendDest(dest);
 
 	glBlendFunci(rtIndex, src_gl, dest_gl);
+}
+
+void jRHI_OpenGL::SetBlendEquation(EBlendEquation func) const
+{
+	const uint32 equation = GetOpenGLBlendEquation(func);
+	glBlendEquation(equation);
+}
+
+void jRHI_OpenGL::SetBlendEquation(EBlendEquation func, int32 rtIndex) const
+{
+	const uint32 equation = GetOpenGLBlendEquation(func);
+	glBlendEquationi(equation, rtIndex);
 }
 
 void jRHI_OpenGL::EnableStencil(bool enable) const

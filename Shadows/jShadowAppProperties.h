@@ -43,6 +43,27 @@ public:
 	float BloomBlurSigma = 0.8f;
 	float BloomMagnitude = 0.75f;
 
+	Vector LeftWallColor = { 1.0f, 0.0f, 0.0f };
+	float LeftWallAlpha = 0.5f;
+	
+	Vector BackWallColor = { 0.7f, 0.7f, 0.7f };
+	float BackWallAlpha = 0.5f;
+	
+	Vector RightWallColor = { 0.0f, 0.0f, 1.0f };
+	float RightWallAlpha = 0.5f;
+	
+	Vector FloorWallColor = { 0.0f, 1.0f, 0.0f };
+	float FloorWallAlpha = 0.5f;
+
+	Vector SphereColor = { 0.8f, 0.0f, 0.0f };
+	float SphereAlpha = 1.0f;
+
+	Vector CubeColor = { 0.7f, 0.7f, 0.0f };
+	float CubeAlpha = 0.8f;
+
+	Vector CapsuleColor = { 1.0f, 0.0f, 1.0f };
+	float CapsuleAlpha = 0.4f;
+
 	virtual void Setup(jAppSettingBase* appSetting) override;
 	virtual void Teardown(jAppSettingBase* appSetting) override;
 

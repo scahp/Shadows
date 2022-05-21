@@ -5,6 +5,62 @@ jShadowAppSettingProperties* jShadowAppSettingProperties::_instance = nullptr;
 
 void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 {
+	appSetting->AddColorVariable("LeftWallColor", LeftWallColor);
+	appSetting->SetGroup("LeftWallColor", "Wall");
+
+	appSetting->AddVariable("LeftWallAlpha", LeftWallAlpha);
+	appSetting->SetGroup("LeftWallAlpha", "Wall");
+	appSetting->SetMinMax("LeftWallAlpha", 0.0f, 1.0f);
+	appSetting->SetStep("LeftWallAlpha", 0.01f);
+
+	appSetting->AddColorVariable("BackWallColor", BackWallColor);
+	appSetting->SetGroup("BackWallColor", "Wall");
+
+	appSetting->AddVariable("BackWallAlpha", BackWallAlpha);
+	appSetting->SetGroup("BackWallAlpha", "Wall");
+	appSetting->SetMinMax("BackWallAlpha", 0.0f, 1.0f);
+	appSetting->SetStep("BackWallAlpha", 0.01f);
+
+	appSetting->AddColorVariable("RightWallColor", RightWallColor);
+	appSetting->SetGroup("RightWallColor", "Wall");
+
+	appSetting->AddVariable("RightWallAlpha", RightWallAlpha);
+	appSetting->SetGroup("RightWallAlpha", "Wall");
+	appSetting->SetMinMax("RightWallAlpha", 0.0f, 1.0f);
+	appSetting->SetStep("RightWallAlpha", 0.01f);
+
+	appSetting->AddColorVariable("FloorWallColor", FloorWallColor);
+	appSetting->SetGroup("FloorWallColor", "Wall");
+
+	appSetting->AddVariable("FloorWallAlpha", FloorWallAlpha);
+	appSetting->SetGroup("FloorWallAlpha", "Wall");
+	appSetting->SetMinMax("FloorWallAlpha", 0.0f, 1.0f);
+	appSetting->SetStep("FloorWallAlpha", 0.01f);
+
+	appSetting->AddColorVariable("SphereColor", SphereColor);
+	appSetting->SetGroup("SphereColor", "Object");
+
+	appSetting->AddVariable("SphereAlpha", SphereAlpha);
+	appSetting->SetGroup("SphereAlpha", "Object");
+	appSetting->SetMinMax("SphereAlpha", 0.0f, 1.0f);
+	appSetting->SetStep("SphereAlpha", 0.01f);
+
+	appSetting->AddColorVariable("CubeColor", CubeColor);
+	appSetting->SetGroup("CubeColor", "Object");
+
+	appSetting->AddVariable("CubeAlpha", CubeAlpha);
+	appSetting->SetGroup("CubeAlpha", "Object");
+	appSetting->SetMinMax("CubeAlpha", 0.0f, 1.0f);
+	appSetting->SetStep("CubeAlpha", 0.01f);
+
+	appSetting->AddColorVariable("CapsuleColor", CapsuleColor);
+	appSetting->SetGroup("CapsuleColor", "Object");
+
+	appSetting->AddVariable("CapsuleAlpha", CapsuleAlpha);
+	appSetting->SetGroup("CapsuleAlpha", "Object");
+	appSetting->SetMinMax("CapsuleAlpha", 0.0f, 1.0f);
+	appSetting->SetStep("CapsuleAlpha", 0.01f);
+
 	//appSetting->AddVariable("ShadowOn", ShadowOn);
 
 	//appSetting->AddEnumVariable("ShadowType", ShadowType, "EShadowType", EShadowTypeString);

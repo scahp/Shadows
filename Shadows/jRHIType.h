@@ -192,6 +192,16 @@ enum class EBlendDest
 	MAX
 };
 
+enum class EBlendEquation
+{
+	ADD = 0,
+	SUBTRACT,
+	REVERSE_SUBTRACT,
+	MIN_VALUE,
+	MAX_VALUE,
+	MAX,
+};
+
 enum class EFace
 {
 	FRONT = 0,

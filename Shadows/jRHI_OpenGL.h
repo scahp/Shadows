@@ -150,6 +150,8 @@ public:
 	virtual void SetClear(ERenderBufferType typeBit) const override;
 	virtual void SetClearColor(float r, float g, float b, float a) const override;
 	virtual void SetClearColor(Vector4 rgba) const override;
+	virtual void SetClearBuffer(ERenderBufferType typeBit, const float* value, int32 bufferIndex) const override;
+	virtual void SetClearBuffer(ERenderBufferType typeBit, const int32* value, int32 bufferIndex) const override;
 	virtual void SetShader(const jShader* shader) const override;
 	virtual jShader* CreateShader(const jShaderInfo& shaderInfo) const override;
 	virtual bool CreateShader(jShader* OutShader, const jShaderInfo& shaderInfo) const override;
@@ -171,6 +173,8 @@ public:
 	virtual void EnableBlend(bool enable) const override;
 	virtual void SetBlendFunc(EBlendSrc src, EBlendDest dest) const override;
 	virtual void SetBlendFuncRT(EBlendSrc src, EBlendDest dest, int32 rtIndex = 0) const override;
+	virtual void SetBlendEquation(EBlendEquation func) const override;
+	virtual void SetBlendEquation(EBlendEquation func, int32 rtIndex) const override;
 	virtual void EnableStencil(bool enable) const override;
 	virtual void SetStencilOpSeparate(EFace face, EStencilOp sFail, EStencilOp dpFail, EStencilOp dpPass) const override;
 	virtual void SetStencilFunc(EComparisonFunc func, int32 ref, uint32 mask) const override;

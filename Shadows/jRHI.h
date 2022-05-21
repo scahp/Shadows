@@ -327,6 +327,8 @@ public:
 	virtual void SetClear(ERenderBufferType typeBit) const {}
 	virtual void SetClearColor(float r, float g, float b, float a) const {}
 	virtual void SetClearColor(Vector4 rgba) const {}
+	virtual void SetClearBuffer(ERenderBufferType typeBit, const float* value, int32 bufferIndex) const {}
+	virtual void SetClearBuffer(ERenderBufferType typeBit, const int32* value, int32 bufferIndex) const {}
 	virtual void SetRenderTarget(const jRenderTarget* rt, int32 index = 0, bool mrt = false) const {}
 	virtual void SetDrawBuffers(const std::initializer_list<EDrawBufferType>& list) const {}
 	virtual jVertexBuffer* CreateVertexBuffer(const std::shared_ptr<jVertexStreamData>& streamData) const { return nullptr; }
@@ -368,6 +370,8 @@ public:
 	virtual void EnableBlend(bool enable) const {}
 	virtual void SetBlendFunc(EBlendSrc src, EBlendDest dest) const {}
 	virtual void SetBlendFuncRT(EBlendSrc src, EBlendDest dest, int32 rtIndex = 0) const {}
+	virtual void SetBlendEquation(EBlendEquation func, int32 rtIndex) const {}
+	virtual void SetBlendEquation(EBlendEquation func) const {}
 	virtual void EnableStencil(bool enable) const {}
 	virtual void SetStencilOpSeparate(EFace face, EStencilOp sFail, EStencilOp dpFail, EStencilOp dpPass) const {}
 	virtual void SetStencilFunc(EComparisonFunc func, int32 ref, uint32 mask) const {}
