@@ -91,6 +91,7 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("Graph2D", "shaders/vs_graph.glsl", "shaders/fs_graph.glsl");
 
 		DECLARE_SHADER_VS_FS("WeightedOIT", "shaders/weightedOIT_vs.glsl", "shaders/weightedOIT_fs.glsl");
+        DECLARE_SHADER_VS_FS("WeightedOIT_Finalize", "shaders/fullscreen/vs_fullscreen_common.glsl", "shaders/weightedOIT_Finalize_fs.glsl");
 	}
 } s_shaderInfoCreation;
 

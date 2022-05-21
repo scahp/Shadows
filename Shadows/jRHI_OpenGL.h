@@ -170,6 +170,7 @@ public:
 	virtual void UpdateVertexBuffer(jVertexBuffer* vb, IStreamParam* streamParam, int32 streamParamIndex) const override;
 	virtual void EnableBlend(bool enable) const override;
 	virtual void SetBlendFunc(EBlendSrc src, EBlendDest dest) const override;
+	virtual void SetBlendFuncRT(EBlendSrc src, EBlendDest dest, int32 rtIndex = 0) const override;
 	virtual void EnableStencil(bool enable) const override;
 	virtual void SetStencilOpSeparate(EFace face, EStencilOp sFail, EStencilOp dpFail, EStencilOp dpPass) const override;
 	virtual void SetStencilFunc(EComparisonFunc func, int32 ref, uint32 mask) const override;

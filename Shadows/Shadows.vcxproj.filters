@@ -538,5 +538,8 @@
     <None Include="Shaders\weightedOIT_vs.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\weightedOIT_Finalize_fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

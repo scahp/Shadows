@@ -367,6 +367,7 @@ public:
 	virtual void EnableDepthTest(bool enable) const {}
 	virtual void EnableBlend(bool enable) const {}
 	virtual void SetBlendFunc(EBlendSrc src, EBlendDest dest) const {}
+	virtual void SetBlendFuncRT(EBlendSrc src, EBlendDest dest, int32 rtIndex = 0) const {}
 	virtual void EnableStencil(bool enable) const {}
 	virtual void SetStencilOpSeparate(EFace face, EStencilOp sFail, EStencilOp dpFail, EStencilOp dpPass) const {}
 	virtual void SetStencilFunc(EComparisonFunc func, int32 ref, uint32 mask) const {}

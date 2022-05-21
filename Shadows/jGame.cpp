@@ -21,6 +21,7 @@
 #include "jForwardRenderer.h"
 #include "jPipeline.h"
 #include "jVertexAdjacency.h"
+#include "jSamplerStatePool.h"
 
 jRHI* g_rhi = nullptr;
 
@@ -60,7 +61,7 @@ void jGame::Setup()
 	//const Vector mainCameraPos(165.0f, 125.0f, -136.0f);
 	//const Vector mainCameraPos(300.0f, 100.0f, 300.0f);
 	const Vector mainCameraTarget(0.0f, 0.0f, 0.0f);
-	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(45.0f), 10.0f, 1000.0f, SCR_WIDTH, SCR_HEIGHT, true);
+	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(45.0f), 0.1f, 500.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
 
 	// Light creation step
@@ -255,7 +256,7 @@ void jGame::Update(float deltaTime)
 	static jObject* JumpingSphere = nullptr;
 	static jObject* RotatingCube = nullptr;
 	static jObject* RotatingCapsule = nullptr;
-
+	static std::shared_ptr<jRenderTarget> TranslucentRTPtr;
 	static bool s_Initialized = false;
 	if (!s_Initialized)
 	{
@@ -301,18 +302,23 @@ void jGame::Update(float deltaTime)
 			thisObject->RenderObject->Rot.x -= 0.01f;
 		};
 
-		//FullScreenQuad = jPrimitiveUtil::CreateFullscreenQuad(RenderTargetPtr->GetTexture());
+        TranslucentRTPtr = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F
+			, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::NONE, SCR_WIDTH, SCR_HEIGHT, 2 }));
+
+        FullScreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
 	}
 
-	//if (RenderTargetPtr->Begin())
+	if (TranslucentRTPtr->Begin(0, true))
 	{
 		g_rhi->EnableDepthTest(true);
 		g_rhi->SetViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
 		g_rhi->EnableBlend(true);
-		g_rhi->SetBlendFunc(EBlendSrc::SRC_ALPHA, EBlendDest::ONE_MINUS_SRC_ALPHA);
+		g_rhi->SetBlendFuncRT(EBlendSrc::ONE, EBlendDest::ONE, 0);
+        g_rhi->SetBlendFuncRT(EBlendSrc::ZERO, EBlendDest::ONE_MINUS_SRC_ALPHA, 1);
 
-		g_rhi->SetClearColor(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);
+        //g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        g_rhi->SetClearColor(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);
 		g_rhi->SetClear(ERenderBufferType::COLOR | ERenderBufferType::DEPTH);
 
 		jShader* pShader = jShader::GetShader("WeightedOIT");
@@ -349,14 +355,23 @@ void jGame::Update(float deltaTime)
 			RotatingCapsule->Draw(MainCamera, pShader, { DirectionalLight });
 		}		
 
-		//RenderTargetPtr->End();
+		TranslucentRTPtr->End();
 	}
 
-	//if (FullScreenQuad)
-	//{
-	//	jShader* pShader = jShader::GetShader("Scale");
-	//	FullScreenQuad->Draw(MainCamera, pShader, {});
-	//}
+	if (FullScreenQuad)
+	{
+		FullScreenQuad->SetTexture(TranslucentRTPtr->GetTexture(0), jSamplerStatePool::GetSamplerState("Point").get());
+        FullScreenQuad->SetTexture2(TranslucentRTPtr->GetTexture(1), jSamplerStatePool::GetSamplerState("Point").get());
+        
+		g_rhi->EnableDepthTest(false);
+        g_rhi->SetViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+
+        g_rhi->EnableBlend(true);
+        g_rhi->SetBlendFunc(EBlendSrc::ONE_MINUS_SRC_ALPHA, EBlendDest::SRC_ALPHA);
+
+		jShader* pShader = jShader::GetShader("WeightedOIT_Finalize");
+		FullScreenQuad->Draw(MainCamera, pShader, {});
+	}
 }
 
 void jGame::UpdateAppSetting()
