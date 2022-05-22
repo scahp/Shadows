@@ -61,6 +61,15 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->SetMinMax("CapsuleAlpha", 0.0f, 1.0f);
 	appSetting->SetStep("CapsuleAlpha", 0.01f);
 
+	appSetting->AddVariable("WeightedOITQuads", WeightedOITQuads);
+	appSetting->SetGroup("WeightedOITQuads", "Quads");
+
+	appSetting->AddColorVariable("Color", BackgroundColor);
+	appSetting->SetGroup("Color", "BackgroundColor");
+
+	appSetting->AddVariable("On", BackgroundColorOnOff);
+	appSetting->SetGroup("On", "BackgroundColor");	
+
 	//appSetting->AddVariable("ShadowOn", ShadowOn);
 
 	//appSetting->AddEnumVariable("ShadowType", ShadowType, "EShadowType", EShadowTypeString);

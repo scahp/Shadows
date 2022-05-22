@@ -7,25 +7,33 @@ in float LinearZ;
 
 layout (location = 0) out vec4 color;
 layout (location = 1) out vec4 alpha;
+layout(location = 2) out vec4 debug;
 
 uniform vec4 ColorUniform;
 
-float linearize_depth(float d, float zNear, float zFar)
-{
-    return zNear * zFar / (zFar + d * (zNear - zFar));
-}
+#define ORIGINAL_WEIGHT_FUNC 0
 
 void main()
 {
     vec3 ColorN = ColorUniform.xyz;
     float AlphaN = ColorUniform.w;
 
-    // Weight function form : http://casual-effects.blogspot.com/2014/03/weighted-blended-order-independent.html
-    // Insert your favorite weighting function here.
-    // The color-based factor avoids color pollution from the edges of wispy clouds.
-    // The z-based factor gives precedence to nearer surfaces.
-    float WeightN = max(min(1.0, max(max(ColorN.r, ColorN.g), ColorN.b) * AlphaN), AlphaN) * clamp(0.03 / (1e-5 + pow(gl_FragCoord.z / 200, 4.0)), 1e-2, 3e3);
+#if ORIGINAL_WEIGHT_FUNC
+    // Tuned to work well with FP16 accumulation buffers and 0.001 < linearDepth < 2.5
+    // See Equation (9) from http://jcgt.org/published/0002/02/09/
+    float WeightN = clamp(0.03 / (1e-5 + pow(LinearZ, 4.0)), 0.01, 3e3);
+    
+    // To avoid the transparent object to be black with far distance.
+    WeightN = max(WeightN, 1.0);
+#else
+    // _WEIGHTED0 from https://github.com/candycat1992/OIT_Lab/blob/master/Assets/OIT/WeightedBlended/Shaders/WB_Accumulate.shader
+    float WeightN = pow(LinearZ, -3.0);
+#endif
 
-    color = vec4(ColorN, AlphaN) * vec4(WeightN);
+    debug.x = gl_FragCoord.z;
+    debug.y = abs(LinearZ);
+    debug.z = WeightN;
+
+    color = vec4(ColorN * AlphaN, AlphaN) * WeightN;
     alpha = vec4(AlphaN);
 }

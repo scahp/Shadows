@@ -64,6 +64,11 @@ public:
 	Vector CapsuleColor = { 1.0f, 0.0f, 1.0f };
 	float CapsuleAlpha = 0.4f;
 
+	bool WeightedOITQuads = true;
+
+	Vector BackgroundColor = { 135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f };
+	bool BackgroundColorOnOff = true;
+
 	virtual void Setup(jAppSettingBase* appSetting) override;
 	virtual void Teardown(jAppSettingBase* appSetting) override;
 

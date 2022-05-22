@@ -246,9 +246,7 @@ void jGame::Update(float deltaTime)
 
 	// Renderer->Render(MainCamera);
 
-	//static auto RenderTargetPtr = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget(
-	//	{ ETextureType::TEXTURE_2D, ETextureFormat::RGBA16F, ETextureFormat::RGBA, EFormatType::FLOAT
-	//	, EDepthBufferType::DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT, 1 }));
+	auto& appSetting = jShadowAppSettingProperties::GetInstance();
 
 	static jQuadPrimitive* pFloor = nullptr;
 	static jObject* Cube[4] = {};
@@ -258,6 +256,12 @@ void jGame::Update(float deltaTime)
 	static jObject* RotatingCapsule = nullptr;
 	static std::shared_ptr<jRenderTarget> TranslucentRTPtr;
 	static bool s_Initialized = false;
+	static jObject* Quad_WeightedOIT[3] = { nullptr, };
+	static Vector4 Quad_WeightedOITColor[3] = {
+		{ 1.0f, 0.0f, 0.0f, 0.5 },
+		{ 0.0f, 1.0f, 0.0f, 0.5 },
+		{ 0.0f, 0.0f, 1.0f, 0.5 },
+	};
 	if (!s_Initialized)
 	{
 		s_Initialized = true;
@@ -302,10 +306,16 @@ void jGame::Update(float deltaTime)
 			thisObject->RenderObject->Rot.x -= 0.01f;
 		};
 
-        TranslucentRTPtr = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F
-			, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::NONE, SCR_WIDTH, SCR_HEIGHT, 2 }));
+        TranslucentRTPtr = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA16F
+			, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::NONE, SCR_WIDTH, SCR_HEIGHT, 3 }));
 
         FullScreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
+
+		for (int32 i = 0; i < 3; ++i)
+		{
+			Quad_WeightedOIT[i] = jPrimitiveUtil::CreateQuad(Vector(Width, 0.0f, 0.0f - 20 * i), Vector::OneVector, Vector(50.0f), Quad_WeightedOITColor[i]);
+			Quad_WeightedOIT[i]->RenderObject->Rot.x = DegreeToRadian(90.0f);
+		}
 	}
 
 	if (TranslucentRTPtr->Begin(0, true))
@@ -326,8 +336,10 @@ void jGame::Update(float deltaTime)
 
 		float ClearColorRT0[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 		float ClearColorRT1[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+		float ClearColorRT2[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 		g_rhi->SetClearBuffer(ERenderBufferType::COLOR, &ClearColorRT0[0], 0);
 		g_rhi->SetClearBuffer(ERenderBufferType::COLOR, &ClearColorRT1[0], 1);
+		g_rhi->SetClearBuffer(ERenderBufferType::COLOR, &ClearColorRT2[0], 2);
 
 		jShader* pShader = jShader::GetShader("WeightedOIT");
 		if (pFloor)
@@ -336,7 +348,6 @@ void jGame::Update(float deltaTime)
 			pFloor->Draw(MainCamera, pShader, { DirectionalLight });
 		}
 
-		auto& appSetting = jShadowAppSettingProperties::GetInstance();
 		static Vector4 Color[4];
 
 		Color[0] = Vector4(appSetting.LeftWallColor, appSetting.LeftWallAlpha);
@@ -388,6 +399,18 @@ void jGame::Update(float deltaTime)
 			RotatingCapsule->Draw(MainCamera, pShader, { DirectionalLight });
 		}
 
+		if (appSetting.WeightedOITQuads)
+		{
+			for (int32 i = 0; i < 3; ++i)
+			{
+				g_rhi->SetShader(pShader);
+				SET_UNIFORM_BUFFER_STATIC(Vector4, "ColorUniform", Quad_WeightedOITColor[i], pShader);
+
+				Quad_WeightedOIT[i]->Update(deltaTime);
+				Quad_WeightedOIT[i]->Draw(MainCamera, pShader, { DirectionalLight });
+			}
+		}
+
 		TranslucentRTPtr->End();
 	}
 
@@ -395,22 +418,37 @@ void jGame::Update(float deltaTime)
 	{
 		g_rhi->EnableDepthTest(false);
 
-		//g_rhi->SetClearColor(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);
-		g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		if (appSetting.BackgroundColorOnOff)
+			g_rhi->SetClearColor(appSetting.BackgroundColor.x, appSetting.BackgroundColor.y, appSetting.BackgroundColor.z, 1.0f);
+		else
+			g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
 		g_rhi->SetClear(ERenderBufferType::COLOR);
 
 		FullScreenQuad->SetTexture(TranslucentRTPtr->GetTexture(0), jSamplerStatePool::GetSamplerState("Point").get());
-        FullScreenQuad->SetTexture2(TranslucentRTPtr->GetTexture(1), jSamplerStatePool::GetSamplerState("Point").get());
-        
-		g_rhi->EnableDepthTest(false);
-        g_rhi->SetViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+		FullScreenQuad->SetTexture2(TranslucentRTPtr->GetTexture(1), jSamplerStatePool::GetSamplerState("Point").get());
 
-        g_rhi->EnableBlend(true);
-        g_rhi->SetBlendFunc(EBlendSrc::ONE_MINUS_SRC_ALPHA, EBlendDest::SRC_ALPHA);
+		g_rhi->EnableDepthTest(false);
+		g_rhi->SetViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+
+		g_rhi->EnableBlend(true);
+		g_rhi->SetBlendFunc(EBlendSrc::ONE_MINUS_SRC_ALPHA, EBlendDest::SRC_ALPHA);
 		g_rhi->SetBlendEquation(EBlendEquation::ADD);
 
 		jShader* pShader = jShader::GetShader("WeightedOIT_Finalize");
 		FullScreenQuad->Draw(MainCamera, pShader, {});
+
+		if (!appSetting.WeightedOITQuads)
+		{
+			g_rhi->SetBlendFunc(EBlendSrc::SRC_ALPHA, EBlendDest::ONE_MINUS_SRC_ALPHA);
+			jShader* pShader = jShader::GetShader("Simple");
+			for (int32 i = 0; i < 3; ++i)
+			{
+				g_rhi->SetShader(pShader);
+				Quad_WeightedOIT[i]->Update(deltaTime);
+				Quad_WeightedOIT[i]->Draw(MainCamera, pShader, { DirectionalLight });
+			}
+		}
 	}
 }
 

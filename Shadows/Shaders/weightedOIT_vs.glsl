@@ -7,6 +7,8 @@ layout(location = 1) in vec4 Color;
 
 uniform mat4 MVP;
 uniform mat4 MV;
+uniform float CameraNear;
+uniform float CameraFar;
 
 out vec4 Color_;
 out float LinearZ;
@@ -18,5 +20,5 @@ void main()
     
     vec4 PosCamera = MV * vec4(Pos, 1.0);
     PosCamera = PosCamera / PosCamera.w;
-    LinearZ = PosCamera.z / (500.0f - 0.1f);
+    LinearZ = abs(PosCamera.z / (CameraFar - CameraNear));
 }

@@ -204,6 +204,8 @@ void jRenderObject::SetCameraProperty(const jShader* shader, const jCamera* came
 	SET_UNIFORM_BUFFER_STATIC(int, "UseMaterial", UseMaterial, shader);
 	SET_UNIFORM_BUFFER_STATIC(int, "ShadingModel", static_cast<int>(ShadingModel), shader);
 	SET_UNIFORM_BUFFER_STATIC(int, "IsTwoSided", IsTwoSided, shader);
+	SET_UNIFORM_BUFFER_STATIC(float, "CameraNear", camera->Near, shader);
+	SET_UNIFORM_BUFFER_STATIC(float, "CameraFar", camera->Far, shader);
 }
 
 void jRenderObject::SetLightProperty(const jShader* shader, const jCamera* camera, const std::list<const jLight*>& lights, jMaterialData* materialData)
