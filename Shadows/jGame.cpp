@@ -56,11 +56,11 @@ void jGame::ProcessInput()
 void jGame::Setup()
 {
 	//////////////////////////////////////////////////////////////////////////
-	const Vector mainCameraPos(172.66f, 160.0f, -180.63f);
+	const Vector mainCameraPos(115.59f, 32.34f, -91.79f);
 	//const Vector mainCameraTarget(171.96f, 166.02f, -180.05f);
 	//const Vector mainCameraPos(165.0f, 125.0f, -136.0f);
 	//const Vector mainCameraPos(300.0f, 100.0f, 300.0f);
-	const Vector mainCameraTarget(0.0f, 0.0f, 0.0f);
+	const Vector mainCameraTarget(116.0f, 31.97f, -90.96f);
 	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(45.0f), 10.0f, 1000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
 
@@ -221,7 +221,7 @@ void jGame::Update(float deltaTime)
 
 		// Get position of the shadow camera
 		Vector shadowCameraPos = frustumCenter + DirectionalLight->Data.Direction * -(farDist - nearDist) / 2.0f;
-	
+
 		auto shadowCamera = jOrthographicCamera::CreateCamera(shadowCameraPos, frustumCenter, shadowCameraPos + upDir
 			, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
 		shadowCamera->UpdateCamera();
@@ -274,7 +274,7 @@ void jGame::Update(float deltaTime)
 		const float HalfWidth = Width / 2.0f;
 		const float Tickness = 5.0f;
 
-		Cube[0] = jPrimitiveUtil::CreateCube(Vector(HalfWidth, 0.0f, 0.0f), Vector::OneVector, Vector(Tickness, Width, Width), Vector4(0.0f, 0.0f, 1.0f, 0.5f)); 
+		Cube[0] = jPrimitiveUtil::CreateCube(Vector(HalfWidth, 0.0f, 0.0f), Vector::OneVector, Vector(Tickness, Width, Width), Vector4(0.0f, 0.0f, 1.0f, 0.5f));
 		Cube[1] = jPrimitiveUtil::CreateCube(Vector(0.0f, -HalfWidth, 0.0f), Vector::OneVector, Vector(Width, Tickness, Width), Vector4(0.7f, 0.7f, 0.7f, 0.5f));
 		Cube[2] = jPrimitiveUtil::CreateCube(Vector(-HalfWidth, 0.0f, 0.0f), Vector::OneVector, Vector(Tickness, Width, Width), Vector4(0.0f, 1.0f, 0.0f, 0.5f));
 		Cube[3] = jPrimitiveUtil::CreateCube(Vector(0.0f, 0.0f, HalfWidth), Vector::OneVector, Vector(Width, Width, Tickness), Vector4(1.0f, 0.0f, 0.0f, 0.5f));
@@ -294,7 +294,7 @@ void jGame::Update(float deltaTime)
 			}
 		};
 
-		RotatingCube = jPrimitiveUtil::CreateCube(Vector(HalfWidth/2.0f, HalfWidth/2.0f, 0.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(0.7f, 0.7f, 0.0f, 0.8f));
+		RotatingCube = jPrimitiveUtil::CreateCube(Vector(HalfWidth / 2.0f, HalfWidth / 2.0f, 0.0f), Vector::OneVector, Vector(20.0f, 20.0f, 20.0f), Vector4(0.7f, 0.7f, 0.0f, 0.8f));
 		RotatingCube->PostUpdateFunc = [](jObject* thisObject, float deltaTime)
 		{
 			thisObject->RenderObject->Rot.z += 0.005f;
@@ -306,10 +306,10 @@ void jGame::Update(float deltaTime)
 			thisObject->RenderObject->Rot.x -= 0.01f;
 		};
 
-        TranslucentRTPtr = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA16F
+		TranslucentRTPtr = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA16F
 			, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::NONE, SCR_WIDTH, SCR_HEIGHT, 3 }));
 
-        FullScreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
+		FullScreenQuad = jPrimitiveUtil::CreateFullscreenQuad(nullptr);
 
 		for (int32 i = 0; i < 3; ++i)
 		{
@@ -325,7 +325,7 @@ void jGame::Update(float deltaTime)
 
 		g_rhi->EnableBlend(true);
 		g_rhi->SetBlendFuncRT(EBlendSrc::ONE, EBlendDest::ONE, 0);
-        g_rhi->SetBlendFuncRT(EBlendSrc::ZERO, EBlendDest::ONE_MINUS_SRC_ALPHA, 1);
+		g_rhi->SetBlendFuncRT(EBlendSrc::ZERO, EBlendDest::ONE_MINUS_SRC_ALPHA, 1);
 		g_rhi->SetBlendEquation(EBlendEquation::ADD);
 
 		g_rhi->EnableCullFace(false);
@@ -448,6 +448,38 @@ void jGame::Update(float deltaTime)
 				Quad_WeightedOIT[i]->Update(deltaTime);
 				Quad_WeightedOIT[i]->Draw(MainCamera, pShader, { DirectionalLight });
 			}
+		}
+
+		const Vector2 PreviewSize(300.0f, SCR_HEIGHT * 300.0f / SCR_WIDTH);
+		static auto PreviewUI = jPrimitiveUtil::CreateUIQuad(Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y), PreviewSize, nullptr);
+#define PREVIEW_TEXTURE(TEXTURE)\
+		{\
+			auto EnableClear = false;\
+			auto EnableDepthTest = false;\
+			auto DepthStencilFunc = EComparisonFunc::LESS;\
+			auto EnableBlend = false;\
+			auto BlendSrc = EBlendSrc::ONE;\
+			auto BlendDest = EBlendDest::ZERO;\
+			auto Shader = jShader::GetShader("UIShader");\
+			g_rhi->EnableDepthTest(false);\
+			g_rhi->EnableBlend(EnableBlend);\
+			g_rhi->SetBlendFunc(BlendSrc, BlendDest);\
+			g_rhi->SetShader(Shader);\
+			MainCamera->BindCamera(Shader);\
+			PreviewUI->RenderObject->tex_object = TEXTURE;\
+			PreviewUI->Draw(MainCamera, Shader, {});\
+		}
+
+		if (appSetting.SumColor && TranslucentRTPtr->GetTexture(0))
+		{
+			PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y);
+			PREVIEW_TEXTURE(TranslucentRTPtr->GetTexture(0));
+		}
+
+		if (appSetting.SumWeight && TranslucentRTPtr->GetTexture(1))
+		{
+			PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y * 2.0);
+			PREVIEW_TEXTURE(TranslucentRTPtr->GetTexture(1));
 		}
 	}
 }

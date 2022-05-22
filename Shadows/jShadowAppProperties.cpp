@@ -70,6 +70,12 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->AddVariable("On", BackgroundColorOnOff);
 	appSetting->SetGroup("On", "BackgroundColor");	
 
+	appSetting->AddVariable("SumColor", SumColor);
+	appSetting->SetGroup("SumColor", "DebugTexture");
+
+	appSetting->AddVariable("SumWeight", SumWeight);
+	appSetting->SetGroup("SumWeight", "DebugTexture");
+
 	//appSetting->AddVariable("ShadowOn", ShadowOn);
 
 	//appSetting->AddEnumVariable("ShadowType", ShadowType, "EShadowType", EShadowTypeString);
@@ -194,37 +200,58 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 
 void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 {
-	appSetting->RemoveVariable("ShadowOn");
-	appSetting->RemoveVariable("EShadowType");
-	appSetting->RemoveVariable("DirectionalLightSilhouette");
-	appSetting->RemoveVariable("PointLightSilhouette");
-	appSetting->RemoveVariable("SpotLightSilhouette");
-	appSetting->RemoveVariable("IsGPUShadowVolume");	
-	appSetting->RemoveVariable("ShadowMapType");
-	appSetting->RemoveVariable("UsePoissonSample");
-	appSetting->RemoveVariable("DirectionalLightMap");
-	appSetting->RemoveVariable("UseTonemap");
-	appSetting->RemoveVariable("DirectionalLight_Info");
-	appSetting->RemoveVariable("PointLight_Info");
-	appSetting->RemoveVariable("SpotLight_Info");
-	appSetting->RemoveVariable("DirecionalLight_Direction");
-	appSetting->RemoveVariable("PointLight_PositionX");
-	appSetting->RemoveVariable("PointLight_PositionY");
-	appSetting->RemoveVariable("PointLight_PositionZ");
-	appSetting->RemoveVariable("SpotLight_PositionX");
-	appSetting->RemoveVariable("SpotLight_PositionY");
-	appSetting->RemoveVariable("SpotLight_PositionZ");
-	appSetting->RemoveVariable("SpotLight_Direction");
-	appSetting->RemoveVariable("Box");
-	appSetting->RemoveVariable("Sphere");
-	appSetting->RemoveVariable("DeepShadowAlpha");
-	appSetting->RemoveVariable("ExponentDeepShadowOn");
-	appSetting->RemoveVariable("CSMDebugOn");
-	appSetting->RemoveVariable("AdaptationRate");
-	appSetting->RemoveVariable("AutoExposureKeyValue");
-	appSetting->RemoveVariable("BloomThreshold");
-	appSetting->RemoveVariable("BloomBlurSigma");
-	appSetting->RemoveVariable("BloomMagnitude");	
+	//appSetting->RemoveVariable("ShadowOn");
+	//appSetting->RemoveVariable("EShadowType");
+	//appSetting->RemoveVariable("DirectionalLightSilhouette");
+	//appSetting->RemoveVariable("PointLightSilhouette");
+	//appSetting->RemoveVariable("SpotLightSilhouette");
+	//appSetting->RemoveVariable("IsGPUShadowVolume");	
+	//appSetting->RemoveVariable("ShadowMapType");
+	//appSetting->RemoveVariable("UsePoissonSample");
+	//appSetting->RemoveVariable("DirectionalLightMap");
+	//appSetting->RemoveVariable("UseTonemap");
+	//appSetting->RemoveVariable("DirectionalLight_Info");
+	//appSetting->RemoveVariable("PointLight_Info");
+	//appSetting->RemoveVariable("SpotLight_Info");
+	//appSetting->RemoveVariable("DirecionalLight_Direction");
+	//appSetting->RemoveVariable("PointLight_PositionX");
+	//appSetting->RemoveVariable("PointLight_PositionY");
+	//appSetting->RemoveVariable("PointLight_PositionZ");
+	//appSetting->RemoveVariable("SpotLight_PositionX");
+	//appSetting->RemoveVariable("SpotLight_PositionY");
+	//appSetting->RemoveVariable("SpotLight_PositionZ");
+	//appSetting->RemoveVariable("SpotLight_Direction");
+	//appSetting->RemoveVariable("Box");
+	//appSetting->RemoveVariable("Sphere");
+	//appSetting->RemoveVariable("DeepShadowAlpha");
+	//appSetting->RemoveVariable("ExponentDeepShadowOn");
+	//appSetting->RemoveVariable("CSMDebugOn");
+	//appSetting->RemoveVariable("AdaptationRate");
+	//appSetting->RemoveVariable("AutoExposureKeyValue");
+	//appSetting->RemoveVariable("BloomThreshold");
+	//appSetting->RemoveVariable("BloomBlurSigma");
+	//appSetting->RemoveVariable("BloomMagnitude");	
+
+	appSetting->RemoveVariable("LeftWallColor");
+	appSetting->RemoveVariable("LeftWallAlpha");
+	appSetting->RemoveVariable("BackWallColor");
+	appSetting->RemoveVariable("BackWallAlpha");
+	appSetting->RemoveVariable("RightWallColor");
+	appSetting->RemoveVariable("RightWallAlpha");
+	appSetting->RemoveVariable("FloorWallColor");
+	appSetting->RemoveVariable("FloorWallAlpha");
+	appSetting->RemoveVariable("SphereColor");
+	appSetting->RemoveVariable("SphereAlpha");
+
+	appSetting->RemoveVariable("CubeColor");
+	appSetting->RemoveVariable("CubeAlpha");
+	appSetting->RemoveVariable("CapsuleColor");
+	appSetting->RemoveVariable("CapsuleAlpha");
+	appSetting->RemoveVariable("WeightedOITQuads");
+	appSetting->RemoveVariable("Color");
+	appSetting->RemoveVariable("On");
+	appSetting->RemoveVariable("SumColor");
+	appSetting->RemoveVariable("SumWeight");
 }
 
 void jShadowAppSettingProperties::SwitchShadowType(jAppSettingBase* appSetting)

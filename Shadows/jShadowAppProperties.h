@@ -69,6 +69,9 @@ public:
 	Vector BackgroundColor = { 135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f };
 	bool BackgroundColorOnOff = true;
 
+	bool SumColor = true;
+	bool SumWeight = true;
+
 	virtual void Setup(jAppSettingBase* appSetting) override;
 	virtual void Teardown(jAppSettingBase* appSetting) override;
 
