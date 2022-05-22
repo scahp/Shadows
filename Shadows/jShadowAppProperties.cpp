@@ -5,6 +5,9 @@ jShadowAppSettingProperties* jShadowAppSettingProperties::_instance = nullptr;
 
 void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 {
+	appSetting->AddEnumVariable("CameraPos", SampleCameraPos, "ESampleCameraPos", ESampleCameraPosString);
+	appSetting->SetGroup("CameraPos", "Samples");
+
 	appSetting->AddColorVariable("LeftWallColor", LeftWallColor);
 	appSetting->SetGroup("LeftWallColor", "Wall");
 
@@ -60,6 +63,23 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->SetGroup("CapsuleAlpha", "Object");
 	appSetting->SetMinMax("CapsuleAlpha", 0.0f, 1.0f);
 	appSetting->SetStep("CapsuleAlpha", 0.01f);
+
+	{
+		char szTemp[64] = { 0, };
+		char szTemp2[64] = { 0, };
+		for (int32 i = 0; i < _countof(SphereShellColor); ++i)
+		{
+			sprintf_s(szTemp, sizeof(szTemp), "Shell%d", i);
+			appSetting->AddColorVariable(szTemp, SphereShellColor[i]);
+			appSetting->SetGroup(szTemp, "SphereShell");
+
+			sprintf_s(szTemp2, sizeof(szTemp2), "ShellAlpha%d", i);
+			appSetting->AddVariable(szTemp2, SphereShellAlpha[i]);
+			appSetting->SetGroup(szTemp2, "SphereShell");
+			appSetting->SetMinMax(szTemp2, 0.0f, 1.0f);
+			appSetting->SetStep(szTemp2, 0.01f);
+		}
+	}
 
 	appSetting->AddVariable("WeightedOITQuads", WeightedOITQuads);
 	appSetting->SetGroup("WeightedOITQuads", "Quads");
@@ -252,6 +272,19 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 	appSetting->RemoveVariable("On");
 	appSetting->RemoveVariable("SumColor");
 	appSetting->RemoveVariable("SumWeight");
+
+	{
+		char szTemp[64] = { 0, };
+		char szTemp2[64] = { 0, };
+		for (int32 i = 0; i < _countof(SphereShellColor); ++i)
+		{
+			sprintf_s(szTemp, sizeof(szTemp), "Shell%d", i);
+			sprintf_s(szTemp2, sizeof(szTemp2), "ShellAlpha%d", i);
+
+			appSetting->RemoveVariable(szTemp);
+			appSetting->RemoveVariable(szTemp2);
+		}
+	}
 }
 
 void jShadowAppSettingProperties::SwitchShadowType(jAppSettingBase* appSetting)

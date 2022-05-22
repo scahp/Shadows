@@ -72,6 +72,11 @@ public:
 	bool SumColor = true;
 	bool SumWeight = true;
 
+	ESampleCameraPos SampleCameraPos = ESampleCameraPos::Quads;
+
+	Vector SphereShellColor[4] = { {0.525f, 0.898f, 0.498f}, {0.949f, 0.796f, 0.38f}, {0.647f, 0.4f, 1.0f}, {1.0f, 0.698f, 0.85f} };
+	float SphereShellAlpha[4] = { 0.5f, 0.5f, 0.5f, 0.5f };
+
 	virtual void Setup(jAppSettingBase* appSetting) override;
 	virtual void Teardown(jAppSettingBase* appSetting) override;
 

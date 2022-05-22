@@ -50,3 +50,15 @@ static const char* EShadowMapTypeString[] = {
 	"DeepShadowMap_DirectionalLight",
 	"CSM_SSM",
 };
+
+enum class ESampleCameraPos
+{
+	Quads = 0,
+	Walls,
+	MAX,
+};
+
+static const char* ESampleCameraPosString[] = {
+	"Quads",
+	"Walls",
+};

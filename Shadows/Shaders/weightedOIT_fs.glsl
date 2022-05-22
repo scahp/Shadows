@@ -27,7 +27,7 @@ void main()
     WeightN = max(WeightN, 1.0);
 #else
     // _WEIGHTED0 from https://github.com/candycat1992/OIT_Lab/blob/master/Assets/OIT/WeightedBlended/Shaders/WB_Accumulate.shader
-    float WeightN = pow(LinearZ, -3.0);
+    float WeightN = pow(LinearZ, -2.5);
 #endif
 
     debug.x = gl_FragCoord.z;

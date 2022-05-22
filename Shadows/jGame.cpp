@@ -174,6 +174,29 @@ void jGame::Update(float deltaTime)
 
 	MainCamera->UpdateCamera();
 
+	auto& appSetting = jShadowAppSettingProperties::GetInstance();
+	static auto CurrentSamplePos = appSetting.SampleCameraPos;
+	if (CurrentSamplePos != appSetting.SampleCameraPos)
+	{
+		CurrentSamplePos = appSetting.SampleCameraPos;
+	
+		switch (appSetting.SampleCameraPos)
+		{
+		case ESampleCameraPos::Quads:
+			MainCamera->Pos = Vector(115.59f, 32.34f, -91.79f);
+			MainCamera->Target = Vector(116.0f, 31.97f, -90.96f);
+			MainCamera->Up = Vector(115.75f, 33.26f, -91.45f);
+			break;
+		case ESampleCameraPos::Walls:
+			MainCamera->Pos = Vector(-237.00f, 167.86f, -165.45f);
+			MainCamera->Target = Vector(-236.46f, 167.43f, -165.05f);
+			MainCamera->Up = Vector(-236.25f, 168.21f, -164.90f);
+			break;
+		default:
+			break;
+		}
+	}
+
 	//DirectionalLight->ShadowMapData->ShadowMapCamera->Pos = MainCamera->Pos - Vector(1000.0f, 500.0f, 1000.0f) * DirectionalLight->Data.Direction;
 	//jLightUtil::MakeDirectionalLightViewInfoWithPos(DirectionalLight->ShadowMapData->ShadowMapCamera->Target, DirectionalLight->ShadowMapData->ShadowMapCamera->Up
 	//	, DirectionalLight->ShadowMapData->ShadowMapCamera->Pos, DirectionalLight->Data.Direction);
@@ -246,8 +269,6 @@ void jGame::Update(float deltaTime)
 
 	// Renderer->Render(MainCamera);
 
-	auto& appSetting = jShadowAppSettingProperties::GetInstance();
-
 	static jQuadPrimitive* pFloor = nullptr;
 	static jObject* Cube[4] = {};
 	static jFullscreenQuadPrimitive* FullScreenQuad = nullptr;
@@ -262,6 +283,7 @@ void jGame::Update(float deltaTime)
 		{ 0.0f, 1.0f, 0.0f, 0.5 },
 		{ 0.0f, 0.0f, 1.0f, 0.5 },
 	};
+	static jObject* SphereShell[4] = { nullptr, };
 	if (!s_Initialized)
 	{
 		s_Initialized = true;
@@ -315,6 +337,50 @@ void jGame::Update(float deltaTime)
 		{
 			Quad_WeightedOIT[i] = jPrimitiveUtil::CreateQuad(Vector(Width, 0.0f, 0.0f - 20 * i), Vector::OneVector, Vector(50.0f), Quad_WeightedOITColor[i]);
 			Quad_WeightedOIT[i]->RenderObject->Rot.x = DegreeToRadian(90.0f);
+		}
+
+		for (int32 i = 0; i < _countof(SphereShell); ++i)
+		{
+			SphereShell[i] = jPrimitiveUtil::CreateSphere(Vector(HalfWidth * 0.4f, -HalfWidth * 0.4f, -HalfWidth * 0.4f), 1.0, 16, Vector(15.0f + 3.0f * i), Vector4(0.8f, 0.0f, 0.0f, 0.5f));
+			SphereShell[i]->PostUpdateFunc = [HalfWidth, i](jObject* thisObject, float deltaTime)
+			{
+				constexpr int32 TotalMoveStep = 200;
+				static float StepSize[_countof(SphereShell)];
+				static int32 RemainingStep[_countof(SphereShell)];
+
+				static bool sInitialize = false;
+				if (!sInitialize)
+				{
+					sInitialize = true;
+
+					for(int32 i=0;i<_countof(SphereShell);++i)
+					{
+						StepSize[i] = (HalfWidth - (HalfWidth / _countof(SphereShell) * i)) / TotalMoveStep;
+						RemainingStep[i] = -TotalMoveStep;
+					}
+				}
+
+				float CurrentStep = 0.0f;
+				if (RemainingStep[i] < 0)
+				{
+					++RemainingStep[i];
+					if (RemainingStep[i] == 0)
+					{
+						RemainingStep[i] = TotalMoveStep;
+					}
+					CurrentStep = -StepSize[i];
+				}
+				else if (RemainingStep[i] > 0)
+				{
+					--RemainingStep[i];
+					if (RemainingStep[i] == 0)
+					{
+						RemainingStep[i] = -TotalMoveStep;
+					}
+					CurrentStep = StepSize[i];
+				}
+				thisObject->RenderObject->Pos.x += CurrentStep;
+			};
 		}
 	}
 
@@ -399,6 +465,16 @@ void jGame::Update(float deltaTime)
 			RotatingCapsule->Draw(MainCamera, pShader, { DirectionalLight });
 		}
 
+		for (int32 i = 0; i < _countof(SphereShell); ++i)
+		{
+			const Vector4 RotatingCapsuleColor = Vector4(appSetting.SphereShellColor[i], appSetting.SphereShellAlpha[i]);
+
+			g_rhi->SetShader(pShader);
+			SET_UNIFORM_BUFFER_STATIC(Vector4, "ColorUniform", RotatingCapsuleColor, pShader);
+			SphereShell[i]->Update(deltaTime);
+			SphereShell[i]->Draw(MainCamera, pShader, { DirectionalLight });
+		}
+
 		if (appSetting.WeightedOITQuads)
 		{
 			for (int32 i = 0; i < 3; ++i)
@@ -478,7 +554,7 @@ void jGame::Update(float deltaTime)
 
 		if (appSetting.SumWeight && TranslucentRTPtr->GetTexture(1))
 		{
-			PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y * 2.0);
+			PreviewUI->Pos = Vector2(SCR_WIDTH - PreviewSize.x, SCR_HEIGHT - PreviewSize.y * 2.0f);
 			PREVIEW_TEXTURE(TranslucentRTPtr->GetTexture(1));
 		}
 	}
