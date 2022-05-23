@@ -384,21 +384,19 @@ void jGame::Update(float deltaTime)
 		}
 	}
 
+	// First pass, handling weighted sum
 	if (TranslucentRTPtr->Begin(0, true))
 	{
 		g_rhi->EnableDepthTest(true);
 		g_rhi->SetViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
+		// Set the blend functions
 		g_rhi->EnableBlend(true);
 		g_rhi->SetBlendFuncRT(EBlendSrc::ONE, EBlendDest::ONE, 0);
 		g_rhi->SetBlendFuncRT(EBlendSrc::ZERO, EBlendDest::ONE_MINUS_SRC_ALPHA, 1);
 		g_rhi->SetBlendEquation(EBlendEquation::ADD);
 
 		g_rhi->EnableCullFace(false);
-
-		//g_rhi->SetClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		//g_rhi->SetClearColor(135.0f / 255.0f, 206.0f / 255.0f, 250.0f / 255.0f, 1.0f);
-		//g_rhi->SetClear(ERenderBufferType::COLOR | ERenderBufferType::DEPTH);
 
 		float ClearColorRT0[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 		float ClearColorRT1[] = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -407,6 +405,7 @@ void jGame::Update(float deltaTime)
 		g_rhi->SetClearBuffer(ERenderBufferType::COLOR, &ClearColorRT1[0], 1);
 		g_rhi->SetClearBuffer(ERenderBufferType::COLOR, &ClearColorRT2[0], 2);
 
+		// Start rendering primitives
 		jShader* pShader = jShader::GetShader("WeightedOIT");
 		if (pFloor)
 		{
@@ -490,6 +489,7 @@ void jGame::Update(float deltaTime)
 		TranslucentRTPtr->End();
 	}
 
+	// Second pass, Finalize Transparency
 	if (FullScreenQuad)
 	{
 		g_rhi->EnableDepthTest(false);
@@ -507,6 +507,7 @@ void jGame::Update(float deltaTime)
 		g_rhi->EnableDepthTest(false);
 		g_rhi->SetViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
+		// Set the blend functions
 		g_rhi->EnableBlend(true);
 		g_rhi->SetBlendFunc(EBlendSrc::ONE_MINUS_SRC_ALPHA, EBlendDest::SRC_ALPHA);
 		g_rhi->SetBlendEquation(EBlendEquation::ADD);
