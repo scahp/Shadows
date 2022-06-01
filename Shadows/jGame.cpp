@@ -213,8 +213,55 @@ void jGame::Update(float deltaTime)
 	// Update object which have dirty flag
 	jObject::FlushDirtyState();
 
-	// Render all objects by using selected renderer
-	Renderer->Render(MainCamera);
+	//// Render all objects by using selected renderer
+	//Renderer->Render(MainCamera);
+
+	static bool s_Initialized = false;
+	static std::weak_ptr<jTexture> ColorTexture;
+	static std::weak_ptr<jTexture> ReliefTexture;
+	static std::weak_ptr<jTexture> NormalTexture;
+	static jObject* Cube = nullptr;
+	if (!s_Initialized)
+	{
+		s_Initialized = true;
+
+		//ColorTexture = jImageFileLoader::GetInstance().LoadTextureFromFile("Image/tile1_color.jpg");
+		ReliefTexture = jImageFileLoader::GetInstance().LoadTextureFromFile("Image/tile1_relief.tga");
+		NormalTexture = jImageFileLoader::GetInstance().LoadTextureFromFile("Image/rockbump_relief.tga");
+		ColorTexture = jImageFileLoader::GetInstance().LoadTextureFromFile("Image/rockbump_color.jpg");
+		
+
+		//ColorTexture = jImageFileLoader::GetInstance().LoadTextureFromFile("Image/brick_diffuse.png");
+		//NormalTexture = jImageFileLoader::GetInstance().LoadTextureFromFile("Image/brick_normal.png");
+
+		const float Width = 100.0f;
+		Cube = jPrimitiveUtil::CreateCube(Vector(0.0f, 0.0f, 0.0f), Vector::OneVector, Vector(Width, Width, Width), Vector4(0.0f, 0.0f, 1.0f, 0.5f));
+		Cube->RenderObject->SetTexture(0, jName("ColorTexture"), ColorTexture.lock().get());
+		Cube->RenderObject->SetTexture(1, jName("ReliefTexture"), ReliefTexture.lock().get());
+		Cube->RenderObject->SetTexture(2, jName("NormalTexture"), NormalTexture.lock().get());
+	}
+
+	g_rhi->SetClear(ERenderBufferType::COLOR | ERenderBufferType::DEPTH);
+	g_rhi->EnableDepthTest(true);
+
+	{
+		jShader* shader = jShader::GetShader("ReliefMapping");
+		//SET_UNIFORM_BUFFER_STATIC("LightDir", DirectionalLight->Data.Direction, shader);
+		//SET_UNIFORM_BUFFER_STATIC("LightDir", Vector::OneVector, shader);
+		//SET_UNIFORM_BUFFER_STATIC("CameraPos", MainCamera->Pos, shader);
+
+		g_rhi->SetShader(shader);
+		g_rhi->SetUniformbuffer(jName("LightDir"), DirectionalLight->Data.Direction, shader);
+
+		Cube->Update(deltaTime);
+		Cube->Draw(MainCamera, shader, { DirectionalLight });
+	}
+
+	{
+		jShader* shader = jShader::GetShader("DebugObjectShader");
+		for (auto& iter : jObject::GetDebugObject())
+			iter->Draw(MainCamera, shader, {});
+	}
 }
 
 void jGame::UpdateAppSetting()

@@ -556,5 +556,11 @@
     <None Include="Shaders\vs_graph.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\fs_relief.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\vs_relief.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
