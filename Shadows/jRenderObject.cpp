@@ -268,3 +268,13 @@ const std::vector<float>& jRenderObject::GetVertices() const
 	static const std::vector<float> s_emtpy;
 	return s_emtpy;
 }
+
+void jRenderObject::SetTexture(int32 index, jName name, const jTexture* texture)
+{
+	MaterialData.SetMaterialParam(index, name, texture);
+}
+
+void jRenderObject::SetTextureWithCommonName(int32 index, const jTexture* texture)
+{
+	MaterialData.SetMaterialParam(index, GetCommonTextureName(index), texture);
+}
