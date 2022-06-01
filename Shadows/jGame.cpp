@@ -57,52 +57,50 @@ void jGame::ProcessInput()
 void jGame::Setup()
 {
 	srand(static_cast<uint32>(time(NULL)));
-	//////////////////////////////////////////////////////////////////////////
+
+	auto& AppSettings = jShadowAppSettingProperties::GetInstance();
+
+	// Create main camera
 	const Vector mainCameraPos(172.66f, 160.0f, -180.63f);
-	//const Vector mainCameraTarget(171.96f, 166.02f, -180.05f);
-	//const Vector mainCameraPos(165.0f, 125.0f, -136.0f);
-	//const Vector mainCameraPos(300.0f, 100.0f, 300.0f);
 	const Vector mainCameraTarget(0.0f, 0.0f, 0.0f);
 	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(45.0f), 10.0f, 1000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
 
-	// Light creation step
-	NormalDirectionalLight = jLight::CreateDirectionalLight(jShadowAppSettingProperties::GetInstance().DirecionalLightDirection
-		, Vector4(0.6f)
-		, Vector(1.0f), Vector(1.0f), 64);
-	CascadeDirectionalLight = jLight::CreateCascadeDirectionalLight(jShadowAppSettingProperties::GetInstance().DirecionalLightDirection
-		, Vector4(0.6f)
-		, Vector(1.0f), Vector(1.0f), 64);
-
-	DirectionalLight = NormalDirectionalLight;
-
-	//AmbientLight = jLight::CreateAmbientLight(Vector(0.7f, 0.8f, 0.8f), Vector(0.1f));
+	// Create lights
+	NormalDirectionalLight = jLight::CreateDirectionalLight(AppSettings.DirecionalLightDirection
+		, Vector4(0.6f), Vector(1.0f), Vector(1.0f), 64);
+	CascadeDirectionalLight = jLight::CreateCascadeDirectionalLight(AppSettings.DirecionalLightDirection
+		, Vector4(0.6f), Vector(1.0f), Vector(1.0f), 64);
 	AmbientLight = jLight::CreateAmbientLight(Vector(0.2f, 0.5f, 1.0f), Vector(0.05f));		// sky light color
-
 	PointLight = jLight::CreatePointLight(jShadowAppSettingProperties::GetInstance().PointLightPosition, Vector4(2.0f, 0.7f, 0.7f, 1.0f), 500.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
 	SpotLight = jLight::CreateSpotLight(jShadowAppSettingProperties::GetInstance().SpotLightPosition, jShadowAppSettingProperties::GetInstance().SpotLightDirection, Vector4(0.0f, 1.0f, 0.0f, 1.0f), 500.0f, 0.7f, 1.0f, Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), 64.0f);
 
+	// Select one of directional light
+	DirectionalLight = NormalDirectionalLight;
+
+	// Create light info for debugging light infomation
 	if (DirectionalLight)
 	{
 		DirectionalLightInfo = jPrimitiveUtil::CreateDirectionalLightDebug(Vector(250, 260, 0) * 0.5f, Vector::OneVector * 10.0f, 10.0f, MainCamera, DirectionalLight, "Image/sun.png");
-		jObject::AddDebugObject(DirectionalLightInfo);
+		if (AppSettings.ShowDirectionalLightInfo)
+			jObject::AddDebugObject(DirectionalLightInfo);
 	}
-
-	DirectionalLightShadowMapUIDebug = jPrimitiveUtil::CreateUIQuad({ 0.0f, 0.0f }, { 150, 150 }, DirectionalLight->GetShadowMap());
-	jObject::AddUIDebugObject(DirectionalLightShadowMapUIDebug);
 
 	if (PointLight)
 	{
 		PointLightInfo = jPrimitiveUtil::CreatePointLightDebug(Vector(10.0f), MainCamera, PointLight, "Image/bulb.png");
-		//jObject::AddDebugObject(PointLightInfo);
+		if (AppSettings.ShowPointLightInfo)
+			jObject::AddDebugObject(PointLightInfo);
 	}
 
 	if (SpotLight)
 	{
 		SpotLightInfo = jPrimitiveUtil::CreateSpotLightDebug(Vector(10.0f), MainCamera, SpotLight, "Image/spot.png");
-		//jObject::AddDebugObject(SpotLightInfo);
+		if (AppSettings.ShowSpotLightInfo)
+			jObject::AddDebugObject(SpotLightInfo);
 	}
 
+	// Main camera is linked with lights which will be used.
 	if (DirectionalLight)
 		MainCamera->AddLight(DirectionalLight);
 	if (PointLight)
@@ -111,8 +109,15 @@ void jGame::Setup()
 		MainCamera->AddLight(SpotLight);
 	MainCamera->AddLight(AmbientLight);
 
+	// Create UI primitive to visualize shadowmap for debugging
+	DirectionalLightShadowMapUIDebug = jPrimitiveUtil::CreateUIQuad({ 0.0f, 0.0f }, { 150, 150 }, DirectionalLight->GetShadowMap());
+	if (DirectionalLightShadowMapUIDebug)
+		jObject::AddUIDebugObject(DirectionalLightShadowMapUIDebug);
+
+	// Select spawning object type
 	SpawnObjects(ESpawnedType::TestPrimitive);
 
+	// Prepare pipeline which have rendering passes.
 	ShadowPipelineSetMap.insert(std::make_pair(EShadowMapType::SSM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_SSM)));
 	ShadowPipelineSetMap.insert(std::make_pair(EShadowMapType::PCF, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_SSM_PCF)));
 	ShadowPipelineSetMap.insert(std::make_pair(EShadowMapType::PCSS, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_SSM_PCSS)));
@@ -129,12 +134,11 @@ void jGame::Setup()
 	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::EVSM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_EVSM)));	
 	ShadowPoissonSamplePipelineSetMap.insert(std::make_pair(EShadowMapType::CSM_SSM, CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_CSM_SSM)));
 
-	CurrentShadowMapType = jShadowAppSettingProperties::GetInstance().ShadowMapType;
-
-	//ForwardRenderer = new jForwardRenderer(ShadowPipelineSetMap[CurrentShadowMapType]);
 	ShadowVolumePipelineSet = CREATE_PIPELINE_SET_WITH_SETUP(jForwardPipelineSet_ShadowVolume);
 
-	// todo 정리 필요
+	CurrentShadowMapType = jShadowAppSettingProperties::GetInstance().ShadowMapType;
+
+	// Prepare renderer which are both forward and deferred. It can be switched depend on shadow type
 	const auto currentShadowPipelineSet = (jShadowAppSettingProperties::GetInstance().ShadowType == EShadowType::ShadowMap) 
 		? ShadowPipelineSetMap[CurrentShadowMapType]  : ShadowVolumePipelineSet;
 	ForwardRenderer = new jForwardRenderer(currentShadowPipelineSet);
@@ -142,11 +146,6 @@ void jGame::Setup()
 
 	DeferredRenderer = new jDeferredRenderer({ ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::DEPTH16, SCR_WIDTH, SCR_HEIGHT, 4 });
 	DeferredRenderer->Setup();
-
-	//for (int32 i = 0; i < NUM_CASCADES; ++i)
-	//{
-	//	jObject::AddUIDebugObject(jPrimitiveUtil::CreateUIQuad({ i * 150.0f, 0.0f }, { 150.0f, 150.0f }, DirectionalLight->ShadowMapData->CascadeShadowMapRenderTarget[i]->GetTexture()));
-	//}
 }
 
 void jGame::SpawnObjects(ESpawnedType spawnType)
@@ -184,15 +183,13 @@ void jGame::Update(float deltaTime)
 {
 	SCOPE_DEBUG_EVENT(g_rhi, "Game::Update");
 
+	// Update application property by using UI Pannel.
 	UpdateAppSetting();
 
+	// Update main camera
 	MainCamera->UpdateCamera();
 
-	//DirectionalLight->ShadowMapData->ShadowMapCamera->Pos = MainCamera->Pos - Vector(1000.0f, 500.0f, 1000.0f) * DirectionalLight->Data.Direction;
-	//jLightUtil::MakeDirectionalLightViewInfoWithPos(DirectionalLight->ShadowMapData->ShadowMapCamera->Target, DirectionalLight->ShadowMapData->ShadowMapCamera->Up
-	//	, DirectionalLight->ShadowMapData->ShadowMapCamera->Pos, DirectionalLight->Data.Direction);
-	//DirectionalLight->ShadowMapData->ShadowMapCamera->UpdateCamera();
-
+	// Update lights
 	const int32 numOfLights = MainCamera->GetNumOfLight();
 	for (int32 i = 0; i < numOfLights; ++i)
 	{
@@ -200,49 +197,6 @@ void jGame::Update(float deltaTime)
 		JASSERT(light);
 		light->Update(deltaTime);
 	}
-
-	////////////////////////////////////////////////////////////////////////////
-	//// Get the 8 points of the view frustum in world space
-	//if (jShadowAppSettingProperties::GetInstance().ShadowMapType != EShadowMapType::DeepShadowMap_DirectionalLight)
-	//{
-	//	Vector frustumCornersWS[8] =
-	//	{
-	//		Vector(-1.0f,  1.0f, -1.0f),
-	//		Vector(1.0f,  1.0f, -1.0f),
-	//		Vector(1.0f, -1.0f, -1.0f),
-	//		Vector(-1.0f, -1.0f, -1.0f),
-	//		Vector(-1.0f,  1.0f, 1.0f),
-	//		Vector(1.0f,  1.0f, 1.0f),
-	//		Vector(1.0f, -1.0f, 1.0f),
-	//		Vector(-1.0f, -1.0f, 1.0f),
-	//	};
-
-	//	Vector frustumCenter(0.0f);
-	//	Matrix invViewProj = (MainCamera->Projection * MainCamera->View).GetInverse();
-	//	for (uint32 i = 0; i < 8; ++i)
-	//	{
-	//		frustumCornersWS[i] = invViewProj.Transform(frustumCornersWS[i]);
-	//		frustumCenter = frustumCenter + frustumCornersWS[i];
-	//	}
-	//	frustumCenter = frustumCenter * (1.0f / 8.0f);
-
-	//	auto upDir = Vector::UpVector;
-
-	//	float width = SM_WIDTH;
-	//	float height = SM_HEIGHT;
-	//	float nearDist = 10.0f;
-	//	float farDist = 1000.0f;
-
-	//	// Get position of the shadow camera
-	//	Vector shadowCameraPos = frustumCenter + DirectionalLight->Data.Direction * -(farDist - nearDist) / 2.0f;
-	//
-	//	auto shadowCamera = jOrthographicCamera::CreateCamera(shadowCameraPos, frustumCenter, shadowCameraPos + upDir
-	//		, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
-	//	shadowCamera->UpdateCamera();
-	//	DirectionalLight->GetLightCamra()->Projection = shadowCamera->Projection;
-	//	DirectionalLight->GetLightCamra()->View = shadowCamera->View;
-	//}
-	////////////////////////////////////////////////////////////////////////////
 
 	for (auto iter : jObject::GetStaticObject())
 		iter->Update(deltaTime);
@@ -256,8 +210,10 @@ void jGame::Update(float deltaTime)
 	for (auto& iter : jObject::GetDebugObject())
 		iter->Update(deltaTime);
 
+	// Update object which have dirty flag
 	jObject::FlushDirtyState();
 
+	// Render all objects by using selected renderer
 	Renderer->Render(MainCamera);
 }
 
@@ -265,8 +221,10 @@ void jGame::UpdateAppSetting()
 {
 	auto& appSetting =  jShadowAppSettingProperties::GetInstance();
 
+	// Rotating spot light
 	appSetting.SpotLightDirection = Matrix::MakeRotateY(0.01f).Transform(appSetting.SpotLightDirection);
 
+	// Chaning normal or cascade shadow map depend on shadow type.
 	bool changedDirectionalLight = false;
 	if (appSetting.ShadowMapType == EShadowMapType::CSM_SSM)
 	{
@@ -288,27 +246,34 @@ void jGame::UpdateAppSetting()
 			changedDirectionalLight = true;
 		}
 	}
-	if (DirectionalLightInfo)
-		((jDirectionalLightPrimitive*)(DirectionalLightInfo))->Light = DirectionalLight;
 
 	if (changedDirectionalLight)
 	{
+		// Update directional light info by using selected shadowmap
+		if (DirectionalLightInfo)
+			((jDirectionalLightPrimitive*)(DirectionalLightInfo))->Light = DirectionalLight;
+
+		// Update debugging shadow map of directional light
 		const auto shaderMapRenderTarget = DirectionalLight->ShadowMapData->ShadowMapRenderTarget;
 		const float aspect = static_cast<float>(shaderMapRenderTarget->Info.Height) / shaderMapRenderTarget->Info.Width;
-		DirectionalLightShadowMapUIDebug->SetTexture(DirectionalLight->ShadowMapData->ShadowMapRenderTarget->GetTexture());
-		DirectionalLightShadowMapUIDebug->Size.y = DirectionalLightShadowMapUIDebug->Size.x * aspect;
+		if (DirectionalLightShadowMapUIDebug)
+		{
+			DirectionalLightShadowMapUIDebug->SetTexture(DirectionalLight->ShadowMapData->ShadowMapRenderTarget->GetTexture());
+			DirectionalLightShadowMapUIDebug->Size.y = DirectionalLightShadowMapUIDebug->Size.x * aspect;
+		}
 	}
 
 	bool isChangedShadowMode = false;
 
+	// Chaning ShadowType or ShadowMapType
+	//  - Spawn object depending on new type
+	//  - Switch pipeline set and renderer depending on new type
 	const bool isChangedShadowType = CurrentShadowType != appSetting.ShadowType;
 	const bool isChangedShadowMapType = (CurrentShadowMapType != appSetting.ShadowMapType);
 	if (appSetting.ShadowType == EShadowType::ShadowMap)
 	{
 		if (appSetting.ShadowMapType == EShadowMapType::DeepShadowMap_DirectionalLight)
 		{
-			//if (DirectionalLight && DirectionalLight->ShadowMapData && DirectionalLight->ShadowMapData->ShadowMapCamera)
-			//	DirectionalLight->ShadowMapData->ShadowMapCamera->IsPerspectiveProjection = true;
 			Renderer = DeferredRenderer;
 			appSetting.ShowPointLightInfo = false;
 			appSetting.ShowSpotLightInfo = false;
@@ -318,8 +283,6 @@ void jGame::UpdateAppSetting()
 		}
 		else
 		{
-			//if (DirectionalLight && DirectionalLight->ShadowMapData && DirectionalLight->ShadowMapData->ShadowMapCamera)
-			//	DirectionalLight->ShadowMapData->ShadowMapCamera->IsPerspectiveProjection = false;
 			Renderer = ForwardRenderer;
 
 			const bool isChangedPoisson = (UsePoissonSample != appSetting.UsePoissonSample);
@@ -358,6 +321,7 @@ void jGame::UpdateAppSetting()
 		MainCamera->IsInfinityFar = true;
 	}
 
+	// Update Light's MaterialData to cache it again
 	if (isChangedShadowMode)
 	{
 		for (int32 i = 0; i < MainCamera->GetNumOfLight(); ++i)
@@ -370,11 +334,13 @@ void jGame::UpdateAppSetting()
 		}
 	}
 
+	// Update visibility of sub menu in UI Panel
 	if (isChangedShadowType)
 		appSetting.SwitchShadowType(jAppSettings::GetInstance().Get("MainPannel"));
 	if (isChangedShadowMapType)
 		appSetting.SwitchShadowMapType(jAppSettings::GetInstance().Get("MainPannel"));
 
+	// Switching visibility of light info by using UI panel
 	static auto s_showDirectionalLightInfo = appSetting.ShowDirectionalLightInfo;
 	static auto s_showPointLightInfo = appSetting.ShowPointLightInfo;
 	static auto s_showSpotLightInfo = appSetting.ShowSpotLightInfo;
@@ -434,7 +400,7 @@ void jGame::UpdateAppSetting()
 			MainCamera->RemoveLight(SpotLight);
 	});
 	
-	// todo debug test, should remove this
+	// Update light direction and position by using UI Panel.
 	if (DirectionalLight)
 		DirectionalLight->Data.Direction = appSetting.DirecionalLightDirection;
 	if (PointLight)
@@ -445,6 +411,7 @@ void jGame::UpdateAppSetting()
 		SpotLight->Data.Position = appSetting.SpotLightPosition;
 	}
 
+	// Update visibility of shadowmap debuging by using UI Panel
 	if (DirectionalLightShadowMapUIDebug)
 		DirectionalLightShadowMapUIDebug->Visible = appSetting.ShowDirectionalLightMap;
 }
@@ -470,12 +437,10 @@ void jGame::SpawnHairObjects()
 	RemoveSpawnedObjects();
 
 	auto hairObject = jHairModelLoader::GetInstance().CreateHairObject("Model/straight.hair");
-	//g_HairObjectArray.push_back(hairObject);
 	jObject::AddObject(hairObject);
 	SpawnedObjects.push_back(hairObject);
 
 	auto headModel = jModelLoader::GetInstance().LoadFromFile("Model/woman.x");
-	//g_StaticObjectArray.push_back(headModel);
 	jObject::AddObject(headModel);
 	SpawnedObjects.push_back(headModel);
 }
@@ -486,7 +451,6 @@ void jGame::SpawnTestPrimitives()
 
 	auto quad = jPrimitiveUtil::CreateQuad(Vector(1.0f, 1.0f, 1.0f), Vector(1.0f), Vector(1000.0f, 1000.0f, 1000.0f), Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 	quad->SetPlane(jPlane(Vector(0.0, 1.0, 0.0), -0.1f));
-	//quad->SkipShadowMapGen = true;
 	quad->SkipUpdateShadowVolume = true;
 	jObject::AddObject(quad);
 	SpawnedObjects.push_back(quad);
