@@ -245,7 +245,7 @@ void jGame::Update(float deltaTime)
 	g_rhi->EnableDepthTest(true);
 
 	{
-		jShader* shader = jShader::GetShader("ReliefMapping");
+		jShader* shader = jShader::GetShader("NormalMapping");
 		//SET_UNIFORM_BUFFER_STATIC("LightDir", DirectionalLight->Data.Direction, shader);
 		//SET_UNIFORM_BUFFER_STATIC("LightDir", Vector::OneVector, shader);
 		//SET_UNIFORM_BUFFER_STATIC("CameraPos", MainCamera->Pos, shader);

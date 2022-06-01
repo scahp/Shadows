@@ -309,8 +309,9 @@ xcopy /s /y /d  "$(ProjectDir)External\assimp\lib\*.dll" "$(OutDir)"</Command>
     <None Include="Shaders\compute\compute_sort_linkedlist.glsl" />
     <None Include="Shaders\fs_boundvolume.glsl" />
     <None Include="Shaders\fs_graph.glsl" />
+    <None Include="Shaders\fs_normalmap.glsl" />
     <None Include="Shaders\fs_red.glsl" />
-    <None Include="Shaders\fs_relief.glsl" />
+    <None Include="Shaders\fs_reliefmap.glsl" />
     <None Include="Shaders\fs_shadowMap.glsl" />
     <None Include="Shaders\fs_test.glsl" />
     <None Include="Shaders\fullscreen\fs_adaptiveLuminance.glsl" />
@@ -364,8 +365,9 @@ xcopy /s /y /d  "$(ProjectDir)External\assimp\lib\*.dll" "$(OutDir)"</Command>
     <None Include="Shaders\tex_vs.glsl" />
     <None Include="Shaders\vs_boundvolume.glsl" />
     <None Include="Shaders\vs_graph.glsl" />
+    <None Include="Shaders\vs_normalmap.glsl" />
     <None Include="Shaders\vs_red.glsl" />
-    <None Include="Shaders\vs_relief.glsl" />
+    <None Include="Shaders\vs_reliefmap.glsl" />
     <None Include="Shaders\vs_shadowMap.glsl" />
     <None Include="Shaders\vs_test.glsl" />
   </ItemGroup>

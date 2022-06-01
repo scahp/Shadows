@@ -1,4 +1,4 @@
-#version 330 core
+ï»¿#version 330 core
 
 precision mediump float;
 
@@ -21,7 +21,7 @@ vec3 GetNormal(vec2 uv)
 {
 	vec3 normal = texture(NormalTexture, uv).xyz;
 	normal = normal * 2.0 - 1.0;
-	//normal.y = -normal.y;			// if it's using opengl normal map
+	normal.y = -normal.y;			// if it's using opengl normal map
 	return normal;
 }
 
@@ -35,7 +35,7 @@ vec3 GetTwoChannelNormal(vec2 uv)
 
 void main()
 {
-	// NormalMapÀ¸·Î ºÎÅÍ normalÀ» ¾ò¾î¿À°í, TBN ¸ÅÆ®¸¯½º·Î º¯È¯½ÃÄÑÁÜ
+	// NormalMapìœ¼ë¡œ ë¶€í„° normalì„ ì–»ì–´ì˜¤ê³ , TBN ë§¤íŠ¸ë¦­ìŠ¤ë¡œ ë³€í™˜ì‹œì¼œì¤Œ
 	vec3 normal = normalize(TBN * GetTwoChannelNormal(TexCoord_));
 	float lightIntensity = clamp(dot(normal, -LightDir), 0.0, 1.0);
 

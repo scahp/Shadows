@@ -90,7 +90,8 @@ struct jShaderInfoCreation
 
 		DECLARE_SHADER_VS_FS("Graph2D", "shaders/vs_graph.glsl", "shaders/fs_graph.glsl");
 
-		DECLARE_SHADER_VS_FS("ReliefMapping", "shaders/vs_relief.glsl", "shaders/fs_relief.glsl");		
+		DECLARE_SHADER_VS_FS("ReliefMapping", "shaders/vs_reliefmap.glsl", "shaders/fs_reliefmap.glsl");
+		DECLARE_SHADER_VS_FS("NormalMapping", "shaders/vs_normalmap.glsl", "shaders/fs_normalmap.glsl");
 	}
 } s_shaderInfoCreation;
 

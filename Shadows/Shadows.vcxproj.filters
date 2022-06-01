@@ -556,10 +556,16 @@
     <None Include="Shaders\vs_graph.glsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="Shaders\fs_relief.glsl">
+    <None Include="Shaders\fs_normalmap.glsl">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="Shaders\vs_relief.glsl">
+    <None Include="Shaders\fs_reliefmap.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\vs_normalmap.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\vs_reliefmap.glsl">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
