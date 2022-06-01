@@ -44,7 +44,10 @@ void jMaterialData::AddMaterialParam(jName name, const jTexture* texture, const 
 void jMaterialData::SetMaterialParam(int32 index, jName name, const jTexture* texture, const jSamplerState* samplerState /*= nullptr*/)
 {
 	if (Params.size() <= index)
-		return;
+	{
+		Params.resize(index + 1);
+		OutputDebugStringA("Resized Params in SetMaterialParam\n");
+	}
 
 	Params[index].Name = name;
     Params[index].Texture = texture;

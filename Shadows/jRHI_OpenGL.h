@@ -348,6 +348,16 @@ struct TTryGetLocation
 		return T::GetLocation(program, name);
 #endif
 	}
+
+	FORCEINLINE void ClearLocation()
+	{
+#if USE_CACHED_LOCATION_HASH
+		NameLocationMap.clear();
+#elif USE_CACHED_LOCATION_ARRAY
+		locations.clear();
+#else
+#endif
+	}
 };
 
 using jTryGetUniformLocation = TTryGetLocation<jUniformbufferLocationGetter>;
@@ -368,5 +378,10 @@ struct jShader_OpenGL : public jShader
 	FORCEINLINE int32 TryGetAttributeLocation(jName name) const
 	{
 		return AttributeLocationGatter.TryGetLocation(program, name);
+	}
+	FORCEINLINE void ClearAllLocations()
+	{
+		UniformLocationGatter.ClearLocation();
+		AttributeLocationGatter.ClearLocation();
 	}
 };

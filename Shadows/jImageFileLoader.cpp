@@ -29,19 +29,7 @@ std::weak_ptr<jImageData> jImageFileLoader::LoadImageDataFromFile(std::string co
 	int32 width = 0;
 	int32 height = 0;
 	int32 NumOfComponent = -1;
-	if (std::string::npos != filename.find(".tga"))
-	{
-		uint8* imageData = stbi_load(filename.c_str(), &width, &height, &NumOfComponent, 0);
-
-		int32 NumOfBytes = width * height * sizeof(uint8) * NumOfComponent;
-		NewImageDataPatr->ImageData.resize(NumOfBytes);
-		memcpy(&NewImageDataPatr->ImageData[0], imageData, NumOfBytes);
-		NewImageDataPatr->sRGB = sRGB;
-		NewImageDataPatr->FormatType = EFormatType::UNSIGNED_BYTE;
-
-		stbi_image_free(imageData);
-	}
-	else if (std::string::npos != filename.find(".dds"))
+	if (std::string::npos != filename.find(".dds"))
 	{
 		uint8* imageData = stbi_dds_load(filename.c_str(), &width, &height, &NumOfComponent, 0);
 
@@ -75,6 +63,18 @@ std::weak_ptr<jImageData> jImageFileLoader::LoadImageDataFromFile(std::string co
 		memcpy(&NewImageDataPatr->ImageData[0], imageData, NumOfBytes);
 		NewImageDataPatr->sRGB = sRGB;
 		NewImageDataPatr->FormatType = EFormatType::FLOAT;
+
+		stbi_image_free(imageData);
+	}
+	else
+	{
+		uint8* imageData = stbi_load(filename.c_str(), &width, &height, &NumOfComponent, 0);
+
+		int32 NumOfBytes = width * height * sizeof(uint8) * NumOfComponent;
+		NewImageDataPatr->ImageData.resize(NumOfBytes);
+		memcpy(&NewImageDataPatr->ImageData[0], imageData, NumOfBytes);
+		NewImageDataPatr->sRGB = sRGB;
+		NewImageDataPatr->FormatType = EFormatType::UNSIGNED_BYTE;
 
 		stbi_image_free(imageData);
 	}

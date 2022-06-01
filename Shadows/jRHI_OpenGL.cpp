@@ -1104,6 +1104,7 @@ bool jRHI_OpenGL::CreateShader(jShader* OutShader, const jShaderInfo& shaderInfo
 		glDeleteProgram(shader_gl->program);
 	shader_gl->program = program;
 	shader_gl->ShaderInfo = shaderInfo;
+	shader_gl->ClearAllLocations();			// 기존 location 정보들을 초기화
 
 	return true;
 }
