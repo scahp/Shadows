@@ -60,7 +60,7 @@ int main()
 	//glfwGetVersion(&major, &minor, &rev);
 	//auto versionCheck = glfwGetVersionString();
 
-	glfwSwapInterval(0);		// 0 is no limit fps
+	//glfwSwapInterval(0);		// 0 is no limit fps
 
 	// glad: load all OpenGL function pointers
 	// ---------------------------------------

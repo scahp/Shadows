@@ -23,6 +23,7 @@
 #include "jVertexAdjacency.h"
 #include <time.h>
 #include <stdlib.h>
+#include "jSamplerStatePool.h"
 
 jRHI* g_rhi = nullptr;
 
@@ -225,33 +226,47 @@ void jGame::Update(float deltaTime)
 	{
 		s_Initialized = true;
 
-		//ColorTexture = jImageFileLoader::GetInstance().LoadTextureFromFile("Image/tile1_color.jpg");
+		ColorTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/tile1_color.jpg"));
 		ReliefTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/tile1_relief.tga"));
-		NormalTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/rockbump_relief.tga"));
-		ColorTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/rockbump_color.jpg"));
+		//NormalTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/tile1_relief.tga"));
+		
+		//NormalTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/rockbump_relief.tga"));
+		//ColorTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/rockbump_color.jpg"));
 		
 
 		//ColorTexture = jImageFileLoader::GetInstance().LoadTextureFromFile("Image/brick_diffuse.png");
 		//NormalTexture = jImageFileLoader::GetInstance().LoadTextureFromFile("Image/brick_normal.png");
 
+		static const auto LinearClampSamplerState = jSamplerStatePool::GetSamplerState(jName("LinearClamp"));
+
 		const float Width = 100.0f;
 		Cube = jPrimitiveUtil::CreateCube(Vector(0.0f, 0.0f, 0.0f), Vector::OneVector, Vector(Width, Width, Width), Vector4(0.0f, 0.0f, 1.0f, 0.5f));
-		Cube->RenderObject->SetTexture(0, jName("ColorTexture"), ColorTexture.lock().get());
-		Cube->RenderObject->SetTexture(1, jName("ReliefTexture"), ReliefTexture.lock().get());
-		Cube->RenderObject->SetTexture(2, jName("NormalTexture"), NormalTexture.lock().get());
+		Cube->RenderObject->SetTexture(0, jName("ColorTexture"), ColorTexture.lock().get(), LinearClampSamplerState.get());
+		Cube->RenderObject->SetTexture(1, jName("ReliefTexture"), ReliefTexture.lock().get(), LinearClampSamplerState.get());
+		Cube->RenderObject->SetTexture(2, jName("NormalTexture"), NormalTexture.lock().get(), LinearClampSamplerState.get());
 	}
 
 	g_rhi->SetClear(ERenderBufferType::COLOR | ERenderBufferType::DEPTH);
 	g_rhi->EnableDepthTest(true);
 
 	{
-		jShader* shader = jShader::GetShader("NormalMapping");
+		jShader* shader = jShader::GetShader("ReliefMapping");
+
+		auto MV = MainCamera->View;
+		auto MVP = MainCamera->Projection * MV;
+		auto InvMPV = MVP.GetInverse();
+		auto LocalCameraPos = InvMPV.Transform(MainCamera->Pos);
+		auto LocalLightDir = InvMPV.Transform(Vector4(DirectionalLight->Data.Direction, 0.0f));
+
 		//SET_UNIFORM_BUFFER_STATIC("LightDir", DirectionalLight->Data.Direction, shader);
 		//SET_UNIFORM_BUFFER_STATIC("LightDir", Vector::OneVector, shader);
 		//SET_UNIFORM_BUFFER_STATIC("CameraPos", MainCamera->Pos, shader);
 
 		g_rhi->SetShader(shader);
 		g_rhi->SetUniformbuffer(jName("LightDir"), DirectionalLight->Data.Direction, shader);
+		g_rhi->SetUniformbuffer(jName("CameraPos"), MainCamera->Pos, shader);
+		g_rhi->SetUniformbuffer(jName("LocalCameraPos"), LocalCameraPos, shader);
+		g_rhi->SetUniformbuffer(jName("LocalLightDirUniform"), Vector(LocalLightDir), shader);
 
 		Cube->Update(deltaTime);
 		Cube->Draw(MainCamera, shader, { DirectionalLight });
