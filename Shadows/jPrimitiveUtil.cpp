@@ -11,6 +11,74 @@
 #include "jImageFileLoader.h"
 #include "jLight.h"
 
+struct Triangle
+{
+	int32 Index[3];
+};
+
+void CalculateTangents(Vector4* OutTangentArray, int32 InTriangleCount, const Triangle* InTriangleArray, int32 InVertexCount
+	, const Vector* InVertexArray, const Vector* InNormalArray, const Vector2* InTexCoordArray)
+{
+	// 임시버퍼 생성
+	Vector* Tangent = new Vector[InVertexCount * 2];
+	Vector* Bitangent = Tangent + InVertexCount;
+	for (int32 i = 0; i < InVertexCount; ++i)
+	{
+		Tangent[i] = Vector::ZeroVector;
+		Bitangent[i] = Vector::ZeroVector;
+	}
+
+	// 모든 삼각형에 대해서 Tangent와 Bitangent를 계산하고 삼각형의 3개의 Vertex에 Tangent와 Bitangent를 더해줍니다.
+	for (int32 k = 0; k < InTriangleCount; ++k)
+	{
+		int32 i0 = InTriangleArray[k].Index[0];
+		int32 i1 = InTriangleArray[k].Index[1];
+		int32 i2 = InTriangleArray[k].Index[2];
+
+		const Vector& p0 = InVertexArray[i0];
+		const Vector& p1 = InVertexArray[i1];
+		const Vector& p2 = InVertexArray[i2];
+		const Vector2& w0 = InTexCoordArray[i0];
+		const Vector2& w1 = InTexCoordArray[i1];
+		const Vector2& w2 = InTexCoordArray[i2];
+
+		Vector e1 = p1 - p0;
+		Vector e2 = p2 - p0;
+		float x1 = w1.x - w0.x;
+		float x2 = w2.x - w0.x;
+		float y1 = w1.y - w0.y;
+		float y2 = w2.y - w0.y;
+
+		float r = 1.0f / (x1 * y2 - x2 * y1);
+		Vector t = (e1 * y2 - e2 * y1) * r;
+		Vector b = (e2 * x1 - e1 * x2) * r;
+
+		Tangent[i0] += t;
+		Tangent[i1] += t;
+		Tangent[i2] += t;
+		Bitangent[i0] += b;
+		Bitangent[i1] += b;
+		Bitangent[i2] += b;
+	}
+
+	// 각각의 Tangent를 Orthonormalize 하고, Handedness 하게 계산가능하도록 w 에 부호 추가
+	for (int32 i = 0; i < InVertexCount; ++i)
+	{
+		const Vector& t = Tangent[i];
+		const Vector& b = Bitangent[i];
+		const Vector& n = InNormalArray[i];
+
+		auto Reject = [](const Vector& t, const Vector& n) {
+			return (t - t.DotProduct(n) * n).GetNormalize();
+		};
+
+		OutTangentArray[i] = Vector4(Reject(t, n), 0.0f); // Normalize(t - Dot(t, n)*n)
+		OutTangentArray[i].w = (t.CrossProduct(b).DotProduct(n) > 0.0f) ? 1.0f : -1.0f;
+	}
+
+	delete[] Tangent;
+}
+
 void jQuadPrimitive::SetPlane(const jPlane& plane)
 {
 	Plane = plane;
@@ -758,63 +826,50 @@ jObject* CreateCube(const Vector& pos, const Vector& size, const Vector& scale, 
 	const Vector offset = Vector::ZeroVector;
 
 	float vertices[] = {
-		// z +
-		offset.x + (-halfSize.x),  offset.y + (halfSize.y),     offset.z + (halfSize.z),
-		offset.x + (-halfSize.x),  offset.y + (-halfSize.y),    offset.z + (halfSize.z),
+		offset.x + (-halfSize.x),  offset.y + (-halfSize.y),     offset.z + (-halfSize.z),
+		offset.x + (-halfSize.x),  offset.y + (halfSize.y),    offset.z + (-halfSize.z),
+		offset.x + (halfSize.x),   offset.y + (halfSize.y),     offset.z + (-halfSize.z),		
+		offset.x + (-halfSize.x),  offset.y + (-halfSize.y),     offset.z + (-halfSize.z),
+		offset.x + (halfSize.x),   offset.y + (halfSize.y),     offset.z + (-halfSize.z),
+		offset.x + (halfSize.x),   offset.y + (-halfSize.y),     offset.z + (-halfSize.z),
+
+		offset.x + (-halfSize.x),   offset.y + (-halfSize.y),     offset.z + (halfSize.z),
+		offset.x + (halfSize.x),   offset.y + (-halfSize.y),     offset.z + (halfSize.z),
 		offset.x + (halfSize.x),   offset.y + (halfSize.y),     offset.z + (halfSize.z),
+		offset.x + (-halfSize.x),   offset.y + (-halfSize.y),     offset.z + (halfSize.z),
 		offset.x + (halfSize.x),   offset.y + (halfSize.y),     offset.z + (halfSize.z),
-		offset.x + (-halfSize.x),  offset.y + (-halfSize.y),    offset.z + (halfSize.z),
-		offset.x + (halfSize.x),   offset.y + (-halfSize.y),    offset.z + (halfSize.z),
+		offset.x + (-halfSize.x),   offset.y + (halfSize.y),     offset.z + (halfSize.z),
 
-		// z -
-		offset.x + (-halfSize.x),  offset.y + (halfSize.y),     offset.z + (-halfSize.z),
-		offset.x + (halfSize.x),   offset.y + (halfSize.y),     offset.z + (-halfSize.z),
-		offset.x + (-halfSize.x),  offset.y + (-halfSize.y),    offset.z + (-halfSize.z),
-		offset.x + (halfSize.x),   offset.y + (halfSize.y),     offset.z + (-halfSize.z),
-		offset.x + (halfSize.x),   offset.y + (-halfSize.y),    offset.z + (-halfSize.z),
-		offset.x + (-halfSize.x),  offset.y + (-halfSize.y),    offset.z + (-halfSize.z),
-
-		// x +
+		offset.x + (-halfSize.x),   offset.y + (halfSize.y),     offset.z + (-halfSize.z),
+		offset.x + (-halfSize.x),   offset.y + (halfSize.y),     offset.z + (halfSize.z),
 		offset.x + (halfSize.x),   offset.y + (halfSize.y),     offset.z + (halfSize.z),
-		offset.x + (halfSize.x),   offset.y + (-halfSize.y),    offset.z + (halfSize.z),
-		offset.x + (halfSize.x),   offset.y + (halfSize.y),     offset.z + (-halfSize.z),
-		offset.x + (halfSize.x),   offset.y + (halfSize.y),     offset.z + (-halfSize.z),
-		offset.x + (halfSize.x),   offset.y + (-halfSize.y),    offset.z + (halfSize.z),
-		offset.x + (halfSize.x),   offset.y + (-halfSize.y),    offset.z + (-halfSize.z),
-
-		// x -
-		offset.x + (-halfSize.x),  offset.y + (halfSize.y),     offset.z + (-halfSize.z),
-		offset.x + (-halfSize.x),  offset.y + (-halfSize.y),    offset.z + (-halfSize.z),
-		offset.x + (-halfSize.x),  offset.y + (halfSize.y),     offset.z + (halfSize.z),
-		offset.x + (-halfSize.x),  offset.y + (halfSize.y),     offset.z + (halfSize.z),
-		offset.x + (-halfSize.x),  offset.y + (-halfSize.y),    offset.z + (-halfSize.z),
-		offset.x + (-halfSize.x),  offset.y + (-halfSize.y),    offset.z + (halfSize.z),
-
-		// y +
-		offset.x + (-halfSize.x),  offset.y + (halfSize.y),     offset.z + (-halfSize.z),
-		offset.x + (-halfSize.x),  offset.y + (halfSize.y),     offset.z + (halfSize.z),
-		offset.x + (halfSize.x),   offset.y + (halfSize.y),     offset.z + (-halfSize.z),
-		offset.x + (halfSize.x),   offset.y + (halfSize.y),     offset.z + (-halfSize.z),
-		offset.x + (-halfSize.x),  offset.y + (halfSize.y),     offset.z + (halfSize.z),
+		offset.x + (-halfSize.x),   offset.y + (halfSize.y),     offset.z + (-halfSize.z),
 		offset.x + (halfSize.x),   offset.y + (halfSize.y),     offset.z + (halfSize.z),
+		offset.x + (halfSize.x),   offset.y + (halfSize.y),     offset.z + (-halfSize.z),
 
-		// y -
-		offset.x + (-halfSize.x),  offset.y + (-halfSize.y),    offset.z + (halfSize.z),
-		offset.x + (-halfSize.x),  offset.y + (-halfSize.y),    offset.z + (-halfSize.z),
-		offset.x + (halfSize.x),   offset.y + (-halfSize.y),    offset.z + (halfSize.z),
-		offset.x + (halfSize.x),   offset.y + (-halfSize.y),    offset.z + (halfSize.z),
-		offset.x + (-halfSize.x),  offset.y + (-halfSize.y),    offset.z + (-halfSize.z),
-		offset.x + (halfSize.x),   offset.y + (-halfSize.y),    offset.z + (-halfSize.z),
+		offset.x + (-halfSize.x),   offset.y + (-halfSize.y),     offset.z + (-halfSize.z),
+		offset.x + (halfSize.x),   offset.y + (-halfSize.y),     offset.z + (-halfSize.z),
+		offset.x + (halfSize.x),   offset.y + (-halfSize.y),     offset.z + (halfSize.z),
+		offset.x + (-halfSize.x),   offset.y + (-halfSize.y),     offset.z + (-halfSize.z),
+		offset.x + (halfSize.x),   offset.y + (-halfSize.y),     offset.z + (halfSize.z),
+		offset.x + (-halfSize.x),   offset.y + (-halfSize.y),     offset.z + (halfSize.z),
+
+		offset.x + (-halfSize.x),   offset.y + (-halfSize.y),     offset.z + (halfSize.z),
+		offset.x + (-halfSize.x),   offset.y + (halfSize.y),     offset.z + (halfSize.z),
+		offset.x + (-halfSize.x),   offset.y + (halfSize.y),     offset.z + (-halfSize.z),
+		offset.x + (-halfSize.x),   offset.y + (-halfSize.y),     offset.z + (halfSize.z),
+		offset.x + (-halfSize.x),   offset.y + (halfSize.y),     offset.z + (-halfSize.z),
+		offset.x + (-halfSize.x),   offset.y + (-halfSize.y),     offset.z + (-halfSize.z),
+
+		offset.x + (halfSize.x),   offset.y + (-halfSize.y),     offset.z + (-halfSize.z),
+		offset.x + (halfSize.x),   offset.y + (halfSize.y),     offset.z + (-halfSize.z),
+		offset.x + (halfSize.x),   offset.y + (halfSize.y),     offset.z + (halfSize.z),
+		offset.x + (halfSize.x),   offset.y + (-halfSize.y),     offset.z + (-halfSize.z),
+		offset.x + (halfSize.x),   offset.y + (halfSize.y),     offset.z + (halfSize.z),
+		offset.x + (halfSize.x),   offset.y + (-halfSize.y),     offset.z + (halfSize.z),
 	};
 
 	float normals[] = {
-		0.0f, 0.0f, 1.0f,
-		0.0f, 0.0f, 1.0f,
-		0.0f, 0.0f, 1.0f,
-		0.0f, 0.0f, 1.0f,
-		0.0f, 0.0f, 1.0f,
-		0.0f, 0.0f, 1.0f,
-
 		0.0f, 0.0f, -1.0f,
 		0.0f, 0.0f, -1.0f,
 		0.0f, 0.0f, -1.0f,
@@ -822,12 +877,26 @@ jObject* CreateCube(const Vector& pos, const Vector& size, const Vector& scale, 
 		0.0f, 0.0f, -1.0f,
 		0.0f, 0.0f, -1.0f,
 
-		1.0f, 0.0f, 0.0f,
-		1.0f, 0.0f, 0.0f,
-		1.0f, 0.0f, 0.0f,
-		1.0f, 0.0f, 0.0f,
-		1.0f, 0.0f, 0.0f,
-		1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f,
+		0.0f, 0.0f, 1.0f,
+		0.0f, 0.0f, 1.0f,
+		0.0f, 0.0f, 1.0f,
+		0.0f, 0.0f, 1.0f,
+		0.0f, 0.0f, 1.0f,
+
+		0.0f, -1.0f, 0.0f,
+		0.0f, -1.0f, 0.0f,
+		0.0f, -1.0f, 0.0f,
+		0.0f, -1.0f, 0.0f,
+		0.0f, -1.0f, 0.0f,
+		0.0f, -1.0f, 0.0f,
+
+		0.0f, -1.0f, 0.0f,
+		0.0f, -1.0f, 0.0f,
+		0.0f, -1.0f, 0.0f,
+		0.0f, -1.0f, 0.0f,
+		0.0f, -1.0f, 0.0f,
+		0.0f, -1.0f, 0.0f,
 
 		-1.0f, 0.0f, 0.0f,
 		-1.0f, 0.0f, 0.0f,
@@ -836,22 +905,59 @@ jObject* CreateCube(const Vector& pos, const Vector& size, const Vector& scale, 
 		-1.0f, 0.0f, 0.0f,
 		-1.0f, 0.0f, 0.0f,
 
-		0.0f, 1.0f, 0.0f,
-		0.0f, 1.0f, 0.0f,
-		0.0f, 1.0f, 0.0f,
-		0.0f, 1.0f, 0.0f,
-		0.0f, 1.0f, 0.0f,
-		0.0f, 1.0f, 0.0f,
-
-		0.0f, -1.0f, 0.0f,
-		0.0f, -1.0f, 0.0f,
-		0.0f, -1.0f, 0.0f,
-		0.0f, -1.0f, 0.0f,
-		0.0f, -1.0f, 0.0f,
-		0.0f, -1.0f, 0.0f,
+		1.0f, 0.0f, 0.0f,
+		1.0f, 0.0f, 0.0f,
+		1.0f, 0.0f, 0.0f,
+		1.0f, 0.0f, 0.0f,
+		1.0f, 0.0f, 0.0f,
+		1.0f, 0.0f, 0.0f,
 	};
 
-	int32 elementCount = _countof(vertices) / 3;
+	Vector2 texcoords[] = {
+		Vector2(0.0f, 1.0f),
+		Vector2(0.0f, 0.0f),
+		Vector2(1.0f, 0.0f),
+		Vector2(0.0f, 1.0f),
+		Vector2(1.0f, 0.0f),
+		Vector2(1.0f, 1.0f),
+
+		Vector2(1.0f, 1.0f),
+		Vector2(0.0f, 1.0f),
+		Vector2(0.0f, 0.0f),
+		Vector2(1.0f, 1.0f),
+		Vector2(0.0f, 0.0f),
+		Vector2(1.0f, 0.0f),
+
+		Vector2(0.0f, 1.0f),
+		Vector2(0.0f, 0.0f),
+		Vector2(1.0f, 0.0f),
+		Vector2(0.0f, 1.0f),
+		Vector2(1.0f, 0.0f),
+		Vector2(1.0f, 1.0f),
+
+		Vector2(1.0f, 1.0f),
+		Vector2(0.0f, 1.0f),
+		Vector2(0.0f, 0.0f),
+		Vector2(1.0f, 1.0f),
+		Vector2(0.0f, 0.0f),
+		Vector2(1.0f, 0.0f),
+
+		Vector2(0.0f, 1.0f),
+		Vector2(0.0f, 0.0f),
+		Vector2(1.0f, 0.0f),
+		Vector2(0.0f, 1.0f),
+		Vector2(1.0f, 0.0f),
+		Vector2(1.0f, 1.0f),
+
+		Vector2(0.0f, 1.0f),
+		Vector2(0.0f, 0.0f),
+		Vector2(1.0f, 0.0f),
+		Vector2(0.0f, 1.0f),
+		Vector2(1.0f, 0.0f),
+		Vector2(1.0f, 1.0f),
+	};
+
+	const int32 elementCount = _countof(vertices) / 3;
 
 	// attribute 추가
 	auto vertexStreamData = std::shared_ptr<jVertexStreamData>(new jVertexStreamData());
@@ -888,6 +994,49 @@ jObject* CreateCube(const Vector& pos, const Vector& size, const Vector& scale, 
 		streamParam->Name = jName("Normal");
 		streamParam->Data.resize(elementCount * 3);
 		memcpy(&streamParam->Data[0], normals, sizeof(normals));
+		vertexStreamData->Params.push_back(streamParam);
+	}
+
+	{
+		// Create tangent
+		const int32 TotalNumOfTriangles = elementCount / 3;
+		std::vector<Triangle> TriangleArray;
+		for (int32 i = 0; i < TotalNumOfTriangles; ++i)
+		{
+			TriangleArray.push_back(Triangle{ i * 3, i * 3 + 1, i * 3 + 2 });
+		}
+
+		constexpr int32 veticesElement = sizeof(vertices) / sizeof(float);
+		Vector4 TangentArray[elementCount];
+		CalculateTangents(&TangentArray[0], (int32)TriangleArray.size(), &TriangleArray[0], elementCount
+			, (const Vector*)(vertices), (const Vector*)&normals[0], &texcoords[0]);
+
+		std::vector<Vector> tangents;
+		for (int32 i = 0; i < veticesElement; ++i)
+		{
+			tangents.push_back(Vector(TangentArray[i].x, TangentArray[i].y, TangentArray[i].z));
+		}
+
+		auto streamParam = new jStreamParam<float>();
+		streamParam->BufferType = EBufferType::STATIC;
+		streamParam->ElementTypeSize = sizeof(float);
+		streamParam->ElementType = EBufferElementType::FLOAT;
+		streamParam->Stride = sizeof(float) * 3;
+		streamParam->Name = jName("Tangent");
+		streamParam->Data.resize(elementCount * 3);
+		memcpy(&streamParam->Data[0], &tangents[0], tangents.size() * sizeof(float));
+		vertexStreamData->Params.push_back(streamParam);
+	}
+
+	{
+		auto streamParam = new jStreamParam<float>();
+		streamParam->BufferType = EBufferType::STATIC;
+		streamParam->ElementType = EBufferElementType::FLOAT;
+		streamParam->ElementTypeSize = sizeof(float);
+		streamParam->Stride = sizeof(float) * 2;
+		streamParam->Name = jName("TexCoord");
+		streamParam->Data.resize(elementCount * 2);
+		memcpy(&streamParam->Data[0], texcoords, sizeof(texcoords));
 		vertexStreamData->Params.push_back(streamParam);
 	}
 
