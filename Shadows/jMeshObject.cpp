@@ -97,7 +97,7 @@ void jMeshObject::DrawSubMesh(int32 meshIndex, const jCamera* camera, const jSha
 
 				jMaterialData& materialData = subMesh.MaterialData;
 
-				const jSamplerState* pSamplerState = jSamplerStatePool::GetSamplerState("LinearWrapMipmap").get();
+				const jSamplerState* pSamplerState = jSamplerStatePool::GetSamplerState(jName("LinearWrapMipmap")).get();
 				materialData.AddMaterialParam(jMeshMaterial::MaterialTextureTypeString[i], pTexture, pSamplerState);
 
 				switch ((jMeshMaterial::EMaterialTextureType)i)

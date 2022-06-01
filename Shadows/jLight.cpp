@@ -42,7 +42,7 @@ namespace jLightUtil
 		shadowMapData->ShadowMapCamera = jOrthographicCamera::CreateCamera(pos, target, up, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
 		
 		shadowMapData->ShadowMapRenderTarget = jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RG32F, ETextureFormat::RG, EFormatType::FLOAT, EDepthBufferType::DEPTH32, SM_WIDTH, SM_HEIGHT, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR });
-		shadowMapData->ShadowMapSamplerState = jSamplerStatePool::GetSamplerState("LinearClampShadow");
+		shadowMapData->ShadowMapSamplerState = jSamplerStatePool::GetSamplerState(jName("LinearClampShadow"));
 
 		return shadowMapData;
 	}
@@ -66,7 +66,7 @@ namespace jLightUtil
 		shadowMapData->ShadowMapCamera = jOrthographicCamera::CreateCamera(pos, target, up, -width / 2.0f, -height / 2.0f, width / 2.0f, height / 2.0f, farDist, nearDist);
 
 		shadowMapData->ShadowMapRenderTarget = jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D, ETextureFormat::RG32F, ETextureFormat::RG, EFormatType::FLOAT, EDepthBufferType::DEPTH32, SM_WIDTH, SM_HEIGHT * NUM_CASCADES, 1, ETextureFilter::LINEAR, ETextureFilter::LINEAR });
-		shadowMapData->ShadowMapSamplerState = jSamplerStatePool::GetSamplerState("LinearClampShadow");
+		shadowMapData->ShadowMapSamplerState = jSamplerStatePool::GetSamplerState(jName("LinearClampShadow"));
 
 		return shadowMapData;
 	}
@@ -85,7 +85,7 @@ namespace jLightUtil
 		shadowMapData->ShadowMapCamera[4] = jCamera::CreateCamera(pos, pos + Vector(0.0f, 0.0f, 1.0f), pos + Vector(0.0f, 1.0f, 0.0f), DegreeToRadian(90.0f), nearDist, farDist, SM_ARRAY_WIDTH, SM_ARRAY_HEIGHT, true);
 		shadowMapData->ShadowMapCamera[5] = jCamera::CreateCamera(pos, pos + Vector(0.0f, 0.0f, -1.0f), pos + Vector(0.0f, 1.0f, 0.0f), DegreeToRadian(90.0f), nearDist, farDist, SM_ARRAY_WIDTH, SM_ARRAY_HEIGHT, true);
 		shadowMapData->ShadowMapRenderTarget = jRenderTargetPool::GetRenderTarget({ ETextureType::TEXTURE_2D_ARRAY_OMNISHADOW, ETextureFormat::RG32F, ETextureFormat::RG, EFormatType::FLOAT, EDepthBufferType::DEPTH32, SM_ARRAY_WIDTH, SM_ARRAY_HEIGHT * 6, 1, ETextureFilter::NEAREST, ETextureFilter::NEAREST });
-		shadowMapData->ShadowMapSamplerState = jSamplerStatePool::GetSamplerState("LinearClampShadow");
+		shadowMapData->ShadowMapSamplerState = jSamplerStatePool::GetSamplerState(jName("LinearClampShadow"));
 
 		return shadowMapData;
 	}

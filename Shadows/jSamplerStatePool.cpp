@@ -1,10 +1,10 @@
 #include "pch.h"
 #include "jSamplerStatePool.h"
 
-std::map<std::string, std::shared_ptr<jSamplerState> > jSamplerStatePool::SamplerStateMap;
-std::map<jSamplerState*, std::string > jSamplerStatePool::SamplerStateNameVariableMap;
+std::map<jName, std::shared_ptr<jSamplerState> > jSamplerStatePool::SamplerStateMap;
+std::map<jSamplerState*, jName > jSamplerStatePool::SamplerStateNameVariableMap;
 
-std::shared_ptr<jSamplerState> jSamplerStatePool::CreateSamplerState(const std::string& name, const jSamplerStateInfo& info)
+std::shared_ptr<jSamplerState> jSamplerStatePool::CreateSamplerState(const jName& name, const jSamplerStateInfo& info)
 {
 	auto it_find = SamplerStateMap.find(name);
 	if (SamplerStateMap.end() != it_find)
@@ -17,7 +17,7 @@ std::shared_ptr<jSamplerState> jSamplerStatePool::CreateSamplerState(const std::
 	return samplerState;
 }
 
-std::shared_ptr<jSamplerState> jSamplerStatePool::GetSamplerState(const std::string& name)
+std::shared_ptr<jSamplerState> jSamplerStatePool::GetSamplerState(const jName& name)
 {
 	auto it_find = SamplerStateMap.find(name);
 	return (SamplerStateMap.end() != it_find) ? it_find->second : nullptr;
@@ -32,10 +32,10 @@ void jSamplerStatePool::CreateDefaultSamplerState()
 		info.AddressU = ETextureAddressMode::REPEAT;
 		info.AddressV = ETextureAddressMode::REPEAT;
 		info.AddressW = ETextureAddressMode::REPEAT;
-		CreateSamplerState("LinearWrap", info);
+		CreateSamplerState(jName("LinearWrap"), info);
 
 		info.Minification = ETextureFilter::LINEAR_MIPMAP_LINEAR;
-		CreateSamplerState("LinearWrapMipmap", info);
+		CreateSamplerState(jName("LinearWrapMipmap"), info);
 	}
 	{
 		jSamplerStateInfo info;
@@ -44,10 +44,10 @@ void jSamplerStatePool::CreateDefaultSamplerState()
 		info.AddressU = ETextureAddressMode::CLAMP_TO_EDGE;
 		info.AddressV = ETextureAddressMode::CLAMP_TO_EDGE;
 		info.AddressW = ETextureAddressMode::CLAMP_TO_EDGE;
-		CreateSamplerState("LinearClamp", info);
+		CreateSamplerState(jName("LinearClamp"), info);
 		
 		info.Minification = ETextureFilter::LINEAR_MIPMAP_LINEAR;
-		CreateSamplerState("LinearClampMipmap", info);
+		CreateSamplerState(jName("LinearClampMipmap"), info);
 	}
 	{
 		jSamplerStateInfo info;
@@ -58,7 +58,7 @@ void jSamplerStatePool::CreateDefaultSamplerState()
 		info.AddressW = ETextureAddressMode::CLAMP_TO_EDGE;
 		info.TextureComparisonMode = ETextureComparisonMode::COMPARE_REF_TO_TEXTURE;
 		info.ComparisonFunc = EComparisonFunc::LESS;
-		CreateSamplerState("LinearClampShadow", info);
+		CreateSamplerState(jName("LinearClampShadow"), info);
 	}
 	{
 		jSamplerStateInfo info;
@@ -67,10 +67,10 @@ void jSamplerStatePool::CreateDefaultSamplerState()
 		info.AddressU = ETextureAddressMode::CLAMP_TO_BORDER;
 		info.AddressV = ETextureAddressMode::CLAMP_TO_BORDER;
 		info.AddressW = ETextureAddressMode::CLAMP_TO_BORDER;
-		CreateSamplerState("LinearBorder", info);
+		CreateSamplerState(jName("LinearBorder"), info);
 
 		info.Minification = ETextureFilter::LINEAR_MIPMAP_LINEAR;
-		CreateSamplerState("LinearBorderMipmap", info);
+		CreateSamplerState(jName("LinearBorderMipmap"), info);
 	}
 	{
 		jSamplerStateInfo info;
@@ -79,10 +79,10 @@ void jSamplerStatePool::CreateDefaultSamplerState()
 		info.AddressU = ETextureAddressMode::CLAMP_TO_EDGE;
 		info.AddressV = ETextureAddressMode::CLAMP_TO_EDGE;
 		info.AddressW = ETextureAddressMode::CLAMP_TO_EDGE;
-		CreateSamplerState("Point", info);
+		CreateSamplerState(jName("Point"), info);
 
 		info.Minification = ETextureFilter::NEAREST_MIPMAP_NEAREST;
-		CreateSamplerState("PointMipmap", info);
+		CreateSamplerState(jName("PointMipmap"), info);
 	}
 	{
 		jSamplerStateInfo info;
@@ -91,9 +91,9 @@ void jSamplerStatePool::CreateDefaultSamplerState()
 		info.AddressU = ETextureAddressMode::REPEAT;
 		info.AddressV = ETextureAddressMode::REPEAT;
 		info.AddressW = ETextureAddressMode::REPEAT;
-		CreateSamplerState("PointWrap", info);
+		CreateSamplerState(jName("PointWrap"), info);
 
 		info.Minification = ETextureFilter::NEAREST_MIPMAP_NEAREST;
-		CreateSamplerState("PointWrapMipmap", info);
+		CreateSamplerState(jName("PointWrapMipmap"), info);
 	}
 }

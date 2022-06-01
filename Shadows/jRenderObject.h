@@ -77,8 +77,8 @@ public:
 	FORCEINLINE const Vector& GetRot() const { return Rot; }
 	FORCEINLINE const Vector& GetScale() const { return Scale; }
 
-	void SetTexture(int32 index, const jName& name, const jTexture* texture);
-	void SetTextureWithCommonName(int32 index, const jTexture* texture);
+	void SetTexture(int32 index, const jName& name, const jTexture* texture, const jSamplerState* samplerState = nullptr);
+	void SetTextureWithCommonName(int32 index, const jTexture* texture, const jSamplerState* samplerState = nullptr);
 
 private:
 	enum EDirty : int8

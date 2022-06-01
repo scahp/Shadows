@@ -31,7 +31,7 @@ void jForwardRenderer::Setup()
 	luminancePostProcessOutput->RenderTarget = LuminanceRenderTarget.get();
 	{
 		auto postprocess = new jPostProcess_LuminanceMapGeneration("LuminanceMapGeneration");
-		postprocess->AddInput(PostProcessInput, jSamplerStatePool::GetSamplerState("LinearClamp"));
+		postprocess->AddInput(PostProcessInput, jSamplerStatePool::GetSamplerState(jName("LinearClamp")));
 		postprocess->SetOutput(luminancePostProcessOutput);
 		PostProcessChain.AddNewPostprocess(postprocess);
 	}
@@ -39,7 +39,7 @@ void jForwardRenderer::Setup()
 	auto avgLuminancePostProcessOutput = std::shared_ptr<jPostProcessInOutput>(new jPostProcessInOutput());
 	{
 		auto postprocess = new jPostProcess_AdaptiveLuminance("AdaptiveLuminance");
-		postprocess->AddInput(luminancePostProcessOutput, jSamplerStatePool::GetSamplerState("PointMipmap"));
+		postprocess->AddInput(luminancePostProcessOutput, jSamplerStatePool::GetSamplerState(jName("PointMipmap")));
 		postprocess->SetOutput(avgLuminancePostProcessOutput);
 		PostProcessChain.AddNewPostprocess(postprocess);
 	}
@@ -50,7 +50,7 @@ void jForwardRenderer::Setup()
 	bloomThresholdPostProcessOut->RenderTarget = bloomThresdholdRT.get();
 	{
 		auto postprocess = new jPostProcess_BloomThreshold("BloomThreshold");
-		postprocess->AddInput(PostProcessInput, jSamplerStatePool::GetSamplerState("LinearClamp"));
+		postprocess->AddInput(PostProcessInput, jSamplerStatePool::GetSamplerState(jName("LinearClamp")));
 		postprocess->AddInput(avgLuminancePostProcessOutput);
 		postprocess->SetOutput(bloomThresholdPostProcessOut);
 		PostProcessChain.AddNewPostprocess(postprocess);
@@ -61,7 +61,7 @@ void jForwardRenderer::Setup()
 	scale1_PostProcessOut->RenderTarget = scale1_RT.get();
 	{
 		auto postprocess = new jPostProcess_Scale("Bloom Downscale");
-		postprocess->AddInput(bloomThresholdPostProcessOut, jSamplerStatePool::GetSamplerState("LinearClamp"));
+		postprocess->AddInput(bloomThresholdPostProcessOut, jSamplerStatePool::GetSamplerState(jName("LinearClamp")));
 		postprocess->SetOutput(scale1_PostProcessOut);
 		PostProcessChain.AddNewPostprocess(postprocess);
 	}
@@ -71,7 +71,7 @@ void jForwardRenderer::Setup()
 	scale2_PostProcessOut->RenderTarget = scale2_RT.get();
 	{
 		auto postprocess = new jPostProcess_Scale("Bloom Downscale");
-		postprocess->AddInput(scale1_PostProcessOut, jSamplerStatePool::GetSamplerState("LinearClamp"));
+		postprocess->AddInput(scale1_PostProcessOut, jSamplerStatePool::GetSamplerState(jName("LinearClamp")));
 		postprocess->SetOutput(scale2_PostProcessOut);
 		PostProcessChain.AddNewPostprocess(postprocess);
 	}
@@ -81,7 +81,7 @@ void jForwardRenderer::Setup()
 	scale3_PostProcessOut->RenderTarget = scale3_RT.get();
 	{
 		auto postprocess = new jPostProcess_Scale("Bloom Downscale");
-		postprocess->AddInput(scale2_PostProcessOut, jSamplerStatePool::GetSamplerState("LinearClamp"));
+		postprocess->AddInput(scale2_PostProcessOut, jSamplerStatePool::GetSamplerState(jName("LinearClamp")));
 		postprocess->SetOutput(scale3_PostProcessOut);
 		PostProcessChain.AddNewPostprocess(postprocess);
 	}
@@ -94,14 +94,14 @@ void jForwardRenderer::Setup()
 		{
 			{
 				auto postprocess = new jPostProcess_GaussianBlurH("GaussianBlurH");
-				postprocess->AddInput(scale3_PostProcessOut, jSamplerStatePool::GetSamplerState("Point"));
+				postprocess->AddInput(scale3_PostProcessOut, jSamplerStatePool::GetSamplerState(jName("Point")));
 				postprocess->SetOutput(gaussianBlur_PostProcessOut);
 				PostProcessChain.AddNewPostprocess(postprocess);
 			}
 
 			{
 				auto postprocess = new jPostProcess_GaussianBlurV("GaussianBlurV");
-				postprocess->AddInput(gaussianBlur_PostProcessOut, jSamplerStatePool::GetSamplerState("Point"));
+				postprocess->AddInput(gaussianBlur_PostProcessOut, jSamplerStatePool::GetSamplerState(jName("Point")));
 				postprocess->SetOutput(scale3_PostProcessOut);
 				PostProcessChain.AddNewPostprocess(postprocess);
 			}
@@ -110,14 +110,14 @@ void jForwardRenderer::Setup()
 
 	{
 		auto postprocess = new jPostProcess_Scale("Bloom Upscale");
-		postprocess->AddInput(scale3_PostProcessOut, jSamplerStatePool::GetSamplerState("LinearClamp"));
+		postprocess->AddInput(scale3_PostProcessOut, jSamplerStatePool::GetSamplerState(jName("LinearClamp")));
 		postprocess->SetOutput(scale2_PostProcessOut);
 		PostProcessChain.AddNewPostprocess(postprocess);
 	}
 
 	{
 		auto postprocess = new jPostProcess_Scale("Bloom Upscale");
-		postprocess->AddInput(scale2_PostProcessOut, jSamplerStatePool::GetSamplerState("LinearClamp"));
+		postprocess->AddInput(scale2_PostProcessOut, jSamplerStatePool::GetSamplerState(jName("LinearClamp")));
 		postprocess->SetOutput(scale1_PostProcessOut);
 		PostProcessChain.AddNewPostprocess(postprocess);
 	}
@@ -125,9 +125,9 @@ void jForwardRenderer::Setup()
 	// ToneMapAndBloom
 	{
 		auto postprocess = new jPostProcess_Tonemap("TonemapAndBloom");
-		postprocess->AddInput(PostProcessInput, jSamplerStatePool::GetSamplerState("Point"));
+		postprocess->AddInput(PostProcessInput, jSamplerStatePool::GetSamplerState(jName("Point")));
 		postprocess->AddInput(avgLuminancePostProcessOutput);
-		postprocess->AddInput(scale1_PostProcessOut, jSamplerStatePool::GetSamplerState("Linear"));
+		postprocess->AddInput(scale1_PostProcessOut, jSamplerStatePool::GetSamplerState(jName("Linear")));
 		postprocess->SetOutput(nullptr);
 		PostProcessChain.AddNewPostprocess(postprocess);
 	}
