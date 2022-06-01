@@ -18,7 +18,7 @@ jImageFileLoader::~jImageFileLoader()
 {
 }
 
-std::weak_ptr<jImageData> jImageFileLoader::LoadImageDataFromFile(std::string const& filename, bool sRGB)
+std::weak_ptr<jImageData> jImageFileLoader::LoadImageDataFromFile(const jName& filename, bool sRGB)
 {
 	auto it_find = CachedImageDataMap.find(filename);
 	if (CachedImageDataMap.end() != it_find)
@@ -29,9 +29,9 @@ std::weak_ptr<jImageData> jImageFileLoader::LoadImageDataFromFile(std::string co
 	int32 width = 0;
 	int32 height = 0;
 	int32 NumOfComponent = -1;
-	if (std::string::npos != filename.find(".dds"))
+	if (strstr(filename.ToStr(), ".dds"))
 	{
-		uint8* imageData = stbi_dds_load(filename.c_str(), &width, &height, &NumOfComponent, 0);
+		uint8* imageData = stbi_dds_load(filename.ToStr(), &width, &height, &NumOfComponent, 0);
 
 		int32 NumOfBytes = width * height * sizeof(uint8) * NumOfComponent;
 		NewImageDataPatr->ImageData.resize(NumOfBytes);
@@ -41,11 +41,11 @@ std::weak_ptr<jImageData> jImageFileLoader::LoadImageDataFromFile(std::string co
 
 		stbi_image_free(imageData);
 	}
-	else if (std::string::npos != filename.find(".png"))
+	else if (strstr(filename.ToStr(), ".png"))
 	{
 		NewImageDataPatr->Filename = filename;
 		unsigned w, h;
-		LodePNG::decode(NewImageDataPatr->ImageData, w, h, filename.c_str());
+		LodePNG::decode(NewImageDataPatr->ImageData, w, h, filename.ToStr());
 		NewImageDataPatr->sRGB = sRGB;
 		NewImageDataPatr->FormatType = EFormatType::UNSIGNED_BYTE;
 
@@ -53,10 +53,10 @@ std::weak_ptr<jImageData> jImageFileLoader::LoadImageDataFromFile(std::string co
 		height = static_cast<int32>(h);
 		NumOfComponent = 4;
 	}
-	else if (std::string::npos != filename.find(".hdr"))
+	else if (strstr(filename.ToStr(), ".hdr"))
 	{
 		int w, h, nrComponents;
-		float* imageData = stbi_loadf(filename.c_str(), &w, &h, &nrComponents, 0);
+		float* imageData = stbi_loadf(filename.ToStr(), &w, &h, &nrComponents, 0);
 
 		int32 NumOfBytes = w * h * sizeof(float) * nrComponents;
 		NewImageDataPatr->ImageData.resize(NumOfBytes);
@@ -68,7 +68,7 @@ std::weak_ptr<jImageData> jImageFileLoader::LoadImageDataFromFile(std::string co
 	}
 	else
 	{
-		uint8* imageData = stbi_load(filename.c_str(), &width, &height, &NumOfComponent, 0);
+		uint8* imageData = stbi_load(filename.ToStr(), &width, &height, &NumOfComponent, 0);
 
 		int32 NumOfBytes = width * height * sizeof(uint8) * NumOfComponent;
 		NewImageDataPatr->ImageData.resize(NumOfBytes);
@@ -102,7 +102,7 @@ std::weak_ptr<jImageData> jImageFileLoader::LoadImageDataFromFile(std::string co
 	return NewImageDataPatr;
 }
 
-std::weak_ptr<jTexture> jImageFileLoader::LoadTextureFromFile(std::string const& filename, bool sRGB /*= false*/)
+std::weak_ptr<jTexture> jImageFileLoader::LoadTextureFromFile(const jName& filename, bool sRGB /*= false*/)
 {
 	auto it_find = CachedTextureMap.find(filename);
 	if (CachedTextureMap.end() != it_find)

@@ -226,9 +226,9 @@ void jGame::Update(float deltaTime)
 		s_Initialized = true;
 
 		//ColorTexture = jImageFileLoader::GetInstance().LoadTextureFromFile("Image/tile1_color.jpg");
-		ReliefTexture = jImageFileLoader::GetInstance().LoadTextureFromFile("Image/tile1_relief.tga");
-		NormalTexture = jImageFileLoader::GetInstance().LoadTextureFromFile("Image/rockbump_relief.tga");
-		ColorTexture = jImageFileLoader::GetInstance().LoadTextureFromFile("Image/rockbump_color.jpg");
+		ReliefTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/tile1_relief.tga"));
+		NormalTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/rockbump_relief.tga"));
+		ColorTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/rockbump_color.jpg"));
 		
 
 		//ColorTexture = jImageFileLoader::GetInstance().LoadTextureFromFile("Image/brick_diffuse.png");

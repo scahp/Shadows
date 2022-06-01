@@ -269,7 +269,7 @@ const std::vector<float>& jRenderObject::GetVertices() const
 	return s_emtpy;
 }
 
-void jRenderObject::SetTexture(int32 index, jName name, const jTexture* texture)
+void jRenderObject::SetTexture(int32 index, const jName& name, const jTexture* texture)
 {
 	MaterialData.SetMaterialParam(index, name, texture);
 }

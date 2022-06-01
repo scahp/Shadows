@@ -168,7 +168,7 @@ jMeshObject* jModelLoader::LoadFromFile(const char* filename, const char* materi
 			}
 			FilePath += str.C_Str();
 
-			curTexData.TextureWeakPtr = jImageFileLoader::GetInstance().LoadTextureFromFile(FilePath, true);
+			curTexData.TextureWeakPtr = jImageFileLoader::GetInstance().LoadTextureFromFile(jName(FilePath), true);
 			curTexData.TextureName = str.C_Str();
 		}
 

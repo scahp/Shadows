@@ -1192,7 +1192,7 @@ jTexture* jRHI_OpenGL::CreateCubeTextureFromData(std::vector<void*> faces, int32
 	return texture;
 }
 
-bool jRHI_OpenGL::SetUniformbuffer(jName name, const Matrix& InData, const jShader* InShader) const
+bool jRHI_OpenGL::SetUniformbuffer(const jName& name, const Matrix& InData, const jShader* InShader) const
 {
 	JASSERT(name);
 
@@ -1210,7 +1210,7 @@ bool jRHI_OpenGL::SetUniformbuffer(jName name, const Matrix& InData, const jShad
 	return true;
 }
 
-bool jRHI_OpenGL::SetUniformbuffer(jName name, const int InData, const jShader* InShader) const
+bool jRHI_OpenGL::SetUniformbuffer(const jName& name, const int InData, const jShader* InShader) const
 {
 	JASSERT(name);
 
@@ -1222,7 +1222,7 @@ bool jRHI_OpenGL::SetUniformbuffer(jName name, const int InData, const jShader* 
 	return true;
 }
 
-bool jRHI_OpenGL::SetUniformbuffer(jName name, const uint32 InData, const jShader* InShader) const
+bool jRHI_OpenGL::SetUniformbuffer(const jName& name, const uint32 InData, const jShader* InShader) const
 {
 	JASSERT(name);
 
@@ -1234,7 +1234,7 @@ bool jRHI_OpenGL::SetUniformbuffer(jName name, const uint32 InData, const jShade
 	return true;
 }
 
-bool jRHI_OpenGL::SetUniformbuffer(jName name, const float InData, const jShader* InShader) const
+bool jRHI_OpenGL::SetUniformbuffer(const jName& name, const float InData, const jShader* InShader) const
 {
 	JASSERT(name);
 
@@ -1246,7 +1246,7 @@ bool jRHI_OpenGL::SetUniformbuffer(jName name, const float InData, const jShader
 	return true;
 }
 
-bool jRHI_OpenGL::SetUniformbuffer(jName name, const Vector2& InData, const jShader* InShader) const
+bool jRHI_OpenGL::SetUniformbuffer(const jName& name, const Vector2& InData, const jShader* InShader) const
 {
 	auto shader_gl = static_cast<const jShader_OpenGL*>(InShader);
 	auto loc = shader_gl->TryGetUniformLocation(name);
@@ -1256,7 +1256,7 @@ bool jRHI_OpenGL::SetUniformbuffer(jName name, const Vector2& InData, const jSha
 	return true;
 }
 
-bool jRHI_OpenGL::SetUniformbuffer(jName name, const Vector& InData, const jShader* InShader) const
+bool jRHI_OpenGL::SetUniformbuffer(const jName& name, const Vector& InData, const jShader* InShader) const
 {
 	auto shader_gl = static_cast<const jShader_OpenGL*>(InShader);
 	auto loc = shader_gl->TryGetUniformLocation(name);
@@ -1266,7 +1266,7 @@ bool jRHI_OpenGL::SetUniformbuffer(jName name, const Vector& InData, const jShad
 	return true;
 }
 
-bool jRHI_OpenGL::SetUniformbuffer(jName name, const Vector4& InData, const jShader* InShader) const
+bool jRHI_OpenGL::SetUniformbuffer(const jName& name, const Vector4& InData, const jShader* InShader) const
 {
 	auto shader_gl = static_cast<const jShader_OpenGL*>(InShader);
 	auto loc = shader_gl->TryGetUniformLocation(name);
@@ -1276,7 +1276,7 @@ bool jRHI_OpenGL::SetUniformbuffer(jName name, const Vector4& InData, const jSha
 	return true;
 }
 
-bool jRHI_OpenGL::SetUniformbuffer(jName name, const Vector2i& InData, const jShader* InShader) const
+bool jRHI_OpenGL::SetUniformbuffer(const jName& name, const Vector2i& InData, const jShader* InShader) const
 {
 	auto shader_gl = static_cast<const jShader_OpenGL*>(InShader);
 	auto loc = shader_gl->TryGetUniformLocation(name);
@@ -1286,7 +1286,7 @@ bool jRHI_OpenGL::SetUniformbuffer(jName name, const Vector2i& InData, const jSh
 	return true;
 }
 
-bool jRHI_OpenGL::SetUniformbuffer(jName name, const Vector3i& InData, const jShader* InShader) const
+bool jRHI_OpenGL::SetUniformbuffer(const jName& name, const Vector3i& InData, const jShader* InShader) const
 {
 	auto shader_gl = static_cast<const jShader_OpenGL*>(InShader);
 	auto loc = shader_gl->TryGetUniformLocation(name);
@@ -1296,7 +1296,7 @@ bool jRHI_OpenGL::SetUniformbuffer(jName name, const Vector3i& InData, const jSh
 	return true;
 }
 
-bool jRHI_OpenGL::SetUniformbuffer(jName name, const Vector4i& InData, const jShader* InShader) const
+bool jRHI_OpenGL::SetUniformbuffer(const jName& name, const Vector4i& InData, const jShader* InShader) const
 {
 	auto shader_gl = static_cast<const jShader_OpenGL*>(InShader);
 	auto loc = shader_gl->TryGetUniformLocation(name);
@@ -1306,7 +1306,7 @@ bool jRHI_OpenGL::SetUniformbuffer(jName name, const Vector4i& InData, const jSh
 	return true;
 }
 
-bool jRHI_OpenGL::GetUniformbuffer(Matrix& outResult, jName name, const jShader* shader) const
+bool jRHI_OpenGL::GetUniformbuffer(Matrix& outResult, const jName& name, const jShader* shader) const
 {
 	auto shader_gl = static_cast<const jShader_OpenGL*>(shader);
 	auto loc = shader_gl->TryGetUniformLocation(name);
@@ -1320,7 +1320,7 @@ bool jRHI_OpenGL::GetUniformbuffer(Matrix& outResult, jName name, const jShader*
 
 	return true;
 }
-bool jRHI_OpenGL::GetUniformbuffer(int& outResult, jName name, const jShader* shader) const
+bool jRHI_OpenGL::GetUniformbuffer(int& outResult, const jName& name, const jShader* shader) const
 {
 	auto shader_gl = static_cast<const jShader_OpenGL*>(shader);
 	auto loc = shader_gl->TryGetUniformLocation(name);
@@ -1329,7 +1329,7 @@ bool jRHI_OpenGL::GetUniformbuffer(int& outResult, jName name, const jShader* sh
 	glGetUniformiv(shader_gl->program, loc, (int*)&outResult);
 	return true;
 }
-bool jRHI_OpenGL::GetUniformbuffer(uint32& outResult, jName name, const jShader* shader) const
+bool jRHI_OpenGL::GetUniformbuffer(uint32& outResult, const jName& name, const jShader* shader) const
 {
 	auto shader_gl = static_cast<const jShader_OpenGL*>(shader);
 	auto loc = shader_gl->TryGetUniformLocation(name);
@@ -1338,7 +1338,7 @@ bool jRHI_OpenGL::GetUniformbuffer(uint32& outResult, jName name, const jShader*
 	glGetUniformuiv(shader_gl->program, loc, (uint32*)&outResult);
 	return true;
 }
-bool jRHI_OpenGL::GetUniformbuffer(float& outResult, jName name, const jShader* shader) const
+bool jRHI_OpenGL::GetUniformbuffer(float& outResult, const jName& name, const jShader* shader) const
 {
 	auto shader_gl = static_cast<const jShader_OpenGL*>(shader);
 	auto loc = shader_gl->TryGetUniformLocation(name);
@@ -1347,7 +1347,7 @@ bool jRHI_OpenGL::GetUniformbuffer(float& outResult, jName name, const jShader* 
 	glGetUniformfv(shader_gl->program, loc, (float*)&outResult);
 	return true;
 }
-bool jRHI_OpenGL::GetUniformbuffer(Vector2& outResult, jName name, const jShader* shader) const
+bool jRHI_OpenGL::GetUniformbuffer(Vector2& outResult, const jName& name, const jShader* shader) const
 {
 	auto shader_gl = static_cast<const jShader_OpenGL*>(shader);
 	auto loc = shader_gl->TryGetUniformLocation(name);
@@ -1356,7 +1356,7 @@ bool jRHI_OpenGL::GetUniformbuffer(Vector2& outResult, jName name, const jShader
 	glGetnUniformfv(shader_gl->program, loc, sizeof(Vector2), (float*)&outResult);
 	return true;
 }
-bool jRHI_OpenGL::GetUniformbuffer(Vector& outResult, jName name, const jShader* shader) const
+bool jRHI_OpenGL::GetUniformbuffer(Vector& outResult, const jName& name, const jShader* shader) const
 {
 	auto shader_gl = static_cast<const jShader_OpenGL*>(shader);
 	auto loc = shader_gl->TryGetUniformLocation(name);
@@ -1365,7 +1365,7 @@ bool jRHI_OpenGL::GetUniformbuffer(Vector& outResult, jName name, const jShader*
 	glGetnUniformfv(shader_gl->program, loc, sizeof(Vector), (float*)&outResult);
 	return true;
 }
-bool jRHI_OpenGL::GetUniformbuffer(Vector4& outResult, jName name, const jShader* shader) const
+bool jRHI_OpenGL::GetUniformbuffer(Vector4& outResult, const jName& name, const jShader* shader) const
 {
 	auto shader_gl = static_cast<const jShader_OpenGL*>(shader);
 	auto loc = shader_gl->TryGetUniformLocation(name);
@@ -1374,7 +1374,7 @@ bool jRHI_OpenGL::GetUniformbuffer(Vector4& outResult, jName name, const jShader
 	glGetnUniformfv(shader_gl->program, loc, sizeof(Vector4), (float*)&outResult);
 	return true;
 }
-bool jRHI_OpenGL::GetUniformbuffer(Vector2i& outResult, jName name, const jShader* shader) const
+bool jRHI_OpenGL::GetUniformbuffer(Vector2i& outResult, const jName& name, const jShader* shader) const
 {
 	auto shader_gl = static_cast<const jShader_OpenGL*>(shader);
 	auto loc = shader_gl->TryGetUniformLocation(name);
@@ -1383,7 +1383,7 @@ bool jRHI_OpenGL::GetUniformbuffer(Vector2i& outResult, jName name, const jShade
 	glGetnUniformiv(shader_gl->program, loc, sizeof(Vector2i), (int*)&outResult);
 	return true;
 }
-bool jRHI_OpenGL::GetUniformbuffer(Vector3i& outResult, jName name, const jShader* shader) const
+bool jRHI_OpenGL::GetUniformbuffer(Vector3i& outResult, const jName& name, const jShader* shader) const
 {
 	auto shader_gl = static_cast<const jShader_OpenGL*>(shader);
 	auto loc = shader_gl->TryGetUniformLocation(name);
@@ -1392,7 +1392,7 @@ bool jRHI_OpenGL::GetUniformbuffer(Vector3i& outResult, jName name, const jShade
 	glGetnUniformiv(shader_gl->program, loc, sizeof(Vector3i), (int*)&outResult);
 	return true;
 }
-bool jRHI_OpenGL::GetUniformbuffer(Vector4i& outResult, jName name, const jShader* shader) const
+bool jRHI_OpenGL::GetUniformbuffer(Vector4i& outResult, const jName& name, const jShader* shader) const
 {
 	auto shader_gl = static_cast<const jShader_OpenGL*>(shader);
 	auto loc = shader_gl->TryGetUniformLocation(name);

@@ -1759,11 +1759,11 @@ jDirectionalLightPrimitive* CreateDirectionalLightDebug(const Vector& pos, const
 {
 	jDirectionalLightPrimitive* object = new jDirectionalLightPrimitive();
 
-	std::weak_ptr<jImageData> data = jImageFileLoader::GetInstance().LoadImageDataFromFile(textureFilename, true);
+	std::weak_ptr<jImageData> data = jImageFileLoader::GetInstance().LoadImageDataFromFile(jName(textureFilename), true);
 	object->BillboardObject = jPrimitiveUtil::CreateBillobardQuad(pos, Vector::OneVector, scale, Vector4(1.0f), targetCamera);
 	if (data.lock()->ImageData.size() > 0)
 	{
-		auto texture = jImageFileLoader::GetInstance().LoadTextureFromFile(textureFilename, true).lock().get();
+		auto texture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName(textureFilename), true).lock().get();
 		object->BillboardObject->RenderObject->MaterialData.AddMaterialParam(GetCommonTextureName(1), texture);
 		object->BillboardObject->RenderObject->IsHiddenBoundBox = true;
 	}
@@ -1789,11 +1789,11 @@ jPointLightPrimitive* CreatePointLightDebug(const Vector& scale, jCamera* target
 {
 	jPointLightPrimitive* object = new jPointLightPrimitive();
 
-	std::weak_ptr<jImageData> data = jImageFileLoader::GetInstance().LoadImageDataFromFile(textureFilename, true);
+	std::weak_ptr<jImageData> data = jImageFileLoader::GetInstance().LoadImageDataFromFile(jName(textureFilename), true);
 	object->BillboardObject = jPrimitiveUtil::CreateBillobardQuad(light->Data.Position, Vector::OneVector, scale, Vector4(1.0f), targetCamera);
 	if (data.lock()->ImageData.size() > 0)
 	{
-		auto texture = jImageFileLoader::GetInstance().LoadTextureFromFile(textureFilename, true).lock().get();
+		auto texture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName(textureFilename), true).lock().get();
 		object->BillboardObject->RenderObject->MaterialData.AddMaterialParam(GetCommonTextureName(1), texture);
 		object->BillboardObject->RenderObject->IsHiddenBoundBox = true;
 	}
@@ -1817,11 +1817,11 @@ jSpotLightPrimitive* CreateSpotLightDebug(const Vector& scale, jCamera* targetCa
 {
 	jSpotLightPrimitive* object = new jSpotLightPrimitive();
 
-	std::weak_ptr<jImageData> data = jImageFileLoader::GetInstance().LoadImageDataFromFile(textureFilename, true);
+	std::weak_ptr<jImageData> data = jImageFileLoader::GetInstance().LoadImageDataFromFile(jName(textureFilename), true);
 	object->BillboardObject = jPrimitiveUtil::CreateBillobardQuad(light->Data.Position, Vector::OneVector, scale, Vector4(1.0f), targetCamera);
 	if (data.lock()->ImageData.size() > 0)
 	{
-		auto texture = jImageFileLoader::GetInstance().LoadTextureFromFile(textureFilename, true).lock().get();
+		auto texture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName(textureFilename), true).lock().get();
 		object->BillboardObject->RenderObject->MaterialData.AddMaterialParam(GetCommonTextureName(1), texture);
 	}
 	object->UmbraConeObject = jPrimitiveUtil::CreateCone(light->Data.Position, 1.0, 1.0, 20, Vector::OneVector, Vector4(light->Data.Color.x, light->Data.Color.y, light->Data.Color.z, 1.0f), true, false, false);
