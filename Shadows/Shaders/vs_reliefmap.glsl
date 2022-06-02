@@ -10,16 +10,14 @@ layout(location = 4) in vec2 TexCoord;
 
 uniform mat4 M;
 uniform mat4 MVP;
-uniform vec3 LocalCameraPos;
-uniform vec3 CameraPos;
-uniform vec3 LocalLightDirUniform;
-uniform vec3 LightDir;
+uniform vec3 WorldSpace_CameraPos;
+uniform vec3 WorldSpace_LightDir_ToSurface;
 
 out vec2 TexCoord_;
 out vec4 Color_;
-out mat3 TBN;
-out vec3 LocalViewDir;
-out vec3 LocalLightDir;
+out mat3 TBN_;
+out vec3 TangentSpace_ViewDir_ToSurface_;
+out vec3 TangentSpace_LightDir_ToSurface_;
 
 void main()
 {
@@ -31,13 +29,11 @@ void main()
 	vec3 B = normalize(vec3(M * vec4(cross(Normal, Tangent), 0.0)));
 	vec3 N = normalize(vec3(M * vec4(Normal, 0.0)));
 
-	TBN = mat3(T, B, N);
-
-	// LocalViewDir = TBN * (Pos.xyz - LocalCameraPos);
+	TBN_ = mat3(T, B, N);
 
 	vec4 wpos = M * vec4(Pos, 1.0);
 	wpos /= wpos.w;
 
-	LocalViewDir = TBN * (wpos.xyz - CameraPos);
-	LocalLightDir = TBN * (-LightDir);
+	TangentSpace_ViewDir_ToSurface_ = TBN_ * normalize(wpos.xyz - WorldSpace_CameraPos);
+	TangentSpace_LightDir_ToSurface_ = TBN_ * normalize(WorldSpace_LightDir_ToSurface);
 }

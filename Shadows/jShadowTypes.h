@@ -50,3 +50,15 @@ static const char* EShadowMapTypeString[] = {
 	"DeepShadowMap_DirectionalLight",
 	"CSM_SSM",
 };
+
+enum class EReliefTracingType
+{
+	Linear = 0,
+	RelaxedCone,
+	MAX
+};
+
+static const char* EReliefTracingTypeString[] = {
+	"Linear",
+	"RelaxedCone",
+};

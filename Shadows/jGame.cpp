@@ -217,11 +217,15 @@ void jGame::Update(float deltaTime)
 	//// Render all objects by using selected renderer
 	//Renderer->Render(MainCamera);
 
+	auto& appSetting = jShadowAppSettingProperties::GetInstance();
+
 	static bool s_Initialized = false;
 	static std::weak_ptr<jTexture> ColorTexture;
 	static std::weak_ptr<jTexture> ReliefTexture;
 	static std::weak_ptr<jTexture> NormalTexture;
 	static jObject* Cube = nullptr;
+	static std::shared_ptr<jRenderTarget> RT;
+	static jObject* FullQuad = nullptr;
 	if (!s_Initialized)
 	{
 		s_Initialized = true;
@@ -244,38 +248,55 @@ void jGame::Update(float deltaTime)
 		Cube->RenderObject->SetTexture(0, jName("ColorTexture"), ColorTexture.lock().get(), LinearClampSamplerState.get());
 		Cube->RenderObject->SetTexture(1, jName("ReliefTexture"), ReliefTexture.lock().get(), LinearClampSamplerState.get());
 		Cube->RenderObject->SetTexture(2, jName("NormalTexture"), NormalTexture.lock().get(), LinearClampSamplerState.get());
+
+		RT = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget(
+			{ ETextureType::TEXTURE_2D, ETextureFormat::RGBA8, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::DEPTH24, SCR_WIDTH, SCR_HEIGHT, 1 }));
+
+		FullQuad = jPrimitiveUtil::CreateFullscreenQuad(RT->GetTexture());
 	}
 
-	g_rhi->SetClear(ERenderBufferType::COLOR | ERenderBufferType::DEPTH);
-	g_rhi->EnableDepthTest(true);
-
+	if (RT->Begin())
 	{
-		jShader* shader = jShader::GetShader("ReliefMapping");
+		g_rhi->SetClear(ERenderBufferType::COLOR | ERenderBufferType::DEPTH);
+		g_rhi->EnableDepthTest(true);
 
-		auto MV = MainCamera->View;
-		auto MVP = MainCamera->Projection * MV;
-		auto InvMPV = MVP.GetInverse();
-		auto LocalCameraPos = InvMPV.Transform(MainCamera->Pos);
-		auto LocalLightDir = InvMPV.Transform(Vector4(DirectionalLight->Data.Direction, 0.0f));
+		{
+			jShader* shader = jShader::GetShader("ReliefMapping");
 
-		//SET_UNIFORM_BUFFER_STATIC("LightDir", DirectionalLight->Data.Direction, shader);
-		//SET_UNIFORM_BUFFER_STATIC("LightDir", Vector::OneVector, shader);
-		//SET_UNIFORM_BUFFER_STATIC("CameraPos", MainCamera->Pos, shader);
+			auto MV = MainCamera->View;
+			auto MVP = MainCamera->Projection * MV;
+			auto InvMPV = MVP.GetInverse();
+			auto LocalCameraPos = InvMPV.Transform(MainCamera->Pos);
+			auto LocalLightDir = InvMPV.Transform(Vector4(DirectionalLight->Data.Direction, 0.0f));
 
-		g_rhi->SetShader(shader);
-		g_rhi->SetUniformbuffer(jName("LightDir"), DirectionalLight->Data.Direction, shader);
-		g_rhi->SetUniformbuffer(jName("CameraPos"), MainCamera->Pos, shader);
-		g_rhi->SetUniformbuffer(jName("LocalCameraPos"), LocalCameraPos, shader);
-		g_rhi->SetUniformbuffer(jName("LocalLightDirUniform"), Vector(LocalLightDir), shader);
+			
+			g_rhi->SetShader(shader);
+			g_rhi->SetUniformbuffer(jName("WorldSpace_LightDir_ToSurface"), DirectionalLight->Data.Direction, shader);
+			g_rhi->SetUniformbuffer(jName("WorldSpace_CameraPos"), MainCamera->Pos, shader);
+			g_rhi->SetUniformbuffer(jName("ReliefTracingType"), (int32)appSetting.ReliefTracingType, shader);
+			g_rhi->SetUniformbuffer(jName("DepthBias"), appSetting.DepthBias, shader);
+			g_rhi->SetUniformbuffer(jName("DepthScale"), appSetting.DepthScale, shader);
+			g_rhi->SetUniformbuffer(jName("UseShadow"), appSetting.ReliefShadowOn, shader);
 
-		Cube->Update(deltaTime);
-		Cube->Draw(MainCamera, shader, { DirectionalLight });
+			Cube->Update(deltaTime);
+			Cube->Draw(MainCamera, shader, { DirectionalLight });
+		}
+
+		{
+			jShader* shader = jShader::GetShader("DebugObjectShader");
+			for (auto& iter : jObject::GetDebugObject())
+				iter->Draw(MainCamera, shader, {});
+		}
+		RT->End();
 	}
 
 	{
-		jShader* shader = jShader::GetShader("DebugObjectShader");
-		for (auto& iter : jObject::GetDebugObject())
-			iter->Draw(MainCamera, shader, {});
+		g_rhi->SetClear(ERenderBufferType::COLOR);
+		g_rhi->EnableDepthTest(false);
+
+		jShader* shader = jShader::GetShader("Scale");
+		FullQuad->Update(deltaTime);
+		FullQuad->Draw(MainCamera, shader, {});
 	}
 }
 

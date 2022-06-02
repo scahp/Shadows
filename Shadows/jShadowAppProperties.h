@@ -31,7 +31,7 @@ public:
 	bool ShowSpotLightInfo = false;
 	bool ShowBoundBox = false;
 	bool ShowBoundSphere = false;
-	Vector DirecionalLightDirection = Vector(-0.56f, -0.83f, 0.01f).GetNormalize();
+	Vector DirecionalLightDirection = Vector(-0.88f, -0.47f, -0.05f).GetNormalize();
 	Vector PointLightPosition = Vector(10.0f, 100.0f, 10.0f);
 	Vector SpotLightPosition = Vector(0.0f, 60.0f, 5.0f);
 	Vector SpotLightDirection = Vector(-1.0f, -1.0f, -0.4f).GetNormalize();
@@ -42,6 +42,11 @@ public:
 	float BloomThreshold = 3.0f;
 	float BloomBlurSigma = 0.8f;
 	float BloomMagnitude = 0.75f;
+
+	EReliefTracingType ReliefTracingType = EReliefTracingType::RelaxedCone;
+	bool DepthBias = true;
+	float DepthScale = 0.15f;
+	bool ReliefShadowOn = true;
 
 	virtual void Setup(jAppSettingBase* appSetting) override;
 	virtual void Teardown(jAppSettingBase* appSetting) override;
