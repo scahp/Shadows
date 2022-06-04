@@ -308,6 +308,7 @@ xcopy /s /y /d  "$(ProjectDir)External\assimp\lib\*.dll" "$(OutDir)"</Command>
     <None Include="Shaders\compute\compute_link_linkedlist.glsl" />
     <None Include="Shaders\compute\compute_sort_linkedlist.glsl" />
     <None Include="Shaders\fs_boundvolume.glsl" />
+    <None Include="Shaders\fs_dualdepthreliefmap.glsl" />
     <None Include="Shaders\fs_graph.glsl" />
     <None Include="Shaders\fs_normalmap.glsl" />
     <None Include="Shaders\fs_red.glsl" />

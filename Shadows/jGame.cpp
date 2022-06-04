@@ -224,6 +224,9 @@ void jGame::Update(float deltaTime)
 	static std::weak_ptr<jTexture> ReliefTexture;
 	static std::weak_ptr<jTexture> NormalTexture;
 	static jObject* Cube = nullptr;
+	static jObject* Quad = nullptr;
+	static std::weak_ptr<jTexture> DualDepthRelief_ColorTexture;
+	static std::weak_ptr<jTexture> DualDepthRelief_DepthTexture;
 	static std::shared_ptr<jRenderTarget> RT;
 	static jObject* FullQuad = nullptr;
 	if (!s_Initialized)
@@ -249,6 +252,14 @@ void jGame::Update(float deltaTime)
 		Cube->RenderObject->SetTexture(1, jName("ReliefTexture"), ReliefTexture.lock().get(), LinearClampSamplerState.get());
 		Cube->RenderObject->SetTexture(2, jName("NormalTexture"), NormalTexture.lock().get(), LinearClampSamplerState.get());
 
+		DualDepthRelief_ColorTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/office1x1x1d_CaptureFG.HDR"));
+		DualDepthRelief_DepthTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/office1x1x1d_DepthFG.TGA"));
+
+		Quad = jPrimitiveUtil::CreateQuad(Vector(0.0f, 0.0f, 0.0f), Vector::OneVector, Vector(Width), Vector4(0.0f, 1.0f, 0.0f, 0.5f));
+		Quad->RenderObject->SetTexture(0, jName("ColorTexture"), DualDepthRelief_ColorTexture.lock().get(), LinearClampSamplerState.get());
+		Quad->RenderObject->SetTexture(1, jName("ReliefTexture"), DualDepthRelief_DepthTexture.lock().get(), LinearClampSamplerState.get());
+		Quad->RenderObject->SetTexture(2, jName("NormalTexture"), NormalTexture.lock().get(), LinearClampSamplerState.get());
+
 		RT = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget(
 			{ ETextureType::TEXTURE_2D, ETextureFormat::RGBA8, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::DEPTH24, SCR_WIDTH, SCR_HEIGHT, 1 }));
 
@@ -260,6 +271,7 @@ void jGame::Update(float deltaTime)
 		g_rhi->SetClear(ERenderBufferType::COLOR | ERenderBufferType::DEPTH);
 		g_rhi->EnableDepthTest(true);
 
+		if (0)
 		{
 			jShader* shader = jShader::GetShader("ReliefMapping");
 
@@ -268,7 +280,6 @@ void jGame::Update(float deltaTime)
 			auto InvMPV = MVP.GetInverse();
 			auto LocalCameraPos = InvMPV.Transform(MainCamera->Pos);
 			auto LocalLightDir = InvMPV.Transform(Vector4(DirectionalLight->Data.Direction, 0.0f));
-
 			
 			g_rhi->SetShader(shader);
 			g_rhi->SetUniformbuffer(jName("WorldSpace_LightDir_ToSurface"), DirectionalLight->Data.Direction, shader);
@@ -280,6 +291,27 @@ void jGame::Update(float deltaTime)
 
 			Cube->Update(deltaTime);
 			Cube->Draw(MainCamera, shader, { DirectionalLight });
+		}
+
+		{
+			auto shader = jShader::GetShader("DualDepthReliefMapping");
+
+			auto MV = MainCamera->View;
+			auto MVP = MainCamera->Projection * MV;
+			auto InvMPV = MVP.GetInverse();
+			auto LocalCameraPos = InvMPV.Transform(MainCamera->Pos);
+			auto LocalLightDir = InvMPV.Transform(Vector4(DirectionalLight->Data.Direction, 0.0f));
+
+			g_rhi->SetShader(shader);
+			g_rhi->SetUniformbuffer(jName("WorldSpace_LightDir_ToSurface"), DirectionalLight->Data.Direction, shader);
+			g_rhi->SetUniformbuffer(jName("WorldSpace_CameraPos"), MainCamera->Pos, shader);
+			g_rhi->SetUniformbuffer(jName("ReliefTracingType"), (int32)appSetting.ReliefTracingType, shader);
+			g_rhi->SetUniformbuffer(jName("DepthBias"), appSetting.DepthBias, shader);
+			g_rhi->SetUniformbuffer(jName("DepthScale"), appSetting.DepthScale, shader);
+			g_rhi->SetUniformbuffer(jName("UseShadow"), appSetting.ReliefShadowOn, shader);
+
+			Quad->Update(deltaTime);
+			Quad->Draw(MainCamera, shader, { DirectionalLight });
 		}
 
 		{

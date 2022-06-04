@@ -572,6 +572,24 @@ jRenderObject* CreateQuad_Internal(const Vector& pos, const Vector& size, const 
 		offset.x + (halfSize.x), 0.0f, offset.z + (-halfSize.z)
 	};
 
+	float normals[] = {
+		0.0f, -1.0f, 0.0f,
+		0.0f, -1.0f, 0.0f,
+		0.0f, -1.0f, 0.0f,
+		0.0f, -1.0f, 0.0f,
+		0.0f, -1.0f, 0.0f,
+		0.0f, -1.0f, 0.0f,
+	};
+
+	Vector2 texcoords[] = {
+		Vector2(0.0f, 1.0f),
+		Vector2(0.0f, 0.0f),
+		Vector2(1.0f, 0.0f),
+		Vector2(0.0f, 1.0f),
+		Vector2(1.0f, 0.0f),
+		Vector2(1.0f, 1.0f),
+	};
+
 	const int32 elementCount = _countof(vertices) / 3;
 
 	// attribute 추가
@@ -600,23 +618,58 @@ jRenderObject* CreateQuad_Internal(const Vector& pos, const Vector& size, const 
 		vertexStreamData->Params.push_back(streamParam);
 	}
 
-	std::vector<float> normals(elementCount * 3);
-	for (int32 i = 0; i < elementCount; ++i)
 	{
-		normals[i * 3] = 0.0f;
-		normals[i * 3 + 1] = 1.0f;
-		normals[i * 3 + 2] = 0.0f;
+		auto streamParam = new jStreamParam<float>();
+		streamParam->BufferType = EBufferType::STATIC;
+		streamParam->ElementType = EBufferElementType::FLOAT;
+		streamParam->ElementTypeSize = sizeof(float);
+		streamParam->Stride = sizeof(float) * 3;
+		streamParam->Name = jName("Normal");
+		streamParam->Data.resize(elementCount * 3);
+		memcpy(&streamParam->Data[0], normals, sizeof(normals));
+		vertexStreamData->Params.push_back(streamParam);
 	}
 
 	{
+		// Create tangent
+		const int32 TotalNumOfTriangles = elementCount / 3;
+		std::vector<Triangle> TriangleArray;
+		for (int32 i = 0; i < TotalNumOfTriangles; ++i)
+		{
+			TriangleArray.push_back(Triangle{ i * 3, i * 3 + 1, i * 3 + 2 });
+		}
+
+		constexpr int32 veticesElement = sizeof(vertices) / sizeof(float);
+		Vector4 TangentArray[elementCount];
+		CalculateTangents(&TangentArray[0], (int32)TriangleArray.size(), &TriangleArray[0], elementCount
+			, (const Vector*)(vertices), (const Vector*)&normals[0], &texcoords[0]);
+
+		std::vector<Vector> tangents;
+		for (int32 i = 0; i < veticesElement; ++i)
+		{
+			tangents.push_back(Vector(TangentArray[i].x, TangentArray[i].y, TangentArray[i].z));
+		}
+
 		auto streamParam = new jStreamParam<float>();
 		streamParam->BufferType = EBufferType::STATIC;
 		streamParam->ElementTypeSize = sizeof(float);
 		streamParam->ElementType = EBufferElementType::FLOAT;
 		streamParam->Stride = sizeof(float) * 3;
-		streamParam->Name = jName("Normal");
+		streamParam->Name = jName("Tangent");
 		streamParam->Data.resize(elementCount * 3);
-		memcpy(&streamParam->Data[0], &normals[0], normals.size() * sizeof(float));
+		memcpy(&streamParam->Data[0], &tangents[0], tangents.size() * sizeof(float));
+		vertexStreamData->Params.push_back(streamParam);
+	}
+
+	{
+		auto streamParam = new jStreamParam<float>();
+		streamParam->BufferType = EBufferType::STATIC;
+		streamParam->ElementType = EBufferElementType::FLOAT;
+		streamParam->ElementTypeSize = sizeof(float);
+		streamParam->Stride = sizeof(float) * 2;
+		streamParam->Name = jName("TexCoord");
+		streamParam->Data.resize(elementCount * 2);
+		memcpy(&streamParam->Data[0], texcoords, sizeof(texcoords));
 		vertexStreamData->Params.push_back(streamParam);
 	}
 
