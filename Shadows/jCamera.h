@@ -148,9 +148,9 @@ public:
 	FORCEINLINE void RotateCameraAxis(const Vector& axis, float radian)
 	{
 		const auto transformMatrix = Matrix::MakeTranslate(Pos) * Matrix::MakeRotate(axis, radian) * Matrix::MakeTranslate(-Pos);
-		Pos = transformMatrix.Transform(Pos);
-		Target = transformMatrix.Transform(Target);
-		Up = transformMatrix.Transform(Up);
+		Pos = transformMatrix.TransformPoint(Pos);
+		Target = transformMatrix.TransformPoint(Target);
+		Up = transformMatrix.TransformPoint(Up);
 	}
 
 	FORCEINLINE void RotateForwardAxis(float radian)

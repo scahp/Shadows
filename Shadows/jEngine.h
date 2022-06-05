@@ -12,6 +12,7 @@ public:
 	void ProcessInput();
 	void Update(float deltaTime);
 	void Resize(int width, int height);
+	void OnMouseButton();
 	void OnMouseMove(int32 xOffset, int32 yOffset);
 
 	jGame Game;

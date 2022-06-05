@@ -46,6 +46,9 @@ public:
 
 	const std::vector<float>& GetVertices() const;
 
+	void UpdateWorldMatrix();
+	Matrix GetWorld() const;
+
 	std::shared_ptr<jVertexStreamData> VertexStream;
 	jVertexBuffer* VertexBuffer = nullptr;
 

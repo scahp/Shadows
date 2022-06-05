@@ -100,8 +100,8 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 
 	////////////////////////////////////////////////////////////////////////////
 	//// Box Group
-	//appSetting->AddVariable("Box", ShowBoundBox);
-	//appSetting->SetGroup("Box", "Bound");
+	appSetting->AddVariable("Box", ShowBoundBox);
+	appSetting->SetGroup("Box", "Bound");
 	//appSetting->AddVariable("Sphere", ShowBoundSphere);
 	//appSetting->SetGroup("Sphere", "Bound");
 
@@ -164,7 +164,7 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 	//appSetting->RemoveVariable("SpotLight_PositionY");
 	//appSetting->RemoveVariable("SpotLight_PositionZ");
 	//appSetting->RemoveVariable("SpotLight_Direction");
-	//appSetting->RemoveVariable("Box");
+	appSetting->RemoveVariable("Box");
 	//appSetting->RemoveVariable("Sphere");
 	//appSetting->RemoveVariable("DeepShadowAlpha");
 	//appSetting->RemoveVariable("ExponentDeepShadowOn");

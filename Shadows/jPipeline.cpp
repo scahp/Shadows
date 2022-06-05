@@ -357,7 +357,7 @@ void jForward_ShadowMapGen_CSM_SSM_Pipeline::Do(const jPipelineContext& pipeline
 
 			Matrix invViewProj = (camera->Projection * camera->View).GetInverse();
 			for (uint32 i = 0; i < 8; ++i)
-				frustumCornersWS[i] = invViewProj.Transform(frustumCornersWS[i]);
+				frustumCornersWS[i] = invViewProj.TransformPoint(frustumCornersWS[i]);
 
 			// Get the corners of the current cascade slice of the view frustum
 			for (uint32 i = 0; i < 4; ++i)

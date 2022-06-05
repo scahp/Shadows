@@ -13,6 +13,8 @@ uniform int ReliefTracingType;
 uniform int DepthBias;
 uniform float DepthScale;
 uniform int UseShadow;
+uniform mat4 InvM;
+uniform vec3 LocalSpace_CameraPos;
 
 uniform vec3 WorldSpace_CameraPos;
 
@@ -22,6 +24,7 @@ in mat3 TBN_;
 //in vec3 TangentSpace_ViewDir_ToSurface_;
 in vec3 TangentSpace_LightDir_ToSurface_;
 in vec3 WorldPos_;
+in vec3 LocalPos_;
 
 out vec4 color;
 
@@ -215,10 +218,20 @@ bool CheckUV(vec3 p, vec2 tex)
 
 void main()
 {
-	vec3 TangentSpace_ViewDir_ToSurface_ = TBN_ * normalize(WorldPos_ - WorldSpace_CameraPos);
+	#define WORLD_SPACE 0
+#if WORLD_SPACE
+    vec4 localViewDir = InvM * vec4(normalize(WorldPos_ - WorldSpace_CameraPos), 0.0);
+    vec3 TangentSpace_ViewDir_ToSurface_ = TBN_ * localViewDir.xyz;
+#else
+    vec3 TangentSpace_ViewDir_ToSurface_ = TBN_ * (LocalPos_ - LocalSpace_CameraPos);
+#endif
 
 	bool IsShadow = false;
-
+	
+    //int row = 0;
+    //color.xyz = vec3(TBN_[row][0], TBN_[row][1], TBN_[row][2]);
+    //return;
+	
 	color.xyz = TangentSpace_ViewDir_ToSurface_;
 	//return;
 

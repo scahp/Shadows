@@ -19,7 +19,7 @@ void jShadowVolumeCPU::Update(const Vector& lightPosOrDirection, bool isOmniDire
 	Vector lightDirWorldInv(Vector::ZeroVector);
 	Vector lightPosWorldInv(Vector::ZeroVector);
 	if (isOmniDirectional)
-		lightPosWorldInv = matWorldInv.Transform(lightPosOrDirection);
+		lightPosWorldInv = matWorldInv.TransformPoint(lightPosOrDirection);
 	else
 		lightDirWorldInv = Matrix3(matWorldInv).Transform(lightPosOrDirection);
 

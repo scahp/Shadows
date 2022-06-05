@@ -162,11 +162,11 @@ jObject::jObject()
 
 jObject::~jObject()
 {
-	jObject::RemoveBoundBoxObject(BoundBoxObjects);
-	delete BoundBoxObjects;
+	jObject::RemoveBoundBoxObject(BoundBoxObject);
+	delete BoundBoxObject;
 
-	jObject::RemoveBoundSphereObject(BoundSphereObjects);
-	delete BoundSphereObjects;
+	jObject::RemoveBoundSphereObject(BoundSphereObject);
+	delete BoundSphereObject;
 
 	delete RenderObject;
 	delete VertexAdjacency;
@@ -194,15 +194,15 @@ void jObject::CreateBoundBox(bool isShow)
 	if (RenderObject)
 	{
 		BoundBox.CreateBoundBox(RenderObject->GetVertices());
-		BoundBoxObjects = jPrimitiveUtil::CreateBoundBox(BoundBox, this);
+		BoundBoxObject = jPrimitiveUtil::CreateBoundBox(BoundBox, this);
 		
 		BoundSphere.CreateBoundSphere(RenderObject->GetVertices());
-		BoundSphereObjects = jPrimitiveUtil::CreateBoundSphere(BoundSphere, this);
+		BoundSphereObject = jPrimitiveUtil::CreateBoundSphere(BoundSphere, this);
 
 		if (isShow)
 		{
-			jObject::AddBoundBoxObject(BoundBoxObjects);
-			jObject::AddBoundSphereObject(BoundSphereObjects);
+			jObject::AddBoundBoxObject(BoundBoxObject);
+			jObject::AddBoundSphereObject(BoundSphereObject);
 		}
 	}
 }
@@ -211,12 +211,12 @@ void jObject::ShowBoundBox(bool isShow)
 {
 	if (isShow)
 	{
-		jObject::AddBoundBoxObject(BoundBoxObjects);
-		jObject::AddBoundSphereObject(BoundSphereObjects);
+		jObject::AddBoundBoxObject(BoundBoxObject);
+		jObject::AddBoundSphereObject(BoundSphereObject);
 	}
 	else
 	{
-		jObject::RemoveBoundBoxObject(BoundBoxObjects);
-		jObject::RemoveBoundSphereObject(BoundSphereObjects);
+		jObject::RemoveBoundBoxObject(BoundBoxObject);
+		jObject::RemoveBoundSphereObject(BoundSphereObject);
 	}
 }

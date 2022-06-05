@@ -54,6 +54,7 @@ public:
 
 	void UpdateAppSetting();
 
+	void OnMouseButton();
 	void OnMouseMove(int32 xOffset, int32 yOffset);
 	void Teardown();
 

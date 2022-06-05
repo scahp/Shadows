@@ -262,6 +262,9 @@ void jGame::Update(float deltaTime)
 		Quad->RenderObject->SetTexture(1, jName("ReliefTexture"), DualDepthRelief_DepthTexture.lock().get(), LinearClampSamplerState.get());
 		Quad->RenderObject->SetTexture(2, jName("NormalTexture"), NormalTexture.lock().get(), LinearClampSamplerState.get());
 
+		//Quad->RenderObject->SetRot({ 0.0f, 0.0f, -DegreeToRadian(90.0f) });
+        //Quad->RenderObject->SetRot({ -DegreeToRadian(90.0f), 0.0f, 0.0f });
+
 		RT = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget(
 			{ ETextureType::TEXTURE_2D, ETextureFormat::RGBA8, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::DEPTH24, SCR_WIDTH, SCR_HEIGHT, 1 }));
 
@@ -301,7 +304,7 @@ void jGame::Update(float deltaTime)
 			auto MV = MainCamera->View;
 			auto MVP = MainCamera->Projection * MV;
 			auto InvMPV = MVP.GetInverse();
-			auto LocalCameraPos = InvMPV.Transform(MainCamera->Pos);
+			auto LocalCameraPos = InvMPV.TransformPoint(MainCamera->Pos);
 			auto LocalLightDir = InvMPV.Transform(Vector4(DirectionalLight->Data.Direction, 0.0f));
 			
 			g_rhi->SetShader(shader);
@@ -322,7 +325,7 @@ void jGame::Update(float deltaTime)
 			auto MV = MainCamera->View;
 			auto MVP = MainCamera->Projection * MV;
 			auto InvMPV = MVP.GetInverse();
-			auto LocalCameraPos = InvMPV.Transform(MainCamera->Pos);
+			auto LocalCameraPos = InvMPV.TransformPoint(MainCamera->Pos);
 			auto LocalLightDir = InvMPV.Transform(Vector4(DirectionalLight->Data.Direction, 0.0f));
 
 			g_rhi->SetShader(shader);
@@ -333,6 +336,11 @@ void jGame::Update(float deltaTime)
 			g_rhi->SetUniformbuffer(jName("DepthScale"), appSetting.DepthScale, shader);
 			g_rhi->SetUniformbuffer(jName("UseShadow"), appSetting.ReliefShadowOn, shader);
 
+			Quad->RenderObject->UpdateWorldMatrix();
+			auto InvWorld = Quad->RenderObject->GetWorld().GetInverse();
+			g_rhi->SetUniformbuffer(jName("LocalSpace_LightDir_ToSurface"), InvWorld.TransformDirection(DirectionalLight->Data.Direction), shader);
+            g_rhi->SetUniformbuffer(jName("LocalSpace_CameraPos"), InvWorld.TransformPoint(MainCamera->Pos), shader);
+
 			Quad->Update(deltaTime);
 			Quad->Draw(MainCamera, shader, { DirectionalLight });
 		}
@@ -342,6 +350,16 @@ void jGame::Update(float deltaTime)
 			for (auto& iter : jObject::GetDebugObject())
 				iter->Draw(MainCamera, shader, {});
 		}
+
+		if (appSetting.ShowBoundBox)
+		{
+			g_rhi->EnableDepthTest(false);
+			jShader* shader = jShader::GetShader("BoundVolumeShader");
+			g_rhi->SetShader(shader);
+			SET_UNIFORM_BUFFER_STATIC("Color", Vector4::ColorWhite, shader);
+            Quad->BoundBoxObject->Draw(MainCamera, shader, {});
+		}
+
 		RT->End();
 	}
 
@@ -360,7 +378,7 @@ void jGame::UpdateAppSetting()
 	auto& appSetting =  jShadowAppSettingProperties::GetInstance();
 
 	// Rotating spot light
-	appSetting.SpotLightDirection = Matrix::MakeRotateY(0.01f).Transform(appSetting.SpotLightDirection);
+	appSetting.SpotLightDirection = Matrix::MakeRotateY(0.01f).TransformDirection(appSetting.SpotLightDirection);
 
 	// Chaning normal or cascade shadow map depend on shadow type.
 	bool changedDirectionalLight = false;
@@ -554,12 +572,17 @@ void jGame::UpdateAppSetting()
 		DirectionalLightShadowMapUIDebug->Visible = appSetting.ShowDirectionalLightMap;
 }
 
+void jGame::OnMouseButton()
+{
+
+}
+
 void jGame::OnMouseMove(int32 xOffset, int32 yOffset)
 {
 	if (g_MouseState[EMouseButtonType::LEFT])
 	{
 		if (abs(xOffset))
-			MainCamera->RotateYAxis(xOffset * -0.005f);
+			MainCamera->RotateUpAxis(xOffset * -0.005f);
 		if (abs(yOffset))
 			MainCamera->RotateRightAxis(yOffset * -0.005f);
 	}
@@ -697,7 +720,7 @@ void jGame::SpawnGraphTestFunc()
 			auto MV = pCamera->Projection * pCamera->View;
 			for (int i = 0; i < 90; ++i)
 			{
-				PerspectiveVector[cnt++] = MV.Transform(Vector({ 0.0f, 0.0f, 10.0f + static_cast<float>(i) }));
+				PerspectiveVector[cnt++] = MV.TransformPoint(Vector({ 0.0f, 0.0f, 10.0f + static_cast<float>(i) }));
 			}
 
 			for (int i = 0; i < _countof(PerspectiveVector); ++i)
@@ -710,7 +733,7 @@ void jGame::SpawnGraphTestFunc()
 			auto MV = pCamera->Projection * pCamera->View;
 			for (int i = 0; i < 90; ++i)
 			{
-				OrthographicVector[cnt++] = MV.Transform(Vector({ 0.0f, 0.0f, 10.0f + static_cast<float>(i) }));
+				OrthographicVector[cnt++] = MV.TransformPoint(Vector({ 0.0f, 0.0f, 10.0f + static_cast<float>(i) }));
 			}
 
 			for (int i = 0; i < _countof(OrthographicVector); ++i)

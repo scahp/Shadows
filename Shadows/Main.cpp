@@ -25,6 +25,8 @@ jEngine g_Engine;
 
 int main()
 {
+	::ShowWindow(::GetConsoleWindow(), SW_HIDE);		// hide console window
+
 	// glfw: initialize and configure
 	// ------------------------------
 	glfwInit();
@@ -302,6 +304,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	}
 
 	g_MouseState[buttonType] = buttonDown;
+	g_Engine.OnMouseButton();
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)

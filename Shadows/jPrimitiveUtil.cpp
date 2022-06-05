@@ -341,10 +341,10 @@ void CreateBoundObjects(const std::vector<float>& vertices, jObject* ownerObject
 	ownerObject->BoundBox = GenerateBoundBox(vertices);
 	ownerObject->BoundSphere = GenerateBoundSphere(vertices);
 
-	ownerObject->BoundBoxObjects = CreateBoundBox(ownerObject->BoundBox, ownerObject);
-	ownerObject->BoundSphereObjects = CreateBoundSphere(ownerObject->BoundSphere, ownerObject);
-	jObject::AddBoundBoxObject(ownerObject->BoundBoxObjects);
-	jObject::AddBoundSphereObject(ownerObject->BoundSphereObjects);
+	ownerObject->BoundBoxObject = CreateBoundBox(ownerObject->BoundBox, ownerObject);
+	ownerObject->BoundSphereObject = CreateBoundSphere(ownerObject->BoundSphere, ownerObject);
+	jObject::AddBoundBoxObject(ownerObject->BoundBoxObject);
+	jObject::AddBoundSphereObject(ownerObject->BoundSphereObject);
 }
 
 jBoundBoxObject* CreateBoundBox(jBoundBox boundBox, jObject* ownerObject, const Vector4& color)
@@ -573,12 +573,12 @@ jRenderObject* CreateQuad_Internal(const Vector& pos, const Vector& size, const 
 	};
 
 	float normals[] = {
-		0.0f, -1.0f, 0.0f,
-		0.0f, -1.0f, 0.0f,
-		0.0f, -1.0f, 0.0f,
-		0.0f, -1.0f, 0.0f,
-		0.0f, -1.0f, 0.0f,
-		0.0f, -1.0f, 0.0f,
+        0.0f, -1.0f, 0.0f,
+        0.0f, -1.0f, 0.0f,
+        0.0f, -1.0f, 0.0f,
+        0.0f, -1.0f, 0.0f,
+        0.0f, -1.0f, 0.0f,
+        0.0f, -1.0f, 0.0f,
 	};
 
 	Vector2 texcoords[] = {
@@ -2124,15 +2124,15 @@ void jFrustumPrimitive::Update(float deltaTime)
 		{
 			auto ProjView = TargetCamera->Projection * TargetCamera->View;
 
-			far_lt = ProjView.Transform(far_lt);
-			far_rt = ProjView.Transform(far_rt);
-			far_lb = ProjView.Transform(far_lb);
-			far_rb = ProjView.Transform(far_rb);
+			far_lt = ProjView.TransformPoint(far_lt);
+			far_rt = ProjView.TransformPoint(far_rt);
+			far_lb = ProjView.TransformPoint(far_lb);
+			far_rb = ProjView.TransformPoint(far_rb);
 
-			near_lt = ProjView.Transform(near_lt);
-			near_rt = ProjView.Transform(near_rt);
-			near_lb = ProjView.Transform(near_lb);
-			near_rb = ProjView.Transform(near_rb);
+			near_lt = ProjView.TransformPoint(near_lt);
+			near_rt = ProjView.TransformPoint(near_rt);
+			near_lb = ProjView.TransformPoint(near_lb);
+			near_rb = ProjView.TransformPoint(near_rb);
 		}
 	}
 	else

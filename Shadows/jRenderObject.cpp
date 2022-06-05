@@ -207,6 +207,24 @@ void jRenderObject::SetRenderProperty(const jShader* shader)
 		IndexBuffer->Bind(shader);
 }
 
+void jRenderObject::UpdateWorldMatrix()
+{
+    if (static_cast<int32>(DirtyFlags) & static_cast<int32>(EDirty::POS_ROT_SCALE))
+    {
+        auto posMatrix = Matrix::MakeTranslate(Pos);
+        auto rotMatrix = Matrix::MakeRotate(Rot);
+        auto scaleMatrix = Matrix::MakeScale(Scale);
+        World = posMatrix * rotMatrix * scaleMatrix;
+
+        ClearDirtyFlags(EDirty::POS_ROT_SCALE);
+    }
+}
+
+Matrix jRenderObject::GetWorld() const
+{
+	return World;
+}
+
 void jRenderObject::SetCameraProperty(const jShader* shader, const jCamera* camera)
 {
 	if (!camera)
@@ -228,6 +246,7 @@ void jRenderObject::SetCameraProperty(const jShader* shader, const jCamera* came
 	SET_UNIFORM_BUFFER_STATIC("MVP", MVP, shader);
 	SET_UNIFORM_BUFFER_STATIC("MV", MV, shader);
 	SET_UNIFORM_BUFFER_STATIC("M", World, shader);
+	SET_UNIFORM_BUFFER_STATIC("InvM", World.GetInverse(), shader);
 	SET_UNIFORM_BUFFER_STATIC("Collided", Collided, shader);
 	SET_UNIFORM_BUFFER_STATIC("UseUniformColor", UseUniformColor, shader);
 	SET_UNIFORM_BUFFER_STATIC("Color", Color, shader);

@@ -171,7 +171,7 @@ void jVertexAdjacency::UpdatedTransformedAdjacencyInfo(const Matrix& world, bool
 		{
 			auto& triangle = *iter.second;
 			const auto transformedNormal = Matrix3(world).Transform(triangle.Normal).GetNormalize();
-			const auto transformedCenterPos = world.Transform(triangle.CenterPos);
+			const auto transformedCenterPos = world.TransformPoint(triangle.CenterPos);
 
 			triangle.TransformedNormal = transformedNormal;
 			triangle.TransformedCenterPos = transformedCenterPos;
@@ -189,7 +189,7 @@ void jVertexAdjacency::UpdatedTransformedAdjacencyInfo(const Matrix& world, bool
 		std::vector<Vector> transformedVerts;
 		transformedVerts.reserve(Vertices.size());
 		for (int32 i = 0; i < Vertices.size(); ++i)
-			transformedVerts.push_back(world.Transform(Vertices[i]));
+			transformedVerts.push_back(world.TransformPoint(Vertices[i]));
 	}
 }
 

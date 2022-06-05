@@ -53,6 +53,11 @@ void jEngine::Resize(int width, int height)
 	glViewport(0, 0, width, height);
 }
 
+void jEngine::OnMouseButton()
+{
+	Game.OnMouseButton();
+}
+
 void jEngine::OnMouseMove(int32 xOffset, int32 yOffset)
 {
 	Game.OnMouseMove(xOffset, yOffset);

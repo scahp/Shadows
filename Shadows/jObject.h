@@ -70,8 +70,8 @@ public:
 	std::function<void(jObject*, float)> PostUpdateFunc;
 
 	// todo 현재는 보유만 하고있음.
-	jObject* BoundBoxObjects = nullptr;
-	jObject* BoundSphereObjects = nullptr;
+	jObject* BoundBoxObject = nullptr;
+	jObject* BoundSphereObject = nullptr;
 
 	jBoundBox BoundBox;
 	jBoundSphere BoundSphere;
