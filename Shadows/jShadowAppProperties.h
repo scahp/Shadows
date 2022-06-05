@@ -29,7 +29,7 @@ public:
 	bool ShowDirectionalLightInfo = true;
 	bool ShowPointLightInfo = false;
 	bool ShowSpotLightInfo = false;
-	bool ShowBoundBox = false;
+	bool ShowBoundBox = true;
 	bool ShowBoundSphere = false;
 	Vector DirecionalLightDirection = Vector(-0.88f, -0.47f, -0.05f).GetNormalize();
 	Vector PointLightPosition = Vector(10.0f, 100.0f, 10.0f);
@@ -45,8 +45,10 @@ public:
 
 	EReliefTracingType ReliefTracingType = EReliefTracingType::RelaxedCone;
 	bool DepthBias = true;
-	float DepthScale = 0.15f;
+	float DepthScale = 1.0f;
 	bool ReliefShadowOn = true;
+
+	EDualDepthReliefTexture ReliefTexture = EDualDepthReliefTexture::office1x1x1b_CaptureFG;
 
 	virtual void Setup(jAppSettingBase* appSetting) override;
 	virtual void Teardown(jAppSettingBase* appSetting) override;

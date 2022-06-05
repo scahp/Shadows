@@ -16,8 +16,9 @@ uniform vec3 WorldSpace_LightDir_ToSurface;
 out vec2 TexCoord_;
 out vec4 Color_;
 out mat3 TBN_;
-out vec3 TangentSpace_ViewDir_ToSurface_;
+//out vec3 TangentSpace_ViewDir_ToSurface_;
 out vec3 TangentSpace_LightDir_ToSurface_;
+out vec3 WorldPos_;
 
 void main()
 {
@@ -34,6 +35,7 @@ void main()
 	vec4 wpos = M * vec4(Pos, 1.0);
 	wpos /= wpos.w;
 
-	TangentSpace_ViewDir_ToSurface_ = TBN_ * normalize(wpos.xyz - WorldSpace_CameraPos);
+	WorldPos_ = wpos.xyz;
+	//TangentSpace_ViewDir_ToSurface_ = TBN_ * normalize(wpos.xyz - WorldSpace_CameraPos);
 	TangentSpace_LightDir_ToSurface_ = TBN_ * normalize(WorldSpace_LightDir_ToSurface);
 }

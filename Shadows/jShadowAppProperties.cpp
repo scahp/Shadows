@@ -12,6 +12,8 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->SetStep("DepthScale", 0.001f);
 	appSetting->AddVariable("ReliefShadowOn", ReliefShadowOn);
 
+	appSetting->AddEnumVariable("DualDepthReliefTexture", ReliefTexture, "EDualDepthReliefTexture", EDualDepthReliefTextureString);
+
 	//appSetting->AddVariable("ShadowOn", ShadowOn);
 
 	//appSetting->AddEnumVariable("ShadowType", ShadowType, "EShadowType", EShadowTypeString);
@@ -172,6 +174,8 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 	//appSetting->RemoveVariable("BloomThreshold");
 	//appSetting->RemoveVariable("BloomBlurSigma");
 	//appSetting->RemoveVariable("BloomMagnitude");	
+
+	appSetting->RemoveVariable("DualDepthReliefTexture");
 }
 
 void jShadowAppSettingProperties::SwitchShadowType(jAppSettingBase* appSetting)

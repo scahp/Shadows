@@ -24,6 +24,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include "jSamplerStatePool.h"
+#include <regex>
 
 jRHI* g_rhi = nullptr;
 
@@ -62,9 +63,9 @@ void jGame::Setup()
 	auto& AppSettings = jShadowAppSettingProperties::GetInstance();
 
 	// Create main camera
-	const Vector mainCameraPos(172.66f, 160.0f, -180.63f);
-	const Vector mainCameraTarget(0.0f, 0.0f, 0.0f);
-	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, 1.0, 0.0), DegreeToRadian(45.0f), 10.0f, 1000.0f, SCR_WIDTH, SCR_HEIGHT, true);
+	const Vector mainCameraPos(-0.713967085f, 208.389587f, -3.13512874f);
+	const Vector mainCameraTarget(-0.713820636f, 207.391312f, -3.19371367f);
+	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, -1.0, 0.0), DegreeToRadian(45.0f), 10.0f, 1000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
 
 	// Create lights
@@ -252,8 +253,9 @@ void jGame::Update(float deltaTime)
 		Cube->RenderObject->SetTexture(1, jName("ReliefTexture"), ReliefTexture.lock().get(), LinearClampSamplerState.get());
 		Cube->RenderObject->SetTexture(2, jName("NormalTexture"), NormalTexture.lock().get(), LinearClampSamplerState.get());
 
-		DualDepthRelief_ColorTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/office1x1x1d_CaptureFG.HDR"));
-		DualDepthRelief_DepthTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/office1x1x1d_DepthFG.TGA"));
+		//DualDepthRelief_ColorTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/DualDepthReliefTexture/supermarket4x4x2a_CaptureFG.HDR"));
+		//DualDepthRelief_DepthTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/DualDepthReliefTexture/supermarket4x4x2a_DepthFG.TGA"));
+		//UpdateReliefTexture();
 
 		Quad = jPrimitiveUtil::CreateQuad(Vector(0.0f, 0.0f, 0.0f), Vector::OneVector, Vector(Width), Vector4(0.0f, 1.0f, 0.0f, 0.5f));
 		Quad->RenderObject->SetTexture(0, jName("ColorTexture"), DualDepthRelief_ColorTexture.lock().get(), LinearClampSamplerState.get());
@@ -264,6 +266,27 @@ void jGame::Update(float deltaTime)
 			{ ETextureType::TEXTURE_2D, ETextureFormat::RGBA8, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::DEPTH24, SCR_WIDTH, SCR_HEIGHT, 1 }));
 
 		FullQuad = jPrimitiveUtil::CreateFullscreenQuad(RT->GetTexture());
+	}
+
+	static auto SelectedTexture = EDualDepthReliefTexture::MAX;
+	auto UpdateReliefTexture = [&]()
+	{
+		std::string color = "Image/DualDepthReliefTexture/" + std::string(EDualDepthReliefTextureString[(int32)SelectedTexture]) + ".HDR";
+		std::string dualdepth = std::regex_replace(color, std::regex("_Capture"), "_Depth");
+		dualdepth = std::regex_replace(dualdepth, std::regex(".HDR"), ".TGA");
+
+		DualDepthRelief_ColorTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName(color.c_str()));
+		DualDepthRelief_DepthTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName(dualdepth.c_str()));
+
+		static const auto LinearClampSamplerState = jSamplerStatePool::GetSamplerState(jName("LinearClamp"));
+		Quad->RenderObject->SetTexture(0, jName("ColorTexture"), DualDepthRelief_ColorTexture.lock().get(), LinearClampSamplerState.get());
+		Quad->RenderObject->SetTexture(1, jName("ReliefTexture"), DualDepthRelief_DepthTexture.lock().get(), LinearClampSamplerState.get());
+	};
+
+	if (SelectedTexture != appSetting.ReliefTexture)
+	{
+		SelectedTexture = appSetting.ReliefTexture;
+		UpdateReliefTexture();
 	}
 
 	if (RT->Begin())
