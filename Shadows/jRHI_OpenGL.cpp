@@ -575,7 +575,7 @@ void jRHI_OpenGL::EnableDepthBias(bool enable) const
 
 void jRHI_OpenGL::SetDepthBias(float constant, float slope) const
 {
-	glPolygonOffset(constant, slope);
+	glPolygonOffset(slope, constant);
 }
 
 void jRHI_OpenGL::EnableSRGB(bool enable) const
