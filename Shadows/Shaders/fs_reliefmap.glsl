@@ -13,16 +13,12 @@ uniform int ReliefTracingType;
 uniform int DepthBias;
 uniform float DepthScale;
 uniform int UseShadow;
-uniform vec3 LocalSpace_CameraPos;
 uniform vec3 WorldSpace_CameraPos;
-uniform vec3 LocalSpace_LightDir_ToSurface;
 
 in vec2 TexCoord_;
 in vec4 Color_;
 in mat3 TBN_;
-//in vec3 TangentSpace_ViewDir_ToSurface_;
 in vec3 TangentSpace_LightDir_ToSurface_;
-in vec3 LocalPos_;
 in vec3 WorldPos_;
 
 out vec4 color;
@@ -61,25 +57,13 @@ vec4 GetDiffuse(vec2 uv)
 
 float GetLightIntensityFromNormalMap(vec2 uv)
 {
-vec3 normal = normalize(transpose(TBN_) * GetTwoChannelNormal(uv));
-float inten = clamp(dot(normal, -normalize(WorldSpace_LightDir_ToSurface)), 0.0, 1.0);
-return inten;
-
-//#define TANGENT_SPACE_NORMAL_MAPPING 1
-//
-//#if TANGENT_SPACE_NORMAL_MAPPING
-//	// Do the normal mapping by using tangent space light direction.
-//	return clamp(dot(GetTwoChannelNormal(uv), -normalize(LocalSpace_LightDir_ToSurface)), 0.0, 1.0);
-//#else
-//	// Do the normal mapping by using world space light direction.
-//	// NormalMap으로 부터 normal을 얻어오고, TBN 매트릭스로 월드공간으로 변환시켜줌
-//	vec3 normal = normalize(transpose(TBN_) * GetTwoChannelNormal(uv));
-//	return clamp(dot(normal, -normalize(LocalSpace_LightDir_ToSurface)), 0.0, 1.0);
-//#endif
+	vec3 normal = normalize(transpose(TBN_) * GetTwoChannelNormal(uv));
+	float intensity = clamp(dot(normal, -normalize(WorldSpace_LightDir_ToSurface)), 0.0, 1.0);
+	return intensity;
 }
 
-// ray intersect depth map using linear and binary searches
-// depth value stored in alpha channel (black at is object surface)
+// https://developer.nvidia.com/gpugems/gpugems3/part-iii-rendering/chapter-18-relaxed-cone-stepping-relief-mapping
+// ray intersect depth map using linear and binary searches depth value stored in alpha channel (black at is object surface)
 void ray_intersect_relief(inout vec3 p, vec3 v)
 {
 	const int num_steps_lin=15;
@@ -106,6 +90,7 @@ void ray_intersect_relief(inout vec3 p, vec3 v)
 	}
 }
 
+// https://developer.nvidia.com/gpugems/gpugems3/part-iii-rendering/chapter-18-relaxed-cone-stepping-relief-mapping
 void ray_intersect_relaxedcone(inout vec3 p, vec3 v)
 {
 	const int cone_steps=15;
@@ -153,7 +138,6 @@ vec3 GetLightTracingStartPointFromCurrentPoint(vec3 CurrentPosition, vec3 LightD
 	// Target = StartPosition + t * Direction;
 	// => StartPosition = Target - t * Direction;
 	vec3 StartPosition = CurrentPosition - t * LightDirectionToSurface;
-
 	return StartPosition;
 }
 
@@ -175,39 +159,18 @@ void ApplyDepthBiasScale(inout vec3 Direction)
 
 void main()
 {
-	#define WORLD_SPACE 1
-#if WORLD_SPACE
     vec3 TangentSpace_ViewDir_ToSurface_ = TBN_ * normalize(WorldPos_ - WorldSpace_CameraPos);
-#else
-    vec3 TangentSpace_ViewDir_ToSurface_ = normalize(LocalPos_ - LocalSpace_CameraPos);
-#endif
 
 	bool IsShadow = false;
 
 	// 1. Tracing ray from camera postion
-	// Setup ray
 	vec3 CurrentPosition = vec3(TexCoord_,0.0);
 	vec3 TangentSpace_ViewDir_ToSurface = normalize(TangentSpace_ViewDir_ToSurface_);
-
-	// float inten = clamp(dot(GetTwoChannelNormal(TexCoord_), normalize(TangentSpace_ViewDir_ToSurface_)), 0.0, 1.0);
-
-	vec3 normal = normalize(transpose(TBN_) * GetTwoChannelNormal(TexCoord_));
-	float inten = clamp(dot(normal, -normalize(WorldSpace_LightDir_ToSurface)), 0.0, 1.0);
-
-	color = vec4(normal.x, 0, 0, 1.0);
-	//color = vec4(0, normal.y, 0, 1.0);
-	//color = vec4(0, 0, normal.z, 1.0);
-
-	color = vec4(inten, inten,inten, 1.0);
-	//color = vec4(TexCoord_, 0.0, 1.0);
-	//color = vec4(TangentSpace_ViewDir_ToSurface_, 1.0);
-	//return;
-
 	TangentSpace_ViewDir_ToSurface.z = abs(TangentSpace_ViewDir_ToSurface.z);
 	
 	ApplyDepthBiasScale(TangentSpace_ViewDir_ToSurface);	// Apply DepthBias and DepthScale
 
-	// Tracing ray
+	// 2. Tracing ray
 	if (ReliefTracingType == 0)
 		ray_intersect_relief(CurrentPosition, TangentSpace_ViewDir_ToSurface);
 	else
@@ -215,7 +178,7 @@ void main()
 
 	if (UseShadow > 0)
 	{
-		// 2. Tracing ray from light position to current position which is previous ray tracing
+		// 3. Tracing ray from light position to current position which is previous ray tracing
 		vec3 TangentSpace_LightDir_ToSurface = normalize(TangentSpace_LightDir_ToSurface_);
 
 		// To avoid shadow issue when the geometry surface and direction of light are alomst parallel.
@@ -228,7 +191,7 @@ void main()
 		// Prepare light tracing start position by using both current position and light direction
 		vec3 LightCurrentPosition = GetLightTracingStartPointFromCurrentPoint(CurrentPosition, TangentSpace_LightDir_ToSurface);
 
-		// Tracing ray
+		// 4. Tracing ray
 		if (ReliefTracingType == 0)
 			ray_intersect_relief(LightCurrentPosition, TangentSpace_LightDir_ToSurface);
 		else
@@ -246,10 +209,6 @@ void main()
 	if (IsShadow)
 		lightIntensity *= 0.0f;		// Apply shadowing if CurrentPoisition is in shadow
 
-	//color = vec4(lightIntensity, 0.0, 0.0, 1.0);
-
 	color = GetDiffuse(uv);			// Apply diffuse
 	color.xyz *= lightIntensity;
-
-	//color.xyz = TangentSpace_LightDir_ToSurface_;	
 }

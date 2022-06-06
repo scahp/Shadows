@@ -63,7 +63,7 @@ void jGame::Setup()
 	auto& AppSettings = jShadowAppSettingProperties::GetInstance();
 
 	// Create main camera
-	const Vector mainCameraPos(-0.713967085f, 208.389587f, -3.13512874f);
+	const Vector mainCameraPos(-0.725829422f, 289.250427f, 1.61028826f);
 	const Vector mainCameraTarget(-0.713820636f, 207.391312f, -3.19371367f);
 	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, -1.0, 0.0), DegreeToRadian(45.0f), 10.0f, 1000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
@@ -83,7 +83,7 @@ void jGame::Setup()
 	// Create light info for debugging light infomation
 	if (DirectionalLight)
 	{
-		DirectionalLightInfo = jPrimitiveUtil::CreateDirectionalLightDebug(Vector(250, 260, 0) * 0.5f, Vector::OneVector * 10.0f, 10.0f, MainCamera, DirectionalLight, "Image/sun.png");
+		DirectionalLightInfo = jPrimitiveUtil::CreateDirectionalLightDebug(Vector(250, 260, 0) * 0.4f, Vector::OneVector * 10.0f, 10.0f, MainCamera, DirectionalLight, "Image/sun.png");
 		if (AppSettings.ShowDirectionalLightInfo)
 			jObject::AddDebugObject(DirectionalLightInfo);
 	}
@@ -269,6 +269,8 @@ void jGame::Update(float deltaTime)
 			{ ETextureType::TEXTURE_2D, ETextureFormat::RGBA8, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::DEPTH24, SCR_WIDTH, SCR_HEIGHT, 1 }));
 
 		FullQuad = jPrimitiveUtil::CreateFullscreenQuad(RT->GetTexture());
+
+		g_rhi->SetLineWidth(2.5f);		// Boudnbox debugging
 	}
 
 	static auto SelectedTexture = EDualDepthReliefTexture::MAX;
@@ -298,6 +300,7 @@ void jGame::Update(float deltaTime)
 	{
 		g_rhi->SetClear(ERenderBufferType::COLOR | ERenderBufferType::DEPTH);
 		g_rhi->EnableDepthTest(true);
+		g_rhi->SetDepthFunc(EComparisonFunc::LEQUAL);
 		g_rhi->EnableCullFace(true);
 		g_rhi->EnableCullMode(ECullMode::BACK);
 		//g_rhi->SetFrontFace(EFrontFace::CCW);
@@ -334,6 +337,14 @@ void jGame::Update(float deltaTime)
 
 			Cube->Update(deltaTime);
 			Cube->Draw(MainCamera, shader, { DirectionalLight });
+
+			if (appSetting.ShowBoundBox)
+			{
+				jShader* shader = jShader::GetShader("BoundVolumeShader");
+				g_rhi->SetShader(shader);
+				SET_UNIFORM_BUFFER_STATIC("Color", Vector4::ColorWhite, shader);
+				Cube->BoundBoxObject->Draw(MainCamera, shader, {});
+			}
 		}
 
 		if (ShouldUseQuad)
@@ -367,7 +378,6 @@ void jGame::Update(float deltaTime)
 
 			if (appSetting.ShowBoundBox)
 			{
-				g_rhi->EnableDepthTest(false);
 				jShader* shader = jShader::GetShader("BoundVolumeShader");
 				g_rhi->SetShader(shader);
 				SET_UNIFORM_BUFFER_STATIC("Color", Vector4::ColorWhite, shader);
