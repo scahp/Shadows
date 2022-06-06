@@ -45,7 +45,7 @@ public:
 
 	EReliefTracingType ReliefTracingType = EReliefTracingType::RelaxedCone;
 	bool DepthBias = true;
-	float DepthScale = 1.0f;
+	float DepthScale = 0.15f;
 	bool ReliefShadowOn = true;
 
 	EDualDepthReliefTexture ReliefTexture = EDualDepthReliefTexture::office1x1x1b_CaptureFG;

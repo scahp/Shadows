@@ -296,10 +296,22 @@ void jGame::Update(float deltaTime)
 	{
 		g_rhi->SetClear(ERenderBufferType::COLOR | ERenderBufferType::DEPTH);
 		g_rhi->EnableDepthTest(true);
+		g_rhi->EnableCullFace(true);
+		g_rhi->EnableCullMode(ECullMode::BACK);
+		//g_rhi->SetFrontFace(EFrontFace::CCW);
+
+		MainCamera->IsEnableCullMode = true;
 
 		if (0)
 		{
 			jShader* shader = jShader::GetShader("ReliefMapping");
+
+			//Cube->RenderObject->SetPos(Vector(10.0f, 100.0f, 100.0f));
+			Cube->RenderObject->SetRot(Cube->RenderObject->GetRot() + Vector(0.0f, 0.0f, 0.01f));
+			//Cube->RenderObject->SetRot(Vector(0.0f, DegreeToRadian(90), 0.0f));
+
+			Cube->RenderObject->UpdateWorldMatrix();
+			auto InvWorld = Cube->RenderObject->GetWorld().GetInverse();
 
 			auto MV = MainCamera->View;
 			auto MVP = MainCamera->Projection * MV;
@@ -315,12 +327,21 @@ void jGame::Update(float deltaTime)
 			g_rhi->SetUniformbuffer(jName("DepthScale"), appSetting.DepthScale, shader);
 			g_rhi->SetUniformbuffer(jName("UseShadow"), appSetting.ReliefShadowOn, shader);
 
+			g_rhi->SetUniformbuffer(jName("LocalSpace_LightDir_ToSurface"), InvWorld.TransformDirection(DirectionalLight->Data.Direction).GetNormalize(), shader);
+			g_rhi->SetUniformbuffer(jName("LocalSpace_CameraPos"), InvWorld.TransformPoint(MainCamera->Pos), shader);
+
 			Cube->Update(deltaTime);
 			Cube->Draw(MainCamera, shader, { DirectionalLight });
 		}
 
+		if (1)
 		{
 			auto shader = jShader::GetShader("DualDepthReliefMapping");
+
+			//Quad->RenderObject->SetRot(Vector(0.0f, 0.0f, DegreeToRadian(90)));
+			//Quad->RenderObject->SetRot(Quad->RenderObject->GetRot() + Vector(0.0f, 0.01f, 0.0f));
+			Quad->RenderObject->UpdateWorldMatrix();
+			auto InvWorld = Quad->RenderObject->GetWorld().GetInverse();
 
 			auto MV = MainCamera->View;
 			auto MVP = MainCamera->Projection * MV;
@@ -336,28 +357,26 @@ void jGame::Update(float deltaTime)
 			g_rhi->SetUniformbuffer(jName("DepthScale"), appSetting.DepthScale, shader);
 			g_rhi->SetUniformbuffer(jName("UseShadow"), appSetting.ReliefShadowOn, shader);
 
-			Quad->RenderObject->UpdateWorldMatrix();
-			auto InvWorld = Quad->RenderObject->GetWorld().GetInverse();
 			g_rhi->SetUniformbuffer(jName("LocalSpace_LightDir_ToSurface"), InvWorld.TransformDirection(DirectionalLight->Data.Direction), shader);
             g_rhi->SetUniformbuffer(jName("LocalSpace_CameraPos"), InvWorld.TransformPoint(MainCamera->Pos), shader);
 
 			Quad->Update(deltaTime);
 			Quad->Draw(MainCamera, shader, { DirectionalLight });
+
+			if (appSetting.ShowBoundBox)
+			{
+				g_rhi->EnableDepthTest(false);
+				jShader* shader = jShader::GetShader("BoundVolumeShader");
+				g_rhi->SetShader(shader);
+				SET_UNIFORM_BUFFER_STATIC("Color", Vector4::ColorWhite, shader);
+				Quad->BoundBoxObject->Draw(MainCamera, shader, {});
+			}
 		}
 
 		{
 			jShader* shader = jShader::GetShader("DebugObjectShader");
 			for (auto& iter : jObject::GetDebugObject())
 				iter->Draw(MainCamera, shader, {});
-		}
-
-		if (appSetting.ShowBoundBox)
-		{
-			g_rhi->EnableDepthTest(false);
-			jShader* shader = jShader::GetShader("BoundVolumeShader");
-			g_rhi->SetShader(shader);
-			SET_UNIFORM_BUFFER_STATIC("Color", Vector4::ColorWhite, shader);
-            Quad->BoundBoxObject->Draw(MainCamera, shader, {});
 		}
 
 		RT->End();

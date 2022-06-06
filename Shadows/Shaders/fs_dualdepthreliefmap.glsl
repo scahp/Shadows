@@ -66,7 +66,7 @@ float GetLightIntensityFromNormalMap(vec2 uv)
 
 #if TANGENT_SPACE_NORMAL_MAPPING
 	// Do the normal mapping by using tangent space light direction.
-	return clamp(dot(GetTwoChannelNormal(uv), -TangentSpace_LightDir_ToSurface_), 0.0, 1.0);
+	return clamp(dot(GetTwoChannelNormal(uv), -normalize(TangentSpace_LightDir_ToSurface_)), 0.0, 1.0);
 #else
 	// Do the normal mapping by using world space light direction.
 	// NormalMap으로 부터 normal을 얻어오고, TBN 매트릭스로 월드공간으로 변환시켜줌
@@ -218,10 +218,9 @@ bool CheckUV(vec3 p, vec2 tex)
 
 void main()
 {
-	#define WORLD_SPACE 0
+	#define WORLD_SPACE 1
 #if WORLD_SPACE
-    vec4 localViewDir = InvM * vec4(normalize(WorldPos_ - WorldSpace_CameraPos), 0.0);
-    vec3 TangentSpace_ViewDir_ToSurface_ = TBN_ * localViewDir.xyz;
+    vec3 TangentSpace_ViewDir_ToSurface_ = TBN_ * normalize(WorldPos_ - WorldSpace_CameraPos);
 #else
     vec3 TangentSpace_ViewDir_ToSurface_ = TBN_ * (LocalPos_ - LocalSpace_CameraPos);
 #endif
@@ -232,7 +231,7 @@ void main()
     //color.xyz = vec3(TBN_[row][0], TBN_[row][1], TBN_[row][2]);
     //return;
 	
-	color.xyz = TangentSpace_ViewDir_ToSurface_;
+	//color.xyz = TangentSpace_ViewDir_ToSurface_;
 	//return;
 
 	// 1. Tracing ray from camera postion

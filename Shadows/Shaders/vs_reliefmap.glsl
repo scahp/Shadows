@@ -29,7 +29,7 @@ void main()
 	Color_ = Color;
 	gl_Position = MVP * vec4(Pos, 1.0);
 
-	#define WORLD_SPACE 0
+	#define WORLD_SPACE 1
 #if WORLD_SPACE
     vec3 T = normalize(vec3(M * vec4(Tangent, 0.0)));
     vec3 B = normalize(vec3(M * vec4(cross(Normal, Tangent), 0.0)));
@@ -39,7 +39,7 @@ void main()
     vec3 B = normalize(cross(Normal, Tangent));
     vec3 N = normalize(Normal);
 #endif
-	TBN_ = mat3(T, B, N);
+	TBN_ = transpose(mat3(T, B, N));
 
 	vec4 wpos = M * vec4(Pos, 1.0);
 	wpos /= wpos.w;
@@ -53,6 +53,6 @@ void main()
 #else		
     //vec4 LocalDir = InvM * vec4(normalize(WorldSpace_LightDir_ToSurface), 0.0);
     //TangentSpace_LightDir_ToSurface_ = TBN_ * LocalDir.xyz;
-    TangentSpace_LightDir_ToSurface_ = TBN_ * LocalSpace_LightDir_ToSurface;
+    //TangentSpace_LightDir_ToSurface_ = TBN_ * LocalSpace_LightDir_ToSurface;
 #endif
 }
