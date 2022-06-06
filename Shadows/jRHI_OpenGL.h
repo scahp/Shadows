@@ -176,7 +176,7 @@ public:
 	virtual void DrawElementsBaseVertex(EPrimitiveType type, int elementSize, int32 startIndex, int32 count, int32 baseVertexIndex) const override;
 	virtual void DrawElementsInstancedBaseVertex(EPrimitiveType type, int elementSize, int32 startIndex, int32 count, int32 baseVertexIndex, int32 instanceCount) const override;
 	virtual void DispatchCompute(uint32 numGroupsX, uint32 numGroupsY, uint32 numGroupsZ) const override;
-	virtual void EnableDepthBias(bool enable) const override;
+	virtual void EnableDepthBias(bool enable, EPolygonMode polygonMode = EPolygonMode::FILL) const override;
 	virtual void SetDepthBias(float constant, float slope) const override;
 	virtual void SetClear(ERenderBufferType typeBit) const override;
 	virtual void SetClearColor(float r, float g, float b, float a) const override;
@@ -261,7 +261,7 @@ public:
 	virtual void EndQueryTimeElapsed(const jQueryTime* queryTimeElpased) const override;
 	virtual void EnableWireframe(bool enable) const override;
 	virtual void SetImageTexture(int32 index, const jTexture* texture, EImageTextureAccessType type) const override;
-	virtual void SetPolygonMode(EFace face, EPolygonMode mode) override;
+	virtual void SetPolygonMode(EFace face, EPolygonMode mode = EPolygonMode::FILL) override;
 	virtual jQueryPrimitiveGenerated* CreateQueryPrimitiveGenerated() const override;
 	virtual void ReleaseQueryPrimitiveGenerated(jQueryPrimitiveGenerated* query) const override;
 	virtual void BeginQueryPrimitiveGenerated(const jQueryPrimitiveGenerated* query) const override;
@@ -271,7 +271,8 @@ public:
 	virtual void SetTextureMipmapLevelLimit(ETextureType type, int32 baseLevel, int32 maxLevel) const override;
 	virtual void EnableMultisample(bool enable) const override;
 	virtual void SetCubeMapSeamless(bool enable) const override;
-	
+	virtual void SetLineWidth(float width) const override;
+
 	//////////////////////////////////////////////////////////////////////////
 	int32 GetUniformLocation(uint32 InProgram, const char* name) const;
 	int32 GetAttributeLocation(uint32 InProgram, const char* name) const;

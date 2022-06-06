@@ -337,6 +337,15 @@ FORCEINLINE uint32 GetStencilOp(EStencilOp type)
 	);
 }
 
+FORCEINLINE uint32 GetPolygonOffsetPrimitiveType(EPolygonMode type)
+{
+	GENERATE_STATIC_CONVERSION_ARRAY(
+		CONVERSION_TYPE_ELEMENT(EPolygonMode::POINT, GL_POLYGON_OFFSET_POINT),
+		CONVERSION_TYPE_ELEMENT(EPolygonMode::LINE, GL_POLYGON_OFFSET_LINE),
+		CONVERSION_TYPE_ELEMENT(EPolygonMode::FILL, GL_POLYGON_OFFSET_FILL)
+	);
+}
+
 uint32 GetOpenGLClearBufferBit(ERenderBufferType typeBit)
 {
 	uint32 clearBufferBit = 0;
@@ -565,12 +574,12 @@ void jRHI_OpenGL::DispatchCompute(uint32 numGroupsX, uint32 numGroupsY, uint32 n
 	glDispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
 }
 
-void jRHI_OpenGL::EnableDepthBias(bool enable) const
+void jRHI_OpenGL::EnableDepthBias(bool enable, EPolygonMode polygonMode) const
 {
 	if (enable)
-		glEnable(GL_POLYGON_OFFSET_FILL);
+		glEnable(GetPolygonOffsetPrimitiveType(polygonMode));
 	else
-		glDisable(GL_POLYGON_OFFSET_FILL);
+		glDisable(GetPolygonOffsetPrimitiveType(polygonMode));
 }
 
 void jRHI_OpenGL::SetDepthBias(float constant, float slope) const
@@ -792,6 +801,11 @@ void jRHI_OpenGL::SetCubeMapSeamless(bool enable) const
 		glDisable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 }
 
+
+void jRHI_OpenGL::SetLineWidth(float width) const
+{
+	glLineWidth(width);
+}
 
 void jRHI_OpenGL::EnableWireframe(bool enable) const
 {
