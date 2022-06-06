@@ -5,14 +5,33 @@ jShadowAppSettingProperties* jShadowAppSettingProperties::_instance = nullptr;
 
 void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 {
-	appSetting->AddEnumVariable("ReliefTracingType", ReliefTracingType, "EReliefTracingType", EReliefTracingTypeString);
+	appSetting->AddEnumVariable("ReliefType", ReliefType, "EReliefType", EReliefTypeString);
+	appSetting->SetGroup("ReliefType", "Type");
+
 	appSetting->AddVariable("DepthBias", DepthBias);
+	appSetting->SetGroup("DepthBias", "SingleDepth");
+
 	appSetting->AddVariable("DepthScale", DepthScale);
 	appSetting->SetMinMax("DepthScale", 0.0f, 2.0f);
 	appSetting->SetStep("DepthScale", 0.001f);
-	appSetting->AddVariable("ReliefShadowOn", ReliefShadowOn);
+	appSetting->SetGroup("DepthScale", "SingleDepth");
 
-	appSetting->AddEnumVariable("DualDepthReliefTexture", ReliefTexture, "EDualDepthReliefTexture", EDualDepthReliefTextureString);
+	appSetting->AddVariable("ShadowOn", ReliefShadowOn);
+	appSetting->SetGroup("ShadowOn", "SingleDepth");
+
+	appSetting->AddVariable("DualDepth_DepthBias", DualDepth_DepthBias);
+	appSetting->SetLabel("DualDepth_DepthBias", "DepthBias");
+	appSetting->SetGroup("DualDepth_DepthBias", "DualDepth");
+
+	appSetting->AddVariable("DualDepth_DepthScale", DualDepth_DepthScale);
+	appSetting->SetLabel("DualDepth_DepthScale", "DepthScale");
+	appSetting->SetMinMax("DualDepth_DepthScale", 0.0f, 2.0f);
+	appSetting->SetStep("DualDepth_DepthScale", 0.001f);
+	appSetting->SetGroup("DualDepth_DepthScale", "DualDepth");
+
+	appSetting->AddEnumVariable("DualDepth_ReliefTexture", ReliefTexture, "EDualDepthReliefTexture", EDualDepthReliefTextureString);
+	appSetting->SetLabel("DualDepth_ReliefTexture", "ReliefTexture");
+	appSetting->SetGroup("DualDepth_ReliefTexture", "DualDepth");
 
 	//appSetting->AddVariable("ShadowOn", ShadowOn);
 
@@ -141,7 +160,12 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 	appSetting->RemoveVariable("ReliefTracingType");
 	appSetting->RemoveVariable("DepthBias");
 	appSetting->RemoveVariable("DepthScale");
-	appSetting->RemoveVariable("ReliefShadowOn");
+	appSetting->RemoveVariable("ShadowOn");
+
+	appSetting->RemoveVariable("DualDepth_DepthBias");
+	appSetting->RemoveVariable("DualDepth_DepthScale");
+	appSetting->RemoveVariable("DualDepth_ReliefTexture");
+	appSetting->RemoveVariable("ShadowOn");
 
 	//appSetting->RemoveVariable("ShadowOn");
 	//appSetting->RemoveVariable("EShadowType");

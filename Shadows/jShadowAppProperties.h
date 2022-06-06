@@ -43,9 +43,11 @@ public:
 	float BloomBlurSigma = 0.8f;
 	float BloomMagnitude = 0.75f;
 
-	EReliefTracingType ReliefTracingType = EReliefTracingType::RelaxedCone;
+	EReliefTracingType ReliefType = EReliefTracingType::RelaxedCone;
 	bool DepthBias = true;
 	float DepthScale = 0.15f;
+	bool DualDepth_DepthBias = true;
+	float DualDepth_DepthScale = 1.0f;
 	bool ReliefShadowOn = true;
 
 	EDualDepthReliefTexture ReliefTexture = EDualDepthReliefTexture::office1x1x1b_CaptureFG;

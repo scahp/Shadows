@@ -11,7 +11,7 @@ void jAppSettings::Init(int32 width, int32 height)
 	TwWindowSize(width, height);
 
 	auto mainPannel = jAppSettings::GetInstance().AddTwBar("MainPannel");		// Default Pannel
-	mainPannel->SetSizeBar(250, 200);
+	mainPannel->SetSizeBar(300, 400);
 	mainPannel->SetValueSizeFit();
 }
 

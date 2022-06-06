@@ -55,12 +55,14 @@ enum class EReliefTracingType
 {
 	Linear = 0,
 	RelaxedCone,
+	DualDepth,
 	MAX
 };
 
-static const char* EReliefTracingTypeString[] = {
+static const char* EReliefTypeString[] = {
 	"Linear",
 	"RelaxedCone",
+	"DualDepth",
 };
 
 // Resource from Matrix city sample of ue5

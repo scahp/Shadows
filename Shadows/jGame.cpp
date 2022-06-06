@@ -292,6 +292,8 @@ void jGame::Update(float deltaTime)
 		UpdateReliefTexture();
 	}
 
+	const bool ShouldUseQuad = appSetting.ReliefType == EReliefTracingType::DualDepth;
+
 	if (RT->Begin())
 	{
 		g_rhi->SetClear(ERenderBufferType::COLOR | ERenderBufferType::DEPTH);
@@ -302,12 +304,12 @@ void jGame::Update(float deltaTime)
 
 		MainCamera->IsEnableCullMode = true;
 
-		if (0)
+		if (!ShouldUseQuad)
 		{
 			jShader* shader = jShader::GetShader("ReliefMapping");
-
+						
 			//Cube->RenderObject->SetPos(Vector(10.0f, 100.0f, 100.0f));
-			Cube->RenderObject->SetRot(Cube->RenderObject->GetRot() + Vector(0.0f, 0.0f, 0.01f));
+			Cube->RenderObject->SetRot(Cube->RenderObject->GetRot() + Vector(0.35f * deltaTime, 0.0f, 0.5f * deltaTime));
 			//Cube->RenderObject->SetRot(Vector(0.0f, DegreeToRadian(90), 0.0f));
 
 			Cube->RenderObject->UpdateWorldMatrix();
@@ -322,7 +324,7 @@ void jGame::Update(float deltaTime)
 			g_rhi->SetShader(shader);
 			g_rhi->SetUniformbuffer(jName("WorldSpace_LightDir_ToSurface"), DirectionalLight->Data.Direction, shader);
 			g_rhi->SetUniformbuffer(jName("WorldSpace_CameraPos"), MainCamera->Pos, shader);
-			g_rhi->SetUniformbuffer(jName("ReliefTracingType"), (int32)appSetting.ReliefTracingType, shader);
+			g_rhi->SetUniformbuffer(jName("ReliefTracingType"), (int32)appSetting.ReliefType, shader);
 			g_rhi->SetUniformbuffer(jName("DepthBias"), appSetting.DepthBias, shader);
 			g_rhi->SetUniformbuffer(jName("DepthScale"), appSetting.DepthScale, shader);
 			g_rhi->SetUniformbuffer(jName("UseShadow"), appSetting.ReliefShadowOn, shader);
@@ -334,7 +336,7 @@ void jGame::Update(float deltaTime)
 			Cube->Draw(MainCamera, shader, { DirectionalLight });
 		}
 
-		if (1)
+		if (ShouldUseQuad)
 		{
 			auto shader = jShader::GetShader("DualDepthReliefMapping");
 
@@ -352,9 +354,9 @@ void jGame::Update(float deltaTime)
 			g_rhi->SetShader(shader);
 			g_rhi->SetUniformbuffer(jName("WorldSpace_LightDir_ToSurface"), DirectionalLight->Data.Direction, shader);
 			g_rhi->SetUniformbuffer(jName("WorldSpace_CameraPos"), MainCamera->Pos, shader);
-			g_rhi->SetUniformbuffer(jName("ReliefTracingType"), (int32)appSetting.ReliefTracingType, shader);
-			g_rhi->SetUniformbuffer(jName("DepthBias"), appSetting.DepthBias, shader);
-			g_rhi->SetUniformbuffer(jName("DepthScale"), appSetting.DepthScale, shader);
+			g_rhi->SetUniformbuffer(jName("ReliefTracingType"), (int32)appSetting.ReliefType, shader);
+			g_rhi->SetUniformbuffer(jName("DepthBias"), appSetting.DualDepth_DepthBias, shader);
+			g_rhi->SetUniformbuffer(jName("DepthScale"), appSetting.DualDepth_DepthScale, shader);
 			g_rhi->SetUniformbuffer(jName("UseShadow"), appSetting.ReliefShadowOn, shader);
 
 			g_rhi->SetUniformbuffer(jName("LocalSpace_LightDir_ToSurface"), InvWorld.TransformDirection(DirectionalLight->Data.Direction), shader);
