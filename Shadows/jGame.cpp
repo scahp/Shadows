@@ -63,8 +63,10 @@ void jGame::Setup()
 	auto& AppSettings = jShadowAppSettingProperties::GetInstance();
 
 	// Create main camera
-	const Vector mainCameraPos(-0.725829422f, 289.250427f, 1.61028826f);
-	const Vector mainCameraTarget(-0.713820636f, 207.391312f, -3.19371367f);
+    //const Vector mainCameraPos(-0.725829422f, 289.250427f, 1.61028826f);
+    //const Vector mainCameraTarget(-0.713820636f, 207.391312f, -3.19371367f);
+	const Vector mainCameraPos(0.0f, 0.0f, 300.0f);
+    const Vector mainCameraTarget(0.0f, 0.0f, 0.0f);
 	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, -1.0, 0.0), DegreeToRadian(45.0f), 10.0f, 1000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
 
@@ -351,7 +353,7 @@ void jGame::Update(float deltaTime)
 		{
 			auto shader = jShader::GetShader("DualDepthReliefMapping");
 
-			//Quad->RenderObject->SetRot(Vector(0.0f, 0.0f, DegreeToRadian(90)));
+			Quad->RenderObject->SetRot(Vector(DegreeToRadian(90), 0.0f, 0.0f));
 			//Quad->RenderObject->SetRot(Quad->RenderObject->GetRot() + Vector(0.0f, 0.01f, 0.0f));
 			Quad->RenderObject->UpdateWorldMatrix();
 			auto InvWorld = Quad->RenderObject->GetWorld().GetInverse();
@@ -610,12 +612,69 @@ void jGame::OnMouseButton()
 
 void jGame::OnMouseMove(int32 xOffset, int32 yOffset)
 {
+	//static Vector Rot = Vector::ZeroVector;
+	//Matrix::MakeRotate(Rot);
 	if (g_MouseState[EMouseButtonType::LEFT])
 	{
-		if (abs(xOffset))
-			MainCamera->RotateUpAxis(xOffset * -0.005f);
-		if (abs(yOffset))
-			MainCamera->RotateRightAxis(yOffset * -0.005f);
+		static float Yaw = -90.0f;
+		static float Pitch = 0.0f;
+
+		Yaw += xOffset * -0.1f;
+		Pitch += yOffset * 0.1f;
+
+		Vector front;
+		front.x = cos(DegreeToRadian(Yaw)) * cos(DegreeToRadian(Pitch));
+		front.y = sin(DegreeToRadian(Pitch));
+		front.z = sin(DegreeToRadian(Yaw)) * cos(DegreeToRadian(Pitch));
+		auto Front = front.GetNormalize();
+		// also re-calculate the Right and Up vector
+		auto Right = Front.CrossProduct(Vector::UpVector).GetNormalize(); // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+		auto Up = Front.CrossProduct(Right).GetNormalize();
+
+		MainCamera->Target = MainCamera->Pos + Front * 300.0f;
+		MainCamera->Up = MainCamera->Pos + Up;
+
+		return;
+		Vector forward = MainCamera->GetForwardVector();
+		static Vector Rot = MainCamera->GetForwardVector().GetEulerAngleFrom();
+		//Rot.x = RadianToDegree(Rot.x);
+		//Rot.y = RadianToDegree(Rot.y);
+
+		Matrix m = Matrix::MakeRotate(Rot);
+		Vector v = m.GetRotateVector();
+
+		MainCamera->Target = MainCamera->Pos + v * 100;
+
+		return;
+	}
+
+	if (g_MouseState[EMouseButtonType::LEFT])
+	{
+        auto Up = MainCamera->GetUpVector();
+        if (abs(xOffset))
+            MainCamera->RotateCameraAxis(Up, xOffset * -0.005f);
+
+		auto Right = MainCamera->GetRightVector();
+        if (abs(yOffset))
+            MainCamera->RotateCameraAxis(Right, yOffset * -0.005f);
+
+		//static float yaw = 90;
+		//static float pitch = 0;
+		//yaw += yOffset * 0.1f;
+		//pitch += xOffset * 0.1f;
+
+  //      if (pitch > 89.0f)
+  //          pitch = 89.0f;
+  //      if (pitch < -89.0f)
+  //          pitch = -89.0f;
+
+		//Vector direction;
+  //      direction.x = cos(DegreeToRadian(yaw)) * cos(DegreeToRadian(pitch));
+  //      direction.y = sin(DegreeToRadian(pitch));
+  //      direction.z = sin(DegreeToRadian(yaw)) * cos(DegreeToRadian(pitch));
+		//direction.SetNormalize();
+
+  //      MainCamera->Target = MainCamera->Pos + 100 * direction;
 	}
 }
 
