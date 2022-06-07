@@ -217,7 +217,7 @@ struct Vector
 
 	FORCEINLINE static Vector GetEulerAngleFrom(const Vector& direction)
 	{
-		return direction.GetEulerAngleFrom();
+		return direction.GetNormalize().GetEulerAngleFrom();
 	}
 
 	Vector GetDirectionFromEulerAngle() const;
