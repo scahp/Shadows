@@ -8,6 +8,11 @@ const Vector Vector::FowardVector = Vector(0.0f, 0.0f, 1.0f);
 const Vector Vector::RightVector = Vector(1.0f, 0.0f, 0.0f);
 const Vector Vector::UpVector = Vector(0.0f, 1.0f, 0.0f);
 
+Vector Vector::GetEulerAngleFrom_Deprecated() const
+{
+	return Vector(acosf(y), atan2f(x, z), 0.0f);
+}
+
 Vector Vector::GetEulerAngleFrom() const
 {
 	// https://math.stackexchange.com/questions/1791209/euler-angle-to-direction-vector-which-is-right

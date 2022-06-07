@@ -82,7 +82,7 @@ void CalculateTangents(Vector4* OutTangentArray, int32 InTriangleCount, const Tr
 void jQuadPrimitive::SetPlane(const jPlane& plane)
 {
 	Plane = plane;
-	RenderObject->SetRot(plane.n.GetEulerAngleFrom());
+	RenderObject->SetRot(plane.n.GetEulerAngleFrom_Deprecated());
 	RenderObject->SetPos(plane.n * plane.d);
 }
 
@@ -91,7 +91,7 @@ void jBillboardQuadPrimitive::Update(float deltaTime)
 	if (Camera)
 	{
 		const Vector normalizedCameraDir = (Camera->Pos - RenderObject->GetPos()).GetNormalize();
-		const Vector eularAngleOfCameraDir = normalizedCameraDir.GetEulerAngleFrom();
+		const Vector eularAngleOfCameraDir = normalizedCameraDir.GetEulerAngleFrom_Deprecated();
 
 		RenderObject->SetRot(eularAngleOfCameraDir);
 	}
@@ -1802,7 +1802,7 @@ jArrowSegmentPrimitive* CreateArrowSegment(const Vector& start, const Vector& en
 	{
 		auto thisArrowSegmentObject = static_cast<jArrowSegmentPrimitive*>(thisObject);
 		thisArrowSegmentObject->ConeObject->RenderObject->SetPos(thisArrowSegmentObject->SegmentObject->RenderObject->GetPos() + thisArrowSegmentObject->SegmentObject->GetCurrentEnd());
-		thisArrowSegmentObject->ConeObject->RenderObject->SetRot(thisArrowSegmentObject->SegmentObject->GetDirectionNormalized().GetEulerAngleFrom());
+		thisArrowSegmentObject->ConeObject->RenderObject->SetRot(thisArrowSegmentObject->SegmentObject->GetDirectionNormalized().GetEulerAngleFrom_Deprecated());
 	};
 
 	return object;
@@ -1888,7 +1888,7 @@ jSpotLightPrimitive* CreateSpotLightDebug(const Vector& scale, jCamera* targetCa
 		spotLightObject->BillboardObject->RenderObject->SetPos(spotLightObject->Light->Data.Position);
 
 		const auto lightDir = -spotLightObject->Light->Data.Direction;
-		const auto directionToRot = lightDir.GetEulerAngleFrom();
+		const auto directionToRot = lightDir.GetEulerAngleFrom_Deprecated();
 		const auto spotLightPos = spotLightObject->Light->Data.Position + lightDir * (-spotLightObject->UmbraConeObject->RenderObject->GetScale().y / 2.0f);
 
 		const auto umbraRadius = tanf(spotLightObject->Light->Data.UmbraRadian) * spotLightObject->Light->Data.MaxDistance;

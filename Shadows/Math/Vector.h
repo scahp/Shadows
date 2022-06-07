@@ -220,6 +220,13 @@ struct Vector
 		return direction.GetNormalize().GetEulerAngleFrom();
 	}
 
+	Vector GetEulerAngleFrom_Deprecated() const;
+
+	FORCEINLINE static Vector GetEulerAngleFrom_Deprecated(const Vector& direction)
+	{
+		return direction.GetNormalize().GetEulerAngleFrom_Deprecated();
+	}
+
 	Vector GetDirectionFromEulerAngle() const;
 
 	FORCEINLINE static Vector GetDirectionFromEulerAngle(const Vector& eulerAngle)
