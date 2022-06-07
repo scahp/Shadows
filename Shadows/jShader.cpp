@@ -93,6 +93,7 @@ struct jShaderInfoCreation
 		DECLARE_SHADER_VS_FS("ReliefMapping", "shaders/vs_reliefmap.glsl", "shaders/fs_reliefmap.glsl");
 		DECLARE_SHADER_VS_FS("DualDepthReliefMapping", "shaders/vs_reliefmap.glsl", "shaders/fs_dualdepthreliefmap.glsl");
 		DECLARE_SHADER_VS_FS("NormalMapping", "shaders/vs_normalmap.glsl", "shaders/fs_normalmap.glsl");
+		DECLARE_SHADER_VS_FS("InteriorMapping", "shaders/vs_interiormap.glsl", "shaders/fs_interiormap.glsl");
 	}
 } s_shaderInfoCreation;
 

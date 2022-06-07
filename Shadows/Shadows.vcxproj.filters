@@ -571,5 +571,11 @@
     <None Include="Shaders\fs_dualdepthreliefmap.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\vs_interiormap.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\fs_interiormap.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
