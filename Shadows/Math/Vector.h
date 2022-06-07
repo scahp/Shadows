@@ -220,6 +220,13 @@ struct Vector
 		return direction.GetEulerAngleFrom();
 	}
 
+	Vector GetDirectionFromEulerAngle() const;
+
+	FORCEINLINE static Vector GetDirectionFromEulerAngle(const Vector& eulerAngle)
+	{
+		return eulerAngle.GetDirectionFromEulerAngle();
+	}
+
 	union
 	{
 		struct { float x, y, z; };

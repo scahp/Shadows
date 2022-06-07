@@ -60,38 +60,39 @@ public:
 	};
 
 	static std::map<int32, jCamera*> CameraMap;
-	static void AddCamera(int32 id, jCamera* camera)
+	FORCEINLINE static void AddCamera(int32 id, jCamera* camera)
 	{
 		CameraMap.insert(std::make_pair(id, camera));
 	}
-	static jCamera* GetCamera(int32 id)
+	FORCEINLINE static jCamera* GetCamera(int32 id)
 	{
 		auto it_find = CameraMap.find(id);
 		return (CameraMap.end() != it_find) ? it_find->second : nullptr;
 	}
-	static jCamera* GetMainCamera()
+	FORCEINLINE static jCamera* GetMainCamera()
 	{
 		return GetCamera(0);
 	}
-	static jCamera* CreateCamera(const Vector& pos, const Vector& target, const Vector& up
+	FORCEINLINE static jCamera* CreateCamera(const Vector& pos, const Vector& target, const Vector& up
 		, float fovRad, float nearDist, float farDist, float width, float height, bool isPerspectiveProjection)
 	{
 		jCamera* camera = new jCamera();
 		SetCamera(camera, pos, target, up, fovRad, nearDist, farDist, width, height, isPerspectiveProjection);
 		return camera;
 	}
-	static void SetCamera(jCamera* OutCamera, const Vector& pos, const Vector& target, const Vector& up
-		, float fovRad, float nearDist, float farDist, float width, float height, bool isPerspectiveProjection)
+	FORCEINLINE static void GetForwardRightUpFromEulerAngle(Vector& OutForward, Vector& OutRight, Vector& OutUp, const Vector& InEulerAngle)
+	{
+		OutForward = InEulerAngle.GetDirectionFromEulerAngle().GetNormalize();
+		OutRight = OutForward.CrossProduct(Vector::UpVector).GetNormalize();
+		OutUp = OutForward.CrossProduct(OutRight).GetNormalize();
+	}
+	FORCEINLINE static void SetCamera(jCamera* OutCamera, const Vector& pos, const Vector& target, const Vector& up
+		, float fovRad, float nearDist, float farDist, float width, float height, bool isPerspectiveProjection, float distance = 300.0f)
 	{
 		const auto toTarget = (target - pos);
-		const auto toUp = (up - pos);
-		const auto toRight = toTarget.CrossProduct(toUp);
-
 		OutCamera->Pos = pos;
-		OutCamera->Up = toRight.CrossProduct(toTarget).GetNormalize();
-		OutCamera->Target = OutCamera->Up.CrossProduct(toRight).GetNormalize();
-		OutCamera->Up += OutCamera->Pos;
-		OutCamera->Target += OutCamera->Pos;
+		OutCamera->Distance = distance;
+		OutCamera->SetEulerAngle(Vector::GetEulerAngleFrom(toTarget));
 
 		OutCamera->FOVRad = fovRad;
 		OutCamera->Near = nearDist;
@@ -112,24 +113,43 @@ public:
 	void UpdateCameraFrustum();
 	void UpdateCamera();
 
-	Vector GetForwardVector() const
+	FORCEINLINE void UpdateCameraParameters()
+	{
+		Vector ForwardDir;
+		Vector RightDir;
+		Vector UpDir;
+		GetForwardRightUpFromEulerAngle(ForwardDir, RightDir, UpDir, EulerAngle);
+		Target = Pos + ForwardDir * Distance;
+		Up = Pos + UpDir;
+	}
+
+	FORCEINLINE void SetEulerAngle(const Vector& InEulerAngle)
+	{
+		if (EulerAngle != InEulerAngle)
+		{
+			EulerAngle = InEulerAngle;
+			UpdateCameraParameters();
+		}
+	}
+
+	FORCEINLINE Vector GetForwardVector() const
 	{
 		return (Target - Pos).GetNormalize();
 	}
 
-	Vector GetUpVector() const
+	FORCEINLINE Vector GetUpVector() const
 	{
 		return (Up - Pos).GetNormalize();
 	}
 
-	Vector GetRightVector() const
+	FORCEINLINE Vector GetRightVector() const
 	{
 		auto toForward = GetForwardVector();
 		auto toUp = GetUpVector();
 		return toForward.CrossProduct(toUp).GetNormalize();
 	}
 
-	void MoveShift(float dist)
+	FORCEINLINE void MoveShift(float dist)
 	{
 		auto toRight = GetRightVector() * dist;
 		Pos += toRight;
@@ -137,7 +157,7 @@ public:
 		Up += toRight;
 	}
 
-	void MoveForward(float dist)
+	FORCEINLINE void MoveForward(float dist)
 	{
 		auto toForward = GetForwardVector() * dist;
 		Pos += toForward;
@@ -188,7 +208,7 @@ public:
 		return Projection * View;
 	}
 
-	bool IsInFrustum(const Vector& pos, float radius)
+	FORCEINLINE bool IsInFrustum(const Vector& pos, float radius)
 	{
 		for (auto& iter : Frustum.Planes)
 		{
@@ -199,7 +219,7 @@ public:
 		return true;
 	}
 
-	bool IsInFrustumWithDirection(const Vector& pos, const Vector& dir, float radius) const
+	FORCEINLINE bool IsInFrustumWithDirection(const Vector& pos, const Vector& dir, float radius) const
 	{
 		for (auto& iter : Frustum.Planes)
 		{
@@ -212,6 +232,8 @@ public:
 		}
 		return true;
 	}
+
+	FORCEINLINE Vector GetEulerAngle() const { return EulerAngle; }
 
 	void AddLight(jLight* light);
 	jLight* GetLight(int32 index) const;
@@ -227,6 +249,9 @@ public:
 	Vector Pos;
 	Vector Target;
 	Vector Up;
+
+	Vector EulerAngle = Vector::ZeroVector;
+	float Distance = 300.0f;
 	
 	Matrix View;
 	Matrix Projection;
@@ -255,7 +280,7 @@ public:
 class jOrthographicCamera : public jCamera 
 {
 public:
-	static jOrthographicCamera* CreateCamera(const Vector& pos, const Vector& target, const Vector& up
+	FORCEINLINE static jOrthographicCamera* CreateCamera(const Vector& pos, const Vector& target, const Vector& up
 		, float minX, float minY, float maxX, float maxY, float farDist, float nearDist)
 	{
 		jOrthographicCamera* camera = new jOrthographicCamera();
@@ -263,18 +288,13 @@ public:
 		return camera;
 	}
 
-	static void SetCamera(jOrthographicCamera* OutCamera, const Vector& pos, const Vector& target, const Vector& up
-		, float minX, float minY, float maxX, float maxY, float farDist, float nearDist)
+	FORCEINLINE static void SetCamera(jOrthographicCamera* OutCamera, const Vector& pos, const Vector& target, const Vector& up
+		, float minX, float minY, float maxX, float maxY, float farDist, float nearDist, float distance = 300.0f)
 	{
 		const auto toTarget = (target - pos);
-		const auto toUp = (up - pos);
-		const auto toRight = toTarget.CrossProduct(toUp);
-
 		OutCamera->Pos = pos;
-		OutCamera->Up = toRight.CrossProduct(toTarget).GetNormalize();
-		OutCamera->Target = OutCamera->Up.CrossProduct(toRight).GetNormalize();
-		OutCamera->Up += OutCamera->Pos;
-		OutCamera->Target += OutCamera->Pos;
+		OutCamera->Distance = distance;
+		OutCamera->SetEulerAngle(Vector::GetEulerAngleFrom(toTarget));
 
 		OutCamera->Near = nearDist;
 		OutCamera->Far = farDist;

@@ -21,20 +21,20 @@ FORCEINLINE bool IsNearlyZero(float fValue, float fTolerance = FLOAT_TOLERANCE)
 	return fabs(fValue) < FLOAT_TOLERANCE;
 }
 
-FORCEINLINE float RadianToDegree(float fRadian)
+FORCEINLINE constexpr float RadianToDegree(float fRadian)
 {
-	static constexpr float ToDegree = 180.0f / PI;
+	constexpr float ToDegree = 180.0f / PI;
 	return fRadian * ToDegree;
 }
 
-FORCEINLINE float DegreeToRadian(float fDegree)
+FORCEINLINE constexpr float DegreeToRadian(float fDegree)
 {
-	static constexpr float ToRadian = PI / 180.0f;
+	constexpr float ToRadian = PI / 180.0f;
 	return fDegree * ToRadian;
 }
 
 template <typename T>
-FORCEINLINE T Clamp(T const& A, T const& Min, T const& Max)
+FORCEINLINE constexpr T Clamp(T const& A, T const& Min, T const& Max)
 {
 	JASSERT(Max >= Min);
 
@@ -48,25 +48,25 @@ FORCEINLINE T Clamp(T const& A, T const& Min, T const& Max)
 }
 
 template <typename T>
-FORCEINLINE T Saturate(T const& A)
+FORCEINLINE constexpr T Saturate(T const& A)
 {
 	return Clamp(A, T(0.0f), T(1.0f));
 }
 
 template <typename T>
-FORCEINLINE T Lerp(const T& A, const T& B, float t)
+FORCEINLINE constexpr T Lerp(const T& A, const T& B, float t)
 {
 	return (A + (B - A) * t);
 }
 
 template <typename T>
-FORCEINLINE T Max(T const& A, T const& B)
+FORCEINLINE constexpr T Max(T const& A, T const& B)
 {
 	return (A > B) ? A : B;
 }
 
 template <typename T>
-FORCEINLINE T Min(T const& A, T const& B)
+FORCEINLINE constexpr T Min(T const& A, T const& B)
 {
 	return (A < B) ? A : B;
 }

@@ -612,69 +612,11 @@ void jGame::OnMouseButton()
 
 void jGame::OnMouseMove(int32 xOffset, int32 yOffset)
 {
-	//static Vector Rot = Vector::ZeroVector;
-	//Matrix::MakeRotate(Rot);
 	if (g_MouseState[EMouseButtonType::LEFT])
 	{
-		static float Yaw = -90.0f;
-		static float Pitch = 0.0f;
-
-		Yaw += xOffset * -0.1f;
-		Pitch += yOffset * 0.1f;
-
-		Vector front;
-		front.x = cos(DegreeToRadian(Yaw)) * cos(DegreeToRadian(Pitch));
-		front.y = sin(DegreeToRadian(Pitch));
-		front.z = sin(DegreeToRadian(Yaw)) * cos(DegreeToRadian(Pitch));
-		auto Front = front.GetNormalize();
-		// also re-calculate the Right and Up vector
-		auto Right = Front.CrossProduct(Vector::UpVector).GetNormalize(); // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
-		auto Up = Front.CrossProduct(Right).GetNormalize();
-
-		MainCamera->Target = MainCamera->Pos + Front * 300.0f;
-		MainCamera->Up = MainCamera->Pos + Up;
-
-		return;
-		Vector forward = MainCamera->GetForwardVector();
-		static Vector Rot = MainCamera->GetForwardVector().GetEulerAngleFrom();
-		//Rot.x = RadianToDegree(Rot.x);
-		//Rot.y = RadianToDegree(Rot.y);
-
-		Matrix m = Matrix::MakeRotate(Rot);
-		Vector v = m.GetRotateVector();
-
-		MainCamera->Target = MainCamera->Pos + v * 100;
-
-		return;
-	}
-
-	if (g_MouseState[EMouseButtonType::LEFT])
-	{
-        auto Up = MainCamera->GetUpVector();
-        if (abs(xOffset))
-            MainCamera->RotateCameraAxis(Up, xOffset * -0.005f);
-
-		auto Right = MainCamera->GetRightVector();
-        if (abs(yOffset))
-            MainCamera->RotateCameraAxis(Right, yOffset * -0.005f);
-
-		//static float yaw = 90;
-		//static float pitch = 0;
-		//yaw += yOffset * 0.1f;
-		//pitch += xOffset * 0.1f;
-
-  //      if (pitch > 89.0f)
-  //          pitch = 89.0f;
-  //      if (pitch < -89.0f)
-  //          pitch = -89.0f;
-
-		//Vector direction;
-  //      direction.x = cos(DegreeToRadian(yaw)) * cos(DegreeToRadian(pitch));
-  //      direction.y = sin(DegreeToRadian(pitch));
-  //      direction.z = sin(DegreeToRadian(yaw)) * cos(DegreeToRadian(pitch));
-		//direction.SetNormalize();
-
-  //      MainCamera->Target = MainCamera->Pos + 100 * direction;
+		constexpr float PitchScale = 0.0025f;
+		constexpr float YawScale = 0.0025f;
+		MainCamera->SetEulerAngle(MainCamera->GetEulerAngle() + Vector(yOffset * PitchScale, xOffset * YawScale, 0.0f));
 	}
 }
 
