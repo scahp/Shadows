@@ -13,7 +13,7 @@ Vector Vector::GetEulerAngleFrom() const
 	// https://math.stackexchange.com/questions/1791209/euler-angle-to-direction-vector-which-is-right
 	// Vector(0, 0, 1) 이 기본 벡터 방향으로 가정함.
 	constexpr float YawOffset = DegreeToRadian(90.0f);
-	return Vector(atan2f(y, z), acosf(x) - YawOffset, 0.0f);
+	return Vector(-atan2f(y, z), acosf(x) - YawOffset, 0.0f);
 }
 
 Vector Vector::GetDirectionFromEulerAngle() const
