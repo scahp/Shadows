@@ -65,7 +65,7 @@ void jGame::Setup()
 	// Create main camera
     //const Vector mainCameraPos(-0.725829422f, 289.250427f, 1.61028826f);
     //const Vector mainCameraTarget(-0.713820636f, 207.391312f, -3.19371367f);
-	const Vector mainCameraPos(300.0f, 0.0f, 300.0f);
+	const Vector mainCameraPos(500.0f, -500.0f, 500.0f);
     const Vector mainCameraTarget(0.0f, 0.0f, 0.0f);
 	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, -1.0, 0.0), DegreeToRadian(45.0f), 10.0f, 1000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
@@ -265,7 +265,7 @@ void jGame::Update(float deltaTime)
 		Quad->RenderObject->SetTexture(1, jName("ReliefTexture"), DualDepthRelief_DepthTexture.lock().get(), LinearClampSamplerState.get());
 		Quad->RenderObject->SetTexture(2, jName("NormalTexture"), NormalTexture.lock().get(), LinearClampSamplerState.get());
 
-		const float RoomWidth = 200.0f;
+		const float RoomWidth = 150.0f;
 		auto test = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/InteriorCubeMap/CaptureCube_Tex_Office1x1x1b2.HDR"));
 		Cube2 = jPrimitiveUtil::CreateCube(Vector(0.0f, 0.0f, 0.0f), Vector::OneVector, Vector(RoomWidth, RoomWidth, RoomWidth), Vector4(0.0f, 0.0f, 1.0f, 0.5f));
 		Cube2->RenderObject->SetTexture(0, jName("ColorTexture"), test.lock().get(), LinearClampSamplerState.get());
