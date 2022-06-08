@@ -65,7 +65,7 @@ void jGame::Setup()
 	// Create main camera
     //const Vector mainCameraPos(-0.725829422f, 289.250427f, 1.61028826f);
     //const Vector mainCameraTarget(-0.713820636f, 207.391312f, -3.19371367f);
-	const Vector mainCameraPos(500.0f, -500.0f, 500.0f);
+	const Vector mainCameraPos(0.0f, 0.0f, -200.0f);
     const Vector mainCameraTarget(0.0f, 0.0f, 0.0f);
 	MainCamera = jCamera::CreateCamera(mainCameraPos, mainCameraTarget, mainCameraPos + Vector(0.0, -1.0, 0.0), DegreeToRadian(45.0f), 10.0f, 1000.0f, SCR_WIDTH, SCR_HEIGHT, true);
 	jCamera::AddCamera(0, MainCamera);
@@ -260,49 +260,78 @@ void jGame::Update(float deltaTime)
 		//DualDepthRelief_DepthTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/DualDepthReliefTexture/supermarket4x4x2a_DepthFG.TGA"));
 		//UpdateReliefTexture();
 
+		std::weak_ptr<jTexture> ColorTextureArray[3];
+		ColorTextureArray[0] = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/DualDepthReliefTexture/office1x1x1e_CaptureFG.HDR"));
+		ColorTextureArray[1] = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/DualDepthReliefTexture/office1x1x1c_CaptureFG.HDR"));
+		ColorTextureArray[2] = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/DualDepthReliefTexture/office1x1x1b_CaptureFG.HDR"));
+
+		std::weak_ptr<jTexture> ReliefTextureArray[3];
+		ReliefTextureArray[0] = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/DualDepthReliefTexture/office1x1x1e_DepthFG.TGA"));
+		ReliefTextureArray[1] = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/DualDepthReliefTexture/office1x1x1c_DepthFG.TGA"));
+		ReliefTextureArray[2] = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/DualDepthReliefTexture/office1x1x1b_DepthFG.TGA"));
+
+		std::weak_ptr<jTexture> EnvTextureArray[3];
+		EnvTextureArray[0] = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/InteriorCubeMap/CaptureCube_Tex_Office1x1x1b2.HDR"));
+		EnvTextureArray[1] = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/InteriorCubeMap/CaptureCube_Tex_Office1x1x1c3.HDR"));
+		EnvTextureArray[2] = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/InteriorCubeMap/CaptureCube_Tex_Office1x1x1d2.HDR"));
+
 		Quad = jPrimitiveUtil::CreateQuad(Vector(0.0f, 0.0f, 0.0f), Vector::OneVector, Vector(Width), Vector4(0.0f, 1.0f, 0.0f, 0.5f));
-		Quad->RenderObject->SetTexture(0, jName("ColorTexture"), DualDepthRelief_ColorTexture.lock().get(), LinearClampSamplerState.get());
-		Quad->RenderObject->SetTexture(1, jName("ReliefTexture"), DualDepthRelief_DepthTexture.lock().get(), LinearClampSamplerState.get());
-		Quad->RenderObject->SetTexture(2, jName("NormalTexture"), NormalTexture.lock().get(), LinearClampSamplerState.get());
+		int32 index = 0;
+		char szTemp[128] = { 0, };
+		for (int32 i = 0; i < 3; ++i)
+		{
+			sprintf_s(szTemp, sizeof(szTemp), "ColorTexture[%d]", i);
+			Quad->RenderObject->SetTexture(index++, jName(szTemp), ColorTextureArray[i].lock().get(), LinearClampSamplerState.get());
+
+			sprintf_s(szTemp, sizeof(szTemp), "ReliefTexture[%d]", i);
+			Quad->RenderObject->SetTexture(index++, jName(szTemp), ReliefTextureArray[i].lock().get(), LinearClampSamplerState.get());
+
+			sprintf_s(szTemp, sizeof(szTemp), "EnvironmentTexture[%d]", i);
+			Quad->RenderObject->SetTexture(index++, jName(szTemp), EnvTextureArray[i].lock().get(), LinearClampSamplerState.get());
+		}
+		//Quad->RenderObject->SetTexture(2, jName("NormalTexture"), NormalTexture.lock().get(), LinearClampSamplerState.get());
+		Quad->RenderObject->SetRot({ DegreeToRadian(90.0f), 0.0f, 0.0f });
 
 		const float RoomWidth = 150.0f;
-		auto test = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/InteriorCubeMap/CaptureCube_Tex_Office1x1x1b2.HDR"));
-		Cube2 = jPrimitiveUtil::CreateCube(Vector(0.0f, 0.0f, 0.0f), Vector::OneVector, Vector(RoomWidth, RoomWidth, RoomWidth), Vector4(0.0f, 0.0f, 1.0f, 0.5f));
-		Cube2->RenderObject->SetTexture(0, jName("ColorTexture"), test.lock().get(), LinearClampSamplerState.get());
+		//Cube2 = jPrimitiveUtil::CreateCube(Vector(0.0f, 0.0f, 0.0f), Vector::OneVector, Vector(RoomWidth, RoomWidth, RoomWidth), Vector4(0.0f, 0.0f, 1.0f, 0.5f));
+		Cube2 = jPrimitiveUtil::CreateQuad(Vector(0.0f, 0.0f, 0.0f), Vector::OneVector, Vector(Width), Vector4(0.0f, 1.0f, 0.0f, 0.5f));
+		Cube2->RenderObject->SetTexture(0, jName("ColorTexture"), EnvTextureArray[0].lock().get(), LinearClampSamplerState.get());
+		Cube2->RenderObject->SetRot({ DegreeToRadian(90.0f), 0.0f, 0.0f });
 
 		//Quad->RenderObject->SetRot({ 0.0f, 0.0f, -DegreeToRadian(90.0f) });
         //Quad->RenderObject->SetRot({ -DegreeToRadian(90.0f), 0.0f, 0.0f });
 
 		RT = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget(
-			{ ETextureType::TEXTURE_2D, ETextureFormat::RGBA8, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::DEPTH24, SCR_WIDTH, SCR_HEIGHT, 1 }));
+			{ ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::DEPTH24, SCR_WIDTH, SCR_HEIGHT, 1 }));
 
 		FullQuad = jPrimitiveUtil::CreateFullscreenQuad(RT->GetTexture());
 
 		g_rhi->SetLineWidth(2.5f);		// Boudnbox debugging
 	}
 
-	static auto SelectedTexture = EDualDepthReliefTexture::MAX;
-	auto UpdateReliefTexture = [&]()
-	{
-		std::string color = "Image/DualDepthReliefTexture/" + std::string(EDualDepthReliefTextureString[(int32)SelectedTexture]) + ".HDR";
-		std::string dualdepth = std::regex_replace(color, std::regex("_Capture"), "_Depth");
-		dualdepth = std::regex_replace(dualdepth, std::regex(".HDR"), ".TGA");
+	//static auto SelectedTexture = EDualDepthReliefTexture::MAX;
+	//auto UpdateReliefTexture = [&]()
+	//{
+	//	std::string color = "Image/DualDepthReliefTexture/" + std::string(EDualDepthReliefTextureString[(int32)SelectedTexture]) + ".HDR";
+	//	std::string dualdepth = std::regex_replace(color, std::regex("_Capture"), "_Depth");
+	//	dualdepth = std::regex_replace(dualdepth, std::regex(".HDR"), ".TGA");
 
-		DualDepthRelief_ColorTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName(color.c_str()));
-		DualDepthRelief_DepthTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName(dualdepth.c_str()));
+	//	DualDepthRelief_ColorTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName(color.c_str()));
+	//	DualDepthRelief_DepthTexture = jImageFileLoader::GetInstance().LoadTextureFromFile(jName(dualdepth.c_str()));
 
-		static const auto LinearClampSamplerState = jSamplerStatePool::GetSamplerState(jName("LinearClamp"));
-		Quad->RenderObject->SetTexture(0, jName("ColorTexture"), DualDepthRelief_ColorTexture.lock().get(), LinearClampSamplerState.get());
-		Quad->RenderObject->SetTexture(1, jName("ReliefTexture"), DualDepthRelief_DepthTexture.lock().get(), LinearClampSamplerState.get());
-	};
+	//	static const auto LinearClampSamplerState = jSamplerStatePool::GetSamplerState(jName("LinearClamp"));
+	//	Quad->RenderObject->SetTexture(0, jName("ColorTexture"), DualDepthRelief_ColorTexture.lock().get(), LinearClampSamplerState.get());
+	//	Quad->RenderObject->SetTexture(1, jName("ReliefTexture"), DualDepthRelief_DepthTexture.lock().get(), LinearClampSamplerState.get());
+	//};
 
-	if (SelectedTexture != appSetting.ReliefTexture)
-	{
-		SelectedTexture = appSetting.ReliefTexture;
-		UpdateReliefTexture();
-	}
+	//if (SelectedTexture != appSetting.ReliefTexture)
+	//{
+	//	SelectedTexture = appSetting.ReliefTexture;
+	//	UpdateReliefTexture();
+	//}
 
-	const bool ShouldUseQuad = appSetting.ReliefType == EReliefTracingType::DualDepth;
+	//const bool ShouldUseQuad = appSetting.ReliefType == EReliefTracingType::DualDepth;
+	auto ShouldUseQuad = true;
 
 	if (RT->Begin())
 	{
@@ -315,8 +344,12 @@ void jGame::Update(float deltaTime)
 
 		MainCamera->IsEnableCullMode = false;
 
+		if (0)
 		{
 			jShader* shader = jShader::GetShader("InteriorMapping");
+			g_rhi->SetShader(shader);
+			SET_UNIFORM_BUFFER_STATIC("WorldSpace_ViewDir_ToSurface", MainCamera->GetForwardVector(), shader);
+			g_rhi->SetUniformbuffer(jName("WorldSpace_CameraPos"), MainCamera->Pos, shader);
 			Cube2->RenderObject->UpdateWorldMatrix();
 			Cube2->Update(deltaTime);
 			Cube2->Draw(MainCamera, shader, {});
@@ -363,7 +396,6 @@ void jGame::Update(float deltaTime)
 			}
 		}
 
-		if (0)
 		if (ShouldUseQuad)
 		{
 			auto shader = jShader::GetShader("DualDepthReliefMapping");

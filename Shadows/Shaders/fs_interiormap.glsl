@@ -5,10 +5,14 @@ precision mediump float;
 uniform sampler2D ColorTexture;
 uniform int TextureSRGB[1];
 uniform int UseTexture;
+uniform vec3 WorldSpace_ViewDir_ToSurface;
+uniform vec3 WorldSpace_CameraPos;
 
 in vec2 TexCoord_;
 in vec4 Color_;
 in vec3 LocalPos_;
+in mat3 TBN_;
+in vec3 WorldPos_;
 
 out vec4 color;
 
@@ -37,8 +41,27 @@ vec2 SampleSphericalMap(vec3 v)
 
 void main()
 {
-	vec2 uv = SampleSphericalMap(normalize(LocalPos_)); // make sure to normalize localPos
-	color.xyz = texture(ColorTexture, uv).rgb;
+//	vec2 uv = SampleSphericalMap(normalize(LocalPos_)); // make sure to normalize localPos
+//	color.xyz = texture(ColorTexture, uv).rgb;
+//	color.xyz = Uncharted2Tonemap(color.xyz);
+//	color.w = 1.0;
+
+    vec3 TangentSpace_ViewDir_ToSurface_ = TBN_ * normalize(WorldPos_ - WorldSpace_CameraPos);
+    //TangentSpace_ViewDir_ToSurface_ = WorldSpace_CameraPos;
+
+    // raytrace box from tangent view dir
+    // https://chulin28ho.tistory.com/521
+    vec3 pos = vec3(TexCoord_ * 2.0 - 1.0, -1.0);
+    vec3 id = 1.0 / (TangentSpace_ViewDir_ToSurface_+0.00001);
+    vec3 k = abs(id) - pos * id;
+    float kMin = min(min(k.x, k.y), k.z);
+    pos += kMin * TangentSpace_ViewDir_ToSurface_;
+    
+    color.xyz = pos;
+    color.w = 1;
+    //return;
+    vec2 uv = SampleSphericalMap(normalize(pos));
+    color.xyz = texture(ColorTexture, uv).rgb;
 	color.xyz = Uncharted2Tonemap(color.xyz);
 	color.w = 1.0;
 }

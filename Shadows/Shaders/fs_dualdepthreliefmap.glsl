@@ -2,9 +2,9 @@
 
 precision mediump float;
 
-uniform sampler2D ColorTexture;
-uniform sampler2D ReliefTexture;
-uniform sampler2D NormalTexture;
+uniform sampler2D ColorTexture[3];
+uniform sampler2D ReliefTexture[3];
+uniform sampler2D EnvironmentTexture[3];
 
 uniform int TextureSRGB[1];
 uniform int UseTexture;
@@ -19,28 +19,12 @@ in vec3 WorldPos_;
 
 out vec4 color;
 
-vec3 GetNormal(vec2 uv)
-{
-	vec3 normal = texture(ReliefTexture, uv).xyz;
-	normal = normal * 2.0 - 1.0;
-	normal.y = -normal.y;			// if it's using opengl normal map
-	return normal;
-}
-
-vec3 GetTwoChannelNormal(vec2 uv)
-{
-	vec2 normal = texture(ReliefTexture, uv).xy;
-	normal = normal * 2.0 - 1.0;
-	normal.y = -normal.y;			// if it's using opengl normal map
-	return vec3(normal.x, normal.y, sqrt(1.0 - normal.x*normal.x - normal.y*normal.y));
-}
-
-vec4 GetDiffuse(vec2 uv)
+vec4 GetDiffuse(vec2 uv, int index)
 {
 	vec4 DiffuseColor;
 	if (UseTexture > 0)
 	{
-		DiffuseColor = texture2D(ColorTexture, uv);
+		DiffuseColor = texture2D(ColorTexture[index], uv);
 		if (TextureSRGB[0] > 0)
 			DiffuseColor.xyz = pow(color.xyz, vec3(2.2));
 	}
@@ -49,34 +33,6 @@ vec4 GetDiffuse(vec2 uv)
 		DiffuseColor = Color_;
 	}
 	return DiffuseColor;
-}
-
-// ray intersect depth map using linear and binary searches
-// depth value stored in alpha channel (black at is object surface)
-void ray_intersect_relief(inout vec3 p, vec3 v)
-{
-	const int num_steps_lin=15;
-	const int num_steps_bin=6;
-	
-	v /= v.z*num_steps_lin;
-	
-	int i;
-	for( i=0;i<num_steps_lin;i++ )
-	{
-		vec4 tex = texture(ReliefTexture, p.xy);
-		if (p.z<tex.w)
-			p+=v;
-	}
-	
-	for( i=0;i<num_steps_bin;i++ )
-	{
-		v *= 0.5;
-		vec4 tex = texture(ReliefTexture, p.xy);
-		if (p.z<tex.w)
-			p+=v;
-		else
-			p-=v;
-	}
 }
 
 vec3 GetLightTracingStartPointFromCurrentPoint(vec3 CurrentPosition, vec3 LightDirectionToSurface)
@@ -127,9 +83,9 @@ vec3 Uncharted2Tonemap(vec3 x)
 	return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
 }
 
-vec2 GetRelief(vec2 uv)
+vec2 GetRelief(vec2 uv, int index)
 {
-	vec2 dualdepth = texture(ReliefTexture, uv.xy).xy;
+	vec2 dualdepth = texture(ReliefTexture[index], uv.xy).xy;
 
 	// This option is specialized for ue5 city sample's asset.
 	dualdepth.x = 1.0 - dualdepth.x;	// x는 카메라에서 가까울 수록 큼
@@ -152,12 +108,46 @@ bool CheckUV(vec3 p, vec2 tex)
 	return (p.z>tex.x && p.z<tex.y);
 }
 
+const vec2 invAtan = vec2(0.1591, 0.3183);
+vec2 SampleSphericalMap(vec3 v)
+{
+    vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
+    uv *= invAtan;
+    uv += 0.5;
+    return uv;
+}
+
+vec3 GetEnvCube(vec2 uv, vec3 TangentSpace_ViewDir_ToSurface_, int index)
+{
+    // raytrace box from tangent view dir
+    // https://chulin28ho.tistory.com/521
+    vec3 pos = vec3(uv * 2.0 - 1.0, TangentSpace_ViewDir_ToSurface_.z > 0 ? -1 : 1);
+    vec3 id = 1.0 / (TangentSpace_ViewDir_ToSurface_+0.00001);
+    vec3 k = abs(id) - pos * id;
+    float kMin = min(min(k.x, k.y), k.z);
+    pos += kMin * TangentSpace_ViewDir_ToSurface_;
+
+	if (TangentSpace_ViewDir_ToSurface_.z <= 0)
+		pos.z = -pos.z;
+
+    return texture(EnvironmentTexture[index], SampleSphericalMap(normalize(pos))).rgb;
+}
+
 void main()
 {
+	vec2 texScale = TexCoord_ * 5.0;
+	vec2 uv = fract(texScale);
+	vec2 indexUV = floor(texScale);
+	int IndexRelief = int(indexUV.x + indexUV.y * 2) % 3;
+	int IndexEnv = int(indexUV.y  + indexUV.x * 4) % 3;
+
+	//IndexRelief = 0;
+	//IndexEnv = 2;
+
     vec3 TangentSpace_ViewDir_ToSurface_ = TBN_ * normalize(WorldPos_ - WorldSpace_CameraPos);
 	
 	// 1. Tracing ray from camera postion
-	vec3 CurrentPosition = vec3(TexCoord_,0.0);
+	vec3 CurrentPosition = vec3(uv,0.0);
 	vec3 TangentSpace_ViewDir_ToSurface = normalize(TangentSpace_ViewDir_ToSurface_);
 	TangentSpace_ViewDir_ToSurface.z = abs(TangentSpace_ViewDir_ToSurface.z);
 
@@ -178,7 +168,7 @@ void main()
 		int i;
 		for( i=0;i<num_steps_lin;i++ )
 		{
-			vec2 tex = GetRelief(p.xy);
+			vec2 tex = GetRelief(p.xy, IndexRelief);
 			if (CheckUV(p, tex) && IsInTexUV(p.xy))
 			{
 				found = true;
@@ -191,9 +181,13 @@ void main()
 		}
 
 		if (!found)
+		{
+			color.xyz = GetEnvCube(uv, TangentSpace_ViewDir_ToSurface_, IndexEnv);
+			color.xyz = Uncharted2Tonemap(color.xyz);
 			return;
+		}
 	}
 
-	color = GetDiffuse(p.xy);			// Apply diffuse
+	color = GetDiffuse(p.xy, IndexRelief);			// Apply diffuse
 	color.xyz = Uncharted2Tonemap(color.xyz);
 }
