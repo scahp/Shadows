@@ -297,3 +297,8 @@ void jRenderObject::SetTextureWithCommonName(int32 index, const jTexture* textur
 {
 	MaterialData.SetMaterialParam(index, GetCommonTextureName(index), texture, samplerState);
 }
+
+void jRenderObject::ClearTexture()
+{
+	MaterialData.Clear();
+}

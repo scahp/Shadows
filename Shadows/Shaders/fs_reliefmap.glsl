@@ -9,7 +9,7 @@ uniform sampler2D NormalTexture;
 uniform int TextureSRGB[1];
 uniform int UseTexture;
 uniform vec3 WorldSpace_LightDir_ToSurface;
-uniform int ReliefTracingType;
+uniform int MappingType;
 uniform int DepthBias;
 uniform float DepthScale;
 uniform int UseShadow;
@@ -171,9 +171,9 @@ void main()
 	ApplyDepthBiasScale(TangentSpace_ViewDir_ToSurface);	// Apply DepthBias and DepthScale
 
 	// 2. Tracing ray
-	if (ReliefTracingType == 0)
+    if (MappingType == 0)		// relief linear
 		ray_intersect_relief(CurrentPosition, TangentSpace_ViewDir_ToSurface);
-	else
+    else if (MappingType == 1)	// relief relaxed cone
 		ray_intersect_relaxedcone(CurrentPosition, TangentSpace_ViewDir_ToSurface);
 
 	if (UseShadow > 0)
@@ -192,12 +192,12 @@ void main()
 		vec3 LightCurrentPosition = GetLightTracingStartPointFromCurrentPoint(CurrentPosition, TangentSpace_LightDir_ToSurface);
 
 		// 4. Tracing ray
-		if (ReliefTracingType == 0)
+        if (MappingType == 0)		// relief linear
 			ray_intersect_relief(LightCurrentPosition, TangentSpace_LightDir_ToSurface);
-		else
+        else if (MappingType == 1)	// relief relaxed cone
 			ray_intersect_relaxedcone(LightCurrentPosition, TangentSpace_LightDir_ToSurface);
 
-		// Check the shadowing
+		// Check receiving shadow
 		if (LightCurrentPosition.z < CurrentPosition.z - 0.01)
 			IsShadow = true;
 	}

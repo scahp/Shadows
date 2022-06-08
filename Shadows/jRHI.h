@@ -230,7 +230,7 @@ struct jMaterialData
 {
 	~jMaterialData()
 	{
-		Params.clear();
+		Clear();
 	}
 
 	void AddMaterialParam(const jName& name, const jTexture* texture, const jSamplerState* samplerState = nullptr);
@@ -238,6 +238,7 @@ struct jMaterialData
 	void SetMaterialParam(int32 index, const jName& name);
 	void SetMaterialParam(int32 index, const jTexture* texture);
 	void SetMaterialParam(int32 index, const jSamplerState* samplerState);
+	void Clear() { Params.clear(); }
 
 	std::vector<jMaterialParam> Params;
 };

@@ -3,10 +3,30 @@
 
 jShadowAppSettingProperties* jShadowAppSettingProperties::_instance = nullptr;
 
+void jShadowAppSettingProperties::UpdateVisibleProperties(jAppSettingBase* appSetting)
+{
+	static auto PrevMappingType = MappingType;
+	if (PrevMappingType == MappingType)
+		return;
+
+	PrevMappingType = MappingType;
+
+	const bool IsVisibleBasicRelief = MappingType == EMappingType::Linear || MappingType == EMappingType::RelaxedCone;
+	const bool IsVisibleDualDepthRelief = MappingType == EMappingType::DualDepth;
+	const bool IsVisibleInterior = MappingType == EMappingType::Interior;
+	const bool IsVisibleDualDepth_Interior = MappingType == EMappingType::DualDepth_Interior;
+
+	appSetting->SetVisible("SingleDepth", IsVisibleBasicRelief);
+	appSetting->SetVisible("DualDepth", IsVisibleDualDepthRelief || IsVisibleDualDepth_Interior);
+
+	const bool IsVisibleSelectReliefTexture = IsVisibleDualDepthRelief && !IsVisibleDualDepth_Interior;
+    appSetting->SetVisible("DualDepth_ReliefTexture", IsVisibleSelectReliefTexture);
+}
+
 void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 {
-	appSetting->AddEnumVariable("ReliefType", ReliefType, "EReliefType", EReliefTypeString);
-	appSetting->SetGroup("ReliefType", "Type");
+	appSetting->AddEnumVariable("MappingType", MappingType, "EMappingType", EMappingTypeString);
+	appSetting->SetGroup("MappingType", "Type");
 
 	appSetting->AddVariable("DepthBias", DepthBias);
 	appSetting->SetGroup("DepthBias", "SingleDepth");
@@ -157,7 +177,7 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 
 void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 {
-	appSetting->RemoveVariable("ReliefTracingType");
+	appSetting->RemoveVariable("MappingType");
 	appSetting->RemoveVariable("DepthBias");
 	appSetting->RemoveVariable("DepthScale");
 	appSetting->RemoveVariable("ShadowOn");

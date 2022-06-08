@@ -31,7 +31,7 @@ public:
 	bool ShowSpotLightInfo = false;
 	bool ShowBoundBox = true;
 	bool ShowBoundSphere = false;
-	Vector DirecionalLightDirection = Vector(-0.88f, -0.47f, -0.05f).GetNormalize();
+	Vector DirecionalLightDirection = Vector(-0.88f, 0.47f, -0.55f).GetNormalize();
 	Vector PointLightPosition = Vector(10.0f, 100.0f, 10.0f);
 	Vector SpotLightPosition = Vector(0.0f, 60.0f, 5.0f);
 	Vector SpotLightDirection = Vector(-1.0f, -1.0f, -0.4f).GetNormalize();
@@ -43,14 +43,17 @@ public:
 	float BloomBlurSigma = 0.8f;
 	float BloomMagnitude = 0.75f;
 
-	EReliefTracingType ReliefType = EReliefTracingType::RelaxedCone;
+	EMappingType MappingType = EMappingType::DualDepth_Interior;
 	bool DepthBias = true;
 	float DepthScale = 0.15f;
 	bool DualDepth_DepthBias = true;
 	float DualDepth_DepthScale = 1.0f;
 	bool ReliefShadowOn = true;
 
+	EInteriorTexture InteriorTexture = EInteriorTexture::CaptureCube_Tex_Office1x1x1b2;
 	EDualDepthReliefTexture ReliefTexture = EDualDepthReliefTexture::office1x1x1b_CaptureFG;
+
+	void UpdateVisibleProperties(jAppSettingBase* appSetting);
 
 	virtual void Setup(jAppSettingBase* appSetting) override;
 	virtual void Teardown(jAppSettingBase* appSetting) override;

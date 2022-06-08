@@ -82,6 +82,7 @@ public:
 
 	void SetTexture(int32 index, const jName& name, const jTexture* texture, const jSamplerState* samplerState = nullptr);
 	void SetTextureWithCommonName(int32 index, const jTexture* texture, const jSamplerState* samplerState = nullptr);
+	void ClearTexture();
 
 private:
 	enum EDirty : int8
