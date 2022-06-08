@@ -629,7 +629,7 @@ void jGame::OnMouseMove(int32 xOffset, int32 yOffset)
 {
 	if (g_MouseState[EMouseButtonType::LEFT])
 	{
-		constexpr float PitchScale = 0.0025f;
+		constexpr float PitchScale = -0.0025f;
 		constexpr float YawScale = 0.0025f;
 		MainCamera->SetEulerAngle(MainCamera->GetEulerAngle() + Vector(yOffset * PitchScale, xOffset * YawScale, 0.0f));
 	}

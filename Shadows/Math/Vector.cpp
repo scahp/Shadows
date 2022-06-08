@@ -8,22 +8,15 @@ const Vector Vector::FowardVector = Vector(0.0f, 0.0f, 1.0f);
 const Vector Vector::RightVector = Vector(1.0f, 0.0f, 0.0f);
 const Vector Vector::UpVector = Vector(0.0f, 1.0f, 0.0f);
 
-Vector Vector::GetEulerAngleFrom_Deprecated() const
-{
-	return Vector(acosf(y), atan2f(x, z), 0.0f);
-}
-
 Vector Vector::GetEulerAngleFrom() const
 {
-	// https://math.stackexchange.com/questions/1791209/euler-angle-to-direction-vector-which-is-right
-	// Vector(0, 0, 1) 이 기본 벡터 방향으로 가정함.
-	constexpr float YawOffset = DegreeToRadian(90.0f);
-	return Vector(-atan2f(y, z), acosf(x) - YawOffset, 0.0f);
+	// Vector::UpVector 이 기반 회전 벡터 방향으로 가정함.
+	return Vector(acosf(y), atan2f(x, z), 0.0f);
 }
 
 Vector Vector::GetDirectionFromEulerAngle() const
 {
-	return Matrix::MakeRotate(x, y, z).TransformDirection(Vector::FowardVector);
+	return Matrix::MakeRotate(x, y, z).TransformDirection(Vector::UpVector);
 }
 
 // Vector

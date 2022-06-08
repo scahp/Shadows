@@ -83,7 +83,10 @@ public:
 	FORCEINLINE static void GetForwardRightUpFromEulerAngle(Vector& OutForward, Vector& OutRight, Vector& OutUp, const Vector& InEulerAngle)
 	{
 		OutForward = InEulerAngle.GetDirectionFromEulerAngle().GetNormalize();
-		OutRight = OutForward.CrossProduct(Vector::UpVector).GetNormalize();
+
+		const bool IsInvert = (InEulerAngle.x < 0 || PI < InEulerAngle.x);
+		OutRight = OutForward.CrossProduct(IsInvert ? -Vector::UpVector : Vector::UpVector).GetNormalize();
+
 		OutUp = OutForward.CrossProduct(OutRight).GetNormalize();
 	}
 	FORCEINLINE static void SetCamera(jCamera* OutCamera, const Vector& pos, const Vector& target, const Vector& up
