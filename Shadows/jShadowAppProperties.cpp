@@ -21,6 +21,11 @@ void jShadowAppSettingProperties::UpdateVisibleProperties(jAppSettingBase* appSe
 
 	const bool IsVisibleSelectReliefTexture = IsVisibleDualDepthRelief && !IsVisibleDualDepth_Interior;
     appSetting->SetVisible("DualDepth_ReliefTexture", IsVisibleSelectReliefTexture);
+
+	appSetting->SetVisible("AmbientColor0", IsVisibleDualDepth_Interior);
+    appSetting->SetVisible("AmbientColor1", IsVisibleDualDepth_Interior);
+    appSetting->SetVisible("AmbientColor2", IsVisibleDualDepth_Interior);
+	appSetting->SetVisible("RoomCount", IsVisibleDualDepth_Interior);
 }
 
 void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
@@ -52,6 +57,13 @@ void jShadowAppSettingProperties::Setup(jAppSettingBase* appSetting)
 	appSetting->AddEnumVariable("DualDepth_ReliefTexture", ReliefTexture, "EDualDepthReliefTexture", EDualDepthReliefTextureString);
 	appSetting->SetLabel("DualDepth_ReliefTexture", "ReliefTexture");
 	appSetting->SetGroup("DualDepth_ReliefTexture", "DualDepth");
+
+    appSetting->AddColorVariable("AmbientColor0", AmbientColors[0]);
+    appSetting->AddColorVariable("AmbientColor1", AmbientColors[1]);
+    appSetting->AddColorVariable("AmbientColor2", AmbientColors[2]);
+
+	appSetting->AddVariable("RoomCount", RoomCount);
+    appSetting->SetMinMax("RoomCount", 1, 12);
 
 	//appSetting->AddVariable("ShadowOn", ShadowOn);
 
@@ -186,6 +198,12 @@ void jShadowAppSettingProperties::Teardown(jAppSettingBase* appSetting)
 	appSetting->RemoveVariable("DualDepth_DepthScale");
 	appSetting->RemoveVariable("DualDepth_ReliefTexture");
 	appSetting->RemoveVariable("ShadowOn");
+
+	appSetting->RemoveVariable("AmbientColor0");
+    appSetting->RemoveVariable("AmbientColor1");
+    appSetting->RemoveVariable("AmbientColor2");
+
+    appSetting->RemoveVariable("RoomCount");
 
 	//appSetting->RemoveVariable("ShadowOn");
 	//appSetting->RemoveVariable("EShadowType");

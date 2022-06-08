@@ -11,6 +11,8 @@ uniform int UseTexture;
 uniform int DepthBias;
 uniform float DepthScale;
 uniform vec3 WorldSpace_CameraPos;
+uniform vec3 InteriorAmbientColor[3];
+uniform int RoomCount;
 
 in vec2 TexCoord_;
 in vec4 Color_;
@@ -133,13 +135,41 @@ vec3 GetEnvCube(vec2 uv, vec3 TangentSpace_ViewDir_ToSurface_, int index)
     return texture(EnvironmentTexture[index], SampleSphericalMap(normalize(pos))).rgb;
 }
 
+// ray tracing dual depth relief until intersecting
+bool ray_intersect_dual_depth_relief(inout vec3 p, vec3 direction, int indexRelief)
+{
+	//const int num_steps_lin=15;
+    const int num_steps_lin = 128;
+    const int num_steps_bin = 6;
+	
+    direction /= direction.z * num_steps_lin;
+
+    bool found = false;
+    for (int i = 0; i < num_steps_lin; i++)
+    {
+        vec2 tex = GetRelief(p.xy, indexRelief);
+        if (CheckUV(p, tex) && IsInTexUV(p.xy))
+        {
+            found = true;
+            break;
+        }
+        else
+        {
+            p += direction;
+        }
+    }
+	
+    return found;
+}
+
 void main()
 {
-	vec2 texScale = TexCoord_ * 5.0;
+    vec2 texScale = TexCoord_ * RoomCount;
 	vec2 uv = fract(texScale);
 	vec2 indexUV = floor(texScale);
 	int IndexRelief = int(indexUV.x + indexUV.y * 2) % 3;
 	int IndexEnv = int(indexUV.y  + indexUV.x * 4) % 3;
+    int IndexAmbient = int(indexUV.x * 2 + indexUV.y * 7) % 3;
 
 	//IndexRelief = 0;
 	//IndexEnv = 2;
@@ -156,38 +186,14 @@ void main()
 	// 2. Tracing ray
 	vec3 p = CurrentPosition;
 	vec3 v = TangentSpace_ViewDir_ToSurface;
-	{
-		//const int num_steps_lin=15;
-		const int num_steps_lin=128;
-		const int num_steps_bin=6;
-	
-		v /= v.z*num_steps_lin;
-
-		bool found = false;
-
-		int i;
-		for( i=0;i<num_steps_lin;i++ )
-		{
-			vec2 tex = GetRelief(p.xy, IndexRelief);
-			if (CheckUV(p, tex) && IsInTexUV(p.xy))
-			{
-				found = true;
-				break;
-			}
-			else
-			{
-				p+=v;
-			}
-		}
-
-		if (!found)
-		{
-			color.xyz = GetEnvCube(uv, TangentSpace_ViewDir_ToSurface_, IndexEnv);
-			color.xyz = Uncharted2Tonemap(color.xyz);
-			return;
-		}
-	}
-
-	color = GetDiffuse(p.xy, IndexRelief);			// Apply diffuse
-	color.xyz = Uncharted2Tonemap(color.xyz);
+    if (ray_intersect_dual_depth_relief(CurrentPosition, TangentSpace_ViewDir_ToSurface, IndexRelief))
+    {
+        color = GetDiffuse(CurrentPosition.xy, IndexRelief); // Apply diffuse
+    }
+	else
+    {
+        color.xyz = GetEnvCube(uv, TangentSpace_ViewDir_ToSurface_, IndexEnv);	// Apply Env
+    }
+    color.xyz *= InteriorAmbientColor[IndexAmbient];
+    color.xyz = Uncharted2Tonemap(color.xyz);
 }

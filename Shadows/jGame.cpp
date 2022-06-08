@@ -270,16 +270,7 @@ void jGame::Update(float deltaTime)
 
 		float QuadWidth = 200.0f;
 		Quad = jPrimitiveUtil::CreateQuad(Vector(0.0f, 0.0f, 0.0f), Vector::OneVector, Vector(QuadWidth), Vector4(0.0f, 1.0f, 0.0f, 0.5f));
-		//Quad->RenderObject->SetTexture(2, jName("NormalTexture"), NormalTexture.lock().get(), LinearClampSamplerState.get());
 		Quad->RenderObject->SetRot({ DegreeToRadian(90.0f), 0.0f, 0.0f });
-
-		//Cube2 = jPrimitiveUtil::CreateCube(Vector(0.0f, 0.0f, 0.0f), Vector::OneVector, Vector(RoomWidth, RoomWidth, RoomWidth), Vector4(0.0f, 0.0f, 1.0f, 0.5f));
-		Cube2 = jPrimitiveUtil::CreateQuad(Vector(0.0f, 0.0f, 0.0f), Vector::OneVector, Vector(Width), Vector4(0.0f, 1.0f, 0.0f, 0.5f));
-		Cube2->RenderObject->SetTexture(0, jName("ColorTexture"), EnvTextureArray[0].lock().get(), LinearClampSamplerState.get());
-		Cube2->RenderObject->SetRot({ DegreeToRadian(90.0f), 0.0f, 0.0f });
-
-		//Quad->RenderObject->SetRot({ 0.0f, 0.0f, -DegreeToRadian(90.0f) });
-        //Quad->RenderObject->SetRot({ -DegreeToRadian(90.0f), 0.0f, 0.0f });
 
 		RT = std::shared_ptr<jRenderTarget>(jRenderTargetPool::GetRenderTarget(
 			{ ETextureType::TEXTURE_2D, ETextureFormat::RGBA32F, ETextureFormat::RGBA, EFormatType::FLOAT, EDepthBufferType::DEPTH24, SCR_WIDTH, SCR_HEIGHT, 1 }));
@@ -362,7 +353,6 @@ void jGame::Update(float deltaTime)
 		g_rhi->SetDepthFunc(EComparisonFunc::LEQUAL);
 		g_rhi->EnableCullFace(true);
 		g_rhi->EnableCullMode(ECullMode::BACK);
-		//g_rhi->SetFrontFace(EFrontFace::CCW);
 
 		MainCamera->IsEnableCullMode = false;
 
@@ -382,12 +372,20 @@ void jGame::Update(float deltaTime)
 					shader = jShader::GetShader("DualDepthReliefInteriorMapping");
 
 				g_rhi->SetShader(shader);
-				g_rhi->SetUniformbuffer(jName("WorldSpace_LightDir_ToSurface"), DirectionalLight->Data.Direction, shader);
-				g_rhi->SetUniformbuffer(jName("WorldSpace_CameraPos"), MainCamera->Pos, shader);
-				g_rhi->SetUniformbuffer(jName("MappingType"), (int32)appSetting.MappingType, shader);
-				g_rhi->SetUniformbuffer(jName("DepthBias"), appSetting.DualDepth_DepthBias, shader);
-				g_rhi->SetUniformbuffer(jName("DepthScale"), appSetting.DualDepth_DepthScale, shader);
-				g_rhi->SetUniformbuffer(jName("UseShadow"), appSetting.ReliefShadowOn, shader);
+				SET_UNIFORM_BUFFER_STATIC("WorldSpace_LightDir_ToSurface", DirectionalLight->Data.Direction, shader);
+				SET_UNIFORM_BUFFER_STATIC("WorldSpace_CameraPos", MainCamera->Pos, shader);
+				SET_UNIFORM_BUFFER_STATIC("MappingType", (int32)appSetting.MappingType, shader);
+				SET_UNIFORM_BUFFER_STATIC("DepthBias", appSetting.DualDepth_DepthBias, shader);
+				SET_UNIFORM_BUFFER_STATIC("DepthScale", appSetting.DualDepth_DepthScale, shader);
+				SET_UNIFORM_BUFFER_STATIC("UseShadow", appSetting.ReliefShadowOn, shader);
+
+				if (appSetting.MappingType == EMappingType::DualDepth_Interior)
+				{
+					SET_UNIFORM_BUFFER_STATIC("InteriorAmbientColor[0]", appSetting.AmbientColors[0], shader);
+					SET_UNIFORM_BUFFER_STATIC("InteriorAmbientColor[1]", appSetting.AmbientColors[1], shader);
+					SET_UNIFORM_BUFFER_STATIC("InteriorAmbientColor[2]", appSetting.AmbientColors[2], shader);
+					SET_UNIFORM_BUFFER_STATIC("RoomCount", appSetting.RoomCount, shader);
+				}
 
 				Quad->Update(deltaTime);
 				Quad->Draw(MainCamera, shader, { DirectionalLight });

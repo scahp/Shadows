@@ -50,6 +50,12 @@ public:
 	float DualDepth_DepthScale = 1.0f;
 	bool ReliefShadowOn = true;
 
+	Vector AmbientColors[3] = {
+		Vector(1.0f,1.0f,1.0f),
+		Vector(255.0f / 255.0f, 197.0f / 255.0f, 143.0f / 255.0f),
+		Vector(0.2f, 0.2f, 0.2f) };
+	int32 RoomCount = 5;
+
 	EInteriorTexture InteriorTexture = EInteriorTexture::CaptureCube_Tex_Office1x1x1b2;
 	EDualDepthReliefTexture ReliefTexture = EDualDepthReliefTexture::office1x1x1b_CaptureFG;
 

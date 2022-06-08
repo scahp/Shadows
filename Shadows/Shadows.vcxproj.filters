@@ -577,5 +577,8 @@
     <None Include="Shaders\fs_interiormap.glsl">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="Shaders\fs_dualdepthrelief_interiormap.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
