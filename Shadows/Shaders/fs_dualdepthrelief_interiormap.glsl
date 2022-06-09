@@ -3,7 +3,7 @@
 precision mediump float;
 
 uniform sampler2D ColorTexture[3];
-uniform sampler2D ReliefTexture[3];
+uniform sampler2D ReliefTexture[3];			// x : front relief depth, y : back relief depth
 uniform sampler2D EnvironmentTexture[3];
 
 uniform int TextureSRGB[1];
@@ -69,8 +69,6 @@ void ApplyDepthBiasScale(inout vec3 Direction)
 	Direction.xy *= DepthScale;
 }
 
-#define USE_RELAXED_CONE_TRACING 1
-
 // http://filmicworlds.com/blog/filmic-tonemapping-operators/
 vec3 Uncharted2Tonemap(vec3 x)
 {
@@ -110,6 +108,8 @@ bool CheckUV(vec3 p, vec2 tex)
 	return (p.z>tex.x && p.z<tex.y);
 }
 
+// https://learnopengl.com/PBR/IBL/Diffuse-irradiance
+// Equirectangular map
 const vec2 invAtan = vec2(0.1591, 0.3183);
 vec2 SampleSphericalMap(vec3 v)
 {
@@ -170,9 +170,6 @@ void main()
 	int IndexRelief = int(indexUV.x + indexUV.y * 2) % 3;
 	int IndexEnv = int(indexUV.y  + indexUV.x * 4) % 3;
     int IndexAmbient = int(indexUV.x * 2 + indexUV.y * 7) % 3;
-
-	//IndexRelief = 0;
-	//IndexEnv = 2;
 
     vec3 TangentSpace_ViewDir_ToSurface_ = TBN_ * normalize(WorldPos_ - WorldSpace_CameraPos);
 	

@@ -3,7 +3,7 @@
 precision mediump float;
 
 uniform sampler2D ColorTexture;
-uniform sampler2D ReliefTexture;
+uniform sampler2D ReliefTexture;		// x : front relief depth, y : back relief depth
 
 uniform int TextureSRGB[1];
 uniform int UseTexture;
@@ -65,8 +65,6 @@ void ApplyDepthBiasScale(inout vec3 Direction)
 
 	Direction.xy *= DepthScale;
 }
-
-#define USE_RELAXED_CONE_TRACING 1
 
 // http://filmicworlds.com/blog/filmic-tonemapping-operators/
 vec3 Uncharted2Tonemap(vec3 x)

@@ -25,6 +25,8 @@ vec3 Uncharted2Tonemap(vec3 x)
 	return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
 }
 
+// https://learnopengl.com/PBR/IBL/Diffuse-irradiance
+// Equirectangular map
 const vec2 invAtan = vec2(0.1591, 0.3183);
 vec2 SampleSphericalMap(vec3 v)
 {

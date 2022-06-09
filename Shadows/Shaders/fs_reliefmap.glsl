@@ -3,8 +3,7 @@
 precision mediump float;
 
 uniform sampler2D ColorTexture;
-uniform sampler2D ReliefTexture;
-uniform sampler2D NormalTexture;
+uniform sampler2D ReliefTexture;		// xy : normal xy, z : relief depth
 
 uniform int TextureSRGB[1];
 uniform int UseTexture;
@@ -22,14 +21,6 @@ in vec3 TangentSpace_LightDir_ToSurface_;
 in vec3 WorldPos_;
 
 out vec4 color;
-
-vec3 GetNormal(vec2 uv)
-{
-	vec3 normal = texture(ReliefTexture, uv).xyz;
-	normal = normal * 2.0 - 1.0;
-	normal.y = -normal.y;			// if it's using opengl normal map
-	return normal;
-}
 
 vec3 GetTwoChannelNormal(vec2 uv)
 {
@@ -154,8 +145,6 @@ void ApplyDepthBiasScale(inout vec3 Direction)
 
 	Direction.xy *= DepthScale;
 }
-
-#define USE_RELAXED_CONE_TRACING 1
 
 void main()
 {
