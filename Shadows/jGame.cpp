@@ -264,8 +264,8 @@ void jGame::Update(float deltaTime)
 		// Load interior cube textures
 		for(int32 i=0;i<(int32)EInteriorTexture::MAX;++i)
 		{
-			std::string color = "Image/DualDepthReliefTexture/" + std::string(EInteriorTextureString[(int32)i]) + ".HDR";
-            EnvTextureArray[i] = jImageFileLoader::GetInstance().LoadTextureFromFile(jName("Image/InteriorCubeMap/CaptureCube_Tex_Office1x1x1b2.HDR"));
+			std::string color = "Image/InteriorCubeMap/" + std::string(EInteriorTextureString[(int32)i]) + ".HDR";
+            EnvTextureArray[i] = jImageFileLoader::GetInstance().LoadTextureFromFile(jName(color.c_str()));
 		}
 
 		float QuadWidth = 200.0f;
