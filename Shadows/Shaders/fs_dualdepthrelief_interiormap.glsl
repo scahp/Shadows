@@ -121,16 +121,14 @@ vec2 SampleSphericalMap(vec3 v)
 
 vec3 GetEnvCube(vec2 uv, vec3 TangentSpace_ViewDir_ToSurface_, int index)
 {
-    // raytrace box from tangent view dir
-    // https://chulin28ho.tistory.com/521
-    vec3 pos = vec3(uv * 2.0 - 1.0, TangentSpace_ViewDir_ToSurface_.z > 0 ? -1 : 1);
+    // raytrace box from tangent view dir https://chulin28ho.tistory.com/521
+    TangentSpace_ViewDir_ToSurface_.z = abs(TangentSpace_ViewDir_ToSurface_.z);
+
+    vec3 pos = vec3(uv * 2.0 - 1.0, -1.0);
     vec3 id = 1.0 / (TangentSpace_ViewDir_ToSurface_+0.00001);
     vec3 k = abs(id) - pos * id;
     float kMin = min(min(k.x, k.y), k.z);
     pos += kMin * TangentSpace_ViewDir_ToSurface_;
-
-	if (TangentSpace_ViewDir_ToSurface_.z <= 0)
-		pos.z = -pos.z;
 
     return texture(EnvironmentTexture[index], SampleSphericalMap(normalize(pos))).rgb;
 }
