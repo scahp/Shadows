@@ -82,19 +82,23 @@ public:
 	}
 	FORCEINLINE static void GetForwardRightUpFromEulerAngle(Vector& OutForward, Vector& OutRight, Vector& OutUp, const Vector& InEulerAngle)
 	{
-		OutForward = InEulerAngle.GetDirectionFromEulerAngle().GetNormalize();
+        OutForward = InEulerAngle.GetDirectionFromEulerAngle().GetNormalize();
 
-		const bool IsInvert = (InEulerAngle.x < 0 || PI < InEulerAngle.x);
-		auto t = RadianToDegree(InEulerAngle.x);
-		OutRight = OutForward.CrossProduct(IsInvert ? Vector::UpVector : -Vector::UpVector).GetNormalize();
+        const bool IsInvert = (InEulerAngle.x < 0 || PI < InEulerAngle.x);
 
-		OutUp = OutForward.CrossProduct(OutRight).GetNormalize();
+        const Vector UpVector = (IsInvert ? -Vector::UpVector : Vector::UpVector);
+        OutRight = (IsInvert ? -Vector::UpVector : Vector::UpVector).CrossProduct(OutForward).GetNormalize();
+        if (IsNearlyZero(OutRight.LengthSQ()))
+            OutRight = (IsInvert ? -Vector::FowardVector : Vector::FowardVector).CrossProduct(OutForward).GetNormalize();
+        OutUp = OutForward.CrossProduct(OutRight).GetNormalize();
 	}
 	FORCEINLINE static void SetCamera(jCamera* OutCamera, const Vector& pos, const Vector& target, const Vector& up
 		, float fovRad, float nearDist, float farDist, float width, float height, bool isPerspectiveProjection, float distance = 300.0f)
 	{
 		const auto toTarget = (target - pos);
 		OutCamera->Pos = pos;
+        OutCamera->Target = target;
+        OutCamera->Up = up;
 		OutCamera->Distance = distance;
 		OutCamera->SetEulerAngle(Vector::GetEulerAngleFrom(toTarget));
 
